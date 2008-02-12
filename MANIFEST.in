@@ -1,0 +1,2 @@
+recursive-include sflvault/public *
+recursive-include sflvault/templates *

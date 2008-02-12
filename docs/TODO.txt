@@ -1,0 +1,25 @@
+TODO
+====
+
+ * Add versioning capabilities for all changes (à-la Typo3)
+ * Add support for svlfault ssh -L, -R, and -D, which does
+   everything it can (even over multiple-hops) to create the
+   desired tunnel (Local, Remote and SOCKS proxy): for example,
+   create intermediate -L with random ports to make sure
+   everything gets to destination.
+ * Add table for sensitive data, that isn't server-related (like
+   credit card info, PayPal accounts..)
+ * Make sflvault --shell ask for the passphrase and decrypt the private
+   key once, and be able to work in with a decrypted (in-ram encrypted)
+   private key, so all the operations are made with the same private key.
+   Eventually, dropping the key each 3 minutes of inactivity writing to
+   the term: [Dropped secrets from memory], asking to authenticate again:
+     [sflv]% 
+     SFLvault: dropped secrets from memory. Issue 'pass' to log back in.
+     [sflv]% pass
+     Enter passphrase: 
+     Authenticated, timeout in XXX seconds
+     [sflv]%
+ * Throttle, avec avertissement.. y repenser..
+ * Sécurisation HTTPS, vérification des certificats, MAN-IN-THE-MIDDLE
+   attach, garder le fingerprint, etc...
