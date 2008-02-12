@@ -1,0 +1,7 @@
+# Temp files
+*~
+# pyc files
+*.pyc
+
+# Database
+vault-database.db
