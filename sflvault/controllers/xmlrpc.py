@@ -34,8 +34,8 @@ class XmlrpcController(XMLRPCController):
 
         # First, remove ALL users that have waiting_setup expired, where
         # waiting_setup isn't NULL.
-        Session.delete(User.query().filter(User.waiting_setup != None).filter(User.waiting_setup < datetime.now()))
-        raise RuntimeError
+        #Session.delete(User.query().filter(User.waiting_setup != None).filter(User.waiting_setup < datetime.now()))
+        #raise RuntimeError
         cnt = User.query().count()
         
         u = User.query().filter_by(username=username).first()
@@ -43,10 +43,10 @@ class XmlrpcController(XMLRPCController):
 
         if (cnt):
             if (not u):
-                return {'error': True, 'message': 'No such user %s' % username}
+                return vaultMsg(True, 'No such user %s' % username)
         
             if (u.setup_expired()):
-                return {'error': True, 'message': 'Setup expired for user %s' % username}
+                return vaultMsg(True, 'Setup expired for user %s' % username)
 
         # Ok, let's save the things and reset waiting_setup.
         u.waiting_setup = None
@@ -54,7 +54,7 @@ class XmlrpcController(XMLRPCController):
 
         Session.commit()
 
-        return {'error': False, 'message': 'User setup complete for %s' % username}
+        return vaultMsg(False, 'User setup complete for %s' % username)
 
 
     def sflvault_adduser(self, username):
@@ -64,7 +64,7 @@ class XmlrpcController(XMLRPCController):
         SETUP_TIMEOUT = 60
 
         if (User.query().filter_by(username=username).count()):
-            return {'error': True, 'message': 'User %s already exists.' % username}
+            return vaultMsg(True, 'User %s already exists.' % username)
         
         n = User()
         n.waiting_setup =  datetime.now() + timedelta(0, SETUP_TIMEOUT)
@@ -74,9 +74,41 @@ class XmlrpcController(XMLRPCController):
 
         Session.commit()
 
-        return {'error': False, 'message': 'User added. User has a delay of %d seconds to invoke a "setup" command' % SETUP_TIMEOUT}
+        return vaultMsg(False, 'User added. User has a delay of %d seconds to invoke a "setup" command' % SETUP_TIMEOUT)
 
 
-    def sflvault_authenticate(self):
-        return [u.username, u.is_admin, b64encode(randfunc(32))]
-        return "Hello again"
+    def sflvault_login(self, username):
+        # Return 'cryptok', encrypted with pubkey.
+        # Save decoded version to user's db field.
+        try:
+            u = User.query().filter_by(username=username).one()
+        except:
+            return vaultMsg(True, 'User unknown')
+        # TODO: implement throttling ?
+
+        rnd = randfunc(32)
+        # 15 seconds to complete login/authenticate round-trip.
+        u.logging_timeout = datetime.now() + timedelta(0, 15)
+        u.logging_token = rnd
+
+        Session.commit()
+
+        e = u.elgamal()
+        cryptok = vaultSerial(e.encrypt(rnd, randfunc(32)))
+        return vaultMsg(False, 'Authenticate please', {'cryptok': cryptok})
+
+    def sflvault_authenticate(self, username, cryptok):
+        try:
+            u = User.query().filter_by(username=username).one()
+        except:
+            return vaultMsg(True, 'User unknown')
+
+        if u.logging_timeout < datetime.now():
+            return vaultMsg(True, 'Login token expired')
+
+        # str() necessary, to convert buffer to string.
+        if vaultUnserial(cryptok) != str(u.logging_token):
+            return vaultMsg(True, 'Authentication failed')
+        else:
+            # TODO: generate session token, and return authtok
+            return vaultMsg(False, 'Authentication successful', {'authtok': 'token'})

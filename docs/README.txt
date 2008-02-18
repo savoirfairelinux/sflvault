@@ -156,7 +156,12 @@ pubkey est shippé direct comme ça dans la BD
 privkey est encrypté (à partir de la) en Blowfish, et écrit direct sur le
   disque dans ~/.sflvault/key   avec les modes changés et renforcés.
 
+pour décoder les pubkey:
+  e = new ElGamalObj()
+  (e.p, e.g, e.y) = pickle.loads(b64decode(pubkey))
 
+pour décoder la privkey:
+  (p, x) = pickle.loads(privkey)
 
 ----------------------------------------------------
 Authentication scheme:

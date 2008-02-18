@@ -23,3 +23,8 @@ TODO
  * Throttle, avec avertissement.. y repenser..
  * Sécurisation HTTPS, vérification des certificats, MAN-IN-THE-MIDDLE
    attach, garder le fingerprint, etc...
+ * Support pour des keywords par usager. Probablement dans les Userciphers
+   comme ça quelqu'un peut demander de se connecter au serveur 'adq' et c'est
+   remplacé automatiquement par le numéro du service (à l'interne).
+   Avec une p'tit fonction pour mapper un numéro de service à un keyword,
+   unique par utilisateur. (sur une table séparée?)

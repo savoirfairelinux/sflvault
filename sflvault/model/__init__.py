@@ -6,6 +6,9 @@ from sqlalchemy.orm import mapper, relation
 from sqlalchemy.orm import scoped_session, sessionmaker
 from datetime import *
 
+from Crypto.PublicKey import ElGamal
+from base64 import b64decode, b64encode
+import pickle
 
 # Global session manager.  Session() returns the session object
 # appropriate for the current web request.
@@ -22,9 +25,13 @@ metadata = MetaData()
 
 users_table = Table("users", metadata,
                     Column('id', types.Integer, primary_key=True),
-                    Column('username', types.String(50)),
+                    Column('username', types.Unicode(50)),
                     # ElGamal public key.
                     Column('pubkey', types.Text),
+                    # Used in the login/authenticate challenge
+                    Column('logging_token', types.Binary(35)),
+                    # Time until the token is valid.
+                    Column('logging_timeout', types.DateTime),
                     # This stamp is used to wipe users which haven't 'setup'
                     # their account before this date/time
                     Column('waiting_setup', types.DateTime, nullable=True),
@@ -36,25 +43,25 @@ users_table = Table("users", metadata,
 userlevels_table = Table('userlevels', metadata,
                           Column('id', types.Integer, primary_key=True),
                           Column('user_id', types.Integer, ForeignKey('users.id')),
-                          Column('level', types.String(50), index=True)
+                          Column('level', types.Unicode(50), index=True)
                           )
 
 clients_table = Table('clients', metadata,
                       Column('id', types.Integer, primary_key=True),
-                      Column('name', types.String(100)),
+                      Column('name', types.Unicode(100)),
                       Column('created_time', types.DateTime),
                       # username, même si yé effacé.
-                      Column('created_user', types.String(50))
+                      Column('created_user', types.Unicode(50))
                       )
 
 servers_table = Table('servers', metadata,
                       Column('id', types.Integer, primary_key=True),
                       Column('client_id', types.Integer, ForeignKey('clients.id')), # relation clients
                       Column('created_time', types.DateTime),
-                      # String lisible, un peu de descriptif
-                      Column('nom', types.String(150)),
+                      # Unicode lisible, un peu de descriptif
+                      Column('name', types.Unicode(150)),
                       # Domaine complet.
-                      Column('fqdn', types.String(150)),
+                      Column('fqdn', types.Unicode(150)),
                       # Adresse IP si fixe, sinon 'dyn'
                       Column('ip', types.String(100)),
                       # Où il est ce serveur, location géographique, et dans
@@ -104,12 +111,18 @@ class Usercipher(object):
 class User(object):
     def setup_expired(self):
         """Return True/False if waiting_setup has expired"""
-        if (self.waiting_setup):
-            return False
+        if (not self.waiting_setup):
+            return True
         elif (datetime.now() < self.waiting_setup):
             return False
         else:
             return True
+
+    def elgamal(self):
+        """Return the ElGamal object, ready to encrypt stuff."""
+        e = ElGamal.ElGamalobj()
+        (e.p, e.g, e.y) = pickle.loads(b64decode(self.pubkey))
+        return e
     
     def __repr__(self):
         return "<User: %s>" % (self.username)

@@ -61,10 +61,17 @@ srv = xmlrpclib.Server(SERVER)
 def authenticate():
 
     pprint(srv.sflvault.login('admin'))
-    
+
     sys.exit()
 
+### TODO: two functions that violate DRY principle, they are in lib/base.py
+def vaultSerial(something):
+    """Serialize with pickle.dumps + b64encode"""
+    return b64encode(pickle.dumps(something))
 
+def vaultUnserial(something):
+    """Unserialize with b64decode + pickle.loads"""
+    return pickle.loads(b64decode(something))
 
 
 ###
@@ -114,6 +121,7 @@ class SFLvaultFunctions(object):
             sys.exit()
         username = sys.argv.pop(1)
         url      = sys.argv.pop(1)
+        ## TODO: use the 'url', and not the hard-coded one.
 
         # Generate a new key:
         print "Generating new ElGamal key-pair..."
@@ -124,7 +132,7 @@ class SFLvaultFunctions(object):
 
         print "Sending request to vault..."
         # Send it to the vault, with username
-        retval = srv.sflvault.setup(username, b64encode(pickle.dumps(pubkey)))
+        retval = srv.sflvault.setup(username, vaultSerial(pubkey))
 
         # If Vault sends a SUCCESS, save all the stuff (username, url)
         # and encrypt privkey locally (with Blowfish)
@@ -141,7 +149,15 @@ class SFLvaultFunctions(object):
             # Encrypt privkey locally (with Blowfish)
             pass
 
-        pass
+        # TODO: remove this, login test
+        retval = srv.sflvault.login(username)
+        if not retval['error']:
+            # decrypt token.
+            cryptok = eg.decrypt(vaultUnserial(retval['cryptok']))
+            retval2 = srv.sflvault.authenticate(username, vaultSerial(cryptok))
+
+            print "WOAH"
+            pprint(retval2)
     
     def deluser(self):
         pass
