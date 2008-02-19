@@ -1,0 +1,4 @@
+Uses:
+  python modules:
+    - Crypto   (AES, Blowfish, ElGamal)
+    - M2Crypto (xmlrpclib over SSL)
