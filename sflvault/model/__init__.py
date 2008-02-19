@@ -46,7 +46,7 @@ userlevels_table = Table('userlevels', metadata,
                           Column('level', types.Unicode(50), index=True)
                           )
 
-cutomerss_table = Table('customers', metadata,
+customers_table = Table('customers', metadata,
                       Column('id', types.Integer, primary_key=True),
                       Column('name', types.Unicode(100)),
                       Column('created_time', types.DateTime),
