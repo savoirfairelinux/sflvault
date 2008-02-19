@@ -5,6 +5,7 @@ PROGRAM = "SFLvault"
 VERSION = "0.1"
 
 SERVER = 'http://localhost:5000/vault/rpc'
+CONFIG_FILE = '~/.sflvault/config'
 
 import optparse
 import sys
@@ -32,6 +33,40 @@ if (len(sys.argv) > 1):
     # Fix for functions
     action = action.replace('-', '_')
 
+#
+# Config file setup
+#
+## TODO: check if ~/.sflvault exists
+##        or create it (mode 0700)
+##       check if modes for ~/.sflvault are 0700
+##        or halt with error message
+##       check for ownership of that dir, or halt with error
+##       check if ~/.sflvault/config exists
+##        or create it (mode 0600, correct ownership)
+##       check if ~/.sflvault/config is mode 0700
+##        or halt with error message
+##       check for ownership of that file, or halt with error
+##       check if ~/.sflvault/key exists
+##        check if it's not 0700
+##         if not, halt with error (give the command to fix it)
+##       check for ownership of that file, or halt with error
+##       parse the config file, return the ConfigParser
+##       --
+##       define a func to write back to the config file
+##       and enforce permissions
+cfg = ConfigParser.ConfigParser()
+cfg.readfp()
+def vaultConfigCheck():
+    """Checks for ownership and modes for all paths and files, à-la SSH"""
+    pass
+
+def vaultConfigRead():
+    """Return the ConfigParser object, fully loaded"""
+    pass
+
+def vaultConfigWrite(cfg):
+    """Write the ConfigParser element to disk."""
+    pass
 
 #
 # Command line parser
@@ -106,8 +141,8 @@ class SFLvaultFunctions(object):
         else:
             print "Vault says: %s" % retval['message']
 
-    def addclient(self):
-        print "Do addclient"
+    def addcustomer(self):
+        print "Do addcustomer"
 
     def addserver(self):
         print "Do addserver"
@@ -174,7 +209,7 @@ class SFLvaultFunctions(object):
     def list_users(self):
         print "Do addserver"
 
-    def list_clients(self):
+    def list_customers(self):
         pass
 
 

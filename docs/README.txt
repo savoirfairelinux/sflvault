@@ -65,17 +65,17 @@ it's computer), completely useless.
 # To add some info into the vault
 ----------------------------------------------
 [auth-required]
-$ sflvault addclient --name|-n "client name"
-Prints the client number.
+$ sflvault addcustomer --name|-n "customer name"
+Prints the customer number.
 
 [auth-required]
-$ sflvault list-clients
-Lists all clients, in $PAGER with their numbers.
+$ sflvault list-customers
+Lists all customers, in $PAGER with their numbers.
 
 [auth-required]
 $ sflvault addserver --name|-n "server name" --fqdn|-d "domain name"
                      --ip|-i "ip address" --location|-l "location"
-Offers a list of clients, with $PAGER, you can select the number from a list,
+Offers a list of customers, with $PAGER, you can select the number from a list,
 and fills the info with that.
 
 [auth-required]
@@ -105,10 +105,11 @@ login username
      private key.
 authenticate username plaintext
   `- returns the 'authtok', and 'session_timeout' required for subsequent calls
-list-clients authtok
-  `- returns a simple list of clients with their client_id
+list-customers authtok
+  `- returns a simple list of customers with their customer_id
+add-customer authtok, customer_name
 list-servers authtok
-  `- returns a simple list of servers (with their client info)
+  `- returns a simple list of servers (with their customer info)
 list-levels authtok
   `- returns a very simple list of existing levels.
      simple GROUP BY 'level' on userlevels.
@@ -172,7 +173,7 @@ client issues xmlrpc:authentication(username, decrypted_randombytes)
 server returns the authtok (required for subsequent authenticated calls)
                and a session timeout (from vault's configuration)
 
-client issues xmlrpc:list-clients(authtok)
+client issues xmlrpc:list-customerss(authtok)
 server checks the authtok, updates the timeout, and returns the list.
 
 

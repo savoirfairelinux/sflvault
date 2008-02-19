@@ -24,11 +24,50 @@ pool.stir()
 pool.randomize()
 randfunc = pool.get_bytes # We'll use this func for most of the random stuff
 
+#
+# Configuration
+#
+# TODO: make those configurable
+SETUP_TIMEOUT = 60
+SESSION_TIMEOUT = 300
+
+
+def _setupSessions(self):
+    """DRY out _setSession and _getSession"""
+    if not g.has_key('vaultSessions'):
+        g['vaultSessions'] = {}
+
+def _setSession(self, authtok, value):
+    """Sets in 'g.vaultSessions':
+    {authtok1: {'username':  , 'timeout': datetime}, authtok2: {}..}
+    
+    """
+    self._setupSessions();
+
+    g['vaultSessions'][authtok] = value;
+        
+def _getSession(self, authtok):
+    """Return the values associated with a session"""
+    self._setupSessions();
+
+    if not g['vaultSessions'].has_key(authtok):
+        return None
+
+    if not g['vaultSessions'][authtok].has_key('timeout'):
+        g['vaultSessions'][authtok]['timeout'] = datetime.now() = timedelta(0, SESSION_TIMEOUT)
+    
+    if g['vaultSessions'][authtok]['timeout'] < datetime.now():
+        del(g['vaultSessions'][authtok])
+        return None
+
+    return g['vaultSessions'][authtok]
+
 
 ##
 ## See: http://wiki.pylonshq.com/display/pylonsdocs/Using+the+XMLRPCController
 ##
 class XmlrpcController(XMLRPCController):
+
 
     def sflvault_setup(self, username, pubkey):
 
@@ -60,8 +99,6 @@ class XmlrpcController(XMLRPCController):
     def sflvault_adduser(self, username):
         # TODO: authenticate
         # TODO: verifier si l'usager loggé est ADMIN
-        # TODO: rendre configurable SETUP_TIMEOUT
-        SETUP_TIMEOUT = 60
 
         if (User.query().filter_by(username=username).count()):
             return vaultMsg(True, 'User %s already exists.' % username)
@@ -112,3 +149,9 @@ class XmlrpcController(XMLRPCController):
         else:
             # TODO: generate session token, and return authtok
             return vaultMsg(False, 'Authentication successful', {'authtok': 'token'})
+
+    def sflvault_addcustomer(self, authtok, customer_name):
+        pass
+
+    def sflvault_listcustomers(self, authtok):
+        lst = 

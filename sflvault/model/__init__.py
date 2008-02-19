@@ -46,7 +46,7 @@ userlevels_table = Table('userlevels', metadata,
                           Column('level', types.Unicode(50), index=True)
                           )
 
-clients_table = Table('clients', metadata,
+cutomerss_table = Table('customers', metadata,
                       Column('id', types.Integer, primary_key=True),
                       Column('name', types.Unicode(100)),
                       Column('created_time', types.DateTime),
@@ -56,7 +56,7 @@ clients_table = Table('clients', metadata,
 
 servers_table = Table('servers', metadata,
                       Column('id', types.Integer, primary_key=True),
-                      Column('client_id', types.Integer, ForeignKey('clients.id')), # relation clients
+                      Column('customer_id', types.Integer, ForeignKey('customers.id')), # relation customers
                       Column('created_time', types.DateTime),
                       # Unicode lisible, un peu de descriptif
                       Column('name', types.Unicode(150)),
@@ -131,14 +131,14 @@ class UserLevel(object):
     def __repr__(self):
         return "<UserLevel: %s>" % (self.level)
 
-class Client(object):
+class Customer(object):
     def __repr__(self):
-        return "<Client: %s>" % (self.name)
+        return "<Customer: %s>" % (self.name)
 
 # Map each class to its corresponding table.
 mapper(User, users_table)
 mapper(UserLevel, userlevels_table)
-mapper(Client, clients_table)
+mapper(Customer, customers_table)
 mapper(Server, servers_table)
 mapper(Service, services_table)
 mapper(Usercipher, userciphers_table)
