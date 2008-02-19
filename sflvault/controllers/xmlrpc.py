@@ -32,42 +32,41 @@ SETUP_TIMEOUT = 60
 SESSION_TIMEOUT = 300
 
 
-def _setupSessions(self):
+def _setupSessions():
     """DRY out _setSession and _getSession"""
-    if not g.has_key('vaultSessions'):
-        g['vaultSessions'] = {}
+    if not hasattr(g, 'vaultSessions'):
+        g.vaultSessions = {}
 
-def _setSession(self, authtok, value):
+def _setSession(authtok, value):
     """Sets in 'g.vaultSessions':
     {authtok1: {'username':  , 'timeout': datetime}, authtok2: {}..}
     
     """
-    self._setupSessions();
+    _setupSessions();
 
-    g['vaultSessions'][authtok] = value;
+    g.vaultSessions[authtok] = value;
         
-def _getSession(self, authtok):
+def _getSession(authtok):
     """Return the values associated with a session"""
-    self._setupSessions();
+    _setupSessions();
 
-    if not g['vaultSessions'].has_key(authtok):
+    if not g.vaultSessions.has_key(authtok):
         return None
 
-    if not g['vaultSessions'][authtok].has_key('timeout'):
-        g['vaultSessions'][authtok]['timeout'] = datetime.now() = timedelta(0, SESSION_TIMEOUT)
+    if not g.vaultSessions[authtok].has_key('timeout'):
+        g.vaultSessions[authtok]['timeout'] = datetime.now() + timedelta(0, SESSION_TIMEOUT)
     
-    if g['vaultSessions'][authtok]['timeout'] < datetime.now():
-        del(g['vaultSessions'][authtok])
+    if g.vaultSessions[authtok]['timeout'] < datetime.now():
+        del(g.vaultSessions[authtok])
         return None
 
-    return g['vaultSessions'][authtok]
+    return g.vaultSessions[authtok]
 
 
 ##
 ## See: http://wiki.pylonshq.com/display/pylonsdocs/Using+the+XMLRPCController
 ##
 class XmlrpcController(XMLRPCController):
-
 
     def sflvault_setup(self, username, pubkey):
 
@@ -147,11 +146,35 @@ class XmlrpcController(XMLRPCController):
         if vaultUnserial(cryptok) != str(u.logging_token):
             return vaultMsg(True, 'Authentication failed')
         else:
-            # TODO: generate session token, and return authtok
-            return vaultMsg(False, 'Authentication successful', {'authtok': 'token'})
+            newtok = b64encode(randfunc(32))
+            _setSession(newtok, {'username': username,
+                                 'timeout': datetime.now() + timedelta(0, SESSION_TIMEOUT)
+                                 })
+
+            return vaultMsg(False, 'Authentication successful', {'authtok': newtok})
 
     def sflvault_addcustomer(self, authtok, customer_name):
-        pass
+        sess = _getSession(authtok)
+        if not sess:
+            return vaultMsg(True, "Session expired")
+
+        nc = Customer()
+        nc.name = customer_name
+        nc.created_time = datetime.now()
+        nc.created_user = sess['username']
+        Session.commit()
+
+        return vaultMsg(False, 'Customer added as no. %d' % nc.id)
 
     def sflvault_listcustomers(self, authtok):
-        lst = 
+        if not _getSession(authtok):
+            return vaultMsg(True, "Session expired")
+        
+        lst = Customer.query.all()
+
+        out = []
+        for x in lst:
+            nx = {'id': x.id, 'name': x.name}
+            out.append(nx)
+
+        return vaultMsg(False, 'Here is the customer list', {'list': out})

@@ -151,7 +151,7 @@ ElGamal(1536 bits, with random K values)
 keys/stuff marshalling/unmarshalling:
   e = clé ElGamal générée.
   pubkey = b64encode(pickle.dumps(e.p, e.g, e.y))
-  privkey = pickle.dumps(e.p, e.x)
+  privkey = b64encode(pickle.dumps(e.p, e.x))
 
 pubkey est shippé direct comme ça dans la BD
 privkey est encrypté (à partir de la) en Blowfish, et écrit direct sur le
@@ -162,7 +162,7 @@ pour décoder les pubkey:
   (e.p, e.g, e.y) = pickle.loads(b64decode(pubkey))
 
 pour décoder la privkey:
-  (p, x) = pickle.loads(privkey)
+  (p, x) = pickle.loads(b64decode(privkey))
 
 ----------------------------------------------------
 Authentication scheme:

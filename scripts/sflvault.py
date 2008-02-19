@@ -8,13 +8,15 @@ SERVER = 'http://localhost:5000/vault/rpc'
 CONFIG_FILE = '~/.sflvault/config'
 
 import optparse
+import os
 import sys
 import xmlrpclib
+from ConfigParser import ConfigParser
+import pickle
 from Crypto.PublicKey import ElGamal
 from Crypto.Cipher import AES, Blowfish
 from Crypto.Util import randpool
 from base64 import b64decode, b64encode
-import pickle
 
 from pprint import pprint
 
@@ -36,42 +38,66 @@ if (len(sys.argv) > 1):
 #
 # Config file setup
 #
-## TODO: check if ~/.sflvault exists
-##        or create it (mode 0700)
-##       check if modes for ~/.sflvault are 0700
-##        or halt with error message
-##       check for ownership of that dir, or halt with error
-##       check if ~/.sflvault/config exists
-##        or create it (mode 0600, correct ownership)
-##       check if ~/.sflvault/config is mode 0700
-##        or halt with error message
-##       check for ownership of that file, or halt with error
-##       check if ~/.sflvault/key exists
-##        check if it's not 0700
-##         if not, halt with error (give the command to fix it)
-##       check for ownership of that file, or halt with error
-##       parse the config file, return the ConfigParser
-##       --
-##       define a func to write back to the config file
-##       and enforce permissions
-cfg = ConfigParser.ConfigParser()
-cfg.readfp()
 def vaultConfigCheck():
     """Checks for ownership and modes for all paths and files, à-la SSH"""
-    pass
+    fullfile = os.path.expanduser(CONFIG_FILE)
+    fullpath = os.path.dirname(fullfile)
+    
+    if not os.path.exists(fullpath):
+        os.makedirs(fullpath, mode=0700)
+
+    if not os.stat(fullpath)[0] & 0700:
+        print "Modes for %s must be 0700 (-rwx------)" % fullpath
+        sys.exit()
+
+    if not os.path.exists(fullfile):
+        fp = open(fullfile, 'w')
+        fp.write("[SFLvault]\n")
+        fp.close()
+        os.chmod(fullfile, 0600)
+        
+    if not os.stat(fullfile)[0] & 0600:
+        print "Modes for %s must be 0600 (-rw-------)" % fullfile
+        sys.exit()
+
+    return True
 
 def vaultConfigRead():
     """Return the ConfigParser object, fully loaded"""
-    pass
+    vaultConfigCheck()
+    
+    cfg = ConfigParser()
+    fp = open(os.path.expanduser(CONFIG_FILE), 'r')
+    cfg.readfp(fp)
+    fp.close()
+
+    if not cfg.has_section('SFLvault'):
+        cfg.add_section('SFLvault')
+
+    if not cfg.has_option('SFLvault', 'username'):
+        cfg.set('SFLvault', 'username', '')
+    
+    if not cfg.has_option('SFLvault', 'url'):
+        cfg.set('SFLvault', 'url', '')
+
+    return cfg
 
 def vaultConfigWrite(cfg):
     """Write the ConfigParser element to disk."""
-    pass
+    fp = open(os.path.expanduser(CONFIG_FILE), 'w')
+    cfg.write(fp)
+    fp.close()
+
+# global cfg object
+cfg = vaultConfigRead()
+
+
 
 #
 # Command line parser
 #
 parser = optparse.OptionParser()
+
 
 
 #
@@ -86,6 +112,8 @@ randfunc = pool.get_bytes # We'll use this func for most of the random stuff
 #
 # XML-RPC server setup.
 #
+## TODO: Use the config version, complain only if the 'action' isn't in
+## ['help', 'setup', ??]
 srv = xmlrpclib.Server(SERVER)
 
 
@@ -93,11 +121,30 @@ srv = xmlrpclib.Server(SERVER)
 #
 # Helper functions
 #
+authtok = None  # global value
 def authenticate():
+    username = cfg.get('SFLvault', 'username')
+    ### TODO: implement encryption of the private key.
+    privkey = cfg.get('SFLvault', 'key')
 
-    pprint(srv.sflvault.login('admin'))
+    retval = srv.sflvault.login(username)
+    if not retval['error']:
+        # decrypt token.
+        eg = ElGamal.ElGamalobj()
+        (eg.p, eg.x) = vaultUnserial(privkey)
 
-    sys.exit()
+        cryptok = eg.decrypt(vaultUnserial(retval['cryptok']))
+        retval2 = srv.sflvault.authenticate(username, vaultSerial(cryptok))
+
+        if retval2['error']:
+            print "Authentication failed"
+        else:
+            authtok = retval2['authtok']
+            print "Authentication successful"
+    else:
+        print "Authentication failed"
+
+    return authtok
 
 ### TODO: two functions that violate DRY principle, they are in lib/base.py
 def vaultSerial(something):
@@ -134,7 +181,10 @@ class SFLvaultFunctions(object):
             sys.exit()
         username = sys.argv.pop(1)
 
-        retval = srv.sflvault.adduser(username)
+        if not authenticate():
+            sys.exit()
+
+        retval = srv.sflvault.adduser(authtok, username)
 
         if (retval['error']):
             print "Vault error: %s" % retval['message']
@@ -142,7 +192,21 @@ class SFLvaultFunctions(object):
             print "Vault says: %s" % retval['message']
 
     def addcustomer(self):
-        print "Do addcustomer"
+        if (len(sys.argv) != 2):
+            print 'Usage: add-customer ["customer name"]'
+            sys.exit()
+        customer_name = sys.argv.pop(1)
+
+        authtok = authenticate()
+        if not authtok:
+            sys.exit()
+
+        retval = srv.sflvault.addcustomer(authtok, customer_name)
+
+        if (retval['error']):
+            print "Error adding customer: %s" % retval['message']
+        else:
+            print "Success: %s" % retval['message']
 
     def addserver(self):
         print "Do addserver"
@@ -173,26 +237,16 @@ class SFLvaultFunctions(object):
         # and encrypt privkey locally (with Blowfish)
         print "Vault says: %s" % retval['message']
 
-        pprint(retval)
-        if (retval['error']):
-            print "We'd stop everything."
-            # Drop and error message (from vault also)
-            pass
-        else:
-            print "Ok, we'd save everything :)"
+        if not (retval['error']):
             # Save all (username, url)
             # Encrypt privkey locally (with Blowfish)
-            pass
+            cfg.set('SFLvault', 'username', username)
+            cfg.set('SFLvault', 'url', url)
+            # p and x form the private key
+            cfg.set('SFLvault', 'key', vaultSerial((eg.p, eg.x)))
+            vaultConfigWrite(cfg)
+            print "Saving settings..."
 
-        # TODO: remove this, login test
-        retval = srv.sflvault.login(username)
-        if not retval['error']:
-            # decrypt token.
-            cryptok = eg.decrypt(vaultUnserial(retval['cryptok']))
-            retval2 = srv.sflvault.authenticate(username, vaultSerial(cryptok))
-
-            print "WOAH"
-            pprint(retval2)
     
     def deluser(self):
         pass
@@ -210,12 +264,23 @@ class SFLvaultFunctions(object):
         print "Do addserver"
 
     def list_customers(self):
-        pass
+        if (len(sys.argv) != 1):
+            print 'Usage: list-customers'
+            sys.exit()
 
+        authtok = authenticate()
+        if not authtok:
+            sys.exit()
 
+        retval = srv.sflvault.listcustomers(authtok)
 
+        if retval['error']:
+            print "Error listing customers: %s" % retval['message']
 
-
+        print "Customer list:"
+        for x in retval['list']:
+            print "ID: %04d  -  %s" % (x['id'], x['name'])
+            
 
 
 
