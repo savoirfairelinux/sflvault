@@ -28,3 +28,7 @@ TODO
    remplacé automatiquement par le numéro du service (à l'interne).
    Avec une p'tit fonction pour mapper un numéro de service à un keyword,
    unique par utilisateur. (sur une table séparée?)
+ * Add support for adduser --admin, that would enable the new user's admin flag
+ * Add support for authtok + IP security (check IP address also) (lib/base.py)
+ * S'arranger pour avoir le help avant d'entrer son mot de passe si on fait
+   une erreur dans le format d'une commande (sflvault client)

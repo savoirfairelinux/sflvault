@@ -35,24 +35,24 @@ users_table = Table("users", metadata,
                     # This stamp is used to wipe users which haven't 'setup'
                     # their account before this date/time
                     Column('waiting_setup', types.DateTime, nullable=True),
-                    Column('created_time', types.DateTime),
+                    Column('created_time', types.DateTime, default=datetime.now()),
                     # Admin flag, allows to add users, and grant access.
-                    Column('is_admin', types.Boolean)
+                    Column('is_admin', types.Boolean, default=False)
                     )
 
 userlevels_table = Table('userlevels', metadata,
-                          Column('id', types.Integer, primary_key=True),
-                          Column('user_id', types.Integer, ForeignKey('users.id')),
-                          Column('level', types.Unicode(50), index=True)
-                          )
+                         Column('id', types.Integer, primary_key=True),
+                         Column('user_id', types.Integer, ForeignKey('users.id')),
+                         Column('level', types.Unicode(50), index=True)
+                         )
 
 customers_table = Table('customers', metadata,
-                      Column('id', types.Integer, primary_key=True),
-                      Column('name', types.Unicode(100)),
-                      Column('created_time', types.DateTime),
-                      # username, même si yé effacé.
-                      Column('created_user', types.Unicode(50))
-                      )
+                        Column('id', types.Integer, primary_key=True),
+                        Column('name', types.Unicode(100)),
+                        Column('created_time', types.DateTime),
+                        # username, même si yé effacé.
+                        Column('created_user', types.Unicode(50))
+                        )
 
 servers_table = Table('servers', metadata,
                       Column('id', types.Integer, primary_key=True),

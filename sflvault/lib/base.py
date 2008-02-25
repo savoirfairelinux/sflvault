@@ -9,6 +9,8 @@ from pylons.controllers.util import abort, etag_cache, redirect_to
 from pylons.decorators import jsonify, validate
 from pylons.i18n import _, ungettext, N_
 from pylons.templating import render
+from decorator import decorator
+from datetime import *
 
 import sflvault.lib.helpers as h
 import sflvault.model as model
@@ -26,6 +28,9 @@ def vaultMsg(error, message, dict=None):
             ret[x] = dict[x]
     return ret
 
+#
+# Serialization/unserialization
+#
 def vaultSerial(something):
     """Serialize with pickle.dumps + b64encode"""
     return b64encode(pickle.dumps(something))
@@ -33,6 +38,81 @@ def vaultSerial(something):
 def vaultUnserial(something):
     """Unserialize with b64decode + pickle.loads"""
     return pickle.loads(b64decode(something))
+
+
+
+#
+# Session management functions
+#
+def _setup_sessions():
+    """DRY out set_session and get_session"""
+    if not hasattr(g, 'vaultSessions'):
+        g.vaultSessions = {}
+
+def set_session(authtok, value):
+    """Sets in 'g.vaultSessions':
+    {authtok1: {'username':  , 'timeout': datetime}, authtok2: {}..}
+    
+    """
+    _setup_sessions();
+
+    g.vaultSessions[authtok] = value;
+        
+def get_session(authtok):
+    """Return the values associated with a session"""
+    _setup_sessions();
+
+    if not g.vaultSessions.has_key(authtok):
+        return None
+
+    if not g.vaultSessions[authtok].has_key('timeout'):
+        g.vaultSessions[authtok]['timeout'] = datetime.now() + timedelta(0, SESSION_TIMEOUT)
+    
+    if g.vaultSessions[authtok]['timeout'] < datetime.now():
+        del(g.vaultSessions[authtok])
+        return None
+
+    return g.vaultSessions[authtok]
+
+#
+# Permissions decorators for XML-RPC calls
+#
+
+@decorator
+def authenticated_user(func, self, *args, **kwargs):
+    """Aborts if user isn't authenticated.
+
+    Timeout check done in get_session.
+
+    WARNING: authenticated_user READ the FIRST non-keyword argument
+             (should be authtok)
+    """
+    s = get_session(args[0])
+
+    if not s:
+        raise abort(403)
+
+    self.sess = s
+
+    return func(self, *args, **kwargs)
+
+@decorator
+def authenticated_admin(func, self, *args, **kwargs):
+    """Aborts if user isn't admin.
+
+    Check authenticated_user , everything written then applies here as well.
+    """
+    s = get_session(args[0])
+        
+    if not s:
+        raise abort(403)
+    if not s['userobj'].is_admin:
+        raise abort(403)
+
+    self.sess = s
+
+    return func(self, *args, **kwargs)
+
 
 
 class BaseController(WSGIController):

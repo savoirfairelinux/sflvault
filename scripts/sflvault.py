@@ -4,7 +4,6 @@
 PROGRAM = "SFLvault"
 VERSION = "0.1"
 
-SERVER = 'http://localhost:5000/vault/rpc'
 CONFIG_FILE = '~/.sflvault/config'
 
 import optparse
@@ -13,10 +12,13 @@ import sys
 import xmlrpclib
 from ConfigParser import ConfigParser
 import pickle
+import getpass
 from Crypto.PublicKey import ElGamal
 from Crypto.Cipher import AES, Blowfish
 from Crypto.Util import randpool
 from base64 import b64decode, b64encode
+from decorator import decorator
+
 
 from pprint import pprint
 
@@ -34,6 +36,8 @@ if (len(sys.argv) > 1):
 
     # Fix for functions
     action = action.replace('-', '_')
+
+
 
 #
 # Config file setup
@@ -88,8 +92,6 @@ def vaultConfigWrite(cfg):
     cfg.write(fp)
     fp.close()
 
-# global cfg object
-cfg = vaultConfigRead()
 
 
 
@@ -109,44 +111,28 @@ pool.randomize()
 randfunc = pool.get_bytes # We'll use this func for most of the random stuff
 
 
-#
-# XML-RPC server setup.
-#
-## TODO: Use the config version, complain only if the 'action' isn't in
-## ['help', 'setup', ??]
-srv = xmlrpclib.Server(SERVER)
-
-
 
 #
-# Helper functions
+# Authentication Failed exception
 #
-authtok = None  # global value
-def authenticate():
-    username = cfg.get('SFLvault', 'username')
-    ### TODO: implement encryption of the private key.
-    privkey = cfg.get('SFLvault', 'key')
+class AuthenticationError(StandardError):
+    def __init__(self, message):
+        """Sets an error message"""
+        self.message = message
+    def __str__(self):
+        return self.message
 
-    retval = srv.sflvault.login(username)
-    if not retval['error']:
-        # decrypt token.
-        eg = ElGamal.ElGamalobj()
-        (eg.p, eg.x) = vaultUnserial(privkey)
+class VaultError(StandardError):
+    def __init__(self, message):
+        """Sets an error message"""
+        self.message = message
+    def __str__(self):
+        return self.message
 
-        cryptok = eg.decrypt(vaultUnserial(retval['cryptok']))
-        retval2 = srv.sflvault.authenticate(username, vaultSerial(cryptok))
 
-        if retval2['error']:
-            print "Authentication failed"
-        else:
-            authtok = retval2['authtok']
-            print "Authentication successful"
-    else:
-        print "Authentication failed"
-
-    return authtok
-
+#
 ### TODO: two functions that violate DRY principle, they are in lib/base.py
+#
 def vaultSerial(something):
     """Serialize with pickle.dumps + b64encode"""
     return b64encode(pickle.dumps(something))
@@ -155,18 +141,105 @@ def vaultUnserial(something):
     """Unserialize with b64decode + pickle.loads"""
     return pickle.loads(b64decode(something))
 
+def vaultEncrypt(something, pw):
+    """Encrypt using a password and Blowfish.
+
+    something should normally be 8-bytes padded, but we add some '\0'
+    to pad it.
+
+    Most of the time anyway, we get some base64 stuff to encrypt, so
+    it shouldn't pose a problem."""
+    b = Blowfish.new(pw)
+    return b64encode(b.encrypt(something + ((8 - (len(something) % 8)) * "\x00")))
+
+def vaultDecrypt(something, pw):
+    """Decrypt using Blowfish and a password
+
+    Remove padding on right."""
+    b = Blowfish.new(pw)
+    return b.decrypt(b64decode(something)).rstrip("\x00")
+
+def vaultReply(rep, errmsg="Error"):
+    """Tracks the Vault reply, and raise an Exception on error"""
+
+    if rep['error']:
+        print "%s: %s" % (errmsg, rep['message'])
+        raise VaultError(rep['message'])
+    
+    return rep
+
+
+#
+# authenticate decorator
+#
+@decorator
+def authenticate(func, self, *args, **kwargs):
+    """Login decorator
+
+    self is there because it's called on class elements.
+    """
+    username = self.cfg.get('SFLvault', 'username')
+    ### TODO: implement encryption of the private key.
+    privkey_enc = self.cfg.get('SFLvault', 'key')
+    privpass = getpass.getpass()
+    privkey = vaultDecrypt(privkey_enc, privpass)
+    privpass = randfunc(32)
+    del(privpass)
+    
+
+    retval = self.vault.login(username)
+    self.authret = retval
+    if not retval['error']:
+        # decrypt token.
+        eg = ElGamal.ElGamalobj()
+        (eg.p, eg.x) = vaultUnserial(privkey)
+        privkey = randfunc(256)
+        del(privkey)
+
+        cryptok = eg.decrypt(vaultUnserial(retval['cryptok']))
+        retval2 = self.vault.authenticate(username, vaultSerial(cryptok))
+        self.authret = retval2
+        
+        if retval2['error']:
+            raise AuthenticationError("Authentication failed: %s" % retval2['message'])
+        else:
+            self.authtok = retval2['authtok']
+            print "Authentication successful"
+    else:
+        raise AuthenticationError("Authentication failed: %s" % retval['message'])
+
+    return func(self, *args, **kwargs)
+
 
 ###
 ### On définit les fonctions qui vont traiter chaque sorte de requête.
 ###
 class SFLvaultFunctions(object):
+    """Class dealing with all the function calls to the Vault"""
+    def __init__(self, cfg=None):
+        """Set up initial configuration for function calls"""
+        self.cfg = vaultConfigRead()
+        self.authtok = ''
+        self.authret = None
+        self.vault = xmlrpclib.Server(self.cfg.get('SFLvault', 'url')).sflvault
+        
+    def _set_vault(self, url, save=False):
+        """Set the vault's URL and optionally save it"""
+        self.vault = xmlrpclib.Server(url).sflvault
+        if save:
+            self.cfg.set('SFLvault', 'url', url)
+
+
     def help(self, error = None):
         print "%s version %s" % (PROGRAM, VERSION)
         print "---------------------------------------------"
         print "Here is a quick overview of the commands:"
-        print "  adduser       add a user"
-        print "  deluser       remove a user"
-        print "  [add more]    yes please"
+        print "  add-user"
+        print "  setup         when originally creating your account"
+        print "  del-user"
+        print "  add-customer"
+        print "  list-customers"
+        print "  list-users"
         print "---------------------------------------------"
         print "Call: sflvault [command] --help for more details on"
         print "each of those commands."
@@ -174,41 +247,33 @@ class SFLvaultFunctions(object):
             print "---"
             print "ERROR: %s" % error
         exit();
-    
-    def adduser(self):
+
+    @authenticate
+    def add_user(self):
+        # TODO: add support for --admin, to give admin privileges
         if (len(sys.argv) != 2):
-            print "Usage: adduser [username]"
+            print "Usage: add-user [username]"
             sys.exit()
         username = sys.argv.pop(1)
 
-        if not authenticate():
-            sys.exit()
+        retval = vaultReply(self.vault.adduser(self.authtok, username),
+                            "Error adding user")
 
-        retval = srv.sflvault.adduser(authtok, username)
+        print "Vault says: %s" % retval['message']
 
-        if (retval['error']):
-            print "Vault error: %s" % retval['message']
-        else:
-            print "Vault says: %s" % retval['message']
-
-    def addcustomer(self):
+    @authenticate        
+    def add_customer(self):
         if (len(sys.argv) != 2):
             print 'Usage: add-customer ["customer name"]'
             sys.exit()
         customer_name = sys.argv.pop(1)
 
-        authtok = authenticate()
-        if not authtok:
-            sys.exit()
+        retval = vaultReply(self.vault.addcustomer(self.authtok, customer_name),
+                            "Error adding customer")
 
-        retval = srv.sflvault.addcustomer(authtok, customer_name)
+        print "Success: %s" % retval['message']
 
-        if (retval['error']):
-            print "Error adding customer: %s" % retval['message']
-        else:
-            print "Success: %s" % retval['message']
-
-    def addserver(self):
+    def add_server(self):
         print "Do addserver"
 
     def grant(self):
@@ -220,7 +285,7 @@ class SFLvaultFunctions(object):
             sys.exit()
         username = sys.argv.pop(1)
         url      = sys.argv.pop(1)
-        ## TODO: use the 'url', and not the hard-coded one.
+        self._set_vault(url, False)
 
         # Generate a new key:
         print "Generating new ElGamal key-pair..."
@@ -229,54 +294,83 @@ class SFLvaultFunctions(object):
         # Marshal the ElGamal key
         pubkey = (eg.p, eg.g, eg.y)
 
+        # TODO: make password CONFIRMATION
+        print "Enter a password to secure your private key locally."
+        privpass = getpass.getpass()
+
         print "Sending request to vault..."
         # Send it to the vault, with username
-        retval = srv.sflvault.setup(username, vaultSerial(pubkey))
+        retval = vaultReply(self.vault.setup(username, vaultSerial(pubkey)),
+                            "Setup failed")
 
         # If Vault sends a SUCCESS, save all the stuff (username, url)
         # and encrypt privkey locally (with Blowfish)
         print "Vault says: %s" % retval['message']
 
-        if not (retval['error']):
-            # Save all (username, url)
-            # Encrypt privkey locally (with Blowfish)
-            cfg.set('SFLvault', 'username', username)
-            cfg.set('SFLvault', 'url', url)
-            # p and x form the private key
-            cfg.set('SFLvault', 'key', vaultSerial((eg.p, eg.x)))
-            vaultConfigWrite(cfg)
-            print "Saving settings..."
+        # Save all (username, url)
+        # Encrypt privkey locally (with Blowfish)
+        self.cfg.set('SFLvault', 'username', username)
+        self._set_vault(url, True)
+        # p and x form the private key
+        self.cfg.set('SFLvault', 'key', vaultEncrypt(vaultSerial((eg.p, eg.x)), privpass))
+        privpass = randfunc(32)
+        eg.p = randfunc(32)
+        eg.x = randfunc(32)
+        del(eg)
+        del(privpass)
+
+        vaultConfigWrite(self.cfg)
+        print "Saving settings..."
 
     
-    def deluser(self):
+    def del_user(self):
         pass
-    
-    def connect(self):
-        authenticate()
     
     def search(self):
         print "Do search, and show and help to select."
 
     def show(self):
         print "Search using xmlrpc:show(), with the service_id, and DECRYPT"
-        
-    def list_users(self):
-        print "Do addserver"
 
+    @authenticate
+    def list_users(self):
+        if (len(sys.argv) != 1):
+            print 'Usage: list-users'
+            sys.exit()
+
+        # Receive: [{'id': x.id, 'username': x.username,
+        #            'created_time': x.created_time,
+        #            'is_admin': x.is_admin,
+        #            'setup_expired': x.setup_expired()}
+        #            {}, {}, ...]
+        #    
+        retval = vaultReply(self.vault.listusers(self.authtok),
+                            "Failed listing users")
+
+        print "User list (with creation date):"
+        for x in retval['list']:
+            add = ''
+            if x['is_admin']:
+                add += ' [is admin]'
+            if not x['setup_expired']:
+                add += ' [in setup process]'
+            print "   %s (#%d)%s - %s" % (x['username'], x['id'], add, x['created_ctime'])
+
+        
+
+    @authenticate
     def list_customers(self):
         if (len(sys.argv) != 1):
             print 'Usage: list-customers'
             sys.exit()
 
-        authtok = authenticate()
-        if not authtok:
-            sys.exit()
+        retval = vaultReply(self.vault.listcustomers(self.authtok),
+                            "Error listing customers")
 
-        retval = srv.sflvault.listcustomers(authtok)
-
-        if retval['error']:
-            print "Error listing customers: %s" % retval['message']
-
+        # Receive a list: [{'id': '%d',
+        #                   'name': 'blah'},
+        #                  {'id': '%d',
+        #                   'name': 'blah2'}]
         print "Customer list:"
         for x in retval['list']:
             print "ID: %04d  -  %s" % (x['id'], x['name'])
@@ -293,5 +387,10 @@ f = SFLvaultFunctions()
 
 try:
     getattr(f, action)()
-except AttributeError:
-    getattr(f, 'help')("Unknown action: %s" % action)
+except AttributeError, e:
+    print e
+    getattr(f, 'help')("Invalid action: %s" % action)
+except AuthenticationError:
+    raise
+except VaultError:
+    raise

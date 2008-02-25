@@ -46,6 +46,9 @@ Re-encrypts the symkeys for 'level1', 'level2' and 'level3' with the pub-key
 of the user `username`, stores it in the userciphers table.
 
 [admin-only, auth-required]
+$ sflvault revoke username [--all|level1,level2,level3]
+
+[admin-only, auth-required]
 $ sflvault list-users
 Lists all users
 

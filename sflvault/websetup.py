@@ -23,7 +23,8 @@ def setup_config(command, filename, section, vars):
     u = model.User()
     u.waiting_setup = datetime.now() + timedelta(0, 300)
     u.username = u'admin'
-    u.create_time = datetime.now()
+    u.created_time = datetime.now()
+    u.is_admin = True
     model.Session.commit()
     
     log.info("Successfully setup")

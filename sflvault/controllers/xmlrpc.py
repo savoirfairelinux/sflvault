@@ -12,6 +12,7 @@ from Crypto.Util import randpool
 from base64 import b64decode, b64encode
 from datetime import *
 import pickle
+import time as stdtime
 
 from sflvault.lib.base import *
 from sflvault.model import *
@@ -32,41 +33,54 @@ SETUP_TIMEOUT = 60
 SESSION_TIMEOUT = 300
 
 
-def _setupSessions():
-    """DRY out _setSession and _getSession"""
-    if not hasattr(g, 'vaultSessions'):
-        g.vaultSessions = {}
-
-def _setSession(authtok, value):
-    """Sets in 'g.vaultSessions':
-    {authtok1: {'username':  , 'timeout': datetime}, authtok2: {}..}
-    
-    """
-    _setupSessions();
-
-    g.vaultSessions[authtok] = value;
-        
-def _getSession(authtok):
-    """Return the values associated with a session"""
-    _setupSessions();
-
-    if not g.vaultSessions.has_key(authtok):
-        return None
-
-    if not g.vaultSessions[authtok].has_key('timeout'):
-        g.vaultSessions[authtok]['timeout'] = datetime.now() + timedelta(0, SESSION_TIMEOUT)
-    
-    if g.vaultSessions[authtok]['timeout'] < datetime.now():
-        del(g.vaultSessions[authtok])
-        return None
-
-    return g.vaultSessions[authtok]
 
 
 ##
 ## See: http://wiki.pylonshq.com/display/pylonsdocs/Using+the+XMLRPCController
 ##
 class XmlrpcController(XMLRPCController):
+    """All XML-RPC calls to control and query the Vault"""
+
+    def sflvault_login(self, username):
+        # Return 'cryptok', encrypted with pubkey.
+        # Save decoded version to user's db field.
+        try:
+            u = User.query().filter_by(username=username).one()
+        except:
+            return vaultMsg(True, 'User unknown')
+        # TODO: implement throttling ?
+
+        rnd = randfunc(32)
+        # 15 seconds to complete login/authenticate round-trip.
+        u.logging_timeout = datetime.now() + timedelta(0, 15)
+        u.logging_token = rnd
+
+        Session.commit()
+
+        e = u.elgamal()
+        cryptok = vaultSerial(e.encrypt(rnd, randfunc(32)))
+        return vaultMsg(False, 'Authenticate please', {'cryptok': cryptok})
+
+    def sflvault_authenticate(self, username, cryptok):
+        try:
+            u = User.query().filter_by(username=username).one()
+        except:
+            return vaultMsg(True, 'Invalid user')
+
+        if u.logging_timeout < datetime.now():
+            return vaultMsg(True, 'Login token expired')
+
+        # str() necessary, to convert buffer to string.
+        if vaultUnserial(cryptok) != str(u.logging_token):
+            return vaultMsg(True, 'Authentication failed')
+        else:
+            newtok = b64encode(randfunc(32))
+            set_session(newtok, {'username': username,
+                                 'timeout': datetime.now() + timedelta(0, SESSION_TIMEOUT),
+                                 'userobj': u
+                                 })
+
+            return vaultMsg(False, 'Authentication successful', {'authtok': newtok})
 
     def sflvault_setup(self, username, pubkey):
 
@@ -95,6 +109,7 @@ class XmlrpcController(XMLRPCController):
         return vaultMsg(False, 'User setup complete for %s' % username)
 
 
+    @authenticated_admin
     def sflvault_adduser(self, username):
         # TODO: authenticate
         # TODO: verifier si l'usager loggé est ADMIN
@@ -112,64 +127,22 @@ class XmlrpcController(XMLRPCController):
 
         return vaultMsg(False, 'User added. User has a delay of %d seconds to invoke a "setup" command' % SETUP_TIMEOUT)
 
+    @authenticated_admin
+    def sflvault_deluser(self, username):
+        pass
 
-    def sflvault_login(self, username):
-        # Return 'cryptok', encrypted with pubkey.
-        # Save decoded version to user's db field.
-        try:
-            u = User.query().filter_by(username=username).one()
-        except:
-            return vaultMsg(True, 'User unknown')
-        # TODO: implement throttling ?
-
-        rnd = randfunc(32)
-        # 15 seconds to complete login/authenticate round-trip.
-        u.logging_timeout = datetime.now() + timedelta(0, 15)
-        u.logging_token = rnd
-
-        Session.commit()
-
-        e = u.elgamal()
-        cryptok = vaultSerial(e.encrypt(rnd, randfunc(32)))
-        return vaultMsg(False, 'Authenticate please', {'cryptok': cryptok})
-
-    def sflvault_authenticate(self, username, cryptok):
-        try:
-            u = User.query().filter_by(username=username).one()
-        except:
-            return vaultMsg(True, 'User unknown')
-
-        if u.logging_timeout < datetime.now():
-            return vaultMsg(True, 'Login token expired')
-
-        # str() necessary, to convert buffer to string.
-        if vaultUnserial(cryptok) != str(u.logging_token):
-            return vaultMsg(True, 'Authentication failed')
-        else:
-            newtok = b64encode(randfunc(32))
-            _setSession(newtok, {'username': username,
-                                 'timeout': datetime.now() + timedelta(0, SESSION_TIMEOUT)
-                                 })
-
-            return vaultMsg(False, 'Authentication successful', {'authtok': newtok})
-
+    @authenticated_user
     def sflvault_addcustomer(self, authtok, customer_name):
-        sess = _getSession(authtok)
-        if not sess:
-            return vaultMsg(True, "Session expired")
-
         nc = Customer()
         nc.name = customer_name
         nc.created_time = datetime.now()
-        nc.created_user = sess['username']
+        nc.created_user = self.sess['username']
         Session.commit()
 
         return vaultMsg(False, 'Customer added as no. %d' % nc.id)
 
+    @authenticated_user
     def sflvault_listcustomers(self, authtok):
-        if not _getSession(authtok):
-            return vaultMsg(True, "Session expired")
-        
         lst = Customer.query.all()
 
         out = []
@@ -178,3 +151,28 @@ class XmlrpcController(XMLRPCController):
             out.append(nx)
 
         return vaultMsg(False, 'Here is the customer list', {'list': out})
+
+    @authenticated_user
+    def sflvault_listusers(self, authtok):
+        lst = User.query.all()
+
+        out = []
+        for x in lst:
+            # perhaps add the pubkey ?
+            if x.created_time:
+                ctme = x.created_time.ctime()
+                stmp = stdtime.mktime(x.created_time.timetuple())
+            else:
+                ctme = '[unknown]'
+                stmp = 0
+                
+            nx = {'id': x.id, 'username': x.username,
+                  'created_ctime': ctme,
+                  'created_stamp': stmp,
+                  'is_admin': x.is_admin,
+                  'setup_expired': x.setup_expired()}
+            out.append(nx)
+
+        # Can use: datetime.fromtimestamp(x.created_stamp)
+        # to get a datetime object back from the x.created_time
+        return vaultMsg(False, "Here is the user list", {'list': out})
