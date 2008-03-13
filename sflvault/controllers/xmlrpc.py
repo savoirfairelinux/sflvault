@@ -82,6 +82,8 @@ class XmlrpcController(XMLRPCController):
 
             return vaultMsg(False, 'Authentication successful', {'authtok': newtok})
 
+
+
     def sflvault_setup(self, username, pubkey):
 
         # First, remove ALL users that have waiting_setup expired, where
@@ -110,10 +112,7 @@ class XmlrpcController(XMLRPCController):
 
 
     @authenticated_admin
-    def sflvault_adduser(self, username):
-        # TODO: authenticate
-        # TODO: verifier si l'usager loggé est ADMIN
-
+    def sflvault_adduser(self, authtok, username):
         if (User.query().filter_by(username=username).count()):
             return vaultMsg(True, 'User %s already exists.' % username)
         
@@ -127,9 +126,22 @@ class XmlrpcController(XMLRPCController):
 
         return vaultMsg(False, 'User added. User has a delay of %d seconds to invoke a "setup" command' % SETUP_TIMEOUT)
 
+
+
     @authenticated_admin
-    def sflvault_deluser(self, username):
-        pass
+    def sflvault_deluser(self, authtok, username):
+        
+        try:
+            u = User.query().filter_by(username=username).one()
+        except:
+            return vaultMsg(True, "User %s doesn't exist." % username)
+
+
+        Session.delete(u)
+        Session.commit()
+
+        return vaultMsg(False, "User successfully deleted")
+
 
     @authenticated_user
     def sflvault_addcustomer(self, authtok, customer_name):
@@ -141,6 +153,7 @@ class XmlrpcController(XMLRPCController):
 
         return vaultMsg(False, 'Customer added as no. %d' % nc.id)
 
+
     @authenticated_user
     def sflvault_listcustomers(self, authtok):
         lst = Customer.query.all()
@@ -151,6 +164,7 @@ class XmlrpcController(XMLRPCController):
             out.append(nx)
 
         return vaultMsg(False, 'Here is the customer list', {'list': out})
+
 
     @authenticated_user
     def sflvault_listusers(self, authtok):

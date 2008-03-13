@@ -259,7 +259,20 @@ class SFLvaultFunctions(object):
         retval = vaultReply(self.vault.adduser(self.authtok, username),
                             "Error adding user")
 
-        print "Vault says: %s" % retval['message']
+        print "Success: %s" % retval['message']
+
+
+    @authenticate
+    def del_user(self):
+        if (len(sys.argv) != 2):
+            print "Usage: del-user [username]"
+            sys.exit()
+        username = sys.argv.pop(1)
+
+        retval = vaultReply(self.vault.deluser(self.authtok, username),
+                            "Error removing user")
+
+        print "Success: %s" % retval['message']
 
     @authenticate        
     def add_customer(self):
@@ -323,9 +336,6 @@ class SFLvaultFunctions(object):
         print "Saving settings..."
 
     
-    def del_user(self):
-        pass
-    
     def search(self):
         print "Do search, and show and help to select."
 
@@ -378,19 +388,22 @@ class SFLvaultFunctions(object):
 
 
 
+
 ###
 ### Execute requested command-line command
-###
-f = SFLvaultFunctions()
+###    
+if __name__ == "__main__":
+    f = SFLvaultFunctions()
 
-# Call the appropriate function of the 'f' object, according to 'action'
-
-try:
-    getattr(f, action)()
-except AttributeError, e:
-    print e
-    getattr(f, 'help')("Invalid action: %s" % action)
-except AuthenticationError:
-    raise
-except VaultError:
-    raise
+    # Call the appropriate function of the 'f' object, according to 'action'
+    
+    try:
+        getattr(f, action)()
+    except AttributeError, e:
+        print e
+        getattr(f, 'help')("Invalid action: %s" % action)
+    except AuthenticationError:
+        raise
+    except VaultError:
+        #raise
+        pass
