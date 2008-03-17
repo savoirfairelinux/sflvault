@@ -1,3 +1,10 @@
+BUGS
+====
+
+Il faut qu'il prenne l'URL du "setup" quand tu call "setup", et non pas
+la config, sinon il plante.
+
+
 TODO
 ====
 

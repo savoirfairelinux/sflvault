@@ -112,15 +112,15 @@ class XmlrpcController(XMLRPCController):
 
 
     @authenticated_admin
-    def sflvault_adduser(self, authtok, username):
+    def sflvault_adduser(self, authtok, username, admin):
         if (User.query().filter_by(username=username).count()):
             return vaultMsg(True, 'User %s already exists.' % username)
         
         n = User()
         n.waiting_setup =  datetime.now() + timedelta(0, SETUP_TIMEOUT)
         n.username = username
+        n.is_admin = admin
         n.created_time = datetime.now()
-        # Une manière d'ajouter un utilisateur 'ADMIN'.
 
         Session.commit()
 

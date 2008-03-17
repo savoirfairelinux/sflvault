@@ -24,20 +24,6 @@ from pprint import pprint
 
 
 ### Setup variables and functions
-#
-# Setup default action = help
-#
-action = 'help'
-if (len(sys.argv) > 1):
-    # Take out the action.
-    action = sys.argv.pop(1)
-    if (action in ['-h', '--help']):
-        action = 'help'
-
-    # Fix for functions
-    action = action.replace('-', '_')
-
-
 
 #
 # Config file setup
@@ -214,7 +200,7 @@ def authenticate(func, self, *args, **kwargs):
 ###
 ### On définit les fonctions qui vont traiter chaque sorte de requête.
 ###
-class SFLvaultFunctions(object):
+class SFLvault(object):
     """Class dealing with all the function calls to the Vault"""
     def __init__(self, cfg=None):
         """Set up initial configuration for function calls"""
@@ -230,61 +216,31 @@ class SFLvaultFunctions(object):
             self.cfg.set('SFLvault', 'url', url)
 
 
-    def help(self, error = None):
-        print "%s version %s" % (PROGRAM, VERSION)
-        print "---------------------------------------------"
-        print "Here is a quick overview of the commands:"
-        print "  add-user"
-        print "  setup         when originally creating your account"
-        print "  del-user"
-        print "  add-customer"
-        print "  list-customers"
-        print "  list-users"
-        print "---------------------------------------------"
-        print "Call: sflvault [command] --help for more details on"
-        print "each of those commands."
-        if (error):
-            print "---"
-            print "ERROR: %s" % error
-        exit();
-
     @authenticate
-    def add_user(self):
+    def add_user(self, username, admin=False):
         # TODO: add support for --admin, to give admin privileges
-        if (len(sys.argv) != 2):
-            print "Usage: add-user [username]"
-            sys.exit()
-        username = sys.argv.pop(1)
 
-        retval = vaultReply(self.vault.adduser(self.authtok, username),
+        retval = vaultReply(self.vault.adduser(self.authtok, username, admin),
                             "Error adding user")
 
         print "Success: %s" % retval['message']
 
 
     @authenticate
-    def del_user(self):
-        if (len(sys.argv) != 2):
-            print "Usage: del-user [username]"
-            sys.exit()
-        username = sys.argv.pop(1)
-
+    def del_user(self, username):
         retval = vaultReply(self.vault.deluser(self.authtok, username),
                             "Error removing user")
 
         print "Success: %s" % retval['message']
 
-    @authenticate        
-    def add_customer(self):
-        if (len(sys.argv) != 2):
-            print 'Usage: add-customer ["customer name"]'
-            sys.exit()
-        customer_name = sys.argv.pop(1)
 
+    @authenticate        
+    def add_customer(self, customer_name):
         retval = vaultReply(self.vault.addcustomer(self.authtok, customer_name),
                             "Error adding customer")
 
         print "Success: %s" % retval['message']
+
 
     def add_server(self):
         print "Do addserver"
@@ -292,13 +248,8 @@ class SFLvaultFunctions(object):
     def grant(self):
         pass
     
-    def setup(self):
-        if (len(sys.argv) != 3):
-            print "Usage: setup [username] [vault-url]"
-            sys.exit()
-        username = sys.argv.pop(1)
-        url      = sys.argv.pop(1)
-        self._set_vault(url, False)
+    def setup(self, username, vault_url):
+        self._set_vault(vault_url, False)
 
         # Generate a new key:
         print "Generating new ElGamal key-pair..."
@@ -316,14 +267,14 @@ class SFLvaultFunctions(object):
         retval = vaultReply(self.vault.setup(username, vaultSerial(pubkey)),
                             "Setup failed")
 
-        # If Vault sends a SUCCESS, save all the stuff (username, url)
+        # If Vault sends a SUCCESS, save all the stuff (username, vault_url)
         # and encrypt privkey locally (with Blowfish)
         print "Vault says: %s" % retval['message']
 
-        # Save all (username, url)
+        # Save all (username, vault_url)
         # Encrypt privkey locally (with Blowfish)
         self.cfg.set('SFLvault', 'username', username)
-        self._set_vault(url, True)
+        self._set_vault(vault_url, True)
         # p and x form the private key
         self.cfg.set('SFLvault', 'key', vaultEncrypt(vaultSerial((eg.p, eg.x)), privpass))
         privpass = randfunc(32)
@@ -344,10 +295,6 @@ class SFLvaultFunctions(object):
 
     @authenticate
     def list_users(self):
-        if (len(sys.argv) != 1):
-            print 'Usage: list-users'
-            sys.exit()
-
         # Receive: [{'id': x.id, 'username': x.username,
         #            'created_time': x.created_time,
         #            'is_admin': x.is_admin,
@@ -370,10 +317,6 @@ class SFLvaultFunctions(object):
 
     @authenticate
     def list_customers(self):
-        if (len(sys.argv) != 1):
-            print 'Usage: list-customers'
-            sys.exit()
-
         retval = vaultReply(self.vault.listcustomers(self.authtok),
                             "Error listing customers")
 
@@ -386,24 +329,194 @@ class SFLvaultFunctions(object):
             print "ID: %04d  -  %s" % (x['id'], x['name'])
             
 
+class SFLvaultParserError(Exception):
+    """For invalid options on the command line"""
+    pass
+
+class SFLvaultParser(object):
+    """Parse command line arguments, and call SFLvault commands
+    on them."""
+    def __init__(self, argv, vault = None):
+        """Setup the SFLvaultParser object.
+
+        argv - arguments from the command line
+        sflvault - SFLvault object (optional)"""
+        self.parser = optparse.OptionParser()
+        self.argv = argv
+        # Use the specified, or create a new one.
+        self.vault = (vault or SFLvault())
+        
+        # Setup default action = help
+        action = 'help'
+        if (len(sys.argv) > 1):
+            # Take out the action.
+            action = sys.argv.pop(1)
+            if (action in ['-h', '--help']):
+                action = 'help'
+
+            # Fix for functions
+            action = action.replace('-', '_')
+        # Check the first parameter, if it's in the local object.
+
+        # Call it or show the help.
+        if hasattr(self, action):
+            try:
+                getattr(self, action)()
+            except SFLvaultParserError, e:
+                self.help(cmd=action, error=e)
+        else:
+            self.help()
+        
+
+    def help(self, cmd = None, error = None):
+        """Print this help.
+
+        You can use:
+        
+          help [command]
+
+        to get further help for `command`."""
+
+        print "%s version %s" % (PROGRAM, VERSION)
+        print "---------------------------------------------"
+
+        if not cmd:
+            print "Here is a quick overview of the commands:"
+            # TODO: go around all the self. attributes and display docstrings
+            #       and give coherent help for every function if specified.
+            #       all those not starting with _.
+            for x in dir(self):
+                if not x.startswith('_') and callable(getattr(self, x)):
+                    doc = getattr(self, x).__doc__
+                    if doc:
+                        doc = doc.split("\n")[0]
+                    else:
+                        doc = '[n/a]'
+                
+                    print "  %s%s%s" % (x.replace('_','-'),
+                                        (25 - len(x)) * ' ',
+                                        doc)
+            print "---------------------------------------------"
+            print "Call: sflvault [command] --help for more details on each of those commands."
+        else:
+            if not cmd.startswith('_') and callable(getattr(self, cmd)):
+                doc = getattr(self, cmd).__doc__
+                if doc:
+                    print "Help for command: %s" % cmd
+                    print "---------------------------------------------"
+                    print doc
+                else:
+                    print "No documentation available for `%s`." % cmd
+                
+            print "---------------------------------------------"
+            
+        if (error):
+            print "ERROR calling %s: %s" % (cmd, error)
+        return
+            
+
+    def add_user(self):
+        """Doc string that will display in the help.
+
+        Rest of the docstring that will be used when invoking
+        sflvault help add_user."""
+
+        # Parse the argv as needed
+        if (len(self.argv) != 2):
+            print "Error, usage: add-user [username]"
+            return
+        username = self.argv.pop(1)
+        # TODO: add support for admin, in the form of a parser.
+        admin = False
+
+        self.vault.add_user(username, admin)
 
 
+    def add_customer(self):
+        """Add a new customer.
 
+        This command adds a new customer to the Vault's database.
+
+        Syntax:
+
+          add-customer ["customer name"]
+        """
+        if (len(self.argv) != 2):
+            raise SFLvaultParserError('Invalid number of arguments')
+
+        customer_name = sys.argv.pop(1)
+
+        self.vault.add_customer(customer_name)
+
+
+    def del_user(self):
+        """Delete an existing user.
+
+        Syntax:
+
+          del-user [username]
+        """
+        if (len(self.argv) != 2):
+            raise SFLvaultParserError("Invalid number of arguments")
+
+        username = sys.argv.pop(1)
+
+        self.vault.del_user(username)
+
+
+    def list_customers(self):
+        """List existing customers.
+
+        This option takes no argument, it just lists customers with their IDs."""
+        if (len(self.argv) != 1):
+            raise SFLvaultParserError('Invalid number of arguments')
+
+        self.vault.list_customers()
+
+    def list_users(self):
+        """List existing users.
+
+        This option takes no argument, it lists the current users and their
+        privileges"""
+
+        if (len(self.argv) != 1):
+            raise SFLvaultParserError("Invalid number of arguments")
+
+        self.vault.list_users()
+
+    def setup(self):
+        """Setup a new user on the vault.
+
+        Call this after an admin has called `add-user` on the vault.
+        
+        Syntax: setup [username] [vault_url]
+
+        username  - the username used in the `add-user` call.
+        vault_url - the URL (http://example.org:port/vault/rpc) to the
+                    Vault"""
+        if (len(self.argv) != 3):
+            raise SFLvaultParserError("Invalid number of arguments")
+
+        username = self.argv.pop(1)
+        url      = self.argv.pop(1)
+
+        self.vault.setup(username, url)
+        
+        
 ###
 ### Execute requested command-line command
 ###    
 if __name__ == "__main__":
-    f = SFLvaultFunctions()
 
     # Call the appropriate function of the 'f' object, according to 'action'
     
     try:
-        getattr(f, action)()
-    except AttributeError, e:
-        print e
-        getattr(f, 'help')("Invalid action: %s" % action)
+        f = SFLvaultParser(sys.argv)
     except AuthenticationError:
         raise
     except VaultError:
         #raise
         pass
+    except xmlrpclib.Fault, e:
+        # On is_admin check failed, on user authentication failed.
+        print e
