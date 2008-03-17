@@ -11,6 +11,7 @@ from pylons.i18n import _, ungettext, N_
 from pylons.templating import render
 from decorator import decorator
 from datetime import *
+import xmlrpclib
 
 import sflvault.lib.helpers as h
 import sflvault.model as model
@@ -90,7 +91,7 @@ def authenticated_user(func, self, *args, **kwargs):
     s = get_session(args[0])
 
     if not s:
-        raise abort(403)
+        return xmlrpclib.Fault(0, "Permission denied")
 
     self.sess = s
 
@@ -103,11 +104,11 @@ def authenticated_admin(func, self, *args, **kwargs):
     Check authenticated_user , everything written then applies here as well.
     """
     s = get_session(args[0])
-        
+
     if not s:
-        raise abort(403)
+        return xmlrpclib.Fault(0, "Permission denied")
     if not s['userobj'].is_admin:
-        raise abort(403)
+        return xmlrpclib.Fault(0, "Permission denied")
 
     self.sess = s
 
