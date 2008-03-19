@@ -18,7 +18,7 @@ from Crypto.Cipher import AES, Blowfish
 from Crypto.Util import randpool
 from base64 import b64decode, b64encode
 from decorator import decorator
-
+from datetime import *
 
 from pprint import pprint
 
@@ -136,7 +136,7 @@ def vaultEncrypt(something, pw):
     Most of the time anyway, we get some base64 stuff to encrypt, so
     it shouldn't pose a problem."""
     b = Blowfish.new(pw)
-    return b64encode(b.encrypt(something + ((8 - (len(something) % 8)) * "\x00")))
+    return b64encode(b.encrypt(something + (((8 - (len(something) % 8)) % 8) * "\x00")))
 
 def vaultDecrypt(something, pw):
     """Decrypt using Blowfish and a password
@@ -156,6 +156,46 @@ def vaultReply(rep, errmsg="Error"):
 
 
 #
+# Functions to allow writing aliases, or m#123 IDs, everywhere where
+# a service ID, a server ID, a customer ID or a user ID is required.
+#
+class vaultIdFormateError(Exception):
+    """When bad parameters are passed to vaultId"""
+    pass
+
+def vaultId(id, prefix):
+    """Return an integer value for a given VaultID.
+
+    A VaultID can be one of the following:
+
+      123   - treated as is, and assume to be of type `prefix`.
+      m#123 - checked against `prefix`, otherwise raise an exception.
+      alias - checked against `prefix` and alias list, returns an int
+              value, or raise an exception.
+    """
+    #prefixes = ['m', 'u', 's', 'c'] # Machine, User, Service, Customer
+    #if prefix not in prefixes:
+    #    raise ValueError("Bad prefix for id %s (prefix given: %s)" % (id, prefix))
+
+    # If it's only a numeric, assume it is of type 'prefix'.
+    try:
+        tmp = int(id)
+        return tmp
+    except:
+        pass
+
+    # Match the m#123 formats..
+    tid = re.match(r'(.)#(\d+)', id)
+    if tid:
+        if tid.group(1) != prefix:
+            raise vaultIdFormatError("Bad prefix for VaultID, context requires '%s': %s" % (prefix, id))
+        return int(tid.group(2))
+
+    # TODO: Check for aliases    
+    raise vaultIdFormatError("Invalid alias of bad VaultID format: %s" % id)
+    
+
+#
 # authenticate decorator
 #
 @decorator
@@ -167,7 +207,7 @@ def authenticate(func, self, *args, **kwargs):
     username = self.cfg.get('SFLvault', 'username')
     ### TODO: implement encryption of the private key.
     privkey_enc = self.cfg.get('SFLvault', 'key')
-    privpass = getpass.getpass()
+    privpass = getpass.getpass("Vault password: ")
     privkey = vaultDecrypt(privkey_enc, privpass)
     privpass = randfunc(32)
     del(privpass)
@@ -245,11 +285,24 @@ class SFLvault(object):
     @authenticate
     def add_server(self, customer_id, name, fqdn, ip, location, notes):
         """Add a server to the database."""
-        retval = vaultReply(self.vault.addserver(self.authtok, int(customer_id), name, fqdn, ip, location, notes),
+        # customer_id REQUIRED
+        retval = vaultReply(self.vault.addserver(self.authtok, int(customer_id),
+                                                 name or '', fqdn or '', ip or '',
+                                                 location or '', notes or ''),
                             "Error adding server")
         print "Success: %s" % retval['message']
         print "New machine ID: m#%d" % retval['server_id']
 
+
+    @authenticate
+    def add_service(self, server_id, url, port, loginname, type, level, secret, notes):
+        #levels = [x.strip() for x in level.split(',')]
+        # TODO: encrypter le secret ??
+        retval = vaultReply(self.vault.addservice(self.authtok, int(server_id), url, port or '', loginname or '', type or '', level, secret, notes or ''),
+                            "Error adding service")
+
+        print "Success: %s" % retval['message']
+        print "New service ID: s#%d" % retval['service_id']
 
     def grant(self):
         pass
@@ -265,8 +318,7 @@ class SFLvault(object):
         pubkey = (eg.p, eg.g, eg.y)
 
         # TODO: make password CONFIRMATION
-        print "Enter a password to secure your private key locally."
-        privpass = getpass.getpass()
+        privpass = getpass.getpass("Enter a password to secure your private key locally: ")
 
         print "Sending request to vault..."
         # Send it to the vault, with username
@@ -317,7 +369,12 @@ class SFLvault(object):
                 add += ' [is admin]'
             if not x['setup_expired']:
                 add += ' [in setup process]'
-            print "   %s (#%d)%s - %s" % (x['username'], x['id'], add, x['created_ctime'])
+            # dt = datetime.strptime(x['created_stamp'], "
+            #created =
+            # TODO: load the xmlrpclib.DateTime object into something more fun
+            #       to deal with! Some day..
+            print "u#%d\t%s\t%s %s" % (x['id'], x['username'],
+                                       x['created_stamp'], add)
 
 
     @authenticate
@@ -366,14 +423,14 @@ class SFLvaultParser(object):
 
         argv - arguments from the command line
         sflvault - SFLvault object (optional)"""
-        self.parser = optparse.OptionParser()
+        self.parser = optparse.OptionParser(usage=optparse.SUPPRESS_USAGE)
         self.argv = argv[1:] # Bump the first (command name)
         self.args = []       # Used after a call to _parse()
         self.opts = object() #  idem.
         
         # Use the specified, or create a new one.
         self.vault = (vault or SFLvault())
-        
+
         # Setup default action = help
         action = 'help'
         if (len(self.argv)):
@@ -432,17 +489,23 @@ class SFLvaultParser(object):
                                         doc)
             print "---------------------------------------------"
             print "Call: sflvault [command] --help for more details on each of those commands."
+        elif not cmd.startswith('_') and callable(getattr(self, cmd)):
+            readcmd = cmd.replace('_','-')
+
+            doc = getattr(self, cmd).__doc__
+            if doc:
+                print "Help for command: %s" % readcmd
+                print "---------------------------------------------"
+                print doc
+            else:
+                print "No documentation available for `%s`." % readcmd
+
+            print ""
+            self.parser.parse_args(args=['--help'])
         else:
-            if not cmd.startswith('_') and callable(getattr(self, cmd)):
-                doc = getattr(self, cmd).__doc__
-                if doc:
-                    print "Help for command: %s" % cmd
-                    print "---------------------------------------------"
-                    print doc
-                else:
-                    print "No documentation available for `%s`." % cmd
-                
-            print "---------------------------------------------"
+            print "No such command"
+
+        print "---------------------------------------------"
             
         if (error):
             print "ERROR calling %s: %s" % (cmd, error)
@@ -475,14 +538,8 @@ class SFLvaultParser(object):
 
 
     def add_customer(self):
-        """Add a new customer.
-
-        This command adds a new customer to the Vault's database.
-
-        Syntax:
-
-          add-customer ["customer name"]
-        """
+        """Add a new customer to the Vault's database."""
+        self.parser.set_usage('add-customer "customer name"')
         self._parse()
         
         if (len(self.args) != 1):
@@ -494,12 +551,8 @@ class SFLvaultParser(object):
 
 
     def del_user(self):
-        """Delete an existing user.
-
-        Syntax:
-
-          del-user [username]
-        """
+        """Delete an existing user."""
+        self.parser.set_usage("del-user username")
         self._parse()
 
         if (len(self.args) != 1):
@@ -511,13 +564,8 @@ class SFLvaultParser(object):
 
 
     def add_server(self):
-        """Add a server (machine) to the Vault's database.
-
-        Syntax:
-
-          add-server --name|-n "server name" --fqdn|-d "domain name"
-                     --ip|-i "ip address" --location|-l "location"
-        """
+        """Add a server (machine) to the Vault's database."""
+        self.parser.set_usage("add-server [options]")
         self.parser.add_option('-c', '--customer', dest="customer_id",
                                help="Customer id, as 'c#123' or '123'")
         self.parser.add_option('-n', '--name', dest="name",
@@ -528,7 +576,7 @@ class SFLvaultParser(object):
                                help="Machine's IP address, in order to access itfrom it's hierarchical position")
         self.parser.add_option('-l', '--location', dest="location", default='',
                                help="Machine's physical location, position in racks, address, etc..")
-        self.parser.add_option('-t', '--notes', dest="notes",
+        self.parser.add_option('--notes', dest="notes",
                                help="Notes about the machine, references, URLs.")
 
         self._parse()
@@ -542,21 +590,19 @@ class SFLvaultParser(object):
             raise SFLvaultParserError("Required parameter 'customer' omitted")
 
         o = self.opts
-        if o.customer_id.startswith('c#'):
-            o.customer_id = o.customer_id[2:]
-        self.vault.add_server(o.customer_id, o.name, o.fqdn, o.ip, o.location, o.notes)
+        self.vault.add_server(vaultId(o.customer_id, 'c'), o.name, o.fqdn,
+                              o.ip, o.location, o.notes)
 
 
     def add_service(self):
-        """Add a service to a particular server in the Vault's database."""
-$ sflvault addservice --type|-t "service type" --port|-p portnum
-                      --login|--loginname|-l "root et al" --level "level"
-		      --notes "these are some notes\nand you can add more and more."
-                      
+        """Add a service to a particular server in the Vault's database.
+
+        The secret/password/authentication key will be asked in the
+        interactive prompt."""
         self.parser.add_option('-s', '--server', dest="server_id",
                                help="Service will be attached to server, as 'm#123' or '123'")
         self.parser.add_option('-u', '--url', dest="url",
-                               help="Service URL"
+                               help="Service URL, full proto://fqdn.example.org/path, WITHOUT the secret.")
         self.parser.add_option('-t', '--type', dest="type",
                                help="Service type (ssh, ftp, web)")
         self.parser.add_option('-p', '--port', dest="port", default='',
@@ -565,7 +611,7 @@ $ sflvault addservice --type|-t "service type" --port|-p portnum
                                help="Username/login name for service.")
         self.parser.add_option('-v', '--level', dest="level", default='',
                                help="Access level (access group) for this service. Use list-levels to get a complete list of access levels.")
-        self.parser.add_option('-t', '--notes', dest="notes",
+        self.parser.add_option('--notes', dest="notes",
                                help="Notes about the service, references, URLs.")
 
         self._parse()
@@ -578,10 +624,11 @@ $ sflvault addservice --type|-t "service type" --port|-p portnum
         if not self.opts.server_id:
             raise SFLvaultParserError("Required parameter 'server' omitted")
 
+        secret = getpass.getpass("Enter service secret (password): ")
+
         o = self.opts
-        if o.server_id.startswith('m#'):
-            o.server_id = o.server_id[2:]
-        self.vault.add_service(o.server_id, ........o.name, o.fqdn, o.ip, o.location, o.notes)
+        self.vault.add_service(vaultId(o.server_id, 'm'), o.url, o.port,
+                               o.loginname, o.type, o.level, secret, o.notes)
 
 
     def list_customers(self):
@@ -663,3 +710,4 @@ if __name__ == "__main__":
     except xmlrpclib.Fault, e:
         # On is_admin check failed, on user authentication failed.
         print "Fault: %s" % e.faultString
+7

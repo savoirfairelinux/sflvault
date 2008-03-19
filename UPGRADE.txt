@@ -1,0 +1,13 @@
+Upgrade procedures
+==================
+
+This is when you upgrade from an older version to a more recent version, and to
+keep track of changes. Usually, inside an sqlite shell:
+
+  $ sqlite3 vault-database.db
+
+--------------------------------------------------------------------------------
+
+ALTER TABLE services ADD url VARCHAR(250);
+
+hmm... you're better off with a clean database, using SQLite.

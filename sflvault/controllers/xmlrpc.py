@@ -8,7 +8,6 @@ import xmlrpclib
 from pylons.controllers import XMLRPCController
 from Crypto.PublicKey import ElGamal
 from Crypto.Cipher import AES
-from Crypto.Util import randpool
 from base64 import b64decode, b64encode
 from datetime import *
 import pickle
@@ -18,12 +17,6 @@ from sflvault.lib.base import *
 from sflvault.model import *
 
 log = logging.getLogger(__name__)
-
-# Random number generators setup
-pool = randpool.RandomPool()
-pool.stir()
-pool.randomize()
-randfunc = pool.get_bytes # We'll use this func for most of the random stuff
 
 #
 # Configuration
@@ -53,7 +46,7 @@ class XmlrpcController(XMLRPCController):
         rnd = randfunc(32)
         # 15 seconds to complete login/authenticate round-trip.
         u.logging_timeout = datetime.now() + timedelta(0, 15)
-        u.logging_token = rnd
+        u.logging_token = b64encode(rnd)
 
         Session.commit()
 
@@ -67,11 +60,11 @@ class XmlrpcController(XMLRPCController):
         except:
             return vaultMsg(True, 'Invalid user')
 
-        if u.logging_timeout < datetime.now():
+        if (u.logging_timeout - timedelta(0,1)) < datetime.now():
             return vaultMsg(True, 'Login token expired')
 
         # str() necessary, to convert buffer to string.
-        if vaultUnserial(cryptok) != str(u.logging_token):
+        if vaultUnserial(cryptok) != str(b64decode(u.logging_token)):
             return vaultMsg(True, 'Authentication failed')
         else:
             newtok = b64encode(randfunc(32))
@@ -144,6 +137,46 @@ class XmlrpcController(XMLRPCController):
         return vaultMsg(False, "Server added.", {'server_id': n.id})
 
 
+    @authenticated_user
+    def sflvault_addservice(self, authtok, server_id, url, port, loginname,
+                            type, level, secret, notes):
+
+        ns = Service()
+        ns.server_id = int(server_id)
+        ns.url = url
+        ns.port = port
+        ns.loginname = loginname
+        ns.type = type
+        ns.level = level
+        (seckey, ciphertext) = encrypt_secret(secret)
+        ns.secret = ciphertext
+        ns.notes = notes
+
+        Session.commit()
+
+        # TODO: get list of users to encrypt for (using levels assocs)
+        lvls = UserLevel.query.filter_by(level=level).group_by('user_id')
+
+        userlist = []
+        for lvl in lvls:
+            # Encode for that user, store in UserCiphers
+            nu = Usercipher()
+            nu.service_id = ns.id
+            nu.user_id = lvl.user_id
+
+            g = nu.user.elgamal()
+            nu.stuff = g.encrypt(seckey)
+            del(g)
+            
+            userlist.append(lvl.user.username) # To return listing.
+
+        Session.commit()
+
+        del(seckey)
+
+        return vaultMsg(False, "Service added.", {'service_id': ns.id,
+                                                  'encrypted_for': userlist})
+
     @authenticated_admin
     def sflvault_deluser(self, authtok, username):
         
@@ -204,14 +237,11 @@ class XmlrpcController(XMLRPCController):
         for x in lst:
             # perhaps add the pubkey ?
             if x.created_time:
-                ctme = x.created_time.ctime()
-                stmp = stdtime.mktime(x.created_time.timetuple())
+                stmp = xmlrpclib.DateTime(x.created_time)
             else:
-                ctme = '[unknown]'
                 stmp = 0
                 
             nx = {'id': x.id, 'username': x.username,
-                  'created_ctime': ctme,
                   'created_stamp': stmp,
                   'is_admin': x.is_admin,
                   'setup_expired': x.setup_expired()}

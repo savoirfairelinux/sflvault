@@ -5,10 +5,25 @@ BUGS
    la config, sinon il plante.
  * Add some verifications to password encryption, pad with random value, start
    and end, and verify they are the same.
+ * Use xmlrpclib.DateTime instead of numbers while passing a date through XMLRPC
+
+
+DESIGN TWISTERS
+===============
+
+ * Vulnerable to someone who would like to erase the database, by overwriting
+   all the secrets, or setting no 'level' for a secret.
+ * Versioning should be though of - BUT it would add so much complexity, that
+   it might be a no-go.
+ * We'll ensure we have a good log system, with *frequent database backup*.
+
 
 TODO
 ====
 
+ * Warn when config already exists, and you're going to issue a *setup*
+   command, that will override previous config, and destroy the private key!!!
+ * Implement XMLRPC via HTTPS (using M2Crypto), on client side.
  * Add ALIAS capability, and wherever an c#123 is required, an alias can
    be used instead.
  * Add versioning capabilities for all changes (à-la Typo3)
@@ -42,3 +57,4 @@ TODO
  * Add support for authtok + IP security (check IP address also) (lib/base.py)
  * S'arranger pour avoir le help avant d'entrer son mot de passe si on fait
    une erreur dans le format d'une commande (sflvault client)
+

@@ -27,9 +27,9 @@ SFLvault installation from source
 
   paster setup-app production.ini
 
-6. Then, put in your crontab:
+6. Then, configure the application through Apache:
 
-  @reboot cd /path/to/your/install ; paster serve production.ini
+  [INSERT INTO ABOUT APACHE SETUP]
 
 
 SFLvault development
@@ -57,5 +57,8 @@ to download dependencies,
 
 and start coding.
 
+NOTE: with the development version, you will be using UNSECURE connection
+through HTTP, ensure you use the Apache+SSL configuration on production
+installations.
 
 

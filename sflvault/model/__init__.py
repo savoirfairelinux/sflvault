@@ -77,9 +77,10 @@ services_table = Table('services', metadata,
                        Column('server_id', types.Integer, ForeignKey('servers.id')), # relation servers
                        # Type of service, eventually, linked to specific plug-ins.
                        # TODO: ajouter le parent_service_id..
-                       Column('type', types.String(50)),
+                       Column('url', types.String(250)),
                        Column('port', types.Integer),
                        Column('loginname', types.String(50)),
+                       Column('type', types.String(50)),
                        Column('level', types.String(50)),
                        Column('secret', types.Text),
                        # pickled python structures, depends on 'type'
@@ -92,8 +93,7 @@ userciphers_table = Table('userciphers', metadata,
                           Column('id', types.Integer, primary_key=True),
                           Column('service_id', types.Integer, ForeignKey('services.id')), # relation to services
                           # The user for which this secret is encrypted
-                          # TODO: check user_id
-                          Column('username', types.String(50)),
+                          Column('user_id', types.Integer, ForeignKey('users.id')),
                           # Encrypted symkey with user's pubkey.
                           Column('stuff', types.Text)
                           )
@@ -139,13 +139,13 @@ class Customer(object):
 
 # Map each class to its corresponding table.
 mapper(User, users_table, {
-    
+    'levels': relation(UserLevel, backref='user', lazy=False)
     })
 mapper(UserLevel, userlevels_table, {
     
     })
 mapper(Customer, customers_table, {
-    'servers': relation(Server, backref='customer')
+    'servers': relation(Server, backref='customer', lazy=False)
     })
 mapper(Server, servers_table, {
     
