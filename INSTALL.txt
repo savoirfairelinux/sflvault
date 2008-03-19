@@ -1,0 +1,61 @@
+SFLvault quick install
+----------------------
+
+If there is a package for your distribution, then use it! It's much
+simpler.
+
+
+SFLvault installation from source
+---------------------------------
+
+1. Start with:
+
+  git clone ...
+
+2. Then:
+
+  sudo apt-get install python-setuptools python-pastescript
+
+3. From the source directory, issue:
+
+  sudo python setup.py install
+
+4. Use development.ini or production.ini, tweak as necessary. That's
+   your application's configuration.
+
+5. Setup the application, create the database with:
+
+  paster setup-app production.ini
+
+6. Then, put in your crontab:
+
+  @reboot cd /path/to/your/install ; paster serve production.ini
+
+
+SFLvault development
+--------------------
+
+1. Issue the commands from previous section, no. 1 and 2
+
+2. Run:
+
+  sudo python setup develop
+
+to download dependencies, 
+
+3. and then create the database with:
+
+  paster setup-app development.ini
+
+4. To run the vault, and start testing, run:
+
+  paster serve --reload development.ini
+
+5. CD to `scripts`, run:
+
+  ./sflvault --help
+
+and start coding.
+
+
+
