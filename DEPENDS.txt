@@ -1,5 +1,0 @@
-Dépends de:
-
-SQLAlchemy>=0.4
-pysqlite2 (python-pysqlite2)
-Crypto (python-crypto)

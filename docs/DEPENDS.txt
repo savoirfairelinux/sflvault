@@ -1,4 +1,6 @@
 Uses:
   python modules:
+    - SQLAlchemy>=0.4
+    - pysqlite2 (python-pysqlite2)
     - Crypto   (AES, Blowfish, ElGamal)
     - M2Crypto (xmlrpclib over SSL)

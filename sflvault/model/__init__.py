@@ -67,6 +67,8 @@ servers_table = Table('servers', metadata,
                       # Où il est ce serveur, location géographique, et dans
                       # la ville et dans son boîtier (4ième ?)
                       Column('location', types.Text),
+                      # Notes sur le serveur, références, URLs, etc..
+                      Column('notes', types.Text)
                       )
 
 # Each ssh or web app. service that have a password.
@@ -136,9 +138,20 @@ class Customer(object):
         return "<Customer: %s>" % (self.name)
 
 # Map each class to its corresponding table.
-mapper(User, users_table)
-mapper(UserLevel, userlevels_table)
-mapper(Customer, customers_table)
-mapper(Server, servers_table)
-mapper(Service, services_table)
-mapper(Usercipher, userciphers_table)
+mapper(User, users_table, {
+    
+    })
+mapper(UserLevel, userlevels_table, {
+    
+    })
+mapper(Customer, customers_table, {
+    'servers': relation(Server, backref='customer')
+    })
+mapper(Server, servers_table, {
+    
+    })
+mapper(Service, services_table, {
+    })
+mapper(Usercipher, userciphers_table, {
+    
+    })

@@ -1,25 +1,47 @@
 How to use SFLvault
 ===================
 
+Client's naming conventions:
+
+ c#123 - Customer ID
+ m#521 - Machine ID (server id)
+ s#768 - Service ID
+ u#52  - User ID
+
 
 Example usage:
 
 -------------------
 [auth-required]
-$ sflvault ssh SRV#235
+$ sflvault ssh s#235
 Drops you, 2 hops over on the right server, sending passwords when required.
 -------------------
 
 -------------------------
 [auth-required]
 $ sflvault search reg1 exps2.*
-Show a list of servers that match, without any secrecy passed on.
+Show a list of servers/services that match, without any secrecy passed on.
 
 [auth-required]
-$ sflvault show SRV#123
+$ sflvault show s#123
 Shows a nice map of the services you need to reach, to get there, in a hierarchy,
 decrypting the passwords you have access to.
+
+[nothing-required]
+$ sflvault alias enzyme01 s#566
+Adds an internal alias (saved in the config .ini file), whenever a service
+is requierd, you can just put there the alias.
+
+[nothing-required]
+$ sflvault unalias enzyme01
+Removes the alias
+
+[nothing-required]
+$ sflvault alias
+Lists all the aliases
 -------------------------
+
+
 
 
 ----------------------------------------------
@@ -51,6 +73,10 @@ $ sflvault revoke username [--all|level1,level2,level3]
 [admin-only, auth-required]
 $ sflvault list-users
 Lists all users
+
+[auth-required]
+$ sflvault list-levels
+Shows all access levels
 
 [admin-only, auth-required]
 $ sflvault deluser username
@@ -131,7 +157,8 @@ setup username pubkey
      all expired non NULL waiting_setup lines. Those should not have any stuff added
 grant authtok username [level1, level2, level3]
  `- starts a round-cycle of encryption of the symkeys for those levels
-
+logout
+ `- destroys the authtok, and destroys session on server's side.
 
 
 ----------------------------------------------------

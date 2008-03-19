@@ -242,8 +242,14 @@ class SFLvault(object):
         print "Success: %s" % retval['message']
 
 
-    def add_server(self):
-        print "Do addserver"
+    @authenticate
+    def add_server(self, customer_id, name, fqdn, ip, location, notes):
+        """Add a server to the database."""
+        retval = vaultReply(self.vault.addserver(self.authtok, int(customer_id), name, fqdn, ip, location, notes),
+                            "Error adding server")
+        print "Success: %s" % retval['message']
+        print "New machine ID: m#%d" % retval['server_id']
+
 
     def grant(self):
         pass
@@ -302,7 +308,7 @@ class SFLvault(object):
         #            {}, {}, ...]
         #    
         retval = vaultReply(self.vault.listusers(self.authtok),
-                            "Failed listing users")
+                            "Error listing users")
 
         print "User list (with creation date):"
         for x in retval['list']:
@@ -313,7 +319,25 @@ class SFLvault(object):
                 add += ' [in setup process]'
             print "   %s (#%d)%s - %s" % (x['username'], x['id'], add, x['created_ctime'])
 
-        
+
+    @authenticate
+    def list_servers(self, verbose=False):
+        retval = vaultReply(self.vault.listservers(self.authtok),
+                            "Error listing servers")
+
+        print "Server list (machines):"
+
+        oldcid = 0
+        for x in retval['list']:
+            if oldcid != x['customer_id']:
+                print "%s (c#%d)" % (x['customer_name'], x['customer_id'])
+                oldcid = x['customer_id']
+            print "\tm#%d\t%s (%s)" % (x['id'], x['name'], x['fqdn'] or x['ip'])
+            if verbose:
+                print "\t\tLocation: %s" % x['location'].replace('\n', '\t\t\n')
+                print "\t\tNotes: %s" % x['notes'].replace('\n', '\t\t\n')
+                print '-' * 76
+
 
     @authenticate
     def list_customers(self):
@@ -326,8 +350,9 @@ class SFLvault(object):
         #                   'name': 'blah2'}]
         print "Customer list:"
         for x in retval['list']:
-            print "ID: %04d  -  %s" % (x['id'], x['name'])
-            
+            print "c#%d\t%s" % (x['id'], x['name'])
+
+
 
 class SFLvaultParserError(Exception):
     """For invalid options on the command line"""
@@ -342,15 +367,18 @@ class SFLvaultParser(object):
         argv - arguments from the command line
         sflvault - SFLvault object (optional)"""
         self.parser = optparse.OptionParser()
-        self.argv = argv
+        self.argv = argv[1:] # Bump the first (command name)
+        self.args = []       # Used after a call to _parse()
+        self.opts = object() #  idem.
+        
         # Use the specified, or create a new one.
         self.vault = (vault or SFLvault())
         
         # Setup default action = help
         action = 'help'
-        if (len(sys.argv) > 1):
+        if (len(self.argv)):
             # Take out the action.
-            action = sys.argv.pop(1)
+            action = self.argv.pop(0)
             if (action in ['-h', '--help']):
                 action = 'help'
 
@@ -360,6 +388,7 @@ class SFLvaultParser(object):
 
         # Call it or show the help.
         if hasattr(self, action):
+            self.action = action
             try:
                 getattr(self, action)()
             except SFLvaultParserError, e:
@@ -367,6 +396,11 @@ class SFLvaultParser(object):
         else:
             self.help()
         
+
+    def _parse(self):
+        """Parse the command line options, and fill self.opts and self.args"""
+        (self.opts, self.args) = self.parser.parse_args(args=self.argv)
+
 
     def help(self, cmd = None, error = None):
         """Print this help.
@@ -416,18 +450,26 @@ class SFLvaultParser(object):
             
 
     def add_user(self):
-        """Doc string that will display in the help.
+        """Add a user to the Vault.
 
-        Rest of the docstring that will be used when invoking
-        sflvault help add_user."""
+        Syntax:
+
+          add-user [-a] [--admin] username
+
+        Optionally flag user as administrator."""
 
         # Parse the argv as needed
-        if (len(self.argv) != 2):
-            print "Error, usage: add-user [username]"
-            return
-        username = self.argv.pop(1)
-        # TODO: add support for admin, in the form of a parser.
-        admin = False
+        self.parser.add_option('-a', '--admin', dest="is_admin",
+                               action="store_true", default=False,
+                               help="Give admin privileges to the added user")
+
+        self._parse()
+
+        if (len(self.args) != 1):
+            raise SFLvaultParserError("Invalid number of arguments")
+        
+        username = self.args[0]
+        admin = self.opts.is_admin
 
         self.vault.add_user(username, admin)
 
@@ -441,10 +483,12 @@ class SFLvaultParser(object):
 
           add-customer ["customer name"]
         """
-        if (len(self.argv) != 2):
+        self._parse()
+        
+        if (len(self.args) != 1):
             raise SFLvaultParserError('Invalid number of arguments')
 
-        customer_name = sys.argv.pop(1)
+        customer_name = self.args[0]
 
         self.vault.add_customer(customer_name)
 
@@ -456,19 +500,97 @@ class SFLvaultParser(object):
 
           del-user [username]
         """
-        if (len(self.argv) != 2):
+        self._parse()
+
+        if (len(self.args) != 1):
             raise SFLvaultParserError("Invalid number of arguments")
 
-        username = sys.argv.pop(1)
+        username = self.args[0]
 
         self.vault.del_user(username)
+
+
+    def add_server(self):
+        """Add a server (machine) to the Vault's database.
+
+        Syntax:
+
+          add-server --name|-n "server name" --fqdn|-d "domain name"
+                     --ip|-i "ip address" --location|-l "location"
+        """
+        self.parser.add_option('-c', '--customer', dest="customer_id",
+                               help="Customer id, as 'c#123' or '123'")
+        self.parser.add_option('-n', '--name', dest="name",
+                               help="Server name, used for display everywhere")
+        self.parser.add_option('-d', '--fqdn', dest="fqdn", default='',
+                               help="Fully qualified domain name, if available")
+        self.parser.add_option('-i', '--ip', dest="ip", default='',
+                               help="Machine's IP address, in order to access itfrom it's hierarchical position")
+        self.parser.add_option('-l', '--location', dest="location", default='',
+                               help="Machine's physical location, position in racks, address, etc..")
+        self.parser.add_option('-t', '--notes', dest="notes",
+                               help="Notes about the machine, references, URLs.")
+
+        self._parse()
+
+        if not self.opts.name:
+            raise SFLvaultParserError("Required parameter 'name' omitted")
+        
+        ## TODO: make a list-customers and provide a selection using arrows or
+        #        or something alike.
+        if not self.opts.customer_id:
+            raise SFLvaultParserError("Required parameter 'customer' omitted")
+
+        o = self.opts
+        if o.customer_id.startswith('c#'):
+            o.customer_id = o.customer_id[2:]
+        self.vault.add_server(o.customer_id, o.name, o.fqdn, o.ip, o.location, o.notes)
+
+
+    def add_service(self):
+        """Add a service to a particular server in the Vault's database."""
+$ sflvault addservice --type|-t "service type" --port|-p portnum
+                      --login|--loginname|-l "root et al" --level "level"
+		      --notes "these are some notes\nand you can add more and more."
+                      
+        self.parser.add_option('-s', '--server', dest="server_id",
+                               help="Service will be attached to server, as 'm#123' or '123'")
+        self.parser.add_option('-u', '--url', dest="url",
+                               help="Service URL"
+        self.parser.add_option('-t', '--type', dest="type",
+                               help="Service type (ssh, ftp, web)")
+        self.parser.add_option('-p', '--port', dest="port", default='',
+                               help="Service port, if different from the default")
+        self.parser.add_option('-l', '--login', '--username', dest="loginname",
+                               help="Username/login name for service.")
+        self.parser.add_option('-v', '--level', dest="level", default='',
+                               help="Access level (access group) for this service. Use list-levels to get a complete list of access levels.")
+        self.parser.add_option('-t', '--notes', dest="notes",
+                               help="Notes about the service, references, URLs.")
+
+        self._parse()
+
+        if not self.opts.url:
+            raise SFLvaultParserError("Required parameter 'url' omitted")
+        
+        ## TODO: make a list-customers and provide a selection using arrows or
+        #        or something alike.
+        if not self.opts.server_id:
+            raise SFLvaultParserError("Required parameter 'server' omitted")
+
+        o = self.opts
+        if o.server_id.startswith('m#'):
+            o.server_id = o.server_id[2:]
+        self.vault.add_service(o.server_id, ........o.name, o.fqdn, o.ip, o.location, o.notes)
 
 
     def list_customers(self):
         """List existing customers.
 
         This option takes no argument, it just lists customers with their IDs."""
-        if (len(self.argv) != 1):
+        self._parse()
+        
+        if len(self.args):
             raise SFLvaultParserError('Invalid number of arguments')
 
         self.vault.list_customers()
@@ -477,12 +599,31 @@ class SFLvaultParser(object):
         """List existing users.
 
         This option takes no argument, it lists the current users and their
-        privileges"""
+        privileges."""
+        self._parse()
 
-        if (len(self.argv) != 1):
+        if len(self.args):
             raise SFLvaultParserError("Invalid number of arguments")
 
         self.vault.list_users()
+
+
+    def list_servers(self):
+        """List existing servers.
+
+        This command will list all servers in the Vault's database."""
+        ## TODO: add support for listing only servers of a certain c#id
+        #        (customer_id)
+        self.parser.add_option('-v', '--verbose', action="store_true",
+                               dest='verbose', default=False,
+                               help="Enable verbose output (location and notes)")
+        self._parse()
+
+        if len(self.args):
+            raise SFLvaultParserError("Invalid number of arguments")
+
+        self.vault.list_servers(self.opts.verbose)
+        
 
     def setup(self):
         """Setup a new user on the vault.
@@ -494,11 +635,13 @@ class SFLvaultParser(object):
         username  - the username used in the `add-user` call.
         vault_url - the URL (http://example.org:port/vault/rpc) to the
                     Vault"""
-        if (len(self.argv) != 3):
+        self._parse()
+        
+        if len(self.args) != 2:
             raise SFLvaultParserError("Invalid number of arguments")
 
-        username = self.argv.pop(1)
-        url      = self.argv.pop(1)
+        username = self.args[0]
+        url      = self.args[1]
 
         self.vault.setup(username, url)
         
@@ -519,4 +662,4 @@ if __name__ == "__main__":
         pass
     except xmlrpclib.Fault, e:
         # On is_admin check failed, on user authentication failed.
-        print e
+        print "Fault: %s" % e.faultString

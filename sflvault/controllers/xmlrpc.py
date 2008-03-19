@@ -127,6 +127,22 @@ class XmlrpcController(XMLRPCController):
         return vaultMsg(False, 'User added. User has a delay of %d seconds to invoke a "setup" command' % SETUP_TIMEOUT)
 
 
+    @authenticated_user
+    def sflvault_addserver(self, authtok, customer_id, name, fqdn, ip, location, notes):
+        
+        n = Server()
+        n.customer_id = int(customer_id)
+        n.created_time = datetime.now()
+        n.name = name
+        n.fqdn = fqdn
+        n.ip = ip
+        n.location = location
+        n.notes = notes
+
+        Session.commit()
+
+        return vaultMsg(False, "Server added.", {'server_id': n.id})
+
 
     @authenticated_admin
     def sflvault_deluser(self, authtok, username):
@@ -165,6 +181,20 @@ class XmlrpcController(XMLRPCController):
 
         return vaultMsg(False, 'Here is the customer list', {'list': out})
 
+
+    @authenticated_user
+    def sflvault_listservers(self, authtok):
+        lst = Server.query.all()
+
+        out = []
+        for x in lst:
+            nx = {'id': x.id, 'name': x.name, 'fqdn': x.fqdn, 'ip': x.ip,
+                  'location': x.location, 'notes': x.notes,
+                  'customer_id': x.customer_id, 'customer_name': x.customer.name}
+            out.append(nx)
+
+        return vaultMsg(False, "Here is the servers list", {'list': out})
+    
 
     @authenticated_user
     def sflvault_listusers(self, authtok):

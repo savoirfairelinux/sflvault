@@ -108,7 +108,7 @@ def authenticated_admin(func, self, *args, **kwargs):
     if not s:
         return xmlrpclib.Fault(0, "Permission denied")
     if not s['userobj'].is_admin:
-        return xmlrpclib.Fault(0, "Permission denied")
+        return xmlrpclib.Fault(0, "Permission denied, admin priv. required")
 
     self.sess = s
 

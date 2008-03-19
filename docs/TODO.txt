@@ -1,13 +1,16 @@
 BUGS
 ====
 
-Il faut qu'il prenne l'URL du "setup" quand tu call "setup", et non pas
-la config, sinon il plante.
-
+ * Il faut qu'il prenne l'URL du "setup" quand tu call "setup", et non pas
+   la config, sinon il plante.
+ * Add some verifications to password encryption, pad with random value, start
+   and end, and verify they are the same.
 
 TODO
 ====
 
+ * Add ALIAS capability, and wherever an c#123 is required, an alias can
+   be used instead.
  * Add versioning capabilities for all changes (à-la Typo3)
  * Add support for svlfault ssh -L, -R, and -D, which does
    everything it can (even over multiple-hops) to create the
@@ -29,7 +32,7 @@ TODO
      [sflv]%
  * Throttle, avec avertissement.. y repenser..
  * Sécurisation HTTPS, vérification des certificats, MAN-IN-THE-MIDDLE
-   attach, garder le fingerprint, etc...
+   attack, garder le fingerprint, etc...
  * Support pour des keywords par usager. Probablement dans les Userciphers
    comme ça quelqu'un peut demander de se connecter au serveur 'adq' et c'est
    remplacé automatiquement par le numéro du service (à l'interne).
