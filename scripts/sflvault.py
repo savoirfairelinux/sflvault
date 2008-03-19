@@ -8,6 +8,7 @@ CONFIG_FILE = '~/.sflvault/config'
 
 import optparse
 import os
+import re
 import sys
 import xmlrpclib
 from ConfigParser import ConfigParser
@@ -296,16 +297,21 @@ class SFLvault(object):
 
     @authenticate
     def add_service(self, server_id, url, port, loginname, type, level, secret, notes):
-        #levels = [x.strip() for x in level.split(',')]
-        # TODO: encrypter le secret ??
+        # TODO: encrypter le secret ?? non
         retval = vaultReply(self.vault.addservice(self.authtok, int(server_id), url, port or '', loginname or '', type or '', level, secret, notes or ''),
                             "Error adding service")
 
         print "Success: %s" % retval['message']
         print "New service ID: s#%d" % retval['service_id']
 
-    def grant(self):
-        pass
+    @authenticate
+    def grant(self, user, levels):
+        #levels = [x.strip() for x in levelstr.split(',')]
+        retval = vaultReply(self.vault.grant(self.authtok, user, levels),
+                            "Error granting level permissions.")
+
+        print "Success: %s" % retval['message']
+
     
     def setup(self, username, vault_url):
         self._set_vault(vault_url, False)
@@ -375,6 +381,17 @@ class SFLvault(object):
             #       to deal with! Some day..
             print "u#%d\t%s\t%s %s" % (x['id'], x['username'],
                                        x['created_stamp'], add)
+
+    @authenticate
+    def list_levels(self):
+        """Simply list the available levels"""
+        retval = vaultReply(self.vault.listlevels(self.authtok),
+                            "Error listing levels")
+
+        print "Levels:"
+
+        for x in retval['list']:
+            print "\t%s" % x
 
 
     @authenticate
@@ -513,15 +530,8 @@ class SFLvaultParser(object):
             
 
     def add_user(self):
-        """Add a user to the Vault.
-
-        Syntax:
-
-          add-user [-a] [--admin] username
-
-        Optionally flag user as administrator."""
-
-        # Parse the argv as needed
+        """Add a user to the Vault."""
+        self.parser.set_usage("add-user [options] username")
         self.parser.add_option('-a', '--admin', dest="is_admin",
                                action="store_true", default=False,
                                help="Give admin privileges to the added user")
@@ -536,6 +546,23 @@ class SFLvaultParser(object):
 
         self.vault.add_user(username, admin)
 
+    def grant(self):
+        """Grant level permissions to user.
+
+        Admin privileges required. Use list-levels to have a list."""
+        self.parser.set_usage('grant username [options]')
+        self.parser.add_option('-l', '--level', dest="levels",
+                               action="append", type="string",
+                               help="Level to grant to user")
+        self._parse()
+
+        if (len(self.args) != 1):
+            raise SFLvaultParserError("Invalid number of arguments, 'username' required.")
+
+        username = self.args[0]
+        levels = self.opts.levels
+
+        self.vault.grant(username, levels)
 
     def add_customer(self):
         """Add a new customer to the Vault's database."""
@@ -653,6 +680,15 @@ class SFLvaultParser(object):
             raise SFLvaultParserError("Invalid number of arguments")
 
         self.vault.list_users()
+
+    def list_levels(self):
+        """List existing levels."""
+        self._parse()
+
+        if len(self.args):
+            raise SFLvaultParserError("Invalid number of arguments")
+
+        self.vault.list_levels()
 
 
     def list_servers(self):

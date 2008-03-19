@@ -139,7 +139,8 @@ class Customer(object):
 
 # Map each class to its corresponding table.
 mapper(User, users_table, {
-    'levels': relation(UserLevel, backref='user', lazy=False)
+    'levels': relation(UserLevel, backref='user', lazy=False),
+    'ciphers': relation(Usercipher, backref='user', lazy=False)
     })
 mapper(UserLevel, userlevels_table, {
     

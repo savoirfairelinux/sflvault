@@ -120,6 +120,27 @@ class XmlrpcController(XMLRPCController):
         return vaultMsg(False, 'User added. User has a delay of %d seconds to invoke a "setup" command' % SETUP_TIMEOUT)
 
 
+    @authenticated_admin
+    def sflvault_grant(self, authtok, user, levels):
+        """Can get user as user_id, or username"""
+        # Add UserLevels corresponding to each levels in the dict
+        if isinstance(user, int):
+            usr = User.query().filter_by(id=user).first()
+        else:
+            usr = User.query().filter_by(username=user).first()
+
+        if not usr:
+            return vaultMsg(True, "Invalid user: %s" % user)
+
+        for l in levels:
+            nu = UserLevel()
+            nu.user_id = usr.id
+            nu.level = l
+
+        Session.commit()
+
+        return vaultMsg(False, "Levels granted successfully")
+
     @authenticated_user
     def sflvault_addserver(self, authtok, customer_id, name, fqdn, ip, location, notes):
         
@@ -164,8 +185,8 @@ class XmlrpcController(XMLRPCController):
             nu.service_id = ns.id
             nu.user_id = lvl.user_id
 
-            g = nu.user.elgamal()
-            nu.stuff = g.encrypt(seckey)
+            g = lvl.user.elgamal()
+            nu.stuff = vaultSerial(g.encrypt(seckey, randfunc(32)))
             del(g)
             
             userlist.append(lvl.user.username) # To return listing.
@@ -213,6 +234,17 @@ class XmlrpcController(XMLRPCController):
             out.append(nx)
 
         return vaultMsg(False, 'Here is the customer list', {'list': out})
+
+
+    @authenticated_user
+    def sflvault_listlevels(self, authtok):
+        lvls = UserLevel.query.group_by(UserLevel.level).all()
+
+        out = []
+        for x in lvls:
+            out.append(x.level)
+
+        return vaultMsg(False, 'Here is the list of levels', {'list': out})
 
 
     @authenticated_user
