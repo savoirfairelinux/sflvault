@@ -2,7 +2,7 @@
 
 from pylons import config
 from sqlalchemy import Column, MetaData, Table, types, ForeignKey
-from sqlalchemy.orm import mapper, relation
+from sqlalchemy.orm import mapper, relation, backref
 from sqlalchemy.orm import scoped_session, sessionmaker
 from datetime import *
 
@@ -77,6 +77,7 @@ services_table = Table('services', metadata,
                        Column('server_id', types.Integer, ForeignKey('servers.id')), # relation servers
                        # Type of service, eventually, linked to specific plug-ins.
                        # TODO: ajouter le parent_service_id..
+                       Column('parent_service_id', types.Integer, ForeignKey('services.id')),
                        Column('url', types.String(250)),
                        Column('port', types.Integer),
                        Column('loginname', types.String(50)),
@@ -85,6 +86,7 @@ services_table = Table('services', metadata,
                        Column('secret', types.Text),
                        # pickled python structures, depends on 'type'
                        Column('metadata', types.Text),
+                       # Add some created_time, modified_time, etc...
                        Column('notes', types.Text)
                        )
 
@@ -100,15 +102,15 @@ userciphers_table = Table('userciphers', metadata,
 
 class Service(object):
     def __repr__(self):
-        return "<Service: %s (SRV#%d)>" % (self.name, self.id)
+        return "<Service s#%d: %s>" % (self.id, self.url)
 
 class Server(object):
     def __repr__(self):
-        return "<Server: %s (%s)>" % (self.nom, self.fqdn)
+        return "<Server m#%d: %s (%s %s)>" % (self.id, self.name, self.fqdn, self.ip)
 
 class Usercipher(object):
     def __repr__(self):
-        return "<Usercipher: %s - service_id: %d>" % (self.username, self.service_id)
+        return "<Usercipher: %s - service_id: %d>" % (self.user, self.service_id)
 
 class User(object):
     def setup_expired(self):
@@ -127,7 +129,7 @@ class User(object):
         return e
     
     def __repr__(self):
-        return "<User: %s>" % (self.username)
+        return "<User u#%d: %s>" % (self.id, self.username)
 
 class UserLevel(object):
     def __repr__(self):
@@ -135,7 +137,7 @@ class UserLevel(object):
 
 class Customer(object):
     def __repr__(self):
-        return "<Customer: %s>" % (self.name)
+        return "<Customer c#%d: %s>" % (self.id, self.name)
 
 # Map each class to its corresponding table.
 mapper(User, users_table, {
@@ -149,9 +151,14 @@ mapper(Customer, customers_table, {
     'servers': relation(Server, backref='customer', lazy=False)
     })
 mapper(Server, servers_table, {
-    
+    'services': relation(Service, backref='server', lazy=False)
     })
 mapper(Service, services_table, {
+    'children': relation(Service,
+                         lazy=False,
+                         backref=backref('parent', uselist=False, remote_side=[services_table.c.id]),
+                         primaryjoin=services_table.c.parent_service_id==services_table.c.id),
+    
     })
 mapper(Usercipher, userciphers_table, {
     

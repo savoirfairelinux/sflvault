@@ -25,70 +25,6 @@ from pprint import pprint
 
 
 ### Setup variables and functions
-
-#
-# Config file setup
-#
-def vaultConfigCheck():
-    """Checks for ownership and modes for all paths and files, à-la SSH"""
-    fullfile = os.path.expanduser(CONFIG_FILE)
-    fullpath = os.path.dirname(fullfile)
-    
-    if not os.path.exists(fullpath):
-        os.makedirs(fullpath, mode=0700)
-
-    if not os.stat(fullpath)[0] & 0700:
-        print "Modes for %s must be 0700 (-rwx------)" % fullpath
-        sys.exit()
-
-    if not os.path.exists(fullfile):
-        fp = open(fullfile, 'w')
-        fp.write("[SFLvault]\n")
-        fp.close()
-        os.chmod(fullfile, 0600)
-        
-    if not os.stat(fullfile)[0] & 0600:
-        print "Modes for %s must be 0600 (-rw-------)" % fullfile
-        sys.exit()
-
-    return True
-
-def vaultConfigRead():
-    """Return the ConfigParser object, fully loaded"""
-    vaultConfigCheck()
-    
-    cfg = ConfigParser()
-    fp = open(os.path.expanduser(CONFIG_FILE), 'r')
-    cfg.readfp(fp)
-    fp.close()
-
-    if not cfg.has_section('SFLvault'):
-        cfg.add_section('SFLvault')
-
-    if not cfg.has_option('SFLvault', 'username'):
-        cfg.set('SFLvault', 'username', '')
-    
-    if not cfg.has_option('SFLvault', 'url'):
-        cfg.set('SFLvault', 'url', '')
-
-    return cfg
-
-def vaultConfigWrite(cfg):
-    """Write the ConfigParser element to disk."""
-    fp = open(os.path.expanduser(CONFIG_FILE), 'w')
-    cfg.write(fp)
-    fp.close()
-
-
-
-
-#
-# Command line parser
-#
-parser = optparse.OptionParser()
-
-
-
 #
 # Random number generators setup
 #
@@ -164,37 +100,6 @@ class vaultIdFormateError(Exception):
     """When bad parameters are passed to vaultId"""
     pass
 
-def vaultId(id, prefix):
-    """Return an integer value for a given VaultID.
-
-    A VaultID can be one of the following:
-
-      123   - treated as is, and assume to be of type `prefix`.
-      m#123 - checked against `prefix`, otherwise raise an exception.
-      alias - checked against `prefix` and alias list, returns an int
-              value, or raise an exception.
-    """
-    #prefixes = ['m', 'u', 's', 'c'] # Machine, User, Service, Customer
-    #if prefix not in prefixes:
-    #    raise ValueError("Bad prefix for id %s (prefix given: %s)" % (id, prefix))
-
-    # If it's only a numeric, assume it is of type 'prefix'.
-    try:
-        tmp = int(id)
-        return tmp
-    except:
-        pass
-
-    # Match the m#123 formats..
-    tid = re.match(r'(.)#(\d+)', id)
-    if tid:
-        if tid.group(1) != prefix:
-            raise vaultIdFormatError("Bad prefix for VaultID, context requires '%s': %s" % (prefix, id))
-        return int(tid.group(2))
-
-    # TODO: Check for aliases    
-    raise vaultIdFormatError("Invalid alias of bad VaultID format: %s" % id)
-    
 
 #
 # authenticate decorator
@@ -208,11 +113,10 @@ def authenticate(func, self, *args, **kwargs):
     username = self.cfg.get('SFLvault', 'username')
     ### TODO: implement encryption of the private key.
     privkey_enc = self.cfg.get('SFLvault', 'key')
-    privpass = getpass.getpass("Vault password: ")
+    privpass = self.getpassfunc()
     privkey = vaultDecrypt(privkey_enc, privpass)
     privpass = randfunc(32)
     del(privpass)
-    
 
     retval = self.vault.login(username)
     self.authret = retval
@@ -237,7 +141,6 @@ def authenticate(func, self, *args, **kwargs):
 
     return func(self, *args, **kwargs)
 
-
 ###
 ### On définit les fonctions qui vont traiter chaque sorte de requête.
 ###
@@ -245,16 +148,163 @@ class SFLvault(object):
     """Class dealing with all the function calls to the Vault"""
     def __init__(self, cfg=None):
         """Set up initial configuration for function calls"""
-        self.cfg = vaultConfigRead()
+        # The function to call upon @authenticate to get password from user.
+        self.getpassfunc = self._getpass
+        # Load configuration
+        self.config_read()
         self.authtok = ''
         self.authret = None
+        # Set the default route to the Vault
         self.vault = xmlrpclib.Server(self.cfg.get('SFLvault', 'url')).sflvault
+
+    def _getpass(self):
+        """Default function to get password from user, for authentication."""
+        return getpass.getpass("Vault password: ")
+
+
+    def config_check(self):
+        """Checks for ownership and modes for all paths and files, à-la SSH"""
+        fullfile = os.path.expanduser(CONFIG_FILE)
+        fullpath = os.path.dirname(fullfile)
+    
+        if not os.path.exists(fullpath):
+            os.makedirs(fullpath, mode=0700)
+
+        if not os.stat(fullpath)[0] & 0700:
+            ### TODO: RAISE EXCEPTION INSTEAD
+            print "Modes for %s must be 0700 (-rwx------)" % fullpath
+            sys.exit()
+
+        if not os.path.exists(fullfile):
+            fp = open(fullfile, 'w')
+            fp.write("[SFLvault]\n")
+            fp.close()
+            os.chmod(fullfile, 0600)
+        
+        if not os.stat(fullfile)[0] & 0600:
+            # TODO: raise exception instead.
+            print "Modes for %s must be 0600 (-rw-------)" % fullfile
+            sys.exit()
+
+    def config_read(self):
+
+        """Return the ConfigParser object, fully loaded"""
+        self.config_check()
+    
+        self.cfg = ConfigParser()
+        fp = open(os.path.expanduser(CONFIG_FILE), 'r')
+        self.cfg.readfp(fp)
+        fp.close()
+
+        if not self.cfg.has_section('SFLvault'):
+            self.cfg.add_section('SFLvault')
+
+        if not self.cfg.has_section('Aliases'):
+            self.cfg.add_section('Aliases')
+
+        if not self.cfg.has_option('SFLvault', 'username'):
+            self.cfg.set('SFLvault', 'username', '')
+    
+        if not self.cfg.has_option('SFLvault', 'url'):
+            self.cfg.set('SFLvault', 'url', '')
+
+    def config_write(self):
+        """Write the ConfigParser element to disk."""
+        fp = open(os.path.expanduser(CONFIG_FILE), 'w')
+        self.cfg.write(fp)
+        fp.close()
+
+    def set_getpassfunc(self, func):
+        """Set the function to ask for password.
+
+        By default, it is set to _getpass, which asks for the password on the
+        command line, but you can create a new function, that would for example
+        pop-up a window, or use another mechanism to ask for password and continue
+        authentication."""
+        self.getpassfunc = func
         
     def _set_vault(self, url, save=False):
         """Set the vault's URL and optionally save it"""
         self.vault = xmlrpclib.Server(url).sflvault
         if save:
             self.cfg.set('SFLvault', 'url', url)
+
+
+    def alias_add(self, alias, ptr):
+        """Add an alias and save config."""
+
+        tid = re.match(r'(.)#(\d+)', ptr)
+
+        if not tid:
+            raise ValueError("VaultID must be in the format: (.)#(\d+)")
+
+        # Set the alias value
+        self.cfg.set('Aliases', alias, ptr)
+        
+        # Save config.
+        self.config_write()
+
+    def alias_del(self, alias):
+        """Remove an alias from the config.
+
+        Return True if removed, False otherwise."""
+
+        if self.cfg.has_option('Aliases', alias):
+            self.cfg.remove_option('Aliases', alias)
+            self.config_write()
+            return True
+        else:
+            return False
+
+    def alias_list(self):
+        """Return a list of aliases"""
+        return self.cfg.items('Aliases')
+
+    def alias_get(self, alias):
+        """Return the pointer for a given alias"""
+        if not self.cfg.has_option('Aliases', alias):
+            return None
+        else:
+            return self.cfg.get('Aliases', alias)
+
+
+    def vaultId(self, vid, prefix, check_alias=True):
+        """Return an integer value for a given VaultID.
+        
+        A VaultID can be one of the following:
+        
+        123   - treated as is, and assume to be of type `prefix`.
+        m#123 - checked against `prefix`, otherwise raise an exception.
+        alias - checked against `prefix` and alias list, returns an int
+        value, or raise an exception.
+        """
+        #prefixes = ['m', 'u', 's', 'c'] # Machine, User, Service, Customer
+        #if prefix not in prefixes:
+        #    raise ValueError("Bad prefix for id %s (prefix given: %s)" % (id, prefix))
+        
+        # If it's only a numeric, assume it is of type 'prefix'.
+        try:
+            tmp = int(vid)
+            return tmp
+        except:
+            pass
+
+        # Match the m#123 formats..
+        tid = re.match(r'(.)#(\d+)', vid)
+        if tid:
+            if tid.group(1) != prefix:
+                raise vaultIdFormatError("Bad prefix for VaultID, context requires '%s': %s" % (prefix, vid))
+            return int(tid.group(2))
+
+        if check_alias:
+            nid = self.alias_get(vid)
+
+            return self.vaultId(nid, prefix, False)
+
+        raise vaultIdFormatError("Invalid alias of bad VaultID format: %s" % vid)
+
+
+    ### REMOTE ACCESS METHODS
 
 
     @authenticate
@@ -265,6 +315,7 @@ class SFLvault(object):
                             "Error adding user")
 
         print "Success: %s" % retval['message']
+        print "New user ID: u#%d" % retval['user_id']
 
 
     @authenticate
@@ -281,6 +332,7 @@ class SFLvault(object):
                             "Error adding customer")
 
         print "Success: %s" % retval['message']
+        print "New customer ID: c#%d" % retval['customer_id']
 
 
     @authenticate
@@ -347,12 +399,23 @@ class SFLvault(object):
         del(eg)
         del(privpass)
 
-        vaultConfigWrite(self.cfg)
         print "Saving settings..."
+        self.config_write()
 
-    
-    def search(self):
-        print "Do search, and show and help to select."
+
+    @authenticate
+    def search(self, query):
+        """Search the database for query terms, specified as a list of REGEXPs.
+
+        Returns a hierarchical view of the results."""
+        retval = vaultReply(self.vault.search(self.authtok, query),
+                            "Error searching database")
+
+        print "Results:"
+        # TODO: format the results in a beautiful way
+        # TODO: call the pager `less` when too long.
+        pprint(retval['results'])
+
 
     def show(self):
         print "Search using xmlrpc:show(), with the service_id, and DECRYPT"
@@ -617,7 +680,8 @@ class SFLvaultParser(object):
             raise SFLvaultParserError("Required parameter 'customer' omitted")
 
         o = self.opts
-        self.vault.add_server(vaultId(o.customer_id, 'c'), o.name, o.fqdn,
+        customer_id = self.vault.vaultId(o.customer_id, 'c')
+        self.vault.add_server(customer_id, o.name, o.fqdn,
                               o.ip, o.location, o.notes)
 
 
@@ -654,8 +718,58 @@ class SFLvaultParser(object):
         secret = getpass.getpass("Enter service secret (password): ")
 
         o = self.opts
-        self.vault.add_service(vaultId(o.server_id, 'm'), o.url, o.port,
+        self.vault.add_service(self.vault.vaultId(o.server_id, 'm'), o.url, o.port,
                                o.loginname, o.type, o.level, secret, o.notes)
+
+
+    def alias(self):
+        """Set an alias, local shortcut to VaultIDs (s#123, m#87, etc..)
+
+        List, view or set an alias."""
+        self.parser.set_usage("alias [options] [alias [VaultID]]")
+
+        self.parser.add_option('-d', '--delete', dest="delete",
+                               help="Delete the given alias")
+
+        self._parse()
+
+        if self.opts.delete:
+            
+            res = self.vault.alias_del(self.opts.delete)
+
+            if res:
+                print "Alias removed"
+            else:
+                print "No such alias"
+
+        elif len(self.args) == 0:
+            
+            # List aliases
+            l = self.vault.alias_list()
+            print "Aliases:"
+            for x in l:
+                print "\t%s\t%s" % (x[0], x[1])
+
+        elif len(self.args) == 1:
+
+            # Show this alias's value
+            a = self.vault.alias_get(self.args[0])
+            if a:
+                print "Alias:"
+                print "\t%s\t%s" % (self.args[0], a)
+            else:
+                print "Invalid alias"
+
+        elif len(self.args) == 2:
+            try:
+                r = self.vault.alias_add(self.args[0], self.args[1])
+            except ValueError, e:
+                raise SFLvaultParserError(e.message)
+
+            print "Alias added"
+
+        else:
+            raise SFLvaultParserError("Invalid number of parameters")
 
 
     def list_customers(self):
@@ -711,13 +825,13 @@ class SFLvaultParser(object):
     def setup(self):
         """Setup a new user on the vault.
 
-        Call this after an admin has called `add-user` on the vault.
+        Call this after an admin has called `add-user` on the Vault.
         
-        Syntax: setup [username] [vault_url]
-
         username  - the username used in the `add-user` call.
         vault_url - the URL (http://example.org:port/vault/rpc) to the
                     Vault"""
+        
+        self.parser.set_usage("setup username vault_url")
         self._parse()
         
         if len(self.args) != 2:
@@ -727,7 +841,17 @@ class SFLvaultParser(object):
         url      = self.args[1]
 
         self.vault.setup(username, url)
-        
+
+
+    def search(self):
+        """Search the Vault's database for those space separated regexp"""
+        self.parser.set_usage('search regexp1 ["reg exp2" ...]')
+        self._parse()
+
+        if not len(self.args):
+            raise SFLvaultParserError("Search terms required")
+
+        self.vault.search(self.args)
         
 ###
 ### Execute requested command-line command

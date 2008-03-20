@@ -11,3 +11,5 @@ keep track of changes. Usually, inside an sqlite shell:
 ALTER TABLE services ADD url VARCHAR(250);
 
 hmm... you're better off with a clean database, using SQLite.
+
+ALTER TABLE services ADD parent_service_id INTEGER

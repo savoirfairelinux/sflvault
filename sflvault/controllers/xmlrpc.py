@@ -104,6 +104,60 @@ class XmlrpcController(XMLRPCController):
         return vaultMsg(False, 'User setup complete for %s' % username)
 
 
+    @authenticated_user
+    def sflvault_search(self, authtok, query):
+        """Do the search, and return the result tree."""
+        # TODO: narrow down search (instead of all(), doh!)
+        cs = Customer.query.all()
+        ms = Server.query.all()
+        ss = Service.query.all()
+
+        # Quick helper funcs, to create the hierarchical 'out' structure.
+        def set_customer(out, c):
+            if out.has_key(str(c.id)):
+                return
+            out[str(c.id)] = {'name': c.name,
+                         'servers': {}}
+        def set_server(subout, m):
+            if subout.has_key(str(m.id)):
+                return
+            subout[str(m.id)] = {'name': m.name,
+                            'fqdn': m.fqdn or '',
+                            'ip': m.ip or '',
+                            'location': m.location or '',
+                            'notes': m.notes or '',
+                            'services': {}}
+        def set_service(subsubout, s):
+            subsubout[str(s.id)] = {'url': s.url,
+                               'loginname': s.loginname or '',
+                               'type': s.type or '',
+                               'level': s.level or '',
+                               # DON'T INCLUDE secret, when we're just searching
+                               #'secret': s.secret or '',
+                               'metadata': s.metadata or '',
+                               'notes': s.notes or ''}
+
+        out = {}
+        # Loop services, setup servers and customers first.
+        for x in ss:
+            # Setup customer dans le out, pour le service
+            set_customer(out, x.server.customer)
+            set_server(out[str(x.server.customer.id)]['servers'], x.server)
+            set_service(out[str(x.server.customer.id)]['servers'][str(x.server.id)]['services'], x)
+
+        # Loop servers, setup customers first.
+        for y in ms:
+            set_customer(out, y.customer)
+            set_server(out[str(y.customer.id)]['servers'], y)
+
+        # Loop customers !
+        for z in cs:
+            set_customer(out, z)
+
+        # Return 'out', in a nicely structured hierarchical form.
+        return vaultMsg(False, "Here are the search results", {'results': out})
+        
+
     @authenticated_admin
     def sflvault_adduser(self, authtok, username, admin):
         if (User.query().filter_by(username=username).count()):
@@ -117,7 +171,7 @@ class XmlrpcController(XMLRPCController):
 
         Session.commit()
 
-        return vaultMsg(False, 'User added. User has a delay of %d seconds to invoke a "setup" command' % SETUP_TIMEOUT)
+        return vaultMsg(False, 'User added. User has a delay of %d seconds to invoke a "setup" command' % SETUP_TIMEOUT, {'user_id': n.id})
 
 
     @authenticated_admin
@@ -221,7 +275,7 @@ class XmlrpcController(XMLRPCController):
         nc.created_user = self.sess['username']
         Session.commit()
 
-        return vaultMsg(False, 'Customer added as no. %d' % nc.id)
+        return vaultMsg(False, 'Customer added', {'customer_id': nc.id})
 
 
     @authenticated_user
