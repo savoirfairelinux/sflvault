@@ -1022,12 +1022,16 @@ class SFLvaultParser(object):
             raise SFLvaultParserError("Search terms required")
 
         self.vault.search(self.args)
-        
+
+
+
+
+
+
 ###
 ### Execute requested command-line command
 ###    
-if __name__ == "__main__":
-
+def main():
     # Call the appropriate function of the 'f' object, according to 'action'
     
     try:
@@ -1043,3 +1047,9 @@ if __name__ == "__main__":
     except VaultConfigurationError, e:
         print "Configuration error: %s" % e
 
+    
+
+# For wrappers.
+if __name__ == "__main__":
+
+    main()
