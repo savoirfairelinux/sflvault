@@ -33,9 +33,6 @@ import xmlrpclib
 from ConfigParser import ConfigParser
 import getpass
 from Crypto.PublicKey import ElGamal
-from Crypto.Cipher import AES, Blowfish
-from Crypto.Util import randpool
-from Crypto.Util.number import bytes_to_long, long_to_bytes
 from base64 import b64decode, b64encode
 from decorator import decorator
 from datetime import *
@@ -46,15 +43,6 @@ from sflvault.lib.crypto import *
 
 
 ### Setup variables and functions
-#
-# Random number generators setup
-#
-pool = randpool.RandomPool()
-pool.stir()
-pool.randomize()
-randfunc = pool.get_bytes # We'll use this func for most of the random stuff
-
-
 #
 # Add protocols to urlparse, for correct parsing.
 #
@@ -88,82 +76,6 @@ class VaultConfigurationError(Exception):
     pass
 
 
-#
-### TODO: DRY these six functions, they are in lib/base.py
-#
-def serial_elgamal_msg(stuff):
-    """Get a 2-elements tuple of str(), return a string."""
-    ns = b64encode(stuff[0]) + ':' + \
-         b64encode(stuff[1])
-    return ns
-
-def unserial_elgamal_msg(stuff):
-    """Get a string, return a 2-elements tuple of str()"""
-    x = stuff.split(':')
-    return (b64decode(x[0]),
-            b64decode(x[1]))
-
-def serial_elgamal_pubkey(stuff):
-    """Get a 3-elements tuple of long(), return a string."""
-    ns = b64encode(long_to_bytes(stuff[0])) + ':' + \
-         b64encode(long_to_bytes(stuff[1])) + ':' + \
-         b64encode(long_to_bytes(stuff[2]))         
-    return ns
-
-def unserial_elgamal_pubkey(stuff):
-    """Get a string, return a 3-elements tuple of long()"""
-    x = stuff.split(':')
-    return (bytes_to_long(b64decode(x[0])),
-            bytes_to_long(b64decode(x[1])),
-            bytes_to_long(b64decode(x[2])))
-
-def serial_elgamal_privkey(stuff):
-    """Get a 2-elements tuple of long(), return a string."""
-    ns = b64encode(long_to_bytes(stuff[0])) + ':' + \
-         b64encode(long_to_bytes(stuff[1]))
-    return ns
-
-def unserial_elgamal_privkey(stuff):
-    """Get a string, return a 2-elements tuple of long()"""
-    x = stuff.split(':')
-    return (bytes_to_long(b64decode(x[0])),
-            bytes_to_long(b64decode(x[1])))
-
-
-#
-# Blowfish encrypt.
-#
-def vaultEncrypt(something, pw):
-    """Encrypt using a password and Blowfish.
-
-    something should normally be 8-bytes padded, but we add some '\0'
-    to pad it.
-
-    Most of the time anyway, we get some base64 stuff to encrypt, so
-    it shouldn't pose a problem."""
-    b = Blowfish.new(pw)
-    return b64encode(b.encrypt(something + (((8 - (len(something) % 8)) % 8) * "\x00")))
-
-def vaultDecrypt(something, pw):
-    """Decrypt using Blowfish and a password
-
-    Remove padding on right."""
-    b = Blowfish.new(pw)
-    return b.decrypt(b64decode(something)).rstrip("\x00")
-
-
-# DRY: this is copied AS-IS in sflvault.py, please keep in sync, until we
-#      have shared libs.
-def decrypt_secret(seckey, ciphertext):
-    """Decrypt using the provided seckey"""
-    a = AES.new(b64decode(seckey))
-    ciphertext = b64decode(ciphertext)
-    secret = a.decrypt(ciphertext).rstrip("\x00")
-    del(a)
-    del(ciphertext)
-    return secret
-vaultDecryptAES = decrypt_secret
-
 
 def vaultReply(rep, errmsg="Error"):
     """Tracks the Vault reply, and raise an Exception on error"""
@@ -192,7 +104,7 @@ def authenticate(keep_privkey=False):
             raise VaultConfigurationError("No private key in local config, init with: setup username vault-url")
         
         privpass = self.getpassfunc()
-        privkey = vaultDecrypt(privkey_enc, privpass)
+        privkey = decrypt_privkey(privkey_enc, privpass)
         privpass = randfunc(32)
         del(privpass)
 
@@ -205,7 +117,7 @@ def authenticate(keep_privkey=False):
         if not retval['error']:
             # decrypt token.
             eg = ElGamal.ElGamalobj()
-            (eg.p, eg.x) = unserial_elgamal_privkey(privkey)
+            (eg.p, eg.x, eg.g, eg.y) = unserial_elgamal_privkey(privkey)
             privkey = randfunc(256)
             del(privkey)
 
@@ -438,9 +350,27 @@ class SFLvault(object):
 
 
     @authenticate()
-    def add_service(self, server_id, url, port, loginname, type, level, secret, notes):
-        # TODO: encrypter le secret ?? non
-        retval = vaultReply(self.vault.addservice(self.authtok, int(server_id), url, port or '', loginname or '', type or '', level, secret, notes or ''),
+    def add_service(self, server_id, parent_service_id, url, port, loginname, type, level, secret, notes):
+        """Add a service to the Vault's database.
+
+        server_id - A m#id server identifier. Specify either server_id or
+                    parent_service_id. 
+        parent_service_id - A s#id, parent service ID, to which you should
+                            connect before connecting to the service you're
+                            adding. Specify 0 of None if no parent exist.
+                            If you set this, server_id is disregarded.
+        url - URL of the service, with username, port and path if non-standard.
+        port - Port if different from the standard port (according to the
+               scheme://...
+        loginname - If not specified directly in the URL, login used to
+                    authenticate to service.
+        type - Type reminder. If evals to empty, then scheme is used here.
+        level - Security level (or group) of the service. Hopefully an existing
+                group level, otherwise, it creates the group.
+        secret - Password for the service. Plain-text.
+        notes - Simple text field, with notes."""
+
+        retval = vaultReply(self.vault.addservice(self.authtok, int(server_id), int(parent_service_id), url, port or '', loginname or '', type or '', level, secret, notes or ''),
                             "Error adding service")
 
         print "Success: %s" % retval['message']
@@ -448,6 +378,10 @@ class SFLvault(object):
 
     @authenticate()
     def grant(self, user, levels):
+        """Add permissions to a certain user for a certain level groups.
+
+        user   - a required username.
+        levels - array of strings of level labels."""
         #levels = [x.strip() for x in levelstr.split(',')]
         retval = vaultReply(self.vault.grant(self.authtok, user, levels),
                             "Error granting level permissions.")
@@ -456,6 +390,13 @@ class SFLvault(object):
 
     
     def setup(self, username, vault_url):
+        """Sets up the local configuration to communicate with the Vault.
+
+        username  - the name with which an admin prepared (with add-user)
+                    your account.
+        vault_url - the URL pointing to the XML-RPC interface of the vault
+                    (typically host://domain.example.org:5000/vault/rpc
+        """
         self._set_vault(vault_url, False)
 
         # Generate a new key:
@@ -481,8 +422,9 @@ class SFLvault(object):
         # Encrypt privkey locally (with Blowfish)
         self.cfg.set('SFLvault', 'username', username)
         self._set_vault(vault_url, True)
-        # p and x form the private key
-        self.cfg.set('SFLvault', 'key', vaultEncrypt(serial_elgamal_privkey([eg.p, eg.x]), privpass))
+        # p and x form the private key, add the public key, add g and y.
+        # if encryption is required at some point.
+        self.cfg.set('SFLvault', 'key', encrypt_privkey(serial_elgamal_privkey([eg.p, eg.x, eg.g, eg.y]), privpass))
         privpass = randfunc(32)
         eg.p = randfunc(32)
         eg.x = randfunc(32)
@@ -529,7 +471,7 @@ class SFLvault(object):
                 
             spc = len(str(x['id'])) * ' '
 
-            # TODO: decrypt secret
+            # Decrypt secret
             aeskey = ''
             secret = ''
             if x['usercipher']:
@@ -538,7 +480,7 @@ class SFLvault(object):
                 except:
                     raise PermissionError("Unable to decrypt Usercipher.")
             
-                secret = vaultDecryptAES(aeskey, x['secret'])
+                secret = decrypt_secret(aeskey, x['secret'])
             
             print "%ss#%d %s" % (pre, x['id'], x['url'])
             print "%s%s   login: %s  pass: %s" % (pre,spc, x['loginname'],
@@ -827,13 +769,18 @@ class SFLvaultParser(object):
         Note: the 'port' specified inside the URL will take precedence over
               the command line argument. Same goes for 'username'. If no -t
               type is specified, the URL scheme will be taken instead.
-        Note: Passwords will never be taken from the URL when invoked on the
-              command-line, to prevent sensitive information being held in
-              history."""
+        Note 2: Passwords will never be taken from the URL when invoked on the
+                command-line, to prevent sensitive information being held in
+                history.
+        Note 3: If you specify both --parent and --server, the parent's actual
+                value for server (on the Vault) will take precedence on the
+                specified --server value."""
         self.parser.add_option('-s', '--server', dest="server_id",
                                help="Service will be attached to server, as 'm#123' or '123'")
         self.parser.add_option('-u', '--url', dest="url",
                                help="Service URL, full proto://fqdn.example.org/path, WITHOUT the secret.")
+        self.parser.add_option('-r', '--parent', dest="parent_id",
+                               help="Service ID parent of this new one.")
         self.parser.add_option('-t', '--type', dest="type",
                                help="Service type (ssh, ftp, web)")
         self.parser.add_option('-p', '--port', dest="port", default='',
@@ -852,11 +799,11 @@ class SFLvaultParser(object):
         
         ## TODO: make a list-customers and provide a selection using arrows or
         #        or something alike.
-        if not self.opts.server_id:
-            raise SFLvaultParserError("Required parameter 'server' omitted")
+        if not self.opts.server_id and not self.opts.parent_id:
+            raise SFLvaultParserError("Parent ID or Server ID required. Please specify -r|--parent VaultID or -s|--server VaultID")
 
-        ## TODO: analyze using urlparse.urlparse the 'URL', and catch password,
-        #        username, port, and fill accordingly.
+        o = self.opts
+
         url = urlparse.urlparse(o.url)
 
         # TODO: check if we're on the command line (and not in the SFLvault
@@ -883,10 +830,14 @@ class SFLvaultParser(object):
         # TODO: rewrite url if a password was included... strip the port and
         #       username from the URL too.
 
-        o = self.opts
-        self.vault.add_service(self.vault.vaultId(o.server_id, 'm'), o.url,
-                               o.port, o.loginname, o.type, o.level, secret,
-                               o.notes)
+        server_id = 0
+        parent_id = 0
+        if o.server_id:
+            server_id = self.vault.vaultId(o.server_id, 'm')
+        if o.parent_id:
+            parent_id = self.vault.vaultId(o.parent_id, 's')
+        self.vault.add_service(server_id, parent_id, o.url, o.port,
+                               o.loginname, o.type, o.level, secret, o.notes)
         del(secret)
 
 

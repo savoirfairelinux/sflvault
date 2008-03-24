@@ -38,40 +38,8 @@ import sflvault.lib.helpers as h
 import sflvault.model as model
 from sflvault.lib.crypto import *
 
-from Crypto.Util import randpool
-from Crypto.Cipher import AES
 from base64 import b64decode, b64encode
 
-
-# Random number generators setup
-pool = randpool.RandomPool()
-pool.stir()
-pool.randomize()
-randfunc = pool.get_bytes # We'll use this func for most of the random stuff
-
-
-# Cipher/crypto helpers
-def encrypt_secret(secret):
-    """Gen. a random key, AES256 encrypts the secret, return the random key"""
-    seckey = randfunc(32)
-    a = AES.new(seckey)
-    # Add padding to have a multiple of 16 bytes 
-    ciphertext = a.encrypt(secret + (((16 - len(secret) % 16) % 16) * "\x00"))
-    ciphertext = b64encode(ciphertext)
-    seckey = b64encode(seckey)
-    del(a)
-    return (seckey, ciphertext)
-
-# DRY: this is copied AS-IS in sflvault.py, please keep in sync, until we
-#      have shared libs.
-def decrypt_secret(seckey, ciphertext):
-    """Decrypt using the provided seckey"""
-    a = AES.new(b64decode(seckey))
-    ciphertext = b64decode(ciphertext)
-    secret = a.decrypt(ciphertext).rstrip("\x00")
-    del(a)
-    del(ciphertext)
-    return secret
 
 # Helper to return messages
 

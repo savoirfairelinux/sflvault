@@ -25,8 +25,6 @@ import xmlrpclib
 #import pylons
 #from pylons import request
 from pylons.controllers import XMLRPCController
-from Crypto.PublicKey import ElGamal
-from Crypto.Cipher import AES
 from base64 import b64decode, b64encode
 from datetime import *
 import time as stdtime
@@ -66,6 +64,7 @@ class XmlrpcController(XMLRPCController):
         u.logging_timeout = datetime.now() + timedelta(0, 15)
         u.logging_token = b64encode(rnd)
 
+        Session.flush()
         Session.commit()
 
         e = u.elgamal()
@@ -76,7 +75,7 @@ class XmlrpcController(XMLRPCController):
         """Receive the *decrypted* cryptok, b64 encoded"""
         
         try:
-            u = User.query().filter_by(username=username).one()
+            u = User.query.filter_by(username=username).one()
         except:
             return vaultMsg(True, 'Invalid user')
 
@@ -84,7 +83,7 @@ class XmlrpcController(XMLRPCController):
             return vaultMsg(True, 'Login token expired. Now: %s Timeout: %s' % (datetime.now(), u.logging_timeout))
 
         # str() necessary, to convert buffer to string.
-        if cryptok != str(b64decode(u.logging_token)):
+        if cryptok != str(u.logging_token):
             return vaultMsg(True, 'Authentication failed')
         else:
             newtok = b64encode(randfunc(32))
@@ -233,7 +232,8 @@ class XmlrpcController(XMLRPCController):
 
         Session.commit()
 
-        return vaultMsg(False, 'User added. User has a delay of %d seconds to invoke a "setup" command' % SETUP_TIMEOUT, {'user_id': n.id})
+        return vaultMsg(False, '%s added. User has a delay of %d seconds to invoke a "setup" command' % (admin and 'Admin user' or 'User',
+                                                                                                         SETUP_TIMEOUT), {'user_id': n.id})
 
 
     @authenticated_admin
@@ -275,11 +275,21 @@ class XmlrpcController(XMLRPCController):
 
 
     @authenticated_user
-    def sflvault_addservice(self, authtok, server_id, url, port, loginname,
-                            type, level, secret, notes):
+    def sflvault_addservice(self, authtok, server_id, parent_service_id, url,
+                            port, loginname, type, level, secret, notes):
+
+        # parent_service_id takes precedence over server_id.
+        if parent_service_id:
+            try:
+                parent = Service.query.get(parent_service_id)
+                server_id = parent.server_id
+            except:
+                return vaultMsg(True, "No such parent service ID.",
+                                {'parent_service_id': parent_service_id})
 
         ns = Service()
         ns.server_id = int(server_id)
+        ns.parent_service_id = parent_service_id or None
         ns.url = url
         ns.port = port
         ns.loginname = loginname
@@ -293,10 +303,27 @@ class XmlrpcController(XMLRPCController):
         Session.commit()
 
         # TODO: get list of users to encrypt for (using levels assocs)
-        lvls = UserLevel.query.filter_by(level=level).group_by('user_id')
+        lvls = UserLevel.query.filter_by(level=level).group_by('user_id').all()
+
+        # Automatically add level to admin users, when creating a new level.
+        if not len(lvls):
+            us = User.query.filter_by(is_admin=True).all()
+            for x in us:
+                # Don't encode for users that aren't setup.
+                if not x.pubkey:
+                    continue
+                ul = UserLevel()
+                ul.user_id = x.id
+                ul.level = level
+                lvls.append(ul)
+            Session.commit()
 
         userlist = []
         for lvl in lvls:
+            # Don't encode for users that aren't setup.
+            if not lvl.user.pubkey:
+                continue
+
             # Encode for that user, store in UserCiphers
             nu = Usercipher()
             nu.service_id = ns.id

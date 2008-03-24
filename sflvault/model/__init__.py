@@ -27,7 +27,6 @@ from datetime import *
 
 from Crypto.PublicKey import ElGamal
 from base64 import b64decode, b64encode
-#import simplejson
 
 from sflvault.lib.crypto import *
 
