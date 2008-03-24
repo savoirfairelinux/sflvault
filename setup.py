@@ -28,5 +28,8 @@ setup(
 
     [paste.app_install]
     main = pylons.util:PylonsInstaller
+
+    [console_scripts]
+    sflvault = sflvault.client:main
     """,
 )

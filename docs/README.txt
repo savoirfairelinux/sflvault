@@ -178,21 +178,30 @@ public-key of that particular user.
 ElGamal(1536 bits, with random K values)
 
 
+elgamal message:
+  serial_elgamal_msg / unserial_elgamal_msg, voir lib/base.py
+
+elgamal pubkey:
+  serial_elgamal_pubkey / unserial_elgamal_pubkey, même chose que *_elgamal_msg, voir lib/base.py
+
+elgamal privkey:
+  
+
 keys/stuff marshalling/unmarshalling:
   e = clé ElGamal générée.
-  pubkey = b64encode(pickle.dumps(e.p, e.g, e.y))
-  privkey = b64encode(pickle.dumps(e.p, e.x))
+  pubkey = b64encode(simplejson.dumps((e.p, e.g, e.y)))
+  privkey = b64encode(simplejson.dumps((e.p, e.x)))
 
 pubkey est shippé direct comme ça dans la BD
 privkey est encrypté (à partir de la) en Blowfish, et écrit direct sur le
-  disque dans ~/.sflvault/key   avec les modes changés et renforcés.
+  disque dans ~/.sflvault/config  avec les modes changés et renforcés.
 
 pour décoder les pubkey:
   e = new ElGamalObj()
-  (e.p, e.g, e.y) = pickle.loads(b64decode(pubkey))
+  (e.p, e.g, e.y) = simplejson.loads(b64decode(pubkey))
 
 pour décoder la privkey:
-  (p, x) = pickle.loads(b64decode(privkey))
+  (p, x) = simplejson.loads(b64decode(privkey))
 
 ----------------------------------------------------
 Authentication scheme:

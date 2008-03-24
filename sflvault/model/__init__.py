@@ -8,7 +8,9 @@ from datetime import *
 
 from Crypto.PublicKey import ElGamal
 from base64 import b64decode, b64encode
-import pickle
+#import simplejson
+
+from sflvault.lib.crypto import *
 
 # Global session manager.  Session() returns the session object
 # appropriate for the current web request.
@@ -84,10 +86,11 @@ services_table = Table('services', metadata,
                        Column('type', types.String(50)),
                        Column('level', types.String(50)),
                        Column('secret', types.Text),
-                       # pickled python structures, depends on 'type'
-                       Column('metadata', types.Text),
+                       # simplejson'd python structures, depends on 'type'
+                       Column('metadata', types.Text), # reserved.
                        # Add some created_time, modified_time, etc...
-                       Column('notes', types.Text)
+                       Column('notes', types.Text),
+                       Column('secret_last_modified', types.DateTime)
                        )
 
 # Table of encrypted symkeys for each 'secret' in the services_table, one for each user.
@@ -125,7 +128,7 @@ class User(object):
     def elgamal(self):
         """Return the ElGamal object, ready to encrypt stuff."""
         e = ElGamal.ElGamalobj()
-        (e.p, e.g, e.y) = pickle.loads(b64decode(self.pubkey))
+        (e.p, e.g, e.y) = unserial_elgamal_pubkey(self.pubkey)
         return e
     
     def __repr__(self):

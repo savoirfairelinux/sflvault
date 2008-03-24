@@ -12,16 +12,18 @@ import re
 import sys
 import xmlrpclib
 from ConfigParser import ConfigParser
-import pickle
 import getpass
 from Crypto.PublicKey import ElGamal
 from Crypto.Cipher import AES, Blowfish
 from Crypto.Util import randpool
+from Crypto.Util.number import bytes_to_long, long_to_bytes
 from base64 import b64decode, b64encode
 from decorator import decorator
 from datetime import *
+import urlparse
 
 from pprint import pprint
+from sflvault.lib.crypto import *
 
 
 ### Setup variables and functions
@@ -33,6 +35,12 @@ pool.stir()
 pool.randomize()
 randfunc = pool.get_bytes # We'll use this func for most of the random stuff
 
+
+#
+# Add protocols to urlparse, for correct parsing.
+#
+urlparse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
+                             'bzr+ssh'])
 
 
 #
@@ -52,18 +60,60 @@ class VaultError(StandardError):
     def __str__(self):
         return self.message
 
+class VaultIDFormatError(Exception):
+    """When bad parameters are passed to vaultId"""
+    pass
+
+class VaultConfigurationError(Exception):
+    """Except when we're missing some config info."""
+    pass
+
 
 #
-### TODO: two functions that violate DRY principle, they are in lib/base.py
+### TODO: DRY these six functions, they are in lib/base.py
 #
-def vaultSerial(something):
-    """Serialize with pickle.dumps + b64encode"""
-    return b64encode(pickle.dumps(something))
+def serial_elgamal_msg(stuff):
+    """Get a 2-elements tuple of str(), return a string."""
+    ns = b64encode(stuff[0]) + ':' + \
+         b64encode(stuff[1])
+    return ns
 
-def vaultUnserial(something):
-    """Unserialize with b64decode + pickle.loads"""
-    return pickle.loads(b64decode(something))
+def unserial_elgamal_msg(stuff):
+    """Get a string, return a 2-elements tuple of str()"""
+    x = stuff.split(':')
+    return (b64decode(x[0]),
+            b64decode(x[1]))
 
+def serial_elgamal_pubkey(stuff):
+    """Get a 3-elements tuple of long(), return a string."""
+    ns = b64encode(long_to_bytes(stuff[0])) + ':' + \
+         b64encode(long_to_bytes(stuff[1])) + ':' + \
+         b64encode(long_to_bytes(stuff[2]))         
+    return ns
+
+def unserial_elgamal_pubkey(stuff):
+    """Get a string, return a 3-elements tuple of long()"""
+    x = stuff.split(':')
+    return (bytes_to_long(b64decode(x[0])),
+            bytes_to_long(b64decode(x[1])),
+            bytes_to_long(b64decode(x[2])))
+
+def serial_elgamal_privkey(stuff):
+    """Get a 2-elements tuple of long(), return a string."""
+    ns = b64encode(long_to_bytes(stuff[0])) + ':' + \
+         b64encode(long_to_bytes(stuff[1]))
+    return ns
+
+def unserial_elgamal_privkey(stuff):
+    """Get a string, return a 2-elements tuple of long()"""
+    x = stuff.split(':')
+    return (bytes_to_long(b64decode(x[0])),
+            bytes_to_long(b64decode(x[1])))
+
+
+#
+# Blowfish encrypt.
+#
 def vaultEncrypt(something, pw):
     """Encrypt using a password and Blowfish.
 
@@ -82,6 +132,20 @@ def vaultDecrypt(something, pw):
     b = Blowfish.new(pw)
     return b.decrypt(b64decode(something)).rstrip("\x00")
 
+
+# DRY: this is copied AS-IS in sflvault.py, please keep in sync, until we
+#      have shared libs.
+def decrypt_secret(seckey, ciphertext):
+    """Decrypt using the provided seckey"""
+    a = AES.new(b64decode(seckey))
+    ciphertext = b64decode(ciphertext)
+    secret = a.decrypt(ciphertext).rstrip("\x00")
+    del(a)
+    del(ciphertext)
+    return secret
+vaultDecryptAES = decrypt_secret
+
+
 def vaultReply(rep, errmsg="Error"):
     """Tracks the Vault reply, and raise an Exception on error"""
 
@@ -93,53 +157,58 @@ def vaultReply(rep, errmsg="Error"):
 
 
 #
-# Functions to allow writing aliases, or m#123 IDs, everywhere where
-# a service ID, a server ID, a customer ID or a user ID is required.
-#
-class vaultIdFormateError(Exception):
-    """When bad parameters are passed to vaultId"""
-    pass
-
-
-#
 # authenticate decorator
 #
-@decorator
-def authenticate(func, self, *args, **kwargs):
-    """Login decorator
-
-    self is there because it's called on class elements.
-    """
-    username = self.cfg.get('SFLvault', 'username')
-    ### TODO: implement encryption of the private key.
-    privkey_enc = self.cfg.get('SFLvault', 'key')
-    privpass = self.getpassfunc()
-    privkey = vaultDecrypt(privkey_enc, privpass)
-    privpass = randfunc(32)
-    del(privpass)
-
-    retval = self.vault.login(username)
-    self.authret = retval
-    if not retval['error']:
-        # decrypt token.
-        eg = ElGamal.ElGamalobj()
-        (eg.p, eg.x) = vaultUnserial(privkey)
-        privkey = randfunc(256)
-        del(privkey)
-
-        cryptok = eg.decrypt(vaultUnserial(retval['cryptok']))
-        retval2 = self.vault.authenticate(username, vaultSerial(cryptok))
-        self.authret = retval2
+def authenticate(keep_privkey=False):
+    def do_authenticate(func, self, *args, **kwargs):
+        """Login decorator
         
-        if retval2['error']:
-            raise AuthenticationError("Authentication failed: %s" % retval2['message'])
-        else:
-            self.authtok = retval2['authtok']
-            print "Authentication successful"
-    else:
-        raise AuthenticationError("Authentication failed: %s" % retval['message'])
+        self is there because it's called on class elements.
+        """
+        username = self.cfg.get('SFLvault', 'username')
+        ### TODO: implement encryption of the private key.
+        try:
+            privkey_enc = self.cfg.get('SFLvault', 'key')
+        except:
+            raise VaultConfigurationError("No private key in local config, init with: setup username vault-url")
+        
+        privpass = self.getpassfunc()
+        privkey = vaultDecrypt(privkey_enc, privpass)
+        privpass = randfunc(32)
+        del(privpass)
 
-    return func(self, *args, **kwargs)
+        # TODO: maybe check when we're already logged in, and check
+        #       the timeout.
+        # TODO: check also is the privkey (ElGamal obj) has been cached
+        #       in self.privkey (when invoked with keep_privkey)
+        retval = self.vault.login(username)
+        self.authret = retval
+        if not retval['error']:
+            # decrypt token.
+            eg = ElGamal.ElGamalobj()
+            (eg.p, eg.x) = unserial_elgamal_privkey(privkey)
+            privkey = randfunc(256)
+            del(privkey)
+
+            # When we ask to keep the privkey, keep the ElGamal obj.
+            if keep_privkey:
+                self.privkey = eg
+
+            cryptok = eg.decrypt(unserial_elgamal_msg(retval['cryptok']))
+            retval2 = self.vault.authenticate(username, b64encode(cryptok))
+            self.authret = retval2
+        
+            if retval2['error']:
+                raise AuthenticationError("Authentication failed: %s" % retval2['message'])
+            else:
+                self.authtok = retval2['authtok']
+                print "Authentication successful"
+        else:
+            raise AuthenticationError("Authentication failed: %s" % retval['message'])
+
+        return func(self, *args, **kwargs)
+
+    return decorator(do_authenticate)
 
 ###
 ### On définit les fonctions qui vont traiter chaque sorte de requête.
@@ -155,7 +224,9 @@ class SFLvault(object):
         self.authtok = ''
         self.authret = None
         # Set the default route to the Vault
-        self.vault = xmlrpclib.Server(self.cfg.get('SFLvault', 'url')).sflvault
+        url = self.cfg.get('SFLvault', 'url')
+        if url:
+            self.vault = xmlrpclib.Server(url).sflvault
 
     def _getpass(self):
         """Default function to get password from user, for authentication."""
@@ -293,7 +364,7 @@ class SFLvault(object):
         tid = re.match(r'(.)#(\d+)', vid)
         if tid:
             if tid.group(1) != prefix:
-                raise vaultIdFormatError("Bad prefix for VaultID, context requires '%s': %s" % (prefix, vid))
+                raise VaultIDFormatError("Bad prefix for VaultID, context requires '%s': %s" % (prefix, vid))
             return int(tid.group(2))
 
         if check_alias:
@@ -301,13 +372,13 @@ class SFLvault(object):
 
             return self.vaultId(nid, prefix, False)
 
-        raise vaultIdFormatError("Invalid alias of bad VaultID format: %s" % vid)
+        raise VaultIDFormatError("Invalid alias of bad VaultID format: %s" % vid)
 
 
     ### REMOTE ACCESS METHODS
 
 
-    @authenticate
+    @authenticate()
     def add_user(self, username, admin=False):
         # TODO: add support for --admin, to give admin privileges
 
@@ -318,7 +389,7 @@ class SFLvault(object):
         print "New user ID: u#%d" % retval['user_id']
 
 
-    @authenticate
+    @authenticate()
     def del_user(self, username):
         retval = vaultReply(self.vault.deluser(self.authtok, username),
                             "Error removing user")
@@ -326,7 +397,7 @@ class SFLvault(object):
         print "Success: %s" % retval['message']
 
 
-    @authenticate        
+    @authenticate()
     def add_customer(self, customer_name):
         retval = vaultReply(self.vault.addcustomer(self.authtok, customer_name),
                             "Error adding customer")
@@ -335,7 +406,7 @@ class SFLvault(object):
         print "New customer ID: c#%d" % retval['customer_id']
 
 
-    @authenticate
+    @authenticate()
     def add_server(self, customer_id, name, fqdn, ip, location, notes):
         """Add a server to the database."""
         # customer_id REQUIRED
@@ -347,7 +418,7 @@ class SFLvault(object):
         print "New machine ID: m#%d" % retval['server_id']
 
 
-    @authenticate
+    @authenticate()
     def add_service(self, server_id, url, port, loginname, type, level, secret, notes):
         # TODO: encrypter le secret ?? non
         retval = vaultReply(self.vault.addservice(self.authtok, int(server_id), url, port or '', loginname or '', type or '', level, secret, notes or ''),
@@ -356,7 +427,7 @@ class SFLvault(object):
         print "Success: %s" % retval['message']
         print "New service ID: s#%d" % retval['service_id']
 
-    @authenticate
+    @authenticate()
     def grant(self, user, levels):
         #levels = [x.strip() for x in levelstr.split(',')]
         retval = vaultReply(self.vault.grant(self.authtok, user, levels),
@@ -380,7 +451,7 @@ class SFLvault(object):
 
         print "Sending request to vault..."
         # Send it to the vault, with username
-        retval = vaultReply(self.vault.setup(username, vaultSerial(pubkey)),
+        retval = vaultReply(self.vault.setup(username, serial_elgamal_pubkey(pubkey)),
                             "Setup failed")
 
         # If Vault sends a SUCCESS, save all the stuff (username, vault_url)
@@ -392,7 +463,7 @@ class SFLvault(object):
         self.cfg.set('SFLvault', 'username', username)
         self._set_vault(vault_url, True)
         # p and x form the private key
-        self.cfg.set('SFLvault', 'key', vaultEncrypt(vaultSerial((eg.p, eg.x)), privpass))
+        self.cfg.set('SFLvault', 'key', vaultEncrypt(serial_elgamal_privkey([eg.p, eg.x]), privpass))
         privpass = randfunc(32)
         eg.p = randfunc(32)
         eg.x = randfunc(32)
@@ -403,7 +474,7 @@ class SFLvault(object):
         self.config_write()
 
 
-    @authenticate
+    @authenticate()
     def search(self, query):
         """Search the database for query terms, specified as a list of REGEXPs.
 
@@ -417,10 +488,53 @@ class SFLvault(object):
         pprint(retval['results'])
 
 
-    def show(self):
-        print "Search using xmlrpc:show(), with the service_id, and DECRYPT"
+    @authenticate(True)
+    def show(self, vid, verbose=False):
+        """Show informations to connect to a particular service"""
 
-    @authenticate
+        retval = vaultReply(self.vault.show(self.authtok, vid),
+                            "Error fetching 'show' info.")
+        
+        print "Results:"
+
+        # TODO: format show, decipher the things
+        # TODO: call pager `less` when too long.
+        # TODO: use the parameter verbose to show or not to show.
+        servs = retval['services']
+        pre = ''
+        for x in retval['services']:
+            # Show separator
+            if pre:
+                pass
+                print "%s%s" % (pre, '-' * (80-len(pre)))
+                
+            spc = len(str(x['id'])) * ' '
+
+            # TODO: decrypt secret
+            aeskey = ''
+            secret = ''
+            if x['usercipher']:
+                try:
+                    aeskey = self.privkey.decrypt(unserial_elgamal_msg(x['usercipher']))
+                except:
+                    raise PermissionError("Unable to decrypt Usercipher.")
+            
+                secret = vaultDecryptAES(aeskey, x['secret'])
+            
+            print "%ss#%d %s" % (pre, x['id'], x['url'])
+            print "%s%s   login: %s  pass: %s" % (pre,spc, x['loginname'],
+                                                  secret or '[access denied]')
+            print "%s%s   notes: %s" % (pre,spc, x['notes'])
+            del(secret)
+            del(aeskey)
+
+            pre = pre + '   ' + spc
+
+        # Clean the cache with the private key.
+        del(self.privkey)
+
+
+    @authenticate()
     def list_users(self):
         # Receive: [{'id': x.id, 'username': x.username,
         #            'created_time': x.created_time,
@@ -445,7 +559,7 @@ class SFLvault(object):
             print "u#%d\t%s\t%s %s" % (x['id'], x['username'],
                                        x['created_stamp'], add)
 
-    @authenticate
+    @authenticate()
     def list_levels(self):
         """Simply list the available levels"""
         retval = vaultReply(self.vault.listlevels(self.authtok),
@@ -457,7 +571,7 @@ class SFLvault(object):
             print "\t%s" % x
 
 
-    @authenticate
+    @authenticate()
     def list_servers(self, verbose=False):
         retval = vaultReply(self.vault.listservers(self.authtok),
                             "Error listing servers")
@@ -476,7 +590,7 @@ class SFLvault(object):
                 print '-' * 76
 
 
-    @authenticate
+    @authenticate()
     def list_customers(self):
         retval = vaultReply(self.vault.listcustomers(self.authtok),
                             "Error listing customers")
@@ -689,7 +803,14 @@ class SFLvaultParser(object):
         """Add a service to a particular server in the Vault's database.
 
         The secret/password/authentication key will be asked in the
-        interactive prompt."""
+        interactive prompt.
+
+        Note: the 'port' specified inside the URL will take precedence over
+              the command line argument. Same goes for 'username'. If no -t
+              type is specified, the URL scheme will be taken instead.
+        Note: Passwords will never be taken from the URL when invoked on the
+              command-line, to prevent sensitive information being held in
+              history."""
         self.parser.add_option('-s', '--server', dest="server_id",
                                help="Service will be attached to server, as 'm#123' or '123'")
         self.parser.add_option('-u', '--url', dest="url",
@@ -715,11 +836,39 @@ class SFLvaultParser(object):
         if not self.opts.server_id:
             raise SFLvaultParserError("Required parameter 'server' omitted")
 
-        secret = getpass.getpass("Enter service secret (password): ")
+        ## TODO: analyze using urlparse.urlparse the 'URL', and catch password,
+        #        username, port, and fill accordingly.
+        url = urlparse.urlparse(o.url)
+
+        # TODO: check if we're on the command line (and not in the SFLvault
+        #       shell. If we're not in the CLI, then we can take the secret
+        #       from the URL, if available. Otherwise, ask.
+        #if blah:
+        #    secret = url.password
+        secret = None
+
+        # 'username' and 'port' from URL take precedence over other command-
+        # line arguments.
+        if url.username:
+            o.loginname = url.username
+        if url.port:
+            o.port = url.port
+
+        # 'type' taken from URL scheme only if not available.
+        if not o.type:
+            o.type = url.scheme
+
+        if not secret:
+            secret = getpass.getpass("Enter service secret (password): ")
+
+        # TODO: rewrite url if a password was included... strip the port and
+        #       username from the URL too.
 
         o = self.opts
-        self.vault.add_service(self.vault.vaultId(o.server_id, 'm'), o.url, o.port,
-                               o.loginname, o.type, o.level, secret, o.notes)
+        self.vault.add_service(self.vault.vaultId(o.server_id, 'm'), o.url,
+                               o.port, o.loginname, o.type, o.level, secret,
+                               o.notes)
+        del(secret)
 
 
     def alias(self):
@@ -842,10 +991,31 @@ class SFLvaultParser(object):
 
         self.vault.setup(username, url)
 
+    def show(self):
+        """Show informations to connect to a particular service.
+
+        VaultID - service ID as 's#123', '123', or alias pointing to a service
+                  ID."""
+        self.parser.set_usage("show [opts] VaultID")
+        self.parser.add_option('-v', '--verbose', dest="verbose",
+                               help="Show verbose output (include notes, location)")
+        self._parse()
+
+        if len(self.args) != 1:
+            raise SFLvaultParserError("Invalid number of arguments")
+
+        vid = self.vault.vaultId(self.args[0], 's')
+        verbose = self.opts.verbose
+
+        self.vault.show(vid, verbose)
+
+
 
     def search(self):
         """Search the Vault's database for those space separated regexp"""
-        self.parser.set_usage('search regexp1 ["reg exp2" ...]')
+        self.parser.set_usage('search [opts] regexp1 ["reg exp2" ...]')
+        self.parser.add_option('-v', '--verbose', dest="verbose",
+                               help="Show verbose output (include notes, location)")
         self._parse()
 
         if not len(self.args):
@@ -870,4 +1040,6 @@ if __name__ == "__main__":
     except xmlrpclib.Fault, e:
         # On is_admin check failed, on user authentication failed.
         print "Fault: %s" % e.faultString
-7
+    except VaultConfigurationError, e:
+        print "Configuration error: %s" % e
+

@@ -15,11 +15,12 @@ import xmlrpclib
 
 import sflvault.lib.helpers as h
 import sflvault.model as model
+from sflvault.lib.crypto import *
 
 from Crypto.Util import randpool
 from Crypto.Cipher import AES
 from base64 import b64decode, b64encode
-import pickle
+
 
 # Random number generators setup
 pool = randpool.RandomPool()
@@ -40,6 +41,8 @@ def encrypt_secret(secret):
     del(a)
     return (seckey, ciphertext)
 
+# DRY: this is copied AS-IS in sflvault.py, please keep in sync, until we
+#      have shared libs.
 def decrypt_secret(seckey, ciphertext):
     """Decrypt using the provided seckey"""
     a = AES.new(b64decode(seckey))
@@ -58,17 +61,6 @@ def vaultMsg(error, message, dict=None):
         for x in dict:
             ret[x] = dict[x]
     return ret
-
-#
-# Serialization/unserialization
-#
-def vaultSerial(something):
-    """Serialize with pickle.dumps + b64encode"""
-    return b64encode(pickle.dumps(something))
-
-def vaultUnserial(something):
-    """Unserialize with b64decode + pickle.loads"""
-    return pickle.loads(b64decode(something))
 
 
 

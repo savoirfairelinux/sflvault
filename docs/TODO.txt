@@ -16,11 +16,22 @@ DESIGN TWISTERS
  * Versioning should be though of - BUT it would add so much complexity, that
    it might be a no-go.
  * We'll ensure we have a good log system, with *frequent database backup*.
+ * Add version-protocol negociation (so client can adapt to older protocols,
+   and same for the server.), freeze protocol at some point. Add some XML-RPC
+   signatures.
 
 
 TODO
 ====
 
+ * Show a warning and don't use password when specified (with add-service)
+   on the command-line.
+ * Make plugins that will display the information in a useful manner for
+   each URL schemas, for example, add the decrypted password to an 'http'
+   scheme and display it as:
+      http://username:password@hostname[:port]/path?query#fragment
+   Display [:port] only if different from hard-coded well-known port (inside
+   the plugin)
  * Warn when config already exists, and you're going to issue a *setup*
    command, that will override previous config, and destroy the private key!!!
  * Implement XMLRPC via HTTPS (using M2Crypto), on client side.

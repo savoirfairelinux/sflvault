@@ -10,7 +10,6 @@ from Crypto.PublicKey import ElGamal
 from Crypto.Cipher import AES
 from base64 import b64decode, b64encode
 from datetime import *
-import pickle
 import time as stdtime
 
 from sflvault.lib.base import *
@@ -51,20 +50,22 @@ class XmlrpcController(XMLRPCController):
         Session.commit()
 
         e = u.elgamal()
-        cryptok = vaultSerial(e.encrypt(rnd, randfunc(32)))
+        cryptok = serial_elgamal_msg(e.encrypt(rnd, randfunc(32)))
         return vaultMsg(False, 'Authenticate please', {'cryptok': cryptok})
 
     def sflvault_authenticate(self, username, cryptok):
+        """Receive the *decrypted* cryptok, b64 encoded"""
+        
         try:
             u = User.query().filter_by(username=username).one()
         except:
             return vaultMsg(True, 'Invalid user')
 
-        if (u.logging_timeout - timedelta(0,1)) < datetime.now():
-            return vaultMsg(True, 'Login token expired')
+        if u.logging_timeout < datetime.now():
+            return vaultMsg(True, 'Login token expired. Now: %s Timeout: %s' % (datetime.now(), u.logging_timeout))
 
         # str() necessary, to convert buffer to string.
-        if vaultUnserial(cryptok) != str(b64decode(u.logging_token)):
+        if cryptok != str(b64decode(u.logging_token)):
             return vaultMsg(True, 'Authentication failed')
         else:
             newtok = b64encode(randfunc(32))
@@ -102,6 +103,48 @@ class XmlrpcController(XMLRPCController):
         Session.commit()
 
         return vaultMsg(False, 'User setup complete for %s' % username)
+
+
+    @authenticated_user
+    def sflvault_show(self, authtok, vid):
+        """Get the specified service ID and return the hierarchy to connect to it."""
+        try:
+            s = Service.query.filter_by(id=vid).one()
+        except:
+            return vaultMsg(True, "Service not found")
+
+        out = []
+        while True:
+            ucipher = Usercipher.query.filter_by(service_id=s.id, user_id=self.sess['userobj'].id).first()
+            if ucipher and ucipher.stuff:
+                cipher = ucipher.stuff
+            else:
+                cipher = ''
+
+            out.append({'id': s.id,
+                        'url': s.url,
+                        'port': s.port or '',
+                        'loginname': s.loginname or '',
+                        'type': s.type or '',
+                        'level': s.level or '',
+                        'secret': s.secret,
+                        'usercipher': cipher,
+                        'secret_last_modified': s.secret_last_modified,
+                        'metadata': s.metadata or '',
+                        'notes': s.notes or ''})
+
+            if not s.parent:
+                break
+            
+            s = s.parent
+
+            # check if we're not in an infinite loop!
+            if s.id in [x['id'] for x in out]:
+                return vaultMsg(True, "Circular references of parent services, aborting.")
+
+        out.reverse()
+
+        return vaultMsg(False, "Here are the services", {'services': out})
 
 
     @authenticated_user
@@ -225,6 +268,7 @@ class XmlrpcController(XMLRPCController):
         ns.level = level
         (seckey, ciphertext) = encrypt_secret(secret)
         ns.secret = ciphertext
+        ns.secret_last_modified = datetime.now()
         ns.notes = notes
 
         Session.commit()
@@ -240,7 +284,7 @@ class XmlrpcController(XMLRPCController):
             nu.user_id = lvl.user_id
 
             g = lvl.user.elgamal()
-            nu.stuff = vaultSerial(g.encrypt(seckey, randfunc(32)))
+            nu.stuff = serial_elgamal_msg(g.encrypt(seckey, randfunc(32)))
             del(g)
             
             userlist.append(lvl.user.username) # To return listing.
