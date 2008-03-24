@@ -21,7 +21,7 @@
 
 
 PROGRAM = "SFLvault"
-VERSION = "0.1"
+VERSION = "0.5.0"
 
 CONFIG_FILE = '~/.sflvault/config'
 

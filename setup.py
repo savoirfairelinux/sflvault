@@ -7,11 +7,11 @@ except ImportError:
 
 setup(
     name='SFLvault',
-    version="",
-    #description='',
-    #author='',
-    #author_email='',
-    #url='',
+    version="0.5.0",
+    description='Secure networked password store and credentials manager',
+    author='Alexandre Bourget',
+    author_email='alexandre.bourget@savoirfairelinux.com',
+    url='http://www.sflvault.org',
     install_requires=["Pylons>=0.9.6.1",
                       "SQLAlchemy>=0.4"],
     packages=find_packages(exclude=['ez_setup']),
