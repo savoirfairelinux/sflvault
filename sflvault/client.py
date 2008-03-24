@@ -436,7 +436,7 @@ class SFLvault(object):
 
 
     @authenticate()
-    def search(self, query):
+    def search(self, query, verbose=False):
         """Search the database for query terms, specified as a list of REGEXPs.
 
         Returns a hierarchical view of the results."""
@@ -446,7 +446,35 @@ class SFLvault(object):
         print "Results:"
         # TODO: format the results in a beautiful way
         # TODO: call the pager `less` when too long.
-        pprint(retval['results'])
+        #pprint(retval['results'])
+        for c_id, c in retval['results'].items():
+            # TODO: display customer info
+            print "c#%s %s" % (c_id, c['name'])
+
+            spc = '     '
+            for m_id, m in c['servers'].items():
+                # TODO: display server infos: 
+                add = ' ' * (4 - len(m_id))
+                print "%sm#%s%s%s (%s - %s)" % (spc, m_id, add,
+                                                m['name'], m['fqdn'], m['ip'])
+                if verbose:
+                    print "%s  %slocation: %s" % (spc, add, m['location'])
+                    print "%s  %snotes: %s" % (spc, add, m['notes'])
+                                                             
+
+                spc = spc + '  ' + add
+                for s_id, s in m['services'].items():
+                    # TODO: display service infos
+                    add = ' ' * (4 - len(s_id))
+                    print "%ss#%s%s%s" % (spc, s_id, add, s['url'])
+                    print "%s      login: %s  port: %s  type: %s" % (spc,
+                                                                   s['loginname'],
+                                                                   s['port'],
+                                                                   s['type'])
+                    if verbose:
+                        print "%s  %snotes: %s" % (spc, add, s['notes'])
+                
+            
 
 
     @authenticate(True)
@@ -985,13 +1013,14 @@ class SFLvaultParser(object):
         """Search the Vault's database for those space separated regexp"""
         self.parser.set_usage('search [opts] regexp1 ["reg exp2" ...]')
         self.parser.add_option('-v', '--verbose', dest="verbose",
+                               action="store_true", default=False,
                                help="Show verbose output (include notes, location)")
         self._parse()
 
         if not len(self.args):
             raise SFLvaultParserError("Search terms required")
 
-        self.vault.search(self.args)
+        self.vault.search(self.args, self.opts.verbose)
 
 
 

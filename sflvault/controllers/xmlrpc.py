@@ -73,7 +73,8 @@ class XmlrpcController(XMLRPCController):
 
     def sflvault_authenticate(self, username, cryptok):
         """Receive the *decrypted* cryptok, b64 encoded"""
-        
+
+        u = None
         try:
             u = User.query.filter_by(username=username).one()
         except:
@@ -193,6 +194,7 @@ class XmlrpcController(XMLRPCController):
                                'loginname': s.loginname or '',
                                'type': s.type or '',
                                'level': s.level or '',
+                               'port': s.port or '',
                                # DON'T INCLUDE secret, when we're just searching
                                #'secret': s.secret or '',
                                'metadata': s.metadata or '',
