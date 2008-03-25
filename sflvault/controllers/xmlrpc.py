@@ -49,6 +49,8 @@ SESSION_TIMEOUT = 300
 ##
 class XmlrpcController(XMLRPCController):
     """All XML-RPC calls to control and query the Vault"""
+    
+    allow_none = True # Enable marshalling of None values through XMLRPC.
 
     def sflvault_login(self, username):
         # Return 'cryptok', encrypted with pubkey.
@@ -142,6 +144,7 @@ class XmlrpcController(XMLRPCController):
 
             out.append({'id': s.id,
                         'url': s.url,
+                        'hostname': s.hostname,
                         'port': s.port or '',
                         'loginname': s.loginname or '',
                         'type': s.type or '',
@@ -191,6 +194,7 @@ class XmlrpcController(XMLRPCController):
                             'services': {}}
         def set_service(subsubout, s):
             subsubout[str(s.id)] = {'url': s.url,
+                                    'hostname': s.hostname or '',
                                'loginname': s.loginname or '',
                                'type': s.type or '',
                                'level': s.level or '',
@@ -278,7 +282,8 @@ class XmlrpcController(XMLRPCController):
 
     @authenticated_user
     def sflvault_addservice(self, authtok, server_id, parent_service_id, url,
-                            port, loginname, type, level, secret, notes):
+                            hostname, port, loginname, type, level, secret,
+                            notes):
 
         # parent_service_id takes precedence over server_id.
         if parent_service_id:
@@ -293,6 +298,7 @@ class XmlrpcController(XMLRPCController):
         ns.server_id = int(server_id)
         ns.parent_service_id = parent_service_id or None
         ns.url = url
+        ns.hostname = hostname
         ns.port = port
         ns.loginname = loginname
         ns.type = type

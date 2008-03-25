@@ -99,10 +99,11 @@ services_table = Table('services', metadata,
                        # TODO: ajouter le parent_service_id..
                        Column('parent_service_id', types.Integer, ForeignKey('services.id')),
                        Column('url', types.String(250)),
+                       Column('hostname', types.String(250)),
                        Column('port', types.Integer),
                        Column('loginname', types.String(50)),
                        Column('type', types.String(50)),
-                       Column('level', types.String(50)),
+                       Column('level', types.Unicode(50)),
                        Column('secret', types.Text),
                        # simplejson'd python structures, depends on 'type'
                        Column('metadata', types.Text), # reserved.

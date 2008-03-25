@@ -37,6 +37,7 @@ from base64 import b64decode, b64encode
 from decorator import decorator
 from datetime import *
 import urlparse
+import pexpect
 
 from pprint import pprint
 from sflvault.lib.crypto import *
@@ -350,7 +351,7 @@ class SFLvault(object):
 
 
     @authenticate()
-    def add_service(self, server_id, parent_service_id, url, port, loginname, type, level, secret, notes):
+    def add_service(self, server_id, parent_service_id, url, hostname, port, loginname, type, level, secret, notes):
         """Add a service to the Vault's database.
 
         server_id - A m#id server identifier. Specify either server_id or
@@ -360,6 +361,7 @@ class SFLvault(object):
                             adding. Specify 0 of None if no parent exist.
                             If you set this, server_id is disregarded.
         url - URL of the service, with username, port and path if non-standard.
+        hostname - Hostname for the service.
         port - Port if different from the standard port (according to the
                scheme://...
         loginname - If not specified directly in the URL, login used to
@@ -370,7 +372,7 @@ class SFLvault(object):
         secret - Password for the service. Plain-text.
         notes - Simple text field, with notes."""
 
-        retval = vaultReply(self.vault.addservice(self.authtok, int(server_id), int(parent_service_id), url, port or '', loginname or '', type or '', level, secret, notes or ''),
+        retval = vaultReply(self.vault.addservice(self.authtok, int(server_id), int(parent_service_id), url, hostname, port or '', loginname or '', type or '', level, secret, notes or ''),
                             "Error adding service")
 
         print "Success: %s" % retval['message']
@@ -386,6 +388,7 @@ class SFLvault(object):
         retval = vaultReply(self.vault.grant(self.authtok, user, levels),
                             "Error granting level permissions.")
 
+        
         print "Success: %s" % retval['message']
 
     
@@ -486,9 +489,7 @@ class SFLvault(object):
         
         print "Results:"
 
-        # TODO: format show, decipher the things
         # TODO: call pager `less` when too long.
-        # TODO: use the parameter verbose to show or not to show.
         servs = retval['services']
         pre = ''
         for x in retval['services']:
@@ -513,7 +514,8 @@ class SFLvault(object):
             print "%ss#%d %s" % (pre, x['id'], x['url'])
             print "%s%s   login: %s  pass: %s" % (pre,spc, x['loginname'],
                                                   secret or '[access denied]')
-            print "%s%s   notes: %s" % (pre,spc, x['notes'])
+            if verbose:
+                print "%s%s   notes: %s" % (pre,spc, x['notes'])
             del(secret)
             del(aeskey)
 
@@ -521,6 +523,74 @@ class SFLvault(object):
 
         # Clean the cache with the private key.
         del(self.privkey)
+
+
+
+    @authenticate(True)
+    def connect(self, vid):
+        """Connect to a distant machine (using SSH for now)"""
+
+        retval = vaultReply(self.vault.show(self.authtok, vid),
+                            "Error fetching 'show' info for 'connect()' call.")
+        
+        servs = retval['services']
+        for x in retval['services']:
+            # Decrypt secret
+            aeskey = ''
+            secret = ''
+            if not x['usercipher']:
+                print "We don't have access to this password."
+                del(self.privkey) # Clean the cache with the private key.
+                break
+
+            try:
+                aeskey = self.privkey.decrypt(unserial_elgamal_msg(x['usercipher']))
+            except:
+                raise PermissionError("Unable to decrypt Usercipher.")
+
+            del(self.privkey) # Clean the cache with the private key.
+            secret = decrypt_secret(aeskey, x['secret'])
+
+            # Default user:
+            user = x['loginname'] or 'root'
+            
+            cnx = pexpect.spawn("ssh -l %s %s" % (user, x['hostname']))
+            idx = cnx.expect(['assword:', 'Last login'], timeout=20)
+
+            if idx == 0:
+                # Send password
+                print "Sending password..."
+                cnx.sendline(secret)
+                del(secret)
+                del(aeskey)
+                try:
+                    cnx.interact()
+                except OSError, e:
+                    print "SFLvault disconnected."
+
+                break
+
+                #idx2 = cnx.expect(['assword:', 'Last login'])
+                #print cnx.before
+                #print cnx.match
+                #print cnx.after
+                #if not idx2:
+                #    print "Wrong password, aborting."
+                #    break
+                #else:
+                #    print "We're in! (using password)"
+                #    cnx.interact()
+            else:
+                print "We're in! (using shared-key?)"
+                # We're in!
+                del(secret)
+                del(aeskey)
+                try:
+                    cnx.interact()
+                except OSError, e:
+                    print "SFLvault disconnected."
+                    
+            break
 
 
     @authenticate()
@@ -728,7 +798,9 @@ class SFLvaultParser(object):
         username = self.args[0]
         levels = self.opts.levels
 
-        self.vault.grant(username, levels)
+        retval = self.vault.grant(username, levels)
+        # TODO: We'll receive all the pubkeys over here, and we need to re-
+        # encode all the symkeys for passwords on that level.
 
     def add_customer(self):
         """Add a new customer to the Vault's database."""
@@ -795,18 +867,23 @@ class SFLvaultParser(object):
         interactive prompt.
 
         Note: the 'port' specified inside the URL will take precedence over
-              the command line argument. Same goes for 'username'. If no -t
-              type is specified, the URL scheme will be taken instead.
+              the command line argument. Same goes for 'username' and
+              'hostname'. If no -t type is specified, the URL scheme will
+              be taken instead.
         Note 2: Passwords will never be taken from the URL when invoked on the
                 command-line, to prevent sensitive information being held in
                 history.
         Note 3: If you specify both --parent and --server, the parent's actual
                 value for server (on the Vault) will take precedence on the
                 specified --server value."""
+        # TODO: remove and clarify the use of --hostname | -h ..
         self.parser.add_option('-s', '--server', dest="server_id",
                                help="Service will be attached to server, as 'm#123' or '123'")
         self.parser.add_option('-u', '--url', dest="url",
                                help="Service URL, full proto://fqdn.example.org/path, WITHOUT the secret.")
+        #self.parser.add_option('-h', '--hostname', dest="hostname",
+        #                       help="Service hostname (taken from URL by default)")
+
         self.parser.add_option('-r', '--parent', dest="parent_id",
                                help="Service ID parent of this new one.")
         self.parser.add_option('-t', '--type', dest="type",
@@ -847,6 +924,8 @@ class SFLvaultParser(object):
             o.loginname = url.username
         if url.port:
             o.port = url.port
+        if url.hostname:
+            o.hostname = url.hostname
 
         # 'type' taken from URL scheme only if not available.
         if not o.type:
@@ -864,7 +943,7 @@ class SFLvaultParser(object):
             server_id = self.vault.vaultId(o.server_id, 'm')
         if o.parent_id:
             parent_id = self.vault.vaultId(o.parent_id, 's')
-        self.vault.add_service(server_id, parent_id, o.url, o.port,
+        self.vault.add_service(server_id, parent_id, o.url, o.hostname, o.port,
                                o.loginname, o.type, o.level, secret, o.notes)
         del(secret)
 
@@ -1006,6 +1085,26 @@ class SFLvaultParser(object):
         verbose = self.opts.verbose
 
         self.vault.show(vid, verbose)
+
+
+
+
+    def connect(self):
+        """Connect to a remote SSH host, sending password on the way.
+
+        VaultID - service ID as 's#123', '123', or alias pointing to a service
+                  ID."""
+        self.parser.set_usage("connect VaultID")
+        self.parser.add_option('-v', '--verbose', dest="verbose",
+                               help="Verbose (unused, only for compat. with 'show')")
+        self._parse()
+
+        if len(self.args) != 1:
+            raise SFLvaultParserError("Invalid number of arguments")
+
+        vid = self.vault.vaultId(self.args[0], 's')
+
+        self.vault.connect(vid)
 
 
 
