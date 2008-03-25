@@ -28,7 +28,7 @@ from datetime import *
 from Crypto.PublicKey import ElGamal
 from base64 import b64decode, b64encode
 
-from sflvault.lib.crypto import *
+from sflvault.lib.common.crypto import *
 
 # Global session manager.  Session() returns the session object
 # appropriate for the current web request.
