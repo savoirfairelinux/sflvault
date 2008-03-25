@@ -5,3 +5,10 @@
 
 # Database
 vault-database.db
+
+# Ignore eggs
+SFLvault_client.egg-info
+SFLvault_common.egg-info
+SFLvault_server.egg-info
+build
+dist
