@@ -36,7 +36,7 @@ import xmlrpclib
 
 import sflvault.lib.helpers as h
 import sflvault.model as model
-from sflvault.lib.crypto import *
+from sflvault.lib.common.crypto import *
 
 from base64 import b64decode, b64encode
 

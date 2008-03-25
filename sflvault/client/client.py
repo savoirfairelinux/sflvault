@@ -40,12 +40,12 @@ import urlparse
 import pexpect
 
 from pprint import pprint
-from sflvault.lib.crypto import *
+from sflvault.lib.common.crypto import *
 
 
 ### Setup variables and functions
 #
-# Add protocols to urlparse, for correct parsing.
+# Add protocols to urlparse, for correct parsing of ssh and others.
 #
 urlparse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
                              'bzr+ssh'])
@@ -401,7 +401,7 @@ class SFLvault(object):
                     (typically host://domain.example.org:5000/vault/rpc
         """
         self._set_vault(vault_url, False)
-
+        
         # Generate a new key:
         print "Generating new ElGamal key-pair..."
         eg = ElGamal.generate(1536, randfunc)
