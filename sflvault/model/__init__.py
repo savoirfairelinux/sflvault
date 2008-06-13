@@ -178,7 +178,8 @@ mapper(Server, servers_table, {
 mapper(Service, services_table, {
     'children': relation(Service,
                          lazy=False,
-                         backref=backref('parent', uselist=False, remote_side=[services_table.c.id]),
+                         backref=backref('parent', uselist=False,
+                                         remote_side=[services_table.c.id]),
                          primaryjoin=services_table.c.parent_service_id==services_table.c.id),
     
     })

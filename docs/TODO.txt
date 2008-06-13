@@ -6,6 +6,8 @@ BUGS
  * Add some verifications to password encryption, pad with random value, start
    and end, and verify they are the same.
  * Use xmlrpclib.DateTime instead of numbers while passing a date through XMLRPC
+ * *IMP* Utiliser plutôt un buffer en mémoire pour l'authentification, et non pas
+   un champ dans la base de données (login_token, login_expired, etc...)
 
 
 DESIGN TWISTERS
