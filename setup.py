@@ -38,6 +38,11 @@ setup(
 
     [console_scripts]
     sflvault = sflvault.client.client:main
+
+    [sflvault.services]
+    ssh = sflvault.client.services:ssh
+    vnc = sflvault.client.services:vnc
+
     """,
 )
 

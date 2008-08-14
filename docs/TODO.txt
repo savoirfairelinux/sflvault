@@ -14,7 +14,7 @@ DESIGN TWISTERS
 ===============
 
  * Vulnerable to someone who would like to erase the database, by overwriting
-   all the secrets, or setting no 'level' for a secret.
+   all the secrets, or setting no 'level' for a secret. Solution: backups.
  * Versioning should be though of - BUT it would add so much complexity, that
    it might be a no-go.
  * We'll ensure we have a good log system, with *frequent database backup*.
@@ -37,9 +37,6 @@ TODO
  * Warn when config already exists, and you're going to issue a *setup*
    command, that will override previous config, and destroy the private key!!!
  * Implement XMLRPC via HTTPS (using M2Crypto), on client side.
- * Add ALIAS capability, and wherever an c#123 is required, an alias can
-   be used instead.
- * Add versioning capabilities for all changes (à-la Typo3)
  * Add support for svlfault ssh -L, -R, and -D, which does
    everything it can (even over multiple-hops) to create the
    desired tunnel (Local, Remote and SOCKS proxy): for example,
@@ -61,13 +58,9 @@ TODO
  * Throttle, avec avertissement.. y repenser..
  * Sécurisation HTTPS, vérification des certificats, MAN-IN-THE-MIDDLE
    attack, garder le fingerprint, etc...
- * Support pour des keywords par usager. Probablement dans les Userciphers
-   comme ça quelqu'un peut demander de se connecter au serveur 'adq' et c'est
-   remplacé automatiquement par le numéro du service (à l'interne).
-   Avec une p'tit fonction pour mapper un numéro de service à un keyword,
-   unique par utilisateur. (sur une table séparée?)
  * Add support for adduser --admin, that would enable the new user's admin flag
  * Add support for authtok + IP security (check IP address also) (lib/base.py)
  * S'arranger pour avoir le help avant d'entrer son mot de passe si on fait
    une erreur dans le format d'une commande (sflvault client)
+ * Log any changes in admin user privileges.
 

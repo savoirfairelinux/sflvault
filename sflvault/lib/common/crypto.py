@@ -122,8 +122,10 @@ def encrypt_secret(secret):
     """Gen. a random key, AES256 encrypts the secret, return the random key"""
     seckey = randfunc(32)
     a = AES.new(seckey)
-    # Add padding to have a multiple of 16 bytes 
-    ciphertext = a.encrypt(secret + (((16 - len(secret) % 16) % 16) * "\x00"))
+    # Add padding to have a multiple of 16 bytes
+    padded_secret = secret + (((16 - len(secret) % 16) % 16) * "\x00")
+    ciphertext = a.encrypt(padded_secret)
+    del(padded_secret)
     ciphertext = b64encode(ciphertext)
     seckey = b64encode(seckey)
     del(a)

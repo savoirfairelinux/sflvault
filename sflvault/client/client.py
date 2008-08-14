@@ -36,46 +36,14 @@ from Crypto.PublicKey import ElGamal
 from base64 import b64decode, b64encode
 from decorator import decorator
 from datetime import *
-import urlparse
-import pexpect
 
 from pprint import pprint
 from sflvault.lib.common.crypto import *
+from sflvault.client.utils import *
+from sflvault.client import remoting
 
 
 ### Setup variables and functions
-#
-# Add protocols to urlparse, for correct parsing of ssh and others.
-#
-urlparse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
-                             'bzr+ssh'])
-
-
-#
-# Authentication Failed exception
-#
-class AuthenticationError(StandardError):
-    def __init__(self, message):
-        """Sets an error message"""
-        self.message = message
-    def __str__(self):
-        return self.message
-
-class VaultError(StandardError):
-    def __init__(self, message):
-        """Sets an error message"""
-        self.message = message
-    def __str__(self):
-        return self.message
-
-class VaultIDFormatError(Exception):
-    """When bad parameters are passed to vaultId"""
-    pass
-
-class VaultConfigurationError(Exception):
-    """Except when we're missing some config info."""
-    pass
-
 
 
 def vaultReply(rep, errmsg="Error"):
@@ -145,7 +113,7 @@ def authenticate(keep_privkey=False):
 ###
 ### On définit les fonctions qui vont traiter chaque sorte de requête.
 ###
-class SFLvault(object):
+class SFLvaultClient(object):
     """Class dealing with all the function calls to the Vault"""
     def __init__(self, cfg=None):
         """Set up initial configuration for function calls"""
@@ -307,6 +275,7 @@ class SFLvault(object):
         raise VaultIDFormatError("Invalid alias of bad VaultID format: %s" % vid)
 
 
+
     ### REMOTE ACCESS METHODS
 
 
@@ -377,6 +346,7 @@ class SFLvault(object):
 
         print "Success: %s" % retval['message']
         print "New service ID: s#%d" % retval['service_id']
+
 
     @authenticate()
     def grant(self, user, levels):
@@ -532,14 +502,17 @@ class SFLvault(object):
 
         retval = vaultReply(self.vault.show(self.authtok, vid),
                             "Error fetching 'show' info for 'connect()' call.")
-        
+
+        # Check and decrypt all ciphers prior to start connection,
+        # if there are some missing, it's not useful to start.
         servs = retval['services']
         for x in retval['services']:
             # Decrypt secret
             aeskey = ''
             secret = ''
+
             if not x['usercipher']:
-                print "We don't have access to this password."
+                raise RemotingException("We don't have access to password for service %s" % x['url'])
                 del(self.privkey) # Clean the cache with the private key.
                 break
 
@@ -548,50 +521,13 @@ class SFLvault(object):
             except:
                 raise PermissionError("Unable to decrypt Usercipher.")
 
-            del(self.privkey) # Clean the cache with the private key.
-            secret = decrypt_secret(aeskey, x['secret'])
+            x['plaintext'] = decrypt_secret(aeskey, x['secret'])
 
-            # Default user:
-            user = x['loginname'] or 'root'
-            
-            cnx = pexpect.spawn("ssh -l %s %s" % (user, x['hostname']))
-            idx = cnx.expect(['assword:', 'Last login'], timeout=20)
+        del(self.privkey) # Clean the cache with the private key.
 
-            if idx == 0:
-                # Send password
-                print "Sending password..."
-                cnx.sendline(secret)
-                del(secret)
-                del(aeskey)
-                try:
-                    cnx.interact()
-                except OSError, e:
-                    print "SFLvault disconnected."
-
-                break
-
-                #idx2 = cnx.expect(['assword:', 'Last login'])
-                #print cnx.before
-                #print cnx.match
-                #print cnx.after
-                #if not idx2:
-                #    print "Wrong password, aborting."
-                #    break
-                #else:
-                #    print "We're in! (using password)"
-                #    cnx.interact()
-            else:
-                print "We're in! (using shared-key?)"
-                # We're in!
-                del(secret)
-                del(aeskey)
-                try:
-                    cnx.interact()
-                except OSError, e:
-                    print "SFLvault disconnected."
-                    
-            break
-
+        connection = remoting.Chain(servs)
+        connection.setup()
+        connection.connect()
 
     @authenticate()
     def list_users(self):
@@ -682,7 +618,7 @@ class SFLvaultParser(object):
         self.opts = object() #  idem.
         
         # Use the specified, or create a new one.
-        self.vault = (vault or SFLvault())
+        self.vault = (vault or SFLvaultClient())
 
         # Setup default action = help
         action = 'help'
@@ -955,7 +891,7 @@ class SFLvaultParser(object):
         self.parser.set_usage("alias [options] [alias [VaultID]]")
 
         self.parser.add_option('-d', '--delete', dest="delete",
-                               help="Delete the given alias")
+                               metavar="ALIAS", help="Delete the given alias")
 
         self._parse()
 
@@ -1141,9 +1077,11 @@ def main():
         pass
     except xmlrpclib.Fault, e:
         # On is_admin check failed, on user authentication failed.
-        print "Fault: %s" % e.faultString
+        print "[SFLvault] XML-RPC Fault: %s" % e.faultString
     except VaultConfigurationError, e:
-        print "Configuration error: %s" % e
+        print "[SFLvault] Configuration error: %s" % e
+    #except RemotingException, e:
+    #    print "[SFLvault] %s" % e.message
 
     
 
