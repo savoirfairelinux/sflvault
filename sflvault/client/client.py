@@ -420,33 +420,44 @@ class SFLvaultClient(object):
         # TODO: format the results in a beautiful way
         # TODO: call the pager `less` when too long.
         #pprint(retval['results'])
+        level = 0
         for c_id, c in retval['results'].items():
+            level = 0
             # TODO: display customer info
-            print "c#%s %s" % (c_id, c['name'])
+            print "c#%s  %s" % (c_id, c['name'])
 
-            spc = '     '
+            spc1 = ' ' * (4 + len(c_id))
             for m_id, m in c['machines'].items():
+                level = 1
                 # TODO: display machine infos: 
-                add = ' ' * (4 - len(m_id))
-                print "%sm#%s%s%s (%s - %s)" % (spc, m_id, add,
+                add = ' ' * (4 + len(m_id))
+                print "%sm#%s  %s (%s - %s)" % (spc1, m_id,
                                                 m['name'], m['fqdn'], m['ip'])
                 if verbose:
-                    print "%s  %slocation: %s" % (spc, add, m['location'])
-                    print "%s  %snotes: %s" % (spc, add, m['notes'])
+                    print "%s%slocation: %s" % (spc1, add, m['location'])
+                    print "%s%snotes: %s" % (spc1, add, m['notes'])
                                                              
 
-                spc = spc + '  ' + add
+                spc2 = spc1 + add
                 for s_id, s in m['services'].items():
+                    level = 2
                     # TODO: display service infos
-                    add = ' ' * (4 - len(s_id))
-                    print "%ss#%s%s%s" % (spc, s_id, add, s['url'])
-                    print "%s      login: %s  port: %s  type: %s" % (spc,
+                    add = ' ' * (4 + len(s_id))
+                    p_id = s.get('parent_service_id')
+                    print "%ss#%s  %s%s" % (spc2, s_id, s['url'],
+                                            ("   (depends: s#%s)" % p_id if p_id else ''))
+                    print "%s%slogin: %s  port: %s  type: %s" % (spc2, add,
                                                                    s['loginname'],
                                                                    s['port'],
                                                                    s['type'])
                     if verbose:
-                        print "%s  %snotes: %s" % (spc, add, s['notes'])
+                        print "%s%snotes: %s" % (spc2, add, s['notes'])
+
+                if level == 2:
+                    print "%s" % (spc2) + '-' * (80 - len(spc2))
                 
+            if level in [0,1]:
+                print "%s" % (spc1) + '-' * (80 - len(spc1))
             
 
 
