@@ -289,7 +289,11 @@ class XmlrpcController(XMLRPCController):
         if parent_service_id:
             try:
                 parent = Service.query.get(parent_service_id)
-                machine_id = parent.machine_id
+                # No, you should be able to specify the machine, and not take
+                # the parent's machine, since services can be inherited and
+                # be on different machines (obvious example: ssh -> ssh, most
+                # probably on two different machines)
+                #machine_id = parent.machine_id
             except:
                 return vaultMsg(True, "No such parent service ID.",
                                 {'parent_service_id': parent_service_id})

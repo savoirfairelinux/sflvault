@@ -808,20 +808,17 @@ class SFLvaultParser(object):
               be taken instead.
         Note 2: Passwords will never be taken from the URL when invoked on the
                 command-line, to prevent sensitive information being held in
-                history.
-        Note 3: If you specify both --parent and --machine, the parent's actual
-                value for machine (on the Vault) will take precedence on the
-                specified --machine value."""
+                history."""
         # TODO: remove and clarify the use of --hostname | -h ..
-        self.parser.add_option('-s', '--machine', dest="machine_id",
+        self.parser.add_option('-m', '--machine', dest="machine_id",
                                help="Service will be attached to machine, as 'm#123' or '123'")
         self.parser.add_option('-u', '--url', dest="url",
                                help="Service URL, full proto://fqdn.example.org/path, WITHOUT the secret.")
         #self.parser.add_option('-h', '--hostname', dest="hostname",
         #                       help="Service hostname (taken from URL by default)")
 
-        self.parser.add_option('-r', '--parent', dest="parent_id",
-                               help="Service ID parent of this new one.")
+        self.parser.add_option('-s', '--parent', dest="parent_id",
+                               help="Parent's Service ID for this new one.")
         self.parser.add_option('-t', '--type', dest="type",
                                help="Service type (ssh, ftp, web)")
         self.parser.add_option('-p', '--port', dest="port", default='',
@@ -841,7 +838,7 @@ class SFLvaultParser(object):
         ## TODO: make a list-customers and provide a selection using arrows or
         #        or something alike.
         if not self.opts.machine_id and not self.opts.parent_id:
-            raise SFLvaultParserError("Parent ID or Machine ID required. Please specify -r|--parent VaultID or -s|--machine VaultID")
+            raise SFLvaultParserError("Parent ID or Machine ID required. Please specify -r|--parent VaultID or -m|--machine VaultID")
 
         o = self.opts
 
