@@ -446,11 +446,11 @@ class SFLvaultClient(object):
                     p_id = s.get('parent_service_id')
                     print "%ss#%s  %s%s" % (spc2, s_id, s['url'],
                                             ("   (depends: s#%s)" % p_id if p_id else ''))
-                    print "%s%slogin: %s  port: %s  type: %s" % (spc2, add,
-                                                                   s['loginname'],
-                                                                   s['port'],
-                                                                   s['type'])
                     if verbose:
+                        print "%s%slogin: %s  port: %s  type: %s" % (spc2, add,
+                                                                     s['loginname'],
+                                                                     s['port'],
+                                                                     s['type'])
                         print "%s%snotes: %s" % (spc2, add, s['notes'])
 
                 if level == 2:
