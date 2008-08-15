@@ -74,7 +74,7 @@ customers_table = Table('customers', metadata,
                         Column('created_user', types.Unicode(50))
                         )
 
-servers_table = Table('servers', metadata,
+machines_table = Table('machines', metadata,
                       Column('id', types.Integer, primary_key=True),
                       Column('customer_id', types.Integer, ForeignKey('customers.id')), # relation customers
                       Column('created_time', types.DateTime),
@@ -94,7 +94,7 @@ servers_table = Table('servers', metadata,
 # Each ssh or web app. service that have a password.
 services_table = Table('services', metadata,
                        Column('id', types.Integer, primary_key=True),
-                       Column('server_id', types.Integer, ForeignKey('servers.id')), # relation servers
+                       Column('machine_id', types.Integer, ForeignKey('machines.id')), # relation machines
                        # Type of service, eventually, linked to specific plug-ins.
                        # TODO: ajouter le parent_service_id..
                        Column('parent_service_id', types.Integer, ForeignKey('services.id')),
@@ -126,9 +126,9 @@ class Service(object):
     def __repr__(self):
         return "<Service s#%d: %s>" % (self.id, self.url)
 
-class Server(object):
+class Machine(object):
     def __repr__(self):
-        return "<Server m#%d: %s (%s %s)>" % (self.id, self.name, self.fqdn, self.ip)
+        return "<Machine m#%d: %s (%s %s)>" % (self.id, self.name, self.fqdn, self.ip)
 
 class Usercipher(object):
     def __repr__(self):
@@ -170,10 +170,10 @@ mapper(UserLevel, userlevels_table, {
     
     })
 mapper(Customer, customers_table, {
-    'servers': relation(Server, backref='customer', lazy=False)
+    'machines': relation(Machine, backref='customer', lazy=False)
     })
-mapper(Server, servers_table, {
-    'services': relation(Service, backref='server', lazy=False)
+mapper(Machine, machines_table, {
+    'services': relation(Service, backref='machine', lazy=False)
     })
 mapper(Service, services_table, {
     'children': relation(Service,

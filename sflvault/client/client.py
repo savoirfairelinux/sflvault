@@ -308,27 +308,27 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def add_server(self, customer_id, name, fqdn, ip, location, notes):
-        """Add a server to the database."""
+    def add_machine(self, customer_id, name, fqdn, ip, location, notes):
+        """Add a machine to the database."""
         # customer_id REQUIRED
-        retval = vaultReply(self.vault.addserver(self.authtok, int(customer_id),
+        retval = vaultReply(self.vault.addmachine(self.authtok, int(customer_id),
                                                  name or '', fqdn or '', ip or '',
                                                  location or '', notes or ''),
-                            "Error adding server")
+                            "Error adding machine")
         print "Success: %s" % retval['message']
-        print "New machine ID: m#%d" % retval['server_id']
+        print "New machine ID: m#%d" % retval['machine_id']
 
 
     @authenticate()
-    def add_service(self, server_id, parent_service_id, url, hostname, port, loginname, type, level, secret, notes):
+    def add_service(self, machine_id, parent_service_id, url, hostname, port, loginname, type, level, secret, notes):
         """Add a service to the Vault's database.
 
-        server_id - A m#id server identifier. Specify either server_id or
+        machine_id - A m#id machine identifier. Specify either machine_id or
                     parent_service_id. 
         parent_service_id - A s#id, parent service ID, to which you should
                             connect before connecting to the service you're
                             adding. Specify 0 of None if no parent exist.
-                            If you set this, server_id is disregarded.
+                            If you set this, machine_id is disregarded.
         url - URL of the service, with username, port and path if non-standard.
         hostname - Hostname for the service.
         port - Port if different from the standard port (according to the
@@ -341,7 +341,7 @@ class SFLvaultClient(object):
         secret - Password for the service. Plain-text.
         notes - Simple text field, with notes."""
 
-        retval = vaultReply(self.vault.addservice(self.authtok, int(server_id), int(parent_service_id), url, hostname, port or '', loginname or '', type or '', level, secret, notes or ''),
+        retval = vaultReply(self.vault.addservice(self.authtok, int(machine_id), int(parent_service_id), url, hostname, port or '', loginname or '', type or '', level, secret, notes or ''),
                             "Error adding service")
 
         print "Success: %s" % retval['message']
@@ -425,8 +425,8 @@ class SFLvaultClient(object):
             print "c#%s %s" % (c_id, c['name'])
 
             spc = '     '
-            for m_id, m in c['servers'].items():
-                # TODO: display server infos: 
+            for m_id, m in c['machines'].items():
+                # TODO: display machine infos: 
                 add = ' ' * (4 - len(m_id))
                 print "%sm#%s%s%s (%s - %s)" % (spc, m_id, add,
                                                 m['name'], m['fqdn'], m['ip'])
@@ -567,11 +567,11 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def list_servers(self, verbose=False):
-        retval = vaultReply(self.vault.listservers(self.authtok),
-                            "Error listing servers")
+    def list_machines(self, verbose=False):
+        retval = vaultReply(self.vault.listmachines(self.authtok),
+                            "Error listing machines")
 
-        print "Server list (machines):"
+        print "Machines list:"
 
         oldcid = 0
         for x in retval['list']:
@@ -764,13 +764,13 @@ class SFLvaultParser(object):
         self.vault.del_user(username)
 
 
-    def add_server(self):
-        """Add a server (machine) to the Vault's database."""
-        self.parser.set_usage("add-server [options]")
+    def add_machine(self):
+        """Add a machine to the Vault's database."""
+        self.parser.set_usage("add-machine [options]")
         self.parser.add_option('-c', '--customer', dest="customer_id",
                                help="Customer id, as 'c#123' or '123'")
         self.parser.add_option('-n', '--name', dest="name",
-                               help="Server name, used for display everywhere")
+                               help="Machine name, used for display everywhere")
         self.parser.add_option('-d', '--fqdn', dest="fqdn", default='',
                                help="Fully qualified domain name, if available")
         self.parser.add_option('-i', '--ip', dest="ip", default='',
@@ -792,12 +792,12 @@ class SFLvaultParser(object):
 
         o = self.opts
         customer_id = self.vault.vaultId(o.customer_id, 'c')
-        self.vault.add_server(customer_id, o.name, o.fqdn,
+        self.vault.add_machine(customer_id, o.name, o.fqdn,
                               o.ip, o.location, o.notes)
 
 
     def add_service(self):
-        """Add a service to a particular server in the Vault's database.
+        """Add a service to a particular machine in the Vault's database.
 
         The secret/password/authentication key will be asked in the
         interactive prompt.
@@ -809,12 +809,12 @@ class SFLvaultParser(object):
         Note 2: Passwords will never be taken from the URL when invoked on the
                 command-line, to prevent sensitive information being held in
                 history.
-        Note 3: If you specify both --parent and --server, the parent's actual
-                value for server (on the Vault) will take precedence on the
-                specified --server value."""
+        Note 3: If you specify both --parent and --machine, the parent's actual
+                value for machine (on the Vault) will take precedence on the
+                specified --machine value."""
         # TODO: remove and clarify the use of --hostname | -h ..
-        self.parser.add_option('-s', '--server', dest="server_id",
-                               help="Service will be attached to server, as 'm#123' or '123'")
+        self.parser.add_option('-s', '--machine', dest="machine_id",
+                               help="Service will be attached to machine, as 'm#123' or '123'")
         self.parser.add_option('-u', '--url', dest="url",
                                help="Service URL, full proto://fqdn.example.org/path, WITHOUT the secret.")
         #self.parser.add_option('-h', '--hostname', dest="hostname",
@@ -840,8 +840,8 @@ class SFLvaultParser(object):
         
         ## TODO: make a list-customers and provide a selection using arrows or
         #        or something alike.
-        if not self.opts.server_id and not self.opts.parent_id:
-            raise SFLvaultParserError("Parent ID or Server ID required. Please specify -r|--parent VaultID or -s|--server VaultID")
+        if not self.opts.machine_id and not self.opts.parent_id:
+            raise SFLvaultParserError("Parent ID or Machine ID required. Please specify -r|--parent VaultID or -s|--machine VaultID")
 
         o = self.opts
 
@@ -873,13 +873,13 @@ class SFLvaultParser(object):
         # TODO: rewrite url if a password was included... strip the port and
         #       username from the URL too.
 
-        server_id = 0
+        machine_id = 0
         parent_id = 0
-        if o.server_id:
-            server_id = self.vault.vaultId(o.server_id, 'm')
+        if o.machine_id:
+            machine_id = self.vault.vaultId(o.machine_id, 'm')
         if o.parent_id:
             parent_id = self.vault.vaultId(o.parent_id, 's')
-        self.vault.add_service(server_id, parent_id, o.url, o.hostname, o.port,
+        self.vault.add_service(machine_id, parent_id, o.url, o.hostname, o.port,
                                o.loginname, o.type, o.level, secret, o.notes)
         del(secret)
 
@@ -967,11 +967,11 @@ class SFLvaultParser(object):
         self.vault.list_levels()
 
 
-    def list_servers(self):
-        """List existing servers.
+    def list_machines(self):
+        """List existing machines.
 
-        This command will list all servers in the Vault's database."""
-        ## TODO: add support for listing only servers of a certain c#id
+        This command will list all machines in the Vault's database."""
+        ## TODO: add support for listing only machines of a certain c#id
         #        (customer_id)
         self.parser.add_option('-v', '--verbose', action="store_true",
                                dest='verbose', default=False,
@@ -981,7 +981,7 @@ class SFLvaultParser(object):
         if len(self.args):
             raise SFLvaultParserError("Invalid number of arguments")
 
-        self.vault.list_servers(self.opts.verbose)
+        self.vault.list_machines(self.opts.verbose)
         
 
     def setup(self):

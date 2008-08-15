@@ -174,7 +174,7 @@ class XmlrpcController(XMLRPCController):
         """Do the search, and return the result tree."""
         # TODO: narrow down search (instead of all(), doh!)
         cs = Customer.query.all()
-        ms = Server.query.all()
+        ms = Machine.query.all()
         ss = Service.query.all()
 
         # Quick helper funcs, to create the hierarchical 'out' structure.
@@ -182,8 +182,8 @@ class XmlrpcController(XMLRPCController):
             if out.has_key(str(c.id)):
                 return
             out[str(c.id)] = {'name': c.name,
-                         'servers': {}}
-        def set_server(subout, m):
+                         'machines': {}}
+        def set_machine(subout, m):
             if subout.has_key(str(m.id)):
                 return
             subout[str(m.id)] = {'name': m.name,
@@ -205,17 +205,17 @@ class XmlrpcController(XMLRPCController):
                                'notes': s.notes or ''}
 
         out = {}
-        # Loop services, setup servers and customers first.
+        # Loop services, setup machines and customers first.
         for x in ss:
             # Setup customer dans le out, pour le service
-            set_customer(out, x.server.customer)
-            set_server(out[str(x.server.customer.id)]['servers'], x.server)
-            set_service(out[str(x.server.customer.id)]['servers'][str(x.server.id)]['services'], x)
+            set_customer(out, x.machine.customer)
+            set_machine(out[str(x.machine.customer.id)]['machines'], x.machine)
+            set_service(out[str(x.machine.customer.id)]['machines'][str(x.machine.id)]['services'], x)
 
-        # Loop servers, setup customers first.
+        # Loop machines, setup customers first.
         for y in ms:
             set_customer(out, y.customer)
-            set_server(out[str(y.customer.id)]['servers'], y)
+            set_machine(out[str(y.customer.id)]['machines'], y)
 
         # Loop customers !
         for z in cs:
@@ -264,9 +264,9 @@ class XmlrpcController(XMLRPCController):
         return vaultMsg(False, "Levels granted successfully")
 
     @authenticated_user
-    def sflvault_addserver(self, authtok, customer_id, name, fqdn, ip, location, notes):
+    def sflvault_addmachine(self, authtok, customer_id, name, fqdn, ip, location, notes):
         
-        n = Server()
+        n = Machine()
         n.customer_id = int(customer_id)
         n.created_time = datetime.now()
         n.name = name
@@ -277,25 +277,25 @@ class XmlrpcController(XMLRPCController):
 
         Session.commit()
 
-        return vaultMsg(False, "Server added.", {'server_id': n.id})
+        return vaultMsg(False, "Machine added.", {'machine_id': n.id})
 
 
     @authenticated_user
-    def sflvault_addservice(self, authtok, server_id, parent_service_id, url,
+    def sflvault_addservice(self, authtok, machine_id, parent_service_id, url,
                             hostname, port, loginname, type, level, secret,
                             notes):
 
-        # parent_service_id takes precedence over server_id.
+        # parent_service_id takes precedence over machine_id.
         if parent_service_id:
             try:
                 parent = Service.query.get(parent_service_id)
-                server_id = parent.server_id
+                machine_id = parent.machine_id
             except:
                 return vaultMsg(True, "No such parent service ID.",
                                 {'parent_service_id': parent_service_id})
 
         ns = Service()
-        ns.server_id = int(server_id)
+        ns.machine_id = int(machine_id)
         ns.parent_service_id = parent_service_id or None
         ns.url = url
         ns.hostname = hostname
@@ -400,8 +400,8 @@ class XmlrpcController(XMLRPCController):
 
 
     @authenticated_user
-    def sflvault_listservers(self, authtok):
-        lst = Server.query.all()
+    def sflvault_listmachines(self, authtok):
+        lst = Machine.query.all()
 
         out = []
         for x in lst:
@@ -410,7 +410,7 @@ class XmlrpcController(XMLRPCController):
                   'customer_id': x.customer_id, 'customer_name': x.customer.name}
             out.append(nx)
 
-        return vaultMsg(False, "Here is the servers list", {'list': out})
+        return vaultMsg(False, "Here is the machines list", {'list': out})
     
 
     @authenticated_user
