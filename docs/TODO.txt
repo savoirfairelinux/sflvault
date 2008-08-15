@@ -26,6 +26,10 @@ DESIGN TWISTERS
 TODO
 ====
 
+
+ * Remove all references to hostname / username / port in data tables, since
+   all this information is stored in the URL, and is fetched automatically
+   by the services. No need to duplicate.
  * Show a warning and don't use password when specified (with add-service)
    on the command-line.
  * Make plugins that will display the information in a useful manner for
