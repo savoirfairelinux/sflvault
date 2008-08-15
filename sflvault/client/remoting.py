@@ -25,22 +25,7 @@ ssh to ssh to http)"""
 
 from sflvault.client.utils import *
 
-__all__ = ['Service', 'Chain', 'PROV_PORT_FORWARD', 'PROV_SHELL_ACCESS',
-           'OP_DIRECT', 'OP_THRGH_FWD_PORT', 'OP_THRGH_SHELL']
-
-# Enum used in the services' `provides`
-PROV_PORT_FORWARD = 'portforward'
-PROV_SHELL_ACCESS = 'shellaccess'
-
-# Operational modes
-OP_DIRECT = 'directaccess'          # - When, let's say 'ssh' is going to spawn a
-                                    # process.
-OP_THRGH_FWD_PORT = 'throughfwdport'# - When we must go through a port that's been
-                                    # forwarded.
-                                    # In that case, the parent must provide with
-                                    # forwarded host and port.
-OP_THRGH_SHELL = 'throughshell'     # - When a command must be sent through an open
-                                    # shell
+__all__ = ['Service', 'Chain']
 
 
 # Mother class for service handlers.

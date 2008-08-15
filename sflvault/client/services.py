@@ -25,6 +25,24 @@ import pxssh
 import sys
 
 
+# Enum used in the services' `provides`
+PROV_PORT_FORWARD  = 'port-forward'
+PROV_SHELL_ACCESS  = 'shell-access'
+PROV_MYSQL_CONSOLE = 'mysql-console'
+
+# Operational modes
+OP_DIRECT = 'direct-access'            # - When, let's say 'ssh' is going to spawn a
+                                       # process.
+OP_THRGH_FWD_PORT = 'through-fwd-port' # - When we must go through a port that's been
+                                       # forwarded.
+                                       # In that case, the parent must provide with
+                                       # forwarded host and port.
+OP_THRGH_SHELL = 'through-shell'       # - When a command must be sent through an open
+                                       # shell
+
+
+
+
 class ssh(Service):
     """ssh protocol service handler"""
 
@@ -64,7 +82,7 @@ class ssh(Service):
             self.provide_mode = provide
         else:
             # Sorry, we don't know what you're talking about :)
-            return False
+            raise ServiceRequireError("ssh module can't provide '%s'" % provide)
             
         if not self.parent:
             # If there's no parent, then we're going to spawn ourself.
@@ -78,32 +96,24 @@ class ssh(Service):
 
 
     def prework(self):
+
         # Default user:
-        user = self.data['loginname'] or 'root'
+        user = self.url.username or 'root'
 
-        #cnx = pxssh.pxssh()
-        #res = cnx.login(self.data['hostname'], user, secret, login_timeout=30)
-        #del(secret)
-        #del(aeskey)
-        #if res:
-        #    print "LOGIN SUCCESSFUL"
-        #    cnx.interact()
-        #else:
-        #    print "LOGIN FAILED"
-        #    sys.exit()
-        #sys.exit()
+        sshcmd = "ssh -l %s %s" % (user, self.url.hostname)
 
-        sshcmd = "ssh -l %s %s" % (user, self.data['hostname'])
+        if self.url.port:
+            sshcmd += " -p %d" % (self.url.port)
 
         if self.operation_mode == OP_DIRECT:
-            print "Trying to login to %s as %s ..." % (self.data['hostname'], user)
+            print "Trying to login to %s as %s ..." % (self.url.hostname, user)
             cnx = pexpect.spawn(sshcmd)
         elif self.operation_mode == OP_THRGH_SHELL:
             cnx = self.parent.shell_handle
             cnx.sendline(sshcmd)
         else:
             # NOTE: This should be dead code:
-            raise RemotingException("No way to go through there. Woah? How did we get here ?")
+            raise RemotingError("No way to go through there. Woah? How did we get here ?")
 
         self.shell_handle = cnx
 
@@ -125,9 +135,26 @@ class ssh(Service):
 
     def interact(self):
         try:
+
+          # To grab the window changing signals
+            import struct, fcntl, termios, signal
+            def sigwinch_passthrough (sig, data):
+                s = struct.pack("HHHH", 0, 0, 0, 0)
+                a = struct.unpack('hhhh', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ , s))
+                self.shell_handle.setwinsize(a[0],a[1])
+
+            # Map window resizing signal to function
+            signal.signal(signal.SIGWINCH, sigwinch_passthrough)
+
+            # Go ahead, you're free to go !
             self.shell_handle.interact()
+
+            # Reset signal
+            signal.signal(signal.SIGWINCH, signal.SIG_DFL)
+
+            print "[SFLvault] Escaped from %s, calling postwork." % self.__class__.__name__
         except OSError, e:
-            print "SFLvault disconnected."
+            print "[SFLvault] %s disconnected" % self.__class__.__name__
 
 
     def postwork(self):
@@ -145,6 +172,75 @@ class su(Service):
 
 
 
+# Inheritance from 'ssh'
+class mysql(ssh):
+    """mysql app. service handler"""
+
+    provides_modes = [PROV_MYSQL_CONSOLE]
+
+    def required(self, provide=None):
+        """Verify if this service handler can provide `provide` type of connection.
+
+        Child can ask for SHELL_ACCESS or PORT_FORWARD to be provided. It can also
+        ask for nothing. It is the case of the last child, which has required()
+        invoked with mode=None, since there's no other child that requires something.
+
+        When mode=None, plugin is most probably the last child, and the end to
+        which we want to connect."""
+
+        if self.provides(provide):
+            self.provide_mode = provide
+        else:
+            # Sorry, we don't know what you're talking about :)
+            raise ServiceRequireError("mysql module can't provide '%s'" % provide)
+        
+        if not self.parent:
+            raise ServiceRequireError("mysql service can't be executed locally, it has to be behind a SHELL_ACCESS-providing module.")
+
+        self.operation_mode = OP_THRGH_SHELL
+        return self.parent.required(PROV_SHELL_ACCESS)
+
+
+    def prework(self):
+
+        # Bring over here the parent's shell handle.
+        cnx = self.parent.shell_handle
+        self.shell_handle = cnx
+
+        # Select a database directly ?
+        db = ''
+        if self.url.path:
+            if self.url.path != '/':
+                db = self.url.path.lstrip('/')
+                
+        cmd = "mysql -u %s -p %s" % (self.url.username, db)
+
+        cnx.sendline(cmd)
+
+        idx = cnx.expect(['assword:', 'ERROR \d*'], timeout=20)
+        sys.stdout.write(cnx.before)
+        sys.stdout.write(cnx.after)
+        
+        if idx == 0:
+            sys.stdout.write(" [sending password...] ")
+            cnx.sendline(self.data['plaintext'])
+            idx = cnx.expect(['mysql>', 'ERROR \d*'], timeout=10)
+            if idx == 0:
+                sys.stdout.write(cnx.before)
+                sys.stdout.write(cnx.after)
+            else:
+                raise RemotingError("Failed to authenticate with mysql")
+        else:
+            raise RemotingError("Failed authentication for mysql at program launch")
+
+
+    # Inherited by `ssh`..
+    #def interact(self):
+    #    pass
+
+    def postwork(self):
+        # Do nothing :)
+        pass
 
 
 

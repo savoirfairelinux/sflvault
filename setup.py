@@ -42,6 +42,7 @@ setup(
     [sflvault.services]
     ssh = sflvault.client.services:ssh
     vnc = sflvault.client.services:vnc
+    mysql = sflvault.client.services:mysql
 
     """,
 )

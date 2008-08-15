@@ -1080,8 +1080,10 @@ def main():
         print "[SFLvault] XML-RPC Fault: %s" % e.faultString
     except VaultConfigurationError, e:
         print "[SFLvault] Configuration error: %s" % e
-    #except RemotingException, e:
-    #    print "[SFLvault] %s" % e.message
+    except RemotingError, e:
+        print "[SFLvault] Remoting error: %s" % e.message
+    except ServiceRequireError, e:
+        print "[SFLvault] Service-chain setup error: %s" % e.message
 
     
 

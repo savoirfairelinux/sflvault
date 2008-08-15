@@ -24,7 +24,8 @@
 import urlparse
 
 __all__ = ['shred', 'urlparse', 'AuthenticationError', 'VaultError',
-           'VaultIDFormatError', 'VaultConfigurationError', 'RemotingException']
+           'VaultIDFormatError', 'VaultConfigurationError', 'RemotingError',
+           'ServiceRequireError']
 
 
 
@@ -32,7 +33,7 @@ __all__ = ['shred', 'urlparse', 'AuthenticationError', 'VaultError',
 # Add protocols to urlparse, for correct parsing of ssh and others.
 #
 urlparse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
-                             'bzr+ssh', 'vnc'])
+                             'bzr+ssh', 'vnc', 'mysql'])
 
 
 def shred(var):
@@ -75,6 +76,10 @@ class VaultConfigurationError(Exception):
 
 ### Remoting Exceptions
 
-class RemotingException(Exception):
+class RemotingError(Exception):
     """When something happens in the Remoting mechanisms"""
+    pass
+
+class ServiceRequireError(Exception):
+    """When the required() elements can't do what we want."""
     pass
