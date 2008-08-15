@@ -179,7 +179,7 @@ class Chain(object):
             service_list.append(service)
             
         # Link the services as parent/child.
-        last = None
+        last = service_list[0]
         for i in range(0, len(service_list) - 1):
             service_list[i].set_child(service_list[i+1])
             last = service_list[i+1]
