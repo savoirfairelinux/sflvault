@@ -20,6 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from sflvault.client.remoting import *
+import struct, fcntl, termios, signal # for term size signaling..
 import pexpect
 import pxssh
 import sys
@@ -137,7 +138,6 @@ class ssh(Service):
         try:
 
           # To grab the window changing signals
-            import struct, fcntl, termios, signal
             def sigwinch_passthrough (sig, data):
                 s = struct.pack("HHHH", 0, 0, 0, 0)
                 a = struct.unpack('hhhh', fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ , s))
@@ -145,6 +145,14 @@ class ssh(Service):
 
             # Map window resizing signal to function
             signal.signal(signal.SIGWINCH, sigwinch_passthrough)
+
+            # Call USER's terminal and get term size.
+            s = struct.pack("HHHH", 0, 0, 0, 0)
+            fd_stdout = sys.stdout.fileno()
+            x = fcntl.ioctl(fd_stdout, termios.TIOCGWINSZ, s)
+            sz = struct.unpack("HHHH", x)
+            # Send to the remote terminals..
+            self.shell_handle.setwinsize(sz[0], sz[1])
 
             # Go ahead, you're free to go !
             self.shell_handle.interact()
