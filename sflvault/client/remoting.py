@@ -61,7 +61,7 @@ class Service(object):
 
     def __init__(self, data):
         self.data = data
-        pass
+        self.url = urlparse.urlparse(data['url'])
 
     def set_child(self, child):
         """Set the child of this service (sets the parent on the child too)"""
@@ -149,11 +149,11 @@ class Chain(object):
         # Create Service objects for each of the service in the hierarchy.
         service_list = []
         for srvdata in self.services:
-            srvdata['parsed_url'] = urlparse.urlparse(srvdata['url'])
+            parsed_url = urlparse.urlparse(srvdata['url'])
             service = None
 
             for ep in iter_entry_points('sflvault.services'):
-                if ep.name == srvdata['parsed_url'].scheme:
+                if ep.name == parsed_url.scheme:
                     srvobj = ep.load()
                     service = srvobj(srvdata)
                     break
