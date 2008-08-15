@@ -78,7 +78,7 @@ class XmlrpcController(XMLRPCController):
 
         u = None
         try:
-            u = User.query.filter_by(username=username).one()
+            u = User.query.options(lazyload('levels')).filter_by(username=username).one()
         except:
             return vaultMsg(True, 'Invalid user')
 
@@ -199,6 +199,7 @@ class XmlrpcController(XMLRPCController):
                                'type': s.type or '',
                                'level': s.level or '',
                                'port': s.port or '',
+                               'parent_service_id': s.parent_service_id or '',
                                # DON'T INCLUDE secret, when we're just searching
                                #'secret': s.secret or '',
                                'metadata': s.metadata or '',

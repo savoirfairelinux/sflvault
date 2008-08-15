@@ -22,7 +22,7 @@
 from pylons import config
 from sqlalchemy import Column, MetaData, Table, types, ForeignKey
 from sqlalchemy.orm import mapper, relation, backref
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker, eagerload, lazyload
 from datetime import *
 
 from Crypto.PublicKey import ElGamal
@@ -163,8 +163,8 @@ class Customer(object):
 
 # Map each class to its corresponding table.
 mapper(User, users_table, {
-    'levels': relation(UserLevel, backref='user', lazy=False),
-    'ciphers': relation(Usercipher, backref='user', lazy=True)
+    'levels': relation(UserLevel, backref='user'), #, lazy=True), we'll ask if we need
+    'ciphers': relation(Usercipher, backref='user'), #, lazy=True), we'll ask if we need
     })
 mapper(UserLevel, userlevels_table, {
     
