@@ -119,10 +119,8 @@ If level doesn't exist (in xmlrpc: list-levels), show them, and ask to confirm
 
 
 
-Private key and config will be stored in ~/.sflvault, with enforced permissions
-of 0700 for the dir. and 0600 for every file in there (like openssh).
-~/.sflvault/config (simple .ini file, with username, and vault url)
-~/.sflvault/key    (encrypted ElGamal private key, for authentication and decryption of cryptograms)
+Private key and config will be stored in `\~/.sflvault`, with enforced permissions of 0700 for the dir. and 0600 for every file in there (like openssh). `\~/.sflvault/config` (simple .ini file, with username, and vault url)
+`\~/.sflvault/key`    (encrypted ElGamal private key, for authentication and decryption of cryptograms)
 
 
 
@@ -164,44 +162,44 @@ logout
 ----------------------------------------------------
 Crypto schemas:
 
-client's private keys encrypted locally with Blowfish, with a symkey of
+* client's private keys encrypted locally with Blowfish, with a symkey of
 variable length. Users are encouraged to use secure and long keys.
 
 
-All 'secret' of the `services` table are encrypted using randomly chosen
+* All 'secret' of the `services` table are encrypted using randomly chosen
 32 bytes AES256 symkeys, this key is then encrypted with the public ElGamal
 key for each user part of that service's level.
 
-All Userciphers are (AES256) 32 bytes symkeys encrypted with the ElGamal
+* All Userciphers are (AES256) 32 bytes symkeys encrypted with the ElGamal
 public-key of that particular user.
 
-ElGamal(1536 bits, with random K values)
+* ElGamal(1536 bits, with random K values)
 
 
-elgamal message:
+* elgamal message:
   serial_elgamal_msg / unserial_elgamal_msg, voir lib/base.py
 
-elgamal pubkey:
+* elgamal pubkey:
   serial_elgamal_pubkey / unserial_elgamal_pubkey, même chose que *_elgamal_msg, voir lib/base.py
 
-elgamal privkey:
+* elgamal privkey:
   
+* keys/stuff marshalling/unmarshalling:
+  `e =` clé ElGamal générée,
+  `pubkey = b64encode(simplejson.dumps((e.p, e.g, e.y)))`,
+  `privkey = b64encode(simplejson.dumps((e.p, e.x)))`.
 
-keys/stuff marshalling/unmarshalling:
-  e = clé ElGamal générée.
-  pubkey = b64encode(simplejson.dumps((e.p, e.g, e.y)))
-  privkey = b64encode(simplejson.dumps((e.p, e.x)))
+* pubkey est shippé direct comme ça dans la BD
 
-pubkey est shippé direct comme ça dans la BD
-privkey est encrypté (à partir de la) en Blowfish, et écrit direct sur le
-  disque dans ~/.sflvault/config  avec les modes changés et renforcés.
+* privkey est encrypté (à partir de la) en Blowfish, et écrit direct sur le
+  disque dans `\~/.sflvault/config`  avec les modes changés et renforcés.
 
-pour décoder les pubkey:
-  e = new ElGamalObj()
-  (e.p, e.g, e.y) = simplejson.loads(b64decode(pubkey))
+* pour décoder les pubkey:
+  `e = new ElGamalObj(); 
+  (e.p, e.g, e.y) = simplejson.loads(b64decode(pubkey))`
 
-pour décoder la privkey:
-  (p, x) = simplejson.loads(b64decode(privkey))
+* pour décoder la privkey:
+  `(p, x) = simplejson.loads(b64decode(privkey))`
 
 ----------------------------------------------------
 Authentication scheme:

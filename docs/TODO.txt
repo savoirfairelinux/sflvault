@@ -1,12 +1,12 @@
 BUGS
 ====
 
- * Il faut qu'il prenne l'URL du "setup" quand tu call "setup", et non pas
+ * Il faut qu'il prenne l'URL du `setup` quand tu call `setup`, et non pas
    la config, sinon il plante.
  * Add some verifications to password encryption, pad with random value, start
    and end, and verify they are the same.
  * Use xmlrpclib.DateTime instead of numbers while passing a date through XMLRPC
- * *IMP* Utiliser plutôt un buffer en mémoire pour l'authentification, et non pas
+ * *IMPORTANT*: Utiliser plutôt un buffer en mémoire pour l'authentification, et non pas
    un champ dans la base de données (login_token, login_expired, etc...)
 
 
@@ -35,7 +35,7 @@ TODO
  * Make plugins that will display the information in a useful manner for
    each URL schemas, for example, add the decrypted password to an 'http'
    scheme and display it as:
-      http://username:password@hostname[:port]/path?query#fragment
+   `+++http://username:password@hostname[:port]/path?query#fragment+++`.
    Display [:port] only if different from hard-coded well-known port (inside
    the plugin)
  * Warn when config already exists, and you're going to issue a *setup*
@@ -48,21 +48,25 @@ TODO
    everything gets to destination.
  * Add table for sensitive data, that isn't server-related (like
    credit card info, PayPal accounts..)
- * Make sflvault --shell ask for the passphrase and decrypt the private
+ * Make `sflvault \--shell` ask for the passphrase and decrypt the private
    key once, and be able to work in with a decrypted (in-ram encrypted)
    private key, so all the operations are made with the same private key.
    Eventually, dropping the key each 3 minutes of inactivity writing to
    the term: [Dropped secrets from memory], asking to authenticate again:
-     [sflv]% 
-     SFLvault: dropped secrets from memory. Issue 'pass' to log back in.
-     [sflv]% pass
-     Enter passphrase: 
-     Authenticated, timeout in XXX seconds
-     [sflv]%
+
+----------------
+[sflv]% 
+SFLvault: dropped secrets from memory. Issue 'pass' to log back in.
+[sflv]% pass
+Enter passphrase: 
+Authenticated, timeout in XXX seconds
+[sflv]%
+----------------
+
  * Throttle, avec avertissement.. y repenser..
  * Sécurisation HTTPS, vérification des certificats, MAN-IN-THE-MIDDLE
    attack, garder le fingerprint, etc...
- * Add support for adduser --admin, that would enable the new user's admin flag
+ * Add support for `adduser \--admin`, that would enable the new user's admin flag
  * Add support for authtok + IP security (check IP address also) (lib/base.py)
  * S'arranger pour avoir le help avant d'entrer son mot de passe si on fait
    une erreur dans le format d'une commande (sflvault client)
