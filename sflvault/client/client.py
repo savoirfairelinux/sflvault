@@ -320,7 +320,7 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def add_service(self, machine_id, parent_service_id, url, hostname, port, loginname, type, level, secret, notes):
+    def add_service(self, machine_id, parent_service_id, url, level, secret, notes):
         """Add a service to the Vault's database.
 
         machine_id - A m#id machine identifier. Specify either machine_id or
@@ -330,18 +330,13 @@ class SFLvaultClient(object):
                             adding. Specify 0 of None if no parent exist.
                             If you set this, machine_id is disregarded.
         url - URL of the service, with username, port and path if non-standard.
-        hostname - Hostname for the service.
-        port - Port if different from the standard port (according to the
-               scheme://...
-        loginname - If not specified directly in the URL, login used to
-                    authenticate to service.
-        type - Type reminder. If evals to empty, then scheme is used here.
         level - Security level (or group) of the service. Hopefully an existing
                 group level, otherwise, it creates the group.
+        notes - Simple text field, with notes.
         secret - Password for the service. Plain-text.
-        notes - Simple text field, with notes."""
+        """
 
-        retval = vaultReply(self.vault.addservice(self.authtok, int(machine_id), int(parent_service_id), url, hostname, port or '', loginname or '', type or '', level, secret, notes or ''),
+        retval = vaultReply(self.vault.addservice(self.authtok, int(machine_id), int(parent_service_id), url, level, secret, notes or ''),
                             "Error adding service")
 
         print "Success: %s" % retval['message']
@@ -447,10 +442,6 @@ class SFLvaultClient(object):
                     print "%ss#%s  %s%s" % (spc2, s_id, s['url'],
                                             ("   (depends: s#%s)" % p_id if p_id else ''))
                     if verbose:
-                        print "%s%slogin: %s  port: %s  type: %s" % (spc2, add,
-                                                                     s['loginname'],
-                                                                     s['port'],
-                                                                     s['type'])
                         print "%s%snotes: %s" % (spc2, add, s['notes'])
 
                 if level == 2:
@@ -493,8 +484,7 @@ class SFLvaultClient(object):
                 secret = decrypt_secret(aeskey, x['secret'])
             
             print "%ss#%d %s" % (pre, x['id'], x['url'])
-            print "%s%s   login: %s  pass: %s" % (pre,spc, x['loginname'],
-                                                  secret or '[access denied]')
+            print "%s%s   secret: %s" % (pre,spc, secret or '[access denied]')
             if verbose:
                 print "%s%s   notes: %s" % (pre,spc, x['notes'])
             del(secret)
@@ -813,29 +803,18 @@ class SFLvaultParser(object):
         The secret/password/authentication key will be asked in the
         interactive prompt.
 
-        Note: the 'port' specified inside the URL will take precedence over
-              the command line argument. Same goes for 'username' and
-              'hostname'. If no -t type is specified, the URL scheme will
-              be taken instead.
-        Note 2: Passwords will never be taken from the URL when invoked on the
-                command-line, to prevent sensitive information being held in
-                history."""
-        # TODO: remove and clarify the use of --hostname | -h ..
+        Note : Passwords will never be taken from the URL when invoked on the
+               command-line, to prevent sensitive information being held in
+               history.
+        """
+        
         self.parser.add_option('-m', '--machine', dest="machine_id",
                                help="Service will be attached to machine, as 'm#123' or '123'")
         self.parser.add_option('-u', '--url', dest="url",
-                               help="Service URL, full proto://fqdn.example.org/path, WITHOUT the secret.")
-        #self.parser.add_option('-h', '--hostname', dest="hostname",
-        #                       help="Service hostname (taken from URL by default)")
+                               help="Service URL, full proto://[username@]fqdn.example.org[:port][/path[#fragment]], WITHOUT the secret.")
 
         self.parser.add_option('-s', '--parent', dest="parent_id",
                                help="Parent's Service ID for this new one.")
-        self.parser.add_option('-t', '--type', dest="type",
-                               help="Service type (ssh, ftp, web)")
-        self.parser.add_option('-p', '--port', dest="port", default='',
-                               help="Service port, if different from the default")
-        self.parser.add_option('-l', '--login', '--username', dest="loginname",
-                               help="Username/login name for service.")
         self.parser.add_option('-v', '--level', dest="level", default='',
                                help="Access level (access group) for this service. Use list-levels to get a complete list of access levels.")
         self.parser.add_option('--notes', dest="notes",
@@ -858,23 +837,10 @@ class SFLvaultParser(object):
         # TODO: check if we're on the command line (and not in the SFLvault
         #       shell. If we're not in the CLI, then we can take the secret
         #       from the URL, if available. Otherwise, ask.
-        #if blah:
-        #    secret = url.password
         secret = None
 
-        # 'username' and 'port' from URL take precedence over other command-
-        # line arguments.
-        if url.username:
-            o.loginname = url.username
-        if url.port:
-            o.port = url.port
-        if url.hostname:
-            o.hostname = url.hostname
 
-        # 'type' taken from URL scheme only if not available.
-        if not o.type:
-            o.type = url.scheme
-
+        # TODO: plug-in-ize password capture.
         if not secret:
             secret = getpass.getpass("Enter service secret (password): ")
 
@@ -887,8 +853,9 @@ class SFLvaultParser(object):
             machine_id = self.vault.vaultId(o.machine_id, 'm')
         if o.parent_id:
             parent_id = self.vault.vaultId(o.parent_id, 's')
-        self.vault.add_service(machine_id, parent_id, o.url, o.hostname, o.port,
-                               o.loginname, o.type, o.level, secret, o.notes)
+            
+        self.vault.add_service(machine_id, parent_id, o.url, o.level, secret,
+                               o.notes)
         del(secret)
 
 

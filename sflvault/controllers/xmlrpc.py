@@ -143,10 +143,6 @@ class XmlrpcController(MyXMLRPCController):
 
             out.append({'id': s.id,
                         'url': s.url,
-                        'hostname': s.hostname,
-                        'port': s.port or '',
-                        'loginname': s.loginname or '',
-                        'type': s.type or '',
                         'level': s.level or '',
                         'secret': s.secret,
                         'usercipher': cipher,
@@ -193,11 +189,7 @@ class XmlrpcController(MyXMLRPCController):
                             'services': {}}
         def set_service(subsubout, s):
             subsubout[str(s.id)] = {'url': s.url,
-                                    'hostname': s.hostname or '',
-                               'loginname': s.loginname or '',
-                               'type': s.type or '',
                                'level': s.level or '',
-                               'port': s.port or '',
                                'parent_service_id': s.parent_service_id or '',
                                # DON'T INCLUDE secret, when we're just searching
                                #'secret': s.secret or '',
@@ -282,8 +274,7 @@ class XmlrpcController(MyXMLRPCController):
 
     @authenticated_user
     def sflvault_addservice(self, authtok, machine_id, parent_service_id, url,
-                            hostname, port, loginname, type, level, secret,
-                            notes):
+                            level, secret, notes):
 
         # parent_service_id takes precedence over machine_id.
         if parent_service_id:
@@ -302,10 +293,6 @@ class XmlrpcController(MyXMLRPCController):
         ns.machine_id = int(machine_id)
         ns.parent_service_id = parent_service_id or None
         ns.url = url
-        ns.hostname = hostname
-        ns.port = port
-        ns.loginname = loginname
-        ns.type = type
         ns.level = level
         (seckey, ciphertext) = encrypt_secret(secret)
         ns.secret = ciphertext

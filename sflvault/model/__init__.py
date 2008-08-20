@@ -94,21 +94,16 @@ machines_table = Table('machines', metadata,
 # Each ssh or web app. service that have a password.
 services_table = Table('services', metadata,
                        Column('id', types.Integer, primary_key=True),
-                       Column('machine_id', types.Integer, ForeignKey('machines.id')), # relation machines
-                       # Type of service, eventually, linked to specific plug-ins.
-                       # TODO: ajouter le parent_service_id..
+                       # Service lies on which Machine ?
+                       Column('machine_id', types.Integer, ForeignKey('machines.id')),
+                       # Hierarchical service required to access this one ?
                        Column('parent_service_id', types.Integer, ForeignKey('services.id')),
-                       Column('url', types.String(250)),
-                       Column('hostname', types.String(250)),
-                       Column('port', types.Integer),
-                       Column('loginname', types.String(50)),
-                       Column('type', types.String(50)),
+                       Column('url', types.String(250)), # Full service desc.
                        Column('level', types.Unicode(50)),
-                       Column('secret', types.Text),
-                       # simplejson'd python structures, depends on 'type'
+                       # simplejson'd python structures, depends on url scheme
                        Column('metadata', types.Text), # reserved.
-                       # Add some created_time, modified_time, etc...
                        Column('notes', types.Text),
+                       Column('secret', types.Text),
                        Column('secret_last_modified', types.DateTime)
                        )
 
