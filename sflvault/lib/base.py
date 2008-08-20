@@ -25,7 +25,7 @@ Provides the BaseController class for subclassing, and other objects
 utilized by Controllers.
 """
 from pylons import c, cache, config, g, request, response, session
-from pylons.controllers import WSGIController
+from pylons.controllers import WSGIController, XMLRPCController
 from pylons.controllers.util import abort, etag_cache, redirect_to
 from pylons.decorators import jsonify, validate
 from pylons.i18n import _, ungettext, N_
@@ -137,6 +137,23 @@ class BaseController(WSGIController):
             return WSGIController.__call__(self, environ, start_response)
         finally:
             model.Session.remove()
+
+class MyXMLRPCController(XMLRPCController):
+    """This controller is required to call model.Session.remove()
+    after each call, otherwise, junk remains in the SQLAlchemy caches."""
+    
+    def __call__(self, environ, start_response):
+        """Invoke the Controller"""
+        # WSGIController.__call__ dispatches to the Controller method
+        # the request is routed to. This routing information is
+        # available in environ['pylons.routes_dict']
+        try:
+            return XMLRPCController.__call__(self, environ, start_response)
+        finally:
+            model.Session.remove()
+
+
+
 
 # Include the '_' function in the public names
 __all__ = [__name for __name in locals().keys() if not __name.startswith('_') \

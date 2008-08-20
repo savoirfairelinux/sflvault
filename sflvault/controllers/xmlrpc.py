@@ -24,7 +24,6 @@ import logging
 import xmlrpclib
 #import pylons
 #from pylons import request
-from pylons.controllers import XMLRPCController
 from base64 import b64decode, b64encode
 from datetime import *
 import time as stdtime
@@ -47,7 +46,7 @@ SESSION_TIMEOUT = 300
 ##
 ## See: http://wiki.pylonshq.com/display/pylonsdocs/Using+the+XMLRPCController
 ##
-class XmlrpcController(XMLRPCController):
+class XmlrpcController(MyXMLRPCController):
     """All XML-RPC calls to control and query the Vault"""
     
     allow_none = True # Enable marshalling of None values through XMLRPC.
