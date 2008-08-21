@@ -73,7 +73,12 @@ def authenticate(keep_privkey=False):
             raise VaultConfigurationError("No private key in local config, init with: setup username vault-url")
         
         privpass = self.getpassfunc()
-        privkey = decrypt_privkey(privkey_enc, privpass)
+        try:
+            privkey = decrypt_privkey(privkey_enc, privpass)
+        except DecryptError, e:
+            print "[SFLvault] Invalid pass-phrase"
+            return False
+            
         privpass = randfunc(32)
         del(privpass)
 
@@ -87,7 +92,7 @@ def authenticate(keep_privkey=False):
             # decrypt token.
             eg = ElGamal.ElGamalobj()
             (eg.p, eg.x, eg.g, eg.y) = unserial_elgamal_privkey(privkey)
-            privkey = randfunc(256)
+            privkey = randfunc(len(privkey))
             del(privkey)
 
             # When we ask to keep the privkey, keep the ElGamal obj.
@@ -1059,6 +1064,9 @@ def main():
         print "[SFLvault] Remoting error: %s" % e.message
     except ServiceRequireError, e:
         print "[SFLvault] Service-chain setup error: %s" % e.message
+    except DecryptError, e:
+        print "[SFLvault] There has been an error in decrypting messages: %s" \
+              % e.message
 
     
 

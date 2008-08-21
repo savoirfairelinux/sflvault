@@ -72,3 +72,9 @@ Authenticated, timeout in XXX seconds
    une erreur dans le format d'une commande (sflvault client)
  * Log any changes in admin user privileges.
 
+
+CRYPTO RISKS
+============
+
+ * M'assurer que je n'ai pas affaibli la crypto-graphie en vérifiant si le
+   message décrypté donnait le bon checksum.
