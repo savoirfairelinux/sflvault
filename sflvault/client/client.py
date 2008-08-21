@@ -104,12 +104,14 @@ def authenticate(keep_privkey=False):
             self.authret = retval2
         
             if retval2['error']:
-                raise AuthenticationError("Authentication failed: %s" % retval2['message'])
+                raise AuthenticationError("Authentication failed: %s" % \
+                                          retval2['message'])
             else:
                 self.authtok = retval2['authtok']
                 print "Authentication successful"
         else:
-            raise AuthenticationError("Authentication failed: %s" % retval['message'])
+            raise AuthenticationError("Authentication failed: %s" % \
+                                      retval['message'])
 
         return func(self, *args, **kwargs)
 
@@ -305,7 +307,8 @@ class SFLvaultClient(object):
 
     @authenticate()
     def add_customer(self, customer_name):
-        retval = vaultReply(self.vault.addcustomer(self.authtok, customer_name),
+        retval = vaultReply(self.vault.addcustomer(self.authtok,
+                                                   customer_name),
                             "Error adding customer")
 
         print "Success: %s" % retval['message']
@@ -316,16 +319,19 @@ class SFLvaultClient(object):
     def add_machine(self, customer_id, name, fqdn, ip, location, notes):
         """Add a machine to the database."""
         # customer_id REQUIRED
-        retval = vaultReply(self.vault.addmachine(self.authtok, int(customer_id),
-                                                 name or '', fqdn or '', ip or '',
-                                                 location or '', notes or ''),
+        retval = vaultReply(self.vault.addmachine(self.authtok,
+                                                  int(customer_id),
+                                                  name or '', fqdn or '',
+                                                  ip or '', location or '',
+                                                  notes or ''),
                             "Error adding machine")
         print "Success: %s" % retval['message']
         print "New machine ID: m#%d" % retval['machine_id']
 
 
     @authenticate()
-    def add_service(self, machine_id, parent_service_id, url, level, secret, notes):
+    def add_service(self, machine_id, parent_service_id, url, level, secret,
+                    notes):
         """Add a service to the Vault's database.
 
         machine_id - A m#id machine identifier. Specify either machine_id or
@@ -341,7 +347,12 @@ class SFLvaultClient(object):
         secret - Password for the service. Plain-text.
         """
 
-        retval = vaultReply(self.vault.addservice(self.authtok, int(machine_id), int(parent_service_id), url, level, secret, notes or ''),
+        retval = vaultReply(self.vault.addservice(self.authtok,
+                                                  int(machine_id),
+                                                  int(parent_service_id),
+                                                  url,
+                                                  level, secret,
+                                                  notes or ''),
                             "Error adding service")
 
         print "Success: %s" % retval['message']
@@ -384,7 +395,8 @@ class SFLvaultClient(object):
 
         print "Sending request to vault..."
         # Send it to the vault, with username
-        retval = vaultReply(self.vault.setup(username, serial_elgamal_pubkey(pubkey)),
+        retval = vaultReply(self.vault.setup(username,
+                                             serial_elgamal_pubkey(pubkey)),
                             "Setup failed")
 
         # If Vault sends a SUCCESS, save all the stuff (username, vault_url)
@@ -397,7 +409,10 @@ class SFLvaultClient(object):
         self._set_vault(vault_url, True)
         # p and x form the private key, add the public key, add g and y.
         # if encryption is required at some point.
-        self.cfg.set('SFLvault', 'key', encrypt_privkey(serial_elgamal_privkey([eg.p, eg.x, eg.g, eg.y]), privpass))
+        self.cfg.set('SFLvault', 'key',
+                     encrypt_privkey(serial_elgamal_privkey([eg.p, eg.x, \
+                                                             eg.g, eg.y]),
+                                     privpass))
         privpass = randfunc(32)
         eg.p = randfunc(32)
         eg.x = randfunc(32)
@@ -445,7 +460,8 @@ class SFLvaultClient(object):
                     add = ' ' * (4 + len(s_id))
                     p_id = s.get('parent_service_id')
                     print "%ss#%s  %s%s" % (spc2, s_id, s['url'],
-                                            ("   (depends: s#%s)" % p_id if p_id else ''))
+                                            ("   (depends: s#%s)" % \
+                                             p_id if p_id else ''))
                     if verbose:
                         print "%s%snotes: %s" % (spc2, add, s['notes'])
 

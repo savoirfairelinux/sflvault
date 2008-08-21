@@ -57,7 +57,7 @@ class XmlrpcController(MyXMLRPCController):
         try:
             u = User.query().filter_by(username=username).one()
         except:
-            return vaultMsg(True, 'User unknown')
+            return vaultMsg(False, 'User unknown')
         # TODO: implement throttling ?
 
         rnd = randfunc(32)
@@ -70,7 +70,7 @@ class XmlrpcController(MyXMLRPCController):
 
         e = u.elgamal()
         cryptok = serial_elgamal_msg(e.encrypt(rnd, randfunc(32)))
-        return vaultMsg(False, 'Authenticate please', {'cryptok': cryptok})
+        return vaultMsg(True, 'Authenticate please', {'cryptok': cryptok})
 
     def sflvault_authenticate(self, username, cryptok):
         """Receive the *decrypted* cryptok, b64 encoded"""
@@ -79,14 +79,14 @@ class XmlrpcController(MyXMLRPCController):
         try:
             u = User.query.options(lazyload('levels')).filter_by(username=username).one()
         except:
-            return vaultMsg(True, 'Invalid user')
+            return vaultMsg(False, 'Invalid user')
 
         if u.logging_timeout < datetime.now():
-            return vaultMsg(True, 'Login token expired. Now: %s Timeout: %s' % (datetime.now(), u.logging_timeout))
+            return vaultMsg(False, 'Login token expired. Now: %s Timeout: %s' % (datetime.now(), u.logging_timeout))
 
         # str() necessary, to convert buffer to string.
         if cryptok != str(u.logging_token):
-            return vaultMsg(True, 'Authentication failed')
+            return vaultMsg(False, 'Authentication failed')
         else:
             newtok = b64encode(randfunc(32))
             set_session(newtok, {'username': username,
@@ -94,7 +94,7 @@ class XmlrpcController(MyXMLRPCController):
                                  'userobj': u
                                  })
 
-            return vaultMsg(False, 'Authentication successful', {'authtok': newtok})
+            return vaultMsg(True, 'Authentication successful', {'authtok': newtok})
 
 
 
@@ -111,10 +111,10 @@ class XmlrpcController(MyXMLRPCController):
 
         if (cnt):
             if (not u):
-                return vaultMsg(True, 'No such user %s' % username)
+                return vaultMsg(False, 'No such user %s' % username)
         
             if (u.setup_expired()):
-                return vaultMsg(True, 'Setup expired for user %s' % username)
+                return vaultMsg(False, 'Setup expired for user %s' % username)
 
         # Ok, let's save the things and reset waiting_setup.
         u.waiting_setup = None
@@ -122,7 +122,7 @@ class XmlrpcController(MyXMLRPCController):
 
         Session.commit()
 
-        return vaultMsg(False, 'User setup complete for %s' % username)
+        return vaultMsg(True, 'User setup complete for %s' % username)
 
 
     @authenticated_user
@@ -131,7 +131,7 @@ class XmlrpcController(MyXMLRPCController):
         try:
             s = Service.query.filter_by(id=vid).one()
         except:
-            return vaultMsg(True, "Service not found")
+            return vaultMsg(False, "Service not found")
 
         out = []
         while True:
@@ -157,11 +157,11 @@ class XmlrpcController(MyXMLRPCController):
 
             # check if we're not in an infinite loop!
             if s.id in [x['id'] for x in out]:
-                return vaultMsg(True, "Circular references of parent services, aborting.")
+                return vaultMsg(False, "Circular references of parent services, aborting.")
 
         out.reverse()
 
-        return vaultMsg(False, "Here are the services", {'services': out})
+        return vaultMsg(True, "Here are the services", {'services': out})
 
 
     @authenticated_user
@@ -214,13 +214,13 @@ class XmlrpcController(MyXMLRPCController):
             set_customer(out, z)
 
         # Return 'out', in a nicely structured hierarchical form.
-        return vaultMsg(False, "Here are the search results", {'results': out})
+        return vaultMsg(True, "Here are the search results", {'results': out})
         
 
     @authenticated_admin
     def sflvault_adduser(self, authtok, username, admin):
         if (User.query().filter_by(username=username).count()):
-            return vaultMsg(True, 'User %s already exists.' % username)
+            return vaultMsg(False, 'User %s already exists.' % username)
         
         n = User()
         n.waiting_setup =  datetime.now() + timedelta(0, SETUP_TIMEOUT)
@@ -230,7 +230,7 @@ class XmlrpcController(MyXMLRPCController):
 
         Session.commit()
 
-        return vaultMsg(False, '%s added. User has a delay of %d seconds to invoke a "setup" command' % (admin and 'Admin user' or 'User',
+        return vaultMsg(True, '%s added. User has a delay of %d seconds to invoke a "setup" command' % (admin and 'Admin user' or 'User',
                                                                                                          SETUP_TIMEOUT), {'user_id': n.id})
 
 
@@ -244,7 +244,7 @@ class XmlrpcController(MyXMLRPCController):
             usr = User.query().filter_by(username=user).first()
 
         if not usr:
-            return vaultMsg(True, "Invalid user: %s" % user)
+            return vaultMsg(False, "Invalid user: %s" % user)
 
         for l in levels:
             nu = UserLevel()
@@ -253,7 +253,7 @@ class XmlrpcController(MyXMLRPCController):
 
         Session.commit()
 
-        return vaultMsg(False, "Levels granted successfully")
+        return vaultMsg(True, "Levels granted successfully")
 
     @authenticated_user
     def sflvault_addmachine(self, authtok, customer_id, name, fqdn, ip, location, notes):
@@ -269,7 +269,7 @@ class XmlrpcController(MyXMLRPCController):
 
         Session.commit()
 
-        return vaultMsg(False, "Machine added.", {'machine_id': n.id})
+        return vaultMsg(True, "Machine added.", {'machine_id': n.id})
 
 
     @authenticated_user
@@ -286,7 +286,7 @@ class XmlrpcController(MyXMLRPCController):
                 # probably on two different machines)
                 #machine_id = parent.machine_id
             except:
-                return vaultMsg(True, "No such parent service ID.",
+                return vaultMsg(False, "No such parent service ID.",
                                 {'parent_service_id': parent_service_id})
 
         ns = Service()
@@ -338,7 +338,7 @@ class XmlrpcController(MyXMLRPCController):
 
         del(seckey)
 
-        return vaultMsg(False, "Service added.", {'service_id': ns.id,
+        return vaultMsg(True, "Service added.", {'service_id': ns.id,
                                                   'encrypted_for': userlist})
 
     @authenticated_admin
@@ -347,13 +347,13 @@ class XmlrpcController(MyXMLRPCController):
         try:
             u = User.query().filter_by(username=username).one()
         except:
-            return vaultMsg(True, "User %s doesn't exist." % username)
+            return vaultMsg(False, "User %s doesn't exist." % username)
 
 
         Session.delete(u)
         Session.commit()
 
-        return vaultMsg(False, "User successfully deleted")
+        return vaultMsg(True, "User successfully deleted")
 
 
     @authenticated_user
@@ -364,7 +364,7 @@ class XmlrpcController(MyXMLRPCController):
         nc.created_user = self.sess['username']
         Session.commit()
 
-        return vaultMsg(False, 'Customer added', {'customer_id': nc.id})
+        return vaultMsg(True, 'Customer added', {'customer_id': nc.id})
 
 
     @authenticated_user
@@ -376,7 +376,7 @@ class XmlrpcController(MyXMLRPCController):
             nx = {'id': x.id, 'name': x.name}
             out.append(nx)
 
-        return vaultMsg(False, 'Here is the customer list', {'list': out})
+        return vaultMsg(True, 'Here is the customer list', {'list': out})
 
 
     @authenticated_user
@@ -387,7 +387,7 @@ class XmlrpcController(MyXMLRPCController):
         for x in lvls:
             out.append(x.level)
 
-        return vaultMsg(False, 'Here is the list of levels', {'list': out})
+        return vaultMsg(True, 'Here is the list of levels', {'list': out})
 
 
     @authenticated_user
@@ -401,7 +401,7 @@ class XmlrpcController(MyXMLRPCController):
                   'customer_id': x.customer_id, 'customer_name': x.customer.name}
             out.append(nx)
 
-        return vaultMsg(False, "Here is the machines list", {'list': out})
+        return vaultMsg(True, "Here is the machines list", {'list': out})
     
 
     @authenticated_user
@@ -424,4 +424,4 @@ class XmlrpcController(MyXMLRPCController):
 
         # Can use: datetime.fromtimestamp(x.created_stamp)
         # to get a datetime object back from the x.created_time
-        return vaultMsg(False, "Here is the user list", {'list': out})
+        return vaultMsg(True, "Here is the user list", {'list': out})

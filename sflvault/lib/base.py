@@ -43,9 +43,9 @@ from base64 import b64decode, b64encode
 
 # Helper to return messages
 
-def vaultMsg(error, message, dict=None):
+def vaultMsg(success, message, dict=None):
     """Form return message understandable by vault client"""
-    ret = {'error': error, 'message': message}
+    ret = {'error': (not success), 'message': message}
     if dict:
         for x in dict:
             ret[x] = dict[x]
