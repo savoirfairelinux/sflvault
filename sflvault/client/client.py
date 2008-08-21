@@ -330,7 +330,7 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def add_service(self, machine_id, parent_service_id, url, level, secret,
+    def add_service(self, machine_id, parent_service_id, url, group_id, secret,
                     notes):
         """Add a service to the Vault's database.
 
@@ -341,8 +341,7 @@ class SFLvaultClient(object):
                             adding. Specify 0 of None if no parent exist.
                             If you set this, machine_id is disregarded.
         url - URL of the service, with username, port and path if non-standard.
-        level - Security level (or group) of the service. Hopefully an existing
-                group level, otherwise, it creates the group.
+        group_id - Group of the service. See `list-groups`
         notes - Simple text field, with notes.
         secret - Password for the service. Plain-text.
         """
@@ -351,7 +350,7 @@ class SFLvaultClient(object):
                                                   int(machine_id),
                                                   int(parent_service_id),
                                                   url,
-                                                  level, secret,
+                                                  int(group_id), secret,
                                                   notes or ''),
                             "Error adding service")
 
@@ -360,17 +359,17 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def grant(self, user, levels):
-        """Add permissions to a certain user for a certain level groups.
+    def grant(self, user, groups):
+        """Add permissions to a certain user for certain groups.
 
-        user   - a required username.
-        levels - array of strings of level labels."""
-        #levels = [x.strip() for x in levelstr.split(',')]
-        retval = vaultReply(self.vault.grant(self.authtok, user, levels),
-                            "Error granting level permissions.")
+        user   - a required username
+        groups - array of group_ids to grant to user"""
+        retval = vaultReply(self.vault.grant(self.authtok, user, groups),
+                            "Error granting group permissions.")
 
         
         print "Success: %s" % retval['message']
+        pprint(retval)
 
     
     def setup(self, username, vault_url):
@@ -577,15 +576,25 @@ class SFLvaultClient(object):
                                        x['created_stamp'], add)
 
     @authenticate()
-    def list_levels(self):
-        """Simply list the available levels"""
-        retval = vaultReply(self.vault.listlevels(self.authtok),
-                            "Error listing levels")
+    def add_group(self, group_name):
+        """Add a named group to the Vault. Return the group id."""
+        retval = vaultReply(self.vault.addgroup(self.authtok, group_name),
+                            "Error adding group")
 
-        print "Levels:"
+        print "Success: %s " % retval['message']
+        print "New group id: g#%d" % retval['group_id']
+
+
+    @authenticate()
+    def list_groups(self):
+        """Simply list the available groups"""
+        retval = vaultReply(self.vault.listgroups(self.authtok),
+                            "Error listing groups")
+
+        print "Groups:"
 
         for x in retval['list']:
-            print "\t%s" % x
+            print "\tg#%d\t%s" % (x['id'], x['name'])
 
 
     @authenticate()
@@ -741,24 +750,24 @@ class SFLvaultParser(object):
         self.vault.add_user(username, admin)
 
     def grant(self):
-        """Grant level permissions to user.
+        """Grant group permissions to user.
 
-        Admin privileges required. Use list-levels to have a list."""
+        Admin privileges required. Use list-groups to have a list."""
         self.parser.set_usage('grant username [options]')
-        self.parser.add_option('-l', '--level', dest="levels",
+        self.parser.add_option('-g', '--group', dest="groups",
                                action="append", type="string",
-                               help="Level to grant to user")
+                               help="Group membership to grant to user")
         self._parse()
 
         if (len(self.args) != 1):
             raise SFLvaultParserError("Invalid number of arguments, 'username' required.")
 
         username = self.args[0]
-        levels = self.opts.levels
+        groups = self.opts.groups
 
-        retval = self.vault.grant(username, levels)
+        retval = self.vault.grant(username, groups)
         # TODO: We'll receive all the pubkeys over here, and we need to re-
-        # encode all the symkeys for passwords on that level.
+        # encode all the symkeys for users in that group
 
     def add_customer(self):
         """Add a new customer to the Vault's database."""
@@ -836,8 +845,8 @@ class SFLvaultParser(object):
 
         self.parser.add_option('-s', '--parent', dest="parent_id",
                                help="Parent's Service ID for this new one.")
-        self.parser.add_option('-v', '--level', dest="level", default='',
-                               help="Access level (access group) for this service. Use list-levels to get a complete list of access levels.")
+        self.parser.add_option('-g', '--group', dest="group_id", default='',
+                               help="Access group_id for this service, as 'g#123' or '123'. Use list-groups to view complete list.")
         self.parser.add_option('--notes', dest="notes",
                                help="Notes about the service, references, URLs.")
 
@@ -870,12 +879,15 @@ class SFLvaultParser(object):
 
         machine_id = 0
         parent_id = 0
+        group_id = 0
         if o.machine_id:
             machine_id = self.vault.vaultId(o.machine_id, 'm')
         if o.parent_id:
             parent_id = self.vault.vaultId(o.parent_id, 's')
+        if o.group_id:
+            group_id = self.vault.vaultId(o.group_id, 'g')
             
-        self.vault.add_service(machine_id, parent_id, o.url, o.level, secret,
+        self.vault.add_service(machine_id, parent_id, o.url, group_id, secret,
                                o.notes)
         del(secret)
 
@@ -953,14 +965,28 @@ class SFLvaultParser(object):
 
         self.vault.list_users()
 
-    def list_levels(self):
-        """List existing levels."""
+    def add_group(self):
+        """Add a group to the Vault
+
+        This command accepts a group name (as string) as first and only
+        parameter.
+        """
+        self._parse()
+
+        if len(self.args) != 1:
+            raise SFLvaultParserError("Group name (as string) required")
+
+        self.vault.add_group(self.args[0])
+
+
+    def list_groups(self):
+        """List existing groups."""
         self._parse()
 
         if len(self.args):
             raise SFLvaultParserError("Invalid number of arguments")
 
-        self.vault.list_levels()
+        self.vault.list_groups()
 
 
     def list_machines(self):

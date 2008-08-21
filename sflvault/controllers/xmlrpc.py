@@ -77,7 +77,7 @@ class XmlrpcController(MyXMLRPCController):
 
         u = None
         try:
-            u = User.query.options(lazyload('levels')).filter_by(username=username).one()
+            u = User.query.filter_by(username=username).one()
         except:
             return vaultMsg(False, 'Invalid user')
 
@@ -129,9 +129,9 @@ class XmlrpcController(MyXMLRPCController):
     def sflvault_show(self, authtok, vid):
         """Get the specified service ID and return the hierarchy to connect to it."""
         try:
-            s = Service.query.filter_by(id=vid).one()
-        except:
-            return vaultMsg(False, "Service not found")
+            s = Service.query.filter_by(id=vid).options(model.eagerload('group')).one()
+        except Exception, e:
+            return vaultMsg(False, "Service not found: %s" % e.message)
 
         out = []
         while True:
@@ -143,7 +143,7 @@ class XmlrpcController(MyXMLRPCController):
 
             out.append({'id': s.id,
                         'url': s.url,
-                        'level': s.level or '',
+                        'group': s.group.name or '',
                         'secret': s.secret,
                         'usercipher': cipher,
                         'secret_last_modified': s.secret_last_modified,
@@ -189,7 +189,7 @@ class XmlrpcController(MyXMLRPCController):
                             'services': {}}
         def set_service(subsubout, s):
             subsubout[str(s.id)] = {'url': s.url,
-                               'level': s.level or '',
+                               'group': s.group.name or '',
                                'parent_service_id': s.parent_service_id or '',
                                # DON'T INCLUDE secret, when we're just searching
                                #'secret': s.secret or '',
@@ -225,7 +225,7 @@ class XmlrpcController(MyXMLRPCController):
         n = User()
         n.waiting_setup =  datetime.now() + timedelta(0, SETUP_TIMEOUT)
         n.username = username
-        n.is_admin = admin
+        n.is_admin = bool(admin)
         n.created_time = datetime.now()
 
         Session.commit()
@@ -235,7 +235,7 @@ class XmlrpcController(MyXMLRPCController):
 
 
     @authenticated_admin
-    def sflvault_grant(self, authtok, user, levels):
+    def sflvault_grant(self, authtok, user, groups):
         """Can get user as user_id, or username"""
         # Add UserLevels corresponding to each levels in the dict
         if isinstance(user, int):
@@ -246,14 +246,39 @@ class XmlrpcController(MyXMLRPCController):
         if not usr:
             return vaultMsg(False, "Invalid user: %s" % user)
 
-        for l in levels:
-            nu = UserLevel()
-            nu.user_id = usr.id
-            nu.level = l
+        usrci = Usercipher.query \
+                    .filter_by(user_id=self.sess['userobj'].id) \
+                    .options(model.eagerload_all('service.group')) \
+                    .all()
+
+        lst = []
+        for uc in usrci:
+            if uc.service is None:
+                # This means we still have Usercipher for a deleted
+                # service. We do nothing with that
+                continue
+            
+            if uc.service.group.id not in groups:
+                # This means that service isn't in the groups
+                continue
+            
+            item = {'id': uc.service_id,
+                    'stuff': uc.stuff}
+            lst.append(item)
+
+        return vaultMsg(True, "Stuff", {'user_pubkey': usr.pubkey,
+                                        'user_id': usr.id,
+                                        'ciphers': lst})
+    
+        # TODO: terminate grant.. and fix this stuff..
+        for grp in groups:
+            grp = int(grp)
+            # Add to usr.groups.append(Group.get(grp))
+            # To continue..
 
         Session.commit()
 
-        return vaultMsg(True, "Levels granted successfully")
+        return vaultMsg(True, "Privileges granted successfully")
 
     @authenticated_user
     def sflvault_addmachine(self, authtok, customer_id, name, fqdn, ip, location, notes):
@@ -274,7 +299,7 @@ class XmlrpcController(MyXMLRPCController):
 
     @authenticated_user
     def sflvault_addservice(self, authtok, machine_id, parent_service_id, url,
-                            level, secret, notes):
+                            group_id, secret, notes):
 
         # parent_service_id takes precedence over machine_id.
         if parent_service_id:
@@ -293,7 +318,8 @@ class XmlrpcController(MyXMLRPCController):
         ns.machine_id = int(machine_id)
         ns.parent_service_id = parent_service_id or None
         ns.url = url
-        ns.level = level
+        ns.group_id = int(group_id)
+        # seckey is the AES256 symmetric key, to be encrypted for each user.
         (seckey, ciphertext) = encrypt_secret(secret)
         ns.secret = ciphertext
         ns.secret_last_modified = datetime.now()
@@ -301,45 +327,42 @@ class XmlrpcController(MyXMLRPCController):
 
         Session.commit()
 
-        # TODO: get list of users to encrypt for (using levels assocs)
-        lvls = UserLevel.query.filter_by(level=level).group_by('user_id').all()
+        # Get all users from the group_id, and all admins.
+        encusers = Group.query.get(group_id).users
+        admusers = User.query.filter_by(is_admin=True).all()
 
-        # Automatically add level to admin users, when creating a new level.
-        if not len(lvls):
-            us = User.query.filter_by(is_admin=True).all()
-            for x in us:
-                # Don't encode for users that aren't setup.
-                if not x.pubkey:
-                    continue
-                ul = UserLevel()
-                ul.user_id = x.id
-                ul.level = level
-                lvls.append(ul)
-            Session.commit()
+        # Merge two lists
+        for adm in admusers:
+            if adm not in encusers:
+                encusers.append(adm)
+                
+        ## TODO: move all that to centralised 'save_service_password'
+        ## that can be used on add-service calls and also on change-password
+        ## calls
 
         userlist = []
-        for lvl in lvls:
-            # Don't encode for users that aren't setup.
-            if not lvl.user.pubkey:
+        for usr in encusers:
+            # pubkey required to encrypt for user
+            if not usr.pubkey:
                 continue
 
             # Encode for that user, store in UserCiphers
             nu = Usercipher()
             nu.service_id = ns.id
-            nu.user_id = lvl.user_id
+            nu.user_id = usr.id
 
-            g = lvl.user.elgamal()
-            nu.stuff = serial_elgamal_msg(g.encrypt(seckey, randfunc(32)))
-            del(g)
+            eg = usr.elgamal()
+            nu.stuff = serial_elgamal_msg(eg.encrypt(seckey, randfunc(32)))
+            del(eg)
             
-            userlist.append(lvl.user.username) # To return listing.
+            userlist.append(usr.username) # To return listing.
 
         Session.commit()
 
         del(seckey)
 
         return vaultMsg(True, "Service added.", {'service_id': ns.id,
-                                                  'encrypted_for': userlist})
+                                                 'encrypted_for': userlist})
 
     @authenticated_admin
     def sflvault_deluser(self, authtok, username):
@@ -379,15 +402,28 @@ class XmlrpcController(MyXMLRPCController):
         return vaultMsg(True, 'Here is the customer list', {'list': out})
 
 
+    @authenticated_admin
+    def sflvault_addgroup(self, authtok, group_name):
+
+        ng = Group()
+
+        ng.name = group_name
+
+        Session.commit()
+
+        return vaultMsg(True, "Added group '%s'" % ng.name,
+                        {'name': ng.name, 'group_id': int(ng.id)})
+
+
     @authenticated_user
-    def sflvault_listlevels(self, authtok):
-        lvls = UserLevel.query.group_by(UserLevel.level).all()
+    def sflvault_listgroups(self, authtok):
+        groups = Group.query.group_by(Group.name).all()
 
         out = []
-        for x in lvls:
-            out.append(x.level)
+        for x in groups:
+            out.append({'id': x.id, 'name': x.name})
 
-        return vaultMsg(True, 'Here is the list of levels', {'list': out})
+        return vaultMsg(True, 'Here is the list of groups', {'list': out})
 
 
     @authenticated_user

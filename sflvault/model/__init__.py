@@ -23,6 +23,7 @@ from pylons import config
 from sqlalchemy import Column, MetaData, Table, types, ForeignKey
 from sqlalchemy.orm import mapper, relation, backref
 from sqlalchemy.orm import scoped_session, sessionmaker, eagerload, lazyload
+from sqlalchemy.orm import eagerload_all
 from datetime import *
 
 from Crypto.PublicKey import ElGamal
@@ -55,16 +56,32 @@ users_table = Table("users", metadata,
                     # This stamp is used to wipe users which haven't 'setup'
                     # their account before this date/time
                     Column('waiting_setup', types.DateTime, nullable=True),
-                    Column('created_time', types.DateTime, default=datetime.now()),
+                    Column('created_time', types.DateTime,
+                           default=datetime.now()),
                     # Admin flag, allows to add users, and grant access.
                     Column('is_admin', types.Boolean, default=False)
                     )
 
-userlevels_table = Table('userlevels', metadata,
+usergroups_table = Table('users_groups', metadata,
                          Column('id', types.Integer, primary_key=True),
-                         Column('user_id', types.Integer, ForeignKey('users.id')),
-                         Column('level', types.Unicode(50), index=True)
+                         Column('user_id', types.Integer,
+                                ForeignKey('users.id')),
+                         Column('group_id', types.Integer,
+                                ForeignKey('groups.id')),
                          )
+
+groups_table = Table('groups', metadata,
+                     Column('id', types.Integer, primary_key=True),
+                     Column('name', types.Unicode(50)),
+                     )
+                                
+# This is deprecated by usergroups + groups
+#userlevels_table = Table('userlevels', metadata,
+#                         Column('id', types.Integer, primary_key=True),
+#                         Column('user_id', types.Integer,
+#                                ForeignKey('users.id')),
+#                         Column('level', types.Unicode(50), index=True)
+#                         )
 
 customers_table = Table('customers', metadata,
                         Column('id', types.Integer, primary_key=True),
@@ -95,11 +112,14 @@ machines_table = Table('machines', metadata,
 services_table = Table('services', metadata,
                        Column('id', types.Integer, primary_key=True),
                        # Service lies on which Machine ?
-                       Column('machine_id', types.Integer, ForeignKey('machines.id')),
+                       Column('machine_id', types.Integer,
+                              ForeignKey('machines.id')),
                        # Hierarchical service required to access this one ?
-                       Column('parent_service_id', types.Integer, ForeignKey('services.id')),
+                       Column('parent_service_id', types.Integer,
+                              ForeignKey('services.id')),
+                       Column('group_id', types.Integer,
+                              ForeignKey('groups.id')),
                        Column('url', types.String(250)), # Full service desc.
-                       Column('level', types.Unicode(50)),
                        # simplejson'd python structures, depends on url scheme
                        Column('metadata', types.Text), # reserved.
                        Column('notes', types.Text),
@@ -148,9 +168,18 @@ class User(object):
     def __repr__(self):
         return "<User u#%d: %s>" % (self.id, self.username)
 
-class UserLevel(object):
+class UserGroup(object):    
     def __repr__(self):
-        return "<UserLevel: %s>" % (self.level)
+        return "<UserGroup element>"
+
+class Group(object):
+    def __repr__(self):
+        return "<Group: %s>" % (self.name)
+    
+# Deprecated by UserGroup + Group
+#class UserLevel(object):
+#    def __repr__(self):
+#        return "<UserLevel: %s>" % (self.level)
 
 class Customer(object):
     def __repr__(self):
@@ -158,11 +187,20 @@ class Customer(object):
 
 # Map each class to its corresponding table.
 mapper(User, users_table, {
-    'levels': relation(UserLevel, backref='user'), #, lazy=True), we'll ask if we need
-    'ciphers': relation(Usercipher, backref='user'), #, lazy=True), we'll ask if we need
+    'groups': relation(Group, secondary=usergroups_table,
+                       backref='users'), # don't eagerload, we'll ask if needed
+    'ciphers': relation(Usercipher, backref='user'),
     })
-mapper(UserLevel, userlevels_table, {
-    
+
+# Not required, the usergroups_table goes through the secondary option
+# of mapper(User).. just above..
+#
+#mapper(UserLevel, userlevels_table, {
+#    
+#    })
+
+mapper(Group, groups_table, {
+    #'userciphers': relation(Usercipher, backref='group'),
     })
 mapper(Customer, customers_table, {
     'machines': relation(Machine, backref='customer', lazy=False)
@@ -176,7 +214,8 @@ mapper(Service, services_table, {
                          backref=backref('parent', uselist=False,
                                          remote_side=[services_table.c.id]),
                          primaryjoin=services_table.c.parent_service_id==services_table.c.id),
-    
+    'group': relation(Group, backref='services'),
+    'userciphers': relation(Usercipher, backref='service'),
     })
 mapper(Usercipher, userciphers_table, {
     
