@@ -246,21 +246,45 @@ class XmlrpcController(MyXMLRPCController):
         if not usr:
             return vaultMsg(False, "Invalid user: %s" % user)
 
+        if isinstance(groups, str):
+            groups = [int(groups)]
+        elif isinstance(groups, int):
+            groups = [groups]
+        elif isinstance(groups, list):
+            groups = [int(x) for x in groups]
+        else:
+            return vaultMsg(False, "Invalid groups specification")
+
+        # Only in those groups
+        srvs = Service.query.filter(Service.group_id.in_(groups)).all()
+
+        # Grab mine and his Userciphers, we're going to fill in the gap
+        hisid = usr.id
+        myid = self.sess['userobj'].id
         usrci = Usercipher.query \
-                    .filter_by(user_id=self.sess['userobj'].id) \
-                    .options(model.eagerload_all('service.group')) \
+                    .filter(User.id.in_([hisid, myid])) \
+                    .filter(Usercipher.service_id.in_([s.id for s in srvs])) \
                     .all()
 
-        lst = []
+        mine = {}
+        his = {}
         for uc in usrci:
-            if uc.service is None:
-                # This means we still have Usercipher for a deleted
-                # service. We do nothing with that
+            if uc.user_id == myid:
+                mine[uc.id] = uc
+            elif uc.user_id == hisid:
+                his[uc.id] = uc
+            else:
+                raise Exception("We didn't ask for those! We should never get there")
+
+        # Now find the missing Ciphers for that user
+        lst = []
+        for ucid in mine.keys():
+
+            # If he already has that Cipher..
+            if his.has_key(ucid):
                 continue
-            
-            if uc.service.group.id not in groups:
-                # This means that service isn't in the groups
-                continue
+
+            uc = mine[ucid]
             
             item = {'id': uc.service_id,
                     'stuff': uc.stuff}
@@ -269,8 +293,11 @@ class XmlrpcController(MyXMLRPCController):
         return vaultMsg(True, "Stuff", {'user_pubkey': usr.pubkey,
                                         'user_id': usr.id,
                                         'ciphers': lst})
+
     
         # TODO: terminate grant.. and fix this stuff..
+        # THIS PART SHOULD BE PART OF ANOTHER sflvault_* CALL,
+        # CALLED JUST AFTER grant()
         for grp in groups:
             grp = int(grp)
             # Add to usr.groups.append(Group.get(grp))
@@ -279,6 +306,7 @@ class XmlrpcController(MyXMLRPCController):
         Session.commit()
 
         return vaultMsg(True, "Privileges granted successfully")
+        # UNTIL HERE...
 
     @authenticated_user
     def sflvault_addmachine(self, authtok, customer_id, name, fqdn, ip, location, notes):
