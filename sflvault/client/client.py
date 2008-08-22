@@ -21,7 +21,8 @@
 
 
 PROGRAM = "SFLvault"
-VERSION = "0.6.1"
+# TODO: remove this!
+VERSION = "0.6.2"
 
 import optparse
 import os
