@@ -9,8 +9,8 @@ except ImportError:
 
 setup(
     name='SFLvault',
-    version="0.5.0",
-    description='Secure networked password store and credentials manager - Bundle',
+    version="0.6.0",
+    description='Secure networked password store and credentials manager',
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
     url='http://www.sflvault.org',
