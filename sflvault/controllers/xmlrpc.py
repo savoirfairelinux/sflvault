@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 # Configuration
 #
 # TODO: make those configurable
-SETUP_TIMEOUT = 60
+SETUP_TIMEOUT = 300
 SESSION_TIMEOUT = 300
 
 
@@ -95,7 +95,6 @@ class XmlrpcController(MyXMLRPCController):
                                  })
 
             return vaultMsg(True, 'Authentication successful', {'authtok': newtok})
-
 
 
     def sflvault_setup(self, username, pubkey):
@@ -220,19 +219,37 @@ class XmlrpcController(MyXMLRPCController):
 
     @authenticated_admin
     def sflvault_adduser(self, authtok, username, admin):
-        if (User.query().filter_by(username=username).count()):
+
+        usr = User.query().filter_by(username=username).first()
+
+        msg = ''
+        if usr == None:
+            # New user
+            usr = User()
+            usr.waiting_setup =  datetime.now() + timedelta(0, SETUP_TIMEOUT)
+            usr.username = username
+            usr.is_admin = bool(admin)
+            usr.created_time = datetime.now()
+            
+            msg = 'added'
+        elif usr.waiting_setup:
+            if usr.waiting_setup < datetime.now():
+                # Verify if it's a waiting_setup user that has expired.
+                usr.waiting_setup = datetime.now() + \
+                                    timedelta(0, SETUP_TIMEOUT)
+            
+                msg = 'updated (had setup timeout expired)'
+            else:
+                return vaultMsg(False, "User %s is waiting for setup" % \
+                                username)
+        else:
             return vaultMsg(False, 'User %s already exists.' % username)
         
-        n = User()
-        n.waiting_setup =  datetime.now() + timedelta(0, SETUP_TIMEOUT)
-        n.username = username
-        n.is_admin = bool(admin)
-        n.created_time = datetime.now()
-
         Session.commit()
 
-        return vaultMsg(True, '%s added. User has a delay of %d seconds to invoke a "setup" command' % (admin and 'Admin user' or 'User',
-                                                                                                         SETUP_TIMEOUT), {'user_id': n.id})
+        return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "setup" command' % \
+                        (admin and 'Admin user' or 'User',
+                         msg, SETUP_TIMEOUT), {'user_id': usr.id})
 
 
     @authenticated_admin
@@ -389,8 +406,26 @@ class XmlrpcController(MyXMLRPCController):
         return vaultMsg(True, "Privileges granted successfully")
 
 
+
+    @authenticated_admin
+    def sflvault_revoke(self, authtok, user, group_ids):
+        """Revoke permissions (and destroy ciphers for user) of a group
+        for a user"""
+
+        # Remove group from user.groups
+
+        # Remove all user-ciphers for services in those groups
+
+        # TODO(future): Make sure when you remove a Usercipher for a service
+        # that matches the specified groups, that you keep it if another group
+        # that you are not removing still exists for the user.
+
+
     @authenticated_admin
     def sflvault_analyze(self, authtok, user):
+        """Return a report of the left-overs (if any) of ciphers on a certain
+        user. Report the number of missing ciphers, the amount to be removed,
+        etc.."""
 
         # TODO: DRY
         uq = User.query()
@@ -627,7 +662,8 @@ class XmlrpcController(MyXMLRPCController):
             nx = {'id': x.id, 'username': x.username,
                   'created_stamp': stmp,
                   'is_admin': x.is_admin,
-                  'setup_expired': x.setup_expired()}
+                  'setup_expired': x.setup_expired(),
+                  'waiting_setup': bool(x.waiting_setup)}
             out.append(nx)
 
         # Can use: datetime.fromtimestamp(x.created_stamp)

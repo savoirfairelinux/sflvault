@@ -61,6 +61,13 @@ class ssh(Service):
     #p = pexpect.spawn('/bin/bash') # Note this is global and used in sigwinch_passthrough.
     #signal.signal(signal.SIGWINCH, sigwinch_passthrough)
 
+    def __init__(self, data, timeout=45):
+        self.timeout = timeout
+        
+        # Call parent
+        Service.__init__(self, data)
+        
+
     def required(self, provide=None):
         """Verify if this service handler can provide `provide` type of connection.
 
@@ -118,15 +125,25 @@ class ssh(Service):
 
         self.shell_handle = cnx
 
-        idx = cnx.expect(['assword:', 'Last login'], timeout=20)
+        idx = cnx.expect(['assword:', 'Last login',
+                         "(?i)are you sure you want to continue connecting"],
+                         timeout=self.timeout)
+        
         sys.stdout.write(cnx.before)
         sys.stdout.write(cnx.after)
+
+        if idx == 2:
+            cnx.sendline('yes')
+            idx = cnx.expect(['assword:', 'Last login'],
+                             timeout=self.timeout)
+            sys.stdout.write(cnx.before)
+            sys.stdout.write(cnx.after)
         
         if idx == 0:
             # Send password
             sys.stdout.write(" [sending password...] ")
             cnx.sendline(self.data['plaintext'])
-            idx = cnx.expect([r'\[.*@.*\][$#]'], timeout=10)
+            idx = cnx.expect([r'\[.*@.*\][$#]'], timeout=self.timeout)
             if idx == 0:
                 sys.stdout.write(cnx.before)
                 sys.stdout.write(cnx.after)
@@ -186,6 +203,11 @@ class mysql(ssh):
 
     provides_modes = [PROV_MYSQL_CONSOLE]
 
+    def __init__(self, data, timeout=45):
+
+        # Call parent
+        ssh.__init__(self, data, timeout)
+        
     def required(self, provide=None):
         """Verify if this service handler can provide `provide` type of connection.
 
@@ -225,14 +247,14 @@ class mysql(ssh):
 
         cnx.sendline(cmd)
 
-        idx = cnx.expect(['assword:', 'ERROR \d*'], timeout=20)
+        idx = cnx.expect(['assword:', 'ERROR \d*'], timeout=self.timeout)
         sys.stdout.write(cnx.before)
         sys.stdout.write(cnx.after)
         
         if idx == 0:
             sys.stdout.write(" [sending password...] ")
             cnx.sendline(self.data['plaintext'])
-            idx = cnx.expect(['mysql>', 'ERROR \d*'], timeout=10)
+            idx = cnx.expect(['mysql>', 'ERROR \d*'], timeout=self.timeout)
             if idx == 0:
                 sys.stdout.write(cnx.before)
                 sys.stdout.write(cnx.after)
