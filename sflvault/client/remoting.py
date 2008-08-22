@@ -159,7 +159,7 @@ class Chain(object):
                     break
 
             if not service:
-                raise RemotingException("Service %s has no handler" % srvdata['url'])
+                raise RemotingError("Service %s has no handler" % srvdata['url'])
 
             service_list.append(service)
             
@@ -174,7 +174,7 @@ class Chain(object):
 
         # Call .required() on the LAST element, and setup all the chain.
         if not last.required():
-            raise RemotingException("No services route to destination")
+            raise RemotingError("No services route to destination")
         else:
             self.ready = True
             return True

@@ -632,7 +632,7 @@ class SFLvaultClient(object):
             secret = ''
 
             if not x['usercipher']:
-                raise RemotingException("We don't have access to password for service %s" % x['url'])
+                raise RemotingError("We don't have access to password for service %s" % x['url'])
                 del(self.privkey) # Clean the cache with the private key.
                 break
 
