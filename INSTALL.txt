@@ -4,6 +4,22 @@ SFLvault quick install
 If there is a package for your distribution, then use it! It's much
 simpler.
 
+SFLvault quick install
+----------------------
+
+Under Ubuntu 8.04
+
+  sudo apt-get install python-setuptools python-pysqlite2 python-simplejson python-crypto
+
+  easy_install SFLvault
+
+On the shell, type:
+
+  sflvault
+
+to access the client.
+
+
 
 SFLvault installation from source
 ---------------------------------
