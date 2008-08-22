@@ -27,6 +27,8 @@ from ConfigParser import ConfigParser
 
 import xmlrpclib
 import getpass
+import sys
+import re
 import os
 
 from decorator import decorator
@@ -60,7 +62,7 @@ def authenticate(keep_privkey=False):
         self is there because it's called on class elements.
         """
         username = self.cfg.get('SFLvault', 'username')
-        ### TODO: implement encryption of the private key.
+
         try:
             privkey_enc = self.cfg.get('SFLvault', 'key')
         except:
@@ -73,7 +75,7 @@ def authenticate(keep_privkey=False):
             print "[SFLvault] Invalid pass-phrase"
             return False
             
-        privpass = randfunc(32)
+        privpass = randfunc(len(privpass))
         del(privpass)
 
         # TODO: maybe check when we're already logged in, and check
@@ -358,7 +360,7 @@ class SFLvaultClient(object):
         print "New service ID: s#%d" % retval['service_id']
 
 
-    @authenticate()
+    @authenticate(True)
     def grant(self, user, groups):
         """Add permissions to a certain user for certain groups.
 
@@ -367,10 +369,64 @@ class SFLvaultClient(object):
         retval = vaultReply(self.vault.grant(self.authtok, user, groups),
                             "Error granting group permissions.")
 
-        
         print "Success: %s" % retval['message']
-        pprint(retval)
 
+        # Get the pubkey, create an ElGamal object with it.
+        his_el = ElGamal.ElGamalobj()
+        (his_el.p,
+         his_el.g,
+         his_el.y) = unserial_elgamal_pubkey(retval['user_pubkey'])
+
+        encstuff = []
+        total = len(retval['ciphers'])
+        count = 0
+        print "Encrypting ciphers for user..."
+        for cipher in retval['ciphers']:
+            # cipher = {'id': service_id, 'stuff': encrypted_symkey}
+            # Decrypt the encrypted_symkey with my privkey
+            try:
+                aeskey = self.privkey.decrypt(unserial_elgamal_msg(cipher['stuff']))
+            except Exception, e:
+                raise DecryptError("Unable to decrypt my Usercipher: %s" % e.message)
+            
+            # Encrypt the symkey with his pubkey
+            stuff = serial_elgamal_msg(his_el.encrypt(aeskey, randfunc(32)))
+            
+            # Report progress
+            count += 1
+            sys.stdout.write("\r  %d of %d " % (count, total))
+            sys.stdout.flush()
+            
+            # Add to the list to be returned in grantupdate() call.
+            encstuff.append({'id': cipher['id'],
+                             'stuff': stuff})
+
+        sys.stdout.write("\ndone.\n")
+
+        # Delete private key in this client, so that we ask the passphrase
+        # again to push the grant update. (NOTE: for now, if you remove this
+        # it will still ask  your passphrase.. since there is no check for
+        # that at the moment)
+        del(self.privkey)
+
+        # Push the ciphers up to the Vault
+        self.grantupdate(retval['user_id'], encstuff)
+
+    @authenticate()
+    def grantupdate(self, user, ciphers):
+        """Close the loop with grant(), and send the ciphers back to the
+        Vault.
+
+        user - user_id or username
+        ciphers - list of dicts {'id': service_id, 'stuff': encrypted_cipher}
+        """
+        retval = vaultReply(self.vault.grantupdate(self.authtok, user,
+                                                   ciphers),
+                            "Error sending encrypted ciphers to the Vault.")
+
+        print "Success: %s" % retval['message']
+
+                            
     
     def setup(self, username, vault_url):
         """Sets up the local configuration to communicate with the Vault.
@@ -499,7 +555,7 @@ class SFLvaultClient(object):
                 try:
                     aeskey = self.privkey.decrypt(unserial_elgamal_msg(x['usercipher']))
                 except:
-                    raise PermissionError("Unable to decrypt Usercipher.")
+                    raise DecryptError("Unable to decrypt Usercipher.")
             
                 secret = decrypt_secret(aeskey, x['secret'])
             

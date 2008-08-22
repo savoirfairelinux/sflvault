@@ -56,8 +56,8 @@ class XmlrpcController(MyXMLRPCController):
         # Save decoded version to user's db field.
         try:
             u = User.query().filter_by(username=username).one()
-        except:
-            return vaultMsg(False, 'User unknown')
+        except Exception, e:
+            return vaultMsg(False, "User unknown: %s" % e.message )
         # TODO: implement throttling ?
 
         rnd = randfunc(32)
@@ -236,8 +236,11 @@ class XmlrpcController(MyXMLRPCController):
 
     @authenticated_admin
     def sflvault_grant(self, authtok, user, groups):
-        """Can get user as user_id, or username"""
-        # Add UserLevels corresponding to each levels in the dict
+        """Grant privileges to a user, for certain groups.
+
+        user - either a numeric user_id, or a username
+        groups - list of numeric `group_id`s or a single group_id
+        """
         if isinstance(user, int):
             usr = User.query().filter_by(id=user).first()
         else:
@@ -301,15 +304,64 @@ class XmlrpcController(MyXMLRPCController):
         for grp in groups:
             grp = int(grp)
             # Add to usr.groups.append(Group.get(grp))
-            # To continue..
+  
 
+    @authenticated_admin
+    def sflvault_grantupdate(self, authtok, user, ciphers):
+        """Receive a user and ciphers to be stored into the database.
+
+        user - either username, or user_id
+        ciphers - hash composed of 'id' (service_id) and encrypted 'stuff'.
+        """
+
+        # TODO: validate those ciphers, make sure the user doesn't already have
+        # them, so that you don't override them, and don't insert them twice.
+        if isinstance(user, int):
+            usr = User.query().filter_by(id=user).first()
+        else:
+            usr = User.query().filter_by(username=user).first()
+
+        if not usr:
+            return vaultMsg(False, "Invalid user: %s" % user)
+        
+        hisid = usr.id
+        usrci = Usercipher.query.filter_by(user_id=hisid) \
+                    .filter(Usercipher.service_id.in_( \
+                                                [s['id'] for s in ciphers])) \
+                    .all()
+
+        # Get a list of all service_id he already has
+        usr_services = [uc.service_id for uc in usrci]
+
+        for ci in ciphers:
+            if not isinstance(ci, dict) or not ci.has_key('id') \
+                                         or not ci.has_key('stuff'):
+                return vaultMsg(False, "Malformed ciphers (must be dicts, with 'id' and 'stuff')");
+
+
+            if ci['id'] in usr_services:
+                # Hey, don't send me stuff I already have!
+                # TODO: log this event, raise an error ??
+                #continue
+                return vaultMsg(False, "Encrypted ciphers already present for user %s" % usr.username)
+
+            nu = Usercipher()
+            nu.user_id = hisid
+            nu.service_id = ci['id']
+            nu.stuff = ci['stuff']
+            
+
+        # Loop received ciphers, make sure they aren't already in, and add them
         Session.commit()
 
+        # TODO: Log this event somewhere! thanks :)
+
         return vaultMsg(True, "Privileges granted successfully")
-        # UNTIL HERE...
+
 
     @authenticated_user
-    def sflvault_addmachine(self, authtok, customer_id, name, fqdn, ip, location, notes):
+    def sflvault_addmachine(self, authtok, customer_id, name, fqdn, ip,
+                            location, notes):
         
         n = Machine()
         n.customer_id = int(customer_id)
@@ -462,7 +514,8 @@ class XmlrpcController(MyXMLRPCController):
         for x in lst:
             nx = {'id': x.id, 'name': x.name, 'fqdn': x.fqdn, 'ip': x.ip,
                   'location': x.location, 'notes': x.notes,
-                  'customer_id': x.customer_id, 'customer_name': x.customer.name}
+                  'customer_id': x.customer_id,
+                  'customer_name': x.customer.name}
             out.append(nx)
 
         return vaultMsg(True, "Here is the machines list", {'list': out})
