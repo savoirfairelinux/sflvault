@@ -188,7 +188,6 @@ def decrypt_secret(seckey, ciphertext):
         secret = sec2
     except DecryptError, e:
         print "NOTE: Using old decryption algorithm. Please update password in database."
-        print "TODO: remove this functionality, once database migration was done"
     
     del(a)
     del(ciphertext)

@@ -281,7 +281,7 @@ class XmlrpcController(MyXMLRPCController):
         hisid = usr.id
         myid = self.sess['userobj'].id
         usrci = Usercipher.query \
-                    .filter(User.id.in_([hisid, myid])) \
+                    .filter(Usercipher.user_id.in_([hisid, myid])) \
                     .filter(Usercipher.service_id.in_([s.id for s in srvs])) \
                     .all()
 
