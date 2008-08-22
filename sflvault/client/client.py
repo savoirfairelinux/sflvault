@@ -170,9 +170,9 @@ class SFLvaultParser(object):
         username = self.args[0]
         groups = [int(x) for x in self.opts.groups]
 
+        # Calls grant and grandupdate on the Vault
         retval = self.vault.grant(username, groups)
-        # TODO: We'll receive all the pubkeys over here, and we need to re-
-        # encode all the symkeys for users in that group
+
 
     def add_customer(self):
         """Add a new customer to the Vault's database."""

@@ -152,7 +152,8 @@ class XmlrpcController(MyXMLRPCController):
 
             if not s.parent:
                 break
-            
+
+            # Load the parent...
             s = s.parent
 
             # check if we're not in an infinite loop!
@@ -235,12 +236,13 @@ class XmlrpcController(MyXMLRPCController):
 
 
     @authenticated_admin
-    def sflvault_grant(self, authtok, user, groups):
+    def sflvault_grant(self, authtok, user, group_ids):
         """Grant privileges to a user, for certain groups.
 
         user - either a numeric user_id, or a username
-        groups - list of numeric `group_id`s or a single group_id
+        group_ids - list of numeric `group_id`s or a single group_id
         """
+        # TODO: DRY
         if isinstance(user, int):
             usr = User.query().filter_by(id=user).first()
         else:
@@ -249,17 +251,31 @@ class XmlrpcController(MyXMLRPCController):
         if not usr:
             return vaultMsg(False, "Invalid user: %s" % user)
 
-        if isinstance(groups, str):
-            groups = [int(groups)]
-        elif isinstance(groups, int):
-            groups = [groups]
-        elif isinstance(groups, list):
-            groups = [int(x) for x in groups]
+        # Get groups
+        if isinstance(group_ids, str):
+            groupids = [int(group_ids)]
+        elif isinstance(group_ids, int):
+            groupids = [group_ids]
+        elif isinstance(group_ids, list):
+            group_ids = [int(x) for x in group_ids]
         else:
             return vaultMsg(False, "Invalid groups specification")
 
+        # Pull the groups from the DB
+        groups = Group.query.filter(Group.id.in_(group_ids)).all()
+
+        if len(groups) != len(group_ids):
+            # Woah, you specified groups that didn't exist ?
+            
+            gcopy = group_ids
+            for x in groups:
+                if x.id in gcopy:
+                    gcopy.remove(x.id)
+
+            return vaultMsg(False, "Invalid group(s): %s" % gcopy)
+
         # Only in those groups
-        srvs = Service.query.filter(Service.group_id.in_(groups)).all()
+        srvs = Service.query.filter(Service.group_id.in_(group_ids)).all()
 
         # Grab mine and his Userciphers, we're going to fill in the gap
         hisid = usr.id
@@ -273,9 +289,9 @@ class XmlrpcController(MyXMLRPCController):
         his = {}
         for uc in usrci:
             if uc.user_id == myid:
-                mine[uc.id] = uc
+                mine[uc.service_id] = uc
             elif uc.user_id == hisid:
-                his[uc.id] = uc
+                his[uc.service_id] = uc
             else:
                 raise Exception("We didn't ask for those! We should never get there")
 
@@ -293,17 +309,31 @@ class XmlrpcController(MyXMLRPCController):
                     'stuff': uc.stuff}
             lst.append(item)
 
-        return vaultMsg(True, "Stuff", {'user_pubkey': usr.pubkey,
-                                        'user_id': usr.id,
-                                        'ciphers': lst})
+        # Check if user has already access to groups
+        add_groupset = set(groups)
+        his_groupset = set(usr.groups)
+        add_groups = add_groupset.difference(his_groupset)
+        has_groups = his_groupset.intersection(his_groupset)
 
-    
-        # TODO: terminate grant.. and fix this stuff..
-        # THIS PART SHOULD BE PART OF ANOTHER sflvault_* CALL,
-        # CALLED JUST AFTER grant()
-        for grp in groups:
-            grp = int(grp)
-            # Add to usr.groups.append(Group.get(grp))
+        msg = []
+        if len(add_groups):
+            txt_groups = ', '.join([g.name for g in add_groups])
+            msg.append("Added groups: %s" % txt_groups)
+        if len(has_groups):
+            txt_groups = ', '.join([g.name for g in has_groups])
+            msg.append("Already was in group: %s" % txt_groups)
+
+
+        # Add groups that weren't there.
+        usr.groups.extend(list(add_groups))
+        
+        Session.commit()
+
+        return vaultMsg(True, "%s, waiting for encryption round-trip" % \
+                                                  (', '.join(msg)),
+                        {'user_pubkey': usr.pubkey,
+                         'user_id': usr.id,
+                         'ciphers': lst})
   
 
     @authenticated_admin
@@ -314,8 +344,7 @@ class XmlrpcController(MyXMLRPCController):
         ciphers - hash composed of 'id' (service_id) and encrypted 'stuff'.
         """
 
-        # TODO: validate those ciphers, make sure the user doesn't already have
-        # them, so that you don't override them, and don't insert them twice.
+        # TODO: DRY
         if isinstance(user, int):
             usr = User.query().filter_by(id=user).first()
         else:

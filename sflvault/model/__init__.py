@@ -189,7 +189,7 @@ class Customer(object):
 mapper(User, users_table, {
     'groups': relation(Group, secondary=usergroups_table,
                        backref='users'), # don't eagerload, we'll ask if needed
-    'ciphers': relation(Usercipher, backref='user'),
+    'userciphers': relation(Usercipher, backref='user'),
     })
 
 # Not required, the usergroups_table goes through the secondary option
