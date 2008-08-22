@@ -315,6 +315,7 @@ class XmlrpcController(MyXMLRPCController):
         add_groups = add_groupset.difference(his_groupset)
         has_groups = his_groupset.intersection(his_groupset)
 
+        # Just generate the message..
         msg = []
         if len(add_groups):
             txt_groups = ', '.join([g.name for g in add_groups])
@@ -386,6 +387,67 @@ class XmlrpcController(MyXMLRPCController):
         # TODO: Log this event somewhere! thanks :)
 
         return vaultMsg(True, "Privileges granted successfully")
+
+
+    @authenticated_admin
+    def sflvault_analyze(self, authtok, user):
+
+        # TODO: DRY
+        uq = User.query()
+        if isinstance(user, int):
+            uq = uq.filter_by(id=user)
+        else:
+            uq = uq.filter_by(username=user)
+            
+        # Grab for groups joins
+        uq1 = uq.options(eagerload_all('groups.services'))
+        usr1 = uq.first()
+        
+        # Grab for userciphers joins..
+        uq2 = uq.options(eagerload_all('userciphers.service.group'))
+        usr2 = uq2.first()
+        
+        if not usr1:
+            return vaultMsg(False, "Invalid user: %s" % user)
+
+
+        # All services user should have access to
+        all_servs = []
+        for g in usr1.groups:
+            all_servs.extend(g.services)
+        # Services for which user has already ciphers
+        ciph_servs = [uc.service for uc in usr2.userciphers]
+
+        all_set = set(all_servs)
+        ciph_set = set(ciph_servs)
+
+        common_set = all_set.intersection(ciph_set)
+
+        missing_set = all_set.difference(ciph_set)
+        over_set = ciph_set.difference(all_set)
+
+        # List groups that are missing (to be re-granted)
+        missing_groups = {}
+        for m in missing_set:
+            missing_groups[str(m.group.id)] = m.group.name
+
+        # List groups that are over (to be revoked)
+        over_groups = {}
+        for o in over_set:
+            over_groups[str(o.group.id)] = o.group.name
+
+        # Generate report:
+
+        report = {}
+        report['total_services'] = len(all_set)
+        report['total_ciphers'] = len(ciph_set)
+        report['missing_ciphers'] = len(missing_set)
+        report['missing_groups'] = missing_groups
+        report['over_ciphers'] = len(over_set)
+        report['over_groups'] = over_groups
+
+        return vaultMsg(True, "Analysis report for user %s" % usr1.username,
+                        report)
 
 
     @authenticated_user

@@ -359,6 +359,49 @@ class SFLvaultClient(object):
         print "Success: %s" % retval['message']
         print "New service ID: s#%d" % retval['service_id']
 
+    @authenticate()
+    def analyze(self, user):
+        """Analyze the status of ciphers for a certain user.
+
+        user - user_id or username
+        """
+        retval = vaultReply(self.vault.analyze(self.authtok, user),
+                            "Error analyzing user %s " % user)
+
+        print "Success: %s" % retval['message']
+
+        # Report as received by XML-RPC:
+        #report['total_services'] = len(all_set)
+        #report['total_ciphers'] = len(ciph_set)
+        #report['missing_ciphers'] = len(missing_set)
+        #report['missing_groups'] = missing_groups (dict(id: group_name))
+        #report['over_ciphers'] = len(over_set)
+        #report['over_groups'] = over_groups (dict(id: group_name))
+
+        print '-' * 79
+        print "User should have access to:  %d services" % \
+                                            retval['total_services']
+        print "User has access to:          %d services's ciphers" % \
+                                            retval['total_ciphers']
+        print '-' * 79
+        print "There are:                   %d missing ciphers" % \
+                                            retval['missing_ciphers']
+        print "There are:                   %d ciphers to be removed" % \
+                                            retval['over_ciphers']
+        print '-' * 79
+        if retval['missing_ciphers']:
+            # Print the groups to be re-granted
+            print "Groups to be re-granted to complete round-trip:"
+            for x in retval['missing_groups'].keys():
+                print "    g#%s  %s" % (x, retval['missing_groups'][x])
+        if retval['over_ciphers']:
+            # Print the groups to be revoked as quickly as possible
+            print "Groups to be revoked on user to clean database:"
+            for x in retval['over_groups'].keys():
+                print "    g#%s  %s" % (x, retval['over_groups'][x])
+        print '-' * 79
+        print "End of analysis report"
+
 
     @authenticate(True)
     def grant(self, user, groups):

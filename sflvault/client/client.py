@@ -154,6 +154,20 @@ class SFLvaultParser(object):
 
         self.vault.add_user(username, admin)
 
+    def analyze(self):
+        """Analyze user's ciphers state. Check for over-grants and under-grants
+        """
+        self.parser.set_usage("analyze username|user_id")
+
+        self._parse()
+
+        if len(self.args) != 1:
+            raise SFLvaultParserError("Invalid number of arguments, 'user' required.")
+
+        user = self.args[0]
+        retval = self.vault.analyze(user)
+
+
     def grant(self):
         """Grant group permissions to user.
 
