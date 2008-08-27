@@ -237,7 +237,7 @@ def get_user(user, eagerload_all_=None):
         uq = User.query().filter_by(username=user)
 
     if eagerload_all_:
-        uq = uq.options(eagerload_all(eagerload_all_)).first()
+        uq = uq.options(eagerload_all(eagerload_all_))
 
     usr = uq.first()
     

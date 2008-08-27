@@ -266,7 +266,7 @@ class XmlrpcController(MyXMLRPCController):
 
         # Get groups
         try:
-            groups, group_ids = model.get_groups_list(groups_id)
+            groups, group_ids = model.get_groups_list(group_ids)
         except ValueError, e:
             return vaultMsg(False, str(e))
         
