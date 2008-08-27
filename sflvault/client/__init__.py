@@ -488,9 +488,24 @@ class SFLvaultClient(object):
         # Marshal the ElGamal key
         pubkey = (eg.p, eg.g, eg.y)
 
-        # TODO: make password CONFIRMATION
-        privpass = getpass.getpass("Enter a password to secure your private key locally: ")
+        print "You will need a passphrase to secure your private key. The"
+        print "encrypted key will be stored on this machine in %s" % CONFIG_FILE
+        print '-' * 80
+        
+        while True:
+            privpass = getpass.getpass("Enter passphrase (to secure your private key): ")
+            privpass2 = getpass.getpass("Enter passphrase again: ")
 
+            if privpass != privpass2:
+                print "Passphrase mismatch, try again."
+            elif privpass == '':
+                print "Passphrase cannot be null."
+            else:
+                # Ok, let's go..
+                privpass2 = randfunc(len(privpass2))
+                break
+
+        
         print "Sending request to vault..."
         # Send it to the vault, with username
         retval = vaultReply(self.vault.setup(username,
@@ -511,7 +526,7 @@ class SFLvaultClient(object):
                      encrypt_privkey(serial_elgamal_privkey([eg.p, eg.x, \
                                                              eg.g, eg.y]),
                                      privpass))
-        privpass = randfunc(32)
+        privpass = randfunc(len(privpass))
         eg.p = randfunc(32)
         eg.x = randfunc(32)
         del(eg)
