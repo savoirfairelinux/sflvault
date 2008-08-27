@@ -391,7 +391,7 @@ class SFLvaultClient(object):
         print '-' * 79
         if retval['missing_ciphers']:
             # Print the groups to be re-granted
-            print "Groups to be re-granted to complete round-trip:"
+            print "Groups to be re-granted to complete membership:"
             for x in retval['missing_groups'].keys():
                 print "    g#%s  %s" % (x, retval['missing_groups'][x])
         if retval['over_ciphers']:
@@ -413,6 +413,12 @@ class SFLvaultClient(object):
                             "Error granting group permissions.")
 
         print "Success: %s" % retval['message']
+
+        total = len(retval['ciphers'])
+
+        if total == 0:
+            print "No ciphers received for encoding"
+            return
 
         # Get the pubkey, create an ElGamal object with it.
         his_el = ElGamal.ElGamalobj()

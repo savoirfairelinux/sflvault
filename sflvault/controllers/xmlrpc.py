@@ -327,8 +327,10 @@ class XmlrpcController(MyXMLRPCController):
         
         Session.commit()
 
-        return vaultMsg(True, "%s, waiting for encryption round-trip" % \
-                                                  (', '.join(msg)),
+        msg.append("waiting for encryption round-trip" if len(lst) else \
+                   "no round-trip required")
+                   
+        return vaultMsg(True, ', '.join(msg),
                         {'user_pubkey': usr.pubkey,
                          'user_id': usr.id,
                          'ciphers': lst})
