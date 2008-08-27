@@ -7,15 +7,15 @@ simpler.
 SFLvault quick install
 ----------------------
 
-Under Ubuntu 8.04
+Under Ubuntu 8.04:
 
-  sudo apt-get install python-setuptools python-pysqlite2 python-simplejson python-crypto python-pexpect
+  $ sudo apt-get install python-setuptools python-pysqlite2 python-simplejson python-crypto python-pexpect
 
-  sudo easy_install SFLvault
+  $ sudo easy_install SFLvault
 
 On the shell, type:
 
-  sflvault
+  $ sflvault
 
 to access the client.
 
