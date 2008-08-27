@@ -1,0 +1,22 @@
+#
+# Script to enable auto-completion of commands in bash
+#
+
+
+# TODO: speed up this thing! It's too slow.. extract it somewhere ?
+
+_sflvault_list_commands()
+{
+    sflvault --list-commands
+}
+
+_sflvault()
+{
+    cur=${COMP_WORDS[COMP_CWORD]}
+
+    COMPREPLY=( $( compgen -W "$(_sflvault_list_commands)"  -- $cur ) )
+
+}
+
+complete -o default -o nospace -F _sflvault sflvault
+

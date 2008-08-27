@@ -59,10 +59,13 @@ class SFLvaultParser(object):
 
         # Setup default action = help
         action = 'help'
+        self.listcmds = False
         if (len(self.argv)):
             # Take out the action.
             action = self.argv.pop(0)
-            if (action in ['-h', '--help']):
+            if action in ['-h', '--help', '--list-commands']:
+                if action == '--list-commands':
+                    self.listcmds = True
                 action = 'help'
 
             # Fix for functions
@@ -85,7 +88,7 @@ class SFLvaultParser(object):
         (self.opts, self.args) = self.parser.parse_args(args=self.argv)
 
 
-    def help(self, cmd = None, error = None):
+    def help(self, cmd=None, error=None):
         """Print this help.
 
         You can use:
@@ -94,6 +97,15 @@ class SFLvaultParser(object):
 
         to get further help for `command`."""
 
+        # For BASH completion.
+        if self.listcmds:
+            # Show only a list of commands, for bash-completion.
+            for x in dir(self):
+                if not x.startswith('_') and callable(getattr(self, x)):
+                    print x.replace('_', '-')
+            sys.exit()
+
+        # Normal help screen.
         print "%s version %s" % (PROGRAM, VERSION)
         print "---------------------------------------------"
 
