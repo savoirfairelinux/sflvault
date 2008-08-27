@@ -558,12 +558,12 @@ class XmlrpcController(MyXMLRPCController):
 
     @authenticated_admin
     def sflvault_deluser(self, authtok, username):
-        
-        try:
-            u = User.query().filter_by(username=username).one()
-        except:
-            return vaultMsg(False, "User %s doesn't exist." % username)
 
+        # Get user
+        try:
+            usr = model.get_user(user)
+        except LookupError, e:
+            return vaultMsg(False, str(e))
 
         Session.delete(u)
         Session.commit()
