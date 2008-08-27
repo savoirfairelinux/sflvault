@@ -155,12 +155,10 @@ class Usercipher(object):
 class User(object):
     def setup_expired(self):
         """Return True/False if waiting_setup has expired"""
-        if (not self.waiting_setup):
+        if self.waiting_setup and self.waiting_setup < datetime.now():
             return True
-        elif (datetime.now() < self.waiting_setup):
-            return False
         else:
-            return True
+            return False
 
     def elgamal(self):
         """Return the ElGamal object, ready to encrypt stuff."""

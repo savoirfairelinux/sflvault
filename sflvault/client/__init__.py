@@ -661,18 +661,30 @@ class SFLvaultClient(object):
                             "Error listing users")
 
         print "User list (with creation date):"
+        
+        to_clean = []  # Expired users to be removed
         for x in retval['list']:
             add = ''
             if x['is_admin']:
                 add += ' [is admin]'
-            if not x['setup_expired']:
+            if x['setup_expired']:
+                add += ' [setup expired]'
+                to_clean.append(x['username'])
+            if x['waiting_setup'] and not x['setup_expired']:
                 add += ' [in setup process]'
-            # dt = datetime.strptime(x['created_stamp'], "
-            #created =
+
             # TODO: load the xmlrpclib.DateTime object into something more fun
             #       to deal with! Some day..
             print "u#%d\t%s\t%s %s" % (x['id'], x['username'],
                                        x['created_stamp'], add)
+
+        print '-' * 80
+
+        if len(to_clean):
+            print "There are expired users. To remove them, run:"
+            for usr in to_clean:
+                print "   sflvault del-user %s" % usr
+        
 
     @authenticate()
     def add_group(self, group_name):
