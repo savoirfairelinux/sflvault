@@ -165,53 +165,51 @@ class XmlrpcController(MyXMLRPCController):
 
 
     @authenticated_user
-    def sflvault_search(self, authtok, query):
+    def sflvault_search(self, authtok, query, verbose=False):
         """Do the search, and return the result tree."""
         # TODO: narrow down search (instead of all(), doh!)
         cs = Customer.query.all()
         ms = Machine.query.all()
         ss = Service.query.all()
 
+        search = model.search_query(query, verbose)
+
+
         # Quick helper funcs, to create the hierarchical 'out' structure.
         def set_customer(out, c):
-            if out.has_key(str(c.id)):
+            if out.has_key(str(c.customers_id)):
                 return
-            out[str(c.id)] = {'name': c.name,
-                         'machines': {}}
+            out[str(c.customers_id)] = {'name': c.customers_name,
+                                        'machines': {}}
+            
         def set_machine(subout, m):
-            if subout.has_key(str(m.id)):
+            if subout.has_key(str(m.machines_id)):
                 return
-            subout[str(m.id)] = {'name': m.name,
-                            'fqdn': m.fqdn or '',
-                            'ip': m.ip or '',
-                            'location': m.location or '',
-                            'notes': m.notes or '',
+            subout[str(m.machines_id)] = {'name': m.machines_name,
+                            'fqdn': m.machines_fqdn or '',
+                            'ip': m.machines_ip or '',
+                            'location': m.machines_location or '',
+                            'notes': m.machines_notes or '',
                             'services': {}}
+            
         def set_service(subsubout, s):
-            subsubout[str(s.id)] = {'url': s.url,
-                               'group': s.group.name or '',
-                               'parent_service_id': s.parent_service_id or '',
-                               # DON'T INCLUDE secret, when we're just searching
-                               #'secret': s.secret or '',
-                               'metadata': s.metadata or '',
-                               'notes': s.notes or ''}
+            subsubout[str(s.services_id)] = {'url': s.services_url,
+                         #TODO: make sure groups goes through correctly
+                         'group': s.groups_name or '',
+                         'parent_service_id': s.services_parent_service_id \
+                                              or '',
+                         'metadata': s.services_metadata or '',
+                         'notes': s.services_notes or ''}
 
         out = {}
         # Loop services, setup machines and customers first.
-        for x in ss:
+        for x in search:
             # Setup customer dans le out, pour le service
-            set_customer(out, x.machine.customer)
-            set_machine(out[str(x.machine.customer.id)]['machines'], x.machine)
-            set_service(out[str(x.machine.customer.id)]['machines'][str(x.machine.id)]['services'], x)
+            set_customer(out, x)
+            set_machine(out[str(x.customers_id)]['machines'], x)
+            set_service(out[str(x.customers_id)]['machines'] \
+                            [str(x.machines_id)]['services'], x)
 
-        # Loop machines, setup customers first.
-        for y in ms:
-            set_customer(out, y.customer)
-            set_machine(out[str(y.customer.id)]['machines'], y)
-
-        # Loop customers !
-        for z in cs:
-            set_customer(out, z)
 
         # Return 'out', in a nicely structured hierarchical form.
         return vaultMsg(True, "Here are the search results", {'results': out})
@@ -259,37 +257,19 @@ class XmlrpcController(MyXMLRPCController):
         user - either a numeric user_id, or a username
         group_ids - list of numeric `group_id`s or a single group_id
         """
-        # TODO: DRY
-        if isinstance(user, int):
-            usr = User.query().filter_by(id=user).first()
-        else:
-            usr = User.query().filter_by(username=user).first()
+        # Get user, and relations
+        try:
+            usr = model.get_user(user)
+        except LookupError, e:
+            return vaultMsg(False, str(e))
 
-        if not usr:
-            return vaultMsg(False, "Invalid user: %s" % user)
 
         # Get groups
-        if isinstance(group_ids, str):
-            groupids = [int(group_ids)]
-        elif isinstance(group_ids, int):
-            groupids = [group_ids]
-        elif isinstance(group_ids, list):
-            group_ids = [int(x) for x in group_ids]
-        else:
-            return vaultMsg(False, "Invalid groups specification")
-
-        # Pull the groups from the DB
-        groups = Group.query.filter(Group.id.in_(group_ids)).all()
-
-        if len(groups) != len(group_ids):
-            # Woah, you specified groups that didn't exist ?
-            
-            gcopy = group_ids
-            for x in groups:
-                if x.id in gcopy:
-                    gcopy.remove(x.id)
-
-            return vaultMsg(False, "Invalid group(s): %s" % gcopy)
+        try:
+            groups, group_ids = model.get_groups_list(groups_id)
+        except ValueError, e:
+            return vaultMsg(False, str(e))
+        
 
         # Only in those groups
         srvs = Service.query.filter(Service.group_id.in_(group_ids)).all()
@@ -362,14 +342,12 @@ class XmlrpcController(MyXMLRPCController):
         ciphers - hash composed of 'id' (service_id) and encrypted 'stuff'.
         """
 
-        # TODO: DRY
-        if isinstance(user, int):
-            usr = User.query().filter_by(id=user).first()
-        else:
-            usr = User.query().filter_by(username=user).first()
+        # Get user, and relations
+        try:
+            usr = model.get_user(user)
+        except LookupError, e:
+            return vaultMsg(False, str(e))
 
-        if not usr:
-            return vaultMsg(False, "Invalid user: %s" % user)
         
         hisid = usr.id
         usrci = Usercipher.query.filter_by(user_id=hisid) \
@@ -411,8 +389,25 @@ class XmlrpcController(MyXMLRPCController):
     def sflvault_revoke(self, authtok, user, group_ids):
         """Revoke permissions (and destroy ciphers for user) of a group
         for a user"""
+        
+        # Get user, and relations
+        try:
+            usr = model.get_user(user, 'groups.services')
+        except LookupError, e:
+            return vaultMsg(False, str(e))
 
+        # Get groups
+        try:
+            groups, group_ids = model.get_groups_list(groups_id)
+        except ValueError, e:
+            return vaultMsg(False, str(e))
+        
+        
         # Remove group from user.groups
+        
+        # Pull the groups from the DB, TODO: DRY
+        groups = Group.query.filter(Group.id.in_(group_ids)).all()
+
 
         # Remove all user-ciphers for services in those groups
 
@@ -427,23 +422,12 @@ class XmlrpcController(MyXMLRPCController):
         user. Report the number of missing ciphers, the amount to be removed,
         etc.."""
 
-        # TODO: DRY
-        uq = User.query()
-        if isinstance(user, int):
-            uq = uq.filter_by(id=user)
-        else:
-            uq = uq.filter_by(username=user)
-            
-        # Grab for groups joins
-        uq1 = uq.options(eagerload_all('groups.services'))
-        usr1 = uq.first()
-        
-        # Grab for userciphers joins..
-        uq2 = uq.options(eagerload_all('userciphers.service.group'))
-        usr2 = uq2.first()
-        
-        if not usr1:
-            return vaultMsg(False, "Invalid user: %s" % user)
+        # Get user, and relations
+        try:
+            usr1 = model.get_user(user, 'groups.services')
+            usr2 = model.get_user(user, 'userciphers.service.group')
+        except LookupError, e:
+            return vaultMsg(False, str(e))
 
 
         # All services user should have access to
@@ -492,11 +476,13 @@ class XmlrpcController(MyXMLRPCController):
         n = Machine()
         n.customer_id = int(customer_id)
         n.created_time = datetime.now()
+        if not name:
+            return vaultMsg(False, "Missing requierd argument: name")
         n.name = name
-        n.fqdn = fqdn
-        n.ip = ip
-        n.location = location
-        n.notes = notes
+        n.fqdn = fqdn or ''
+        n.ip = ip or ''
+        n.location = location or ''
+        n.notes = notes or ''
 
         Session.commit()
 

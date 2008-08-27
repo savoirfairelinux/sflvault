@@ -24,7 +24,10 @@ from sqlalchemy import Column, MetaData, Table, types, ForeignKey
 from sqlalchemy.orm import mapper, relation, backref
 from sqlalchemy.orm import scoped_session, sessionmaker, eagerload, lazyload
 from sqlalchemy.orm import eagerload_all
+from sqlalchemy import sql
 from datetime import *
+
+import re
 
 from Crypto.PublicKey import ElGamal
 from base64 import b64decode, b64encode
@@ -220,3 +223,90 @@ mapper(Service, services_table, {
 mapper(Usercipher, userciphers_table, {
     
     })
+
+
+################ Helper functions ################
+
+
+def get_user(user, eagerload_all_=None):
+    """Get a user provided a username or an int(user_id), possibly eager
+    loading some relations.
+    """
+    # TODO: DRY
+    if isinstance(user, int):
+        uq = User.query().filter_by(id=user)
+    else:
+        uq = User.query().filter_by(username=user)
+
+    if eagerload_all_:
+        uq = uq.options(eagerload_all(eagerload_all_)).first()
+
+    usr = uq.first()
+    
+    if not usr:
+        raise LookupError("Invalid user: %s" % user)
+
+    return usr
+
+
+def get_groups_list(group_ids, eagerload_all_=None):
+    """Get a group_ids list, or string, or int, and make sure we
+    return a list of integers.
+    """
+    # Get groups, TODO: DRY
+    if isinstance(group_ids, str):
+        groupids = [int(group_ids)]
+    elif isinstance(group_ids, int):
+        groupids = [group_ids]
+    elif isinstance(group_ids, list):
+        group_ids = [int(x) for x in group_ids]
+    else:
+        raise ValueError("Invalid groups specification")
+
+
+    # Pull the groups from the DB
+    groups_q = Group.query.filter(Group.id.in_(group_ids))
+
+    if eagerload_all_:
+        groups_q = groups_q.options(eagerload_all(eagerload_all_))
+
+    groups = groups_q.all()
+
+    if len(groups) != len(group_ids):
+        # Woah, you specified groups that didn't exist ?
+
+        gcopy = group_ids
+        for x in groups:
+            if x.id in gcopy:
+                gcopy.remove(x.id)
+
+        raise ValueError("Invalid group(s): %s" % gcopy)
+
+    return (groups, group_ids)
+
+
+def search_query(swords, verbose=False):
+
+    # Create the join..
+    sel = sql.join(Customer, Machine).join(Service).join(Group) \
+                                                   .select(use_labels=True)
+
+    # Fields to search in..
+    allfields = [Customer.c.name,
+                 Machine.c.name,
+                 Machine.c.fqdn,
+                 Machine.c.ip,
+                 Machine.c.location,
+                 Machine.c.notes,
+                 Service.c.url,
+                 Service.c.notes]
+
+    andlist = []
+    for word in swords:
+        orlist = [field.ilike('%%%s%%' % word) for field in allfields]
+        orword = sql.or_(*orlist)
+        andlist.append(orword)
+
+    sel = sel.where(sql.and_(*andlist))
+
+    return Session.execute(sel)

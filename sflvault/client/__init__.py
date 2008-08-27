@@ -526,7 +526,7 @@ class SFLvaultClient(object):
         """Search the database for query terms, specified as a list of REGEXPs.
 
         Returns a hierarchical view of the results."""
-        retval = vaultReply(self.vault.search(self.authtok, query),
+        retval = vaultReply(self.vault.search(self.authtok, query, verbose),
                             "Error searching database")
 
         print "Results:"
