@@ -29,6 +29,8 @@ import os
 import re
 import sys
 import xmlrpclib
+import getpass
+
 from Crypto.PublicKey import ElGamal
 from base64 import b64decode, b64encode
 from datetime import *
@@ -321,13 +323,29 @@ class SFLvaultParser(object):
         #       from the URL, if available. Otherwise, ask.
         secret = None
 
+        # Rewrite url if a password was included... strip the port and
+        #       username from the URL too.
+        if url.password:
+            out = []
+            if url.username:
+                out.append('%s@' % url.username)
+                
+            out.append(url.hostname)
+            
+            if url.port:
+                out.append(":%d" % url.port)
+            
+            url = urlparse.urlunparse((url[0],
+                                       ''.join(out),
+                                       url[2], url[3], url[4], url[5]))
+
+            print "Do not specify password in URL. Rewritten: %s" % url
+
 
         # TODO: plug-in-ize password capture.
         if not secret:
             secret = getpass.getpass("Enter service secret (password): ")
 
-        # TODO: rewrite url if a password was included... strip the port and
-        #       username from the URL too.
 
         machine_id = 0
         parent_id = 0
