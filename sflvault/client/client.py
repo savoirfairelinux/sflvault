@@ -201,6 +201,26 @@ class SFLvaultParser(object):
         retval = self.vault.grant(username, groups)
 
 
+    def revoke(self):
+        """Revoke group permissions to user.
+
+        Admin privileges required. Use list-groups to have a list."""
+        self.parser.set_usage('revoke username [options]')
+        self.parser.add_option('-g', '--group', dest="groups",
+                               action="append", type="string",
+                               help="Group membership to grant to user")
+        self._parse()
+
+        if (len(self.args) != 1):
+            raise SFLvaultParserError("Invalid number of arguments, 'username' required.")
+
+        username = self.args[0]
+        groups = [int(x) for x in self.opts.groups]
+
+        # Calls revoke
+        retval = self.vault.revoke(username, groups)
+
+
     def add_customer(self):
         """Add a new customer to the Vault's database."""
         self.parser.set_usage('add-customer "customer name"')
@@ -323,7 +343,20 @@ class SFLvaultParser(object):
                                o.notes)
         del(secret)
 
+    def chg_service_passwd(self):
+        """Change the password for a service
 
+        Do not specify password on command line, it will be asked on the
+        next line.
+        """
+        self.parser.add_option('-s', dest="service_id",
+                               help="Service ID for which to change password")
+        
+        self._parse()
+
+        if not self.opts.service_id:
+            raise SFLvaultParserError("Required parameter '-s' omitted")
+        
     def alias(self):
         """Set an alias, local shortcut to VaultIDs (s#123, m#87, etc..)
 

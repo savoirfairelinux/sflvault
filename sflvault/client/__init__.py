@@ -403,6 +403,21 @@ class SFLvaultClient(object):
         print "End of analysis report"
 
 
+    @authenticate()
+    def revoke(self, user, groups):
+        """Revoke permissions to certain groups for a given user
+
+        user   - a required username
+        groups - array of group_ids to grant to user
+        """
+        retval = vaultReply(self.vault.revoke(self.authtok, user, groups),
+                            "Error revoking permissions.")
+
+        print "Success: %s" % retval['message']
+
+        pprint(retval['service_ids'])
+
+
     @authenticate(True)
     def grant(self, user, groups):
         """Add permissions to a certain user for certain groups.

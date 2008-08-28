@@ -400,19 +400,42 @@ class XmlrpcController(MyXMLRPCController):
 
         # Get groups
         try:
-            groups, group_ids = model.get_groups_list(groups_id)
+            groups, group_ids = model.get_groups_list(group_ids)
         except ValueError, e:
             return vaultMsg(False, str(e))
+
         
+        remgrps = set(groups)
+        mygrps = set(usr.groups)
         
-        # Remove group from user.groups
+        # Remove groups
+        usr.groups = list(mygrps.difference(remgrps))
         
         # Pull the groups from the DB, TODO: DRY
         groups = Group.query.filter(Group.id.in_(group_ids)).all()
 
-
         # Remove all user-ciphers for services in those groups
+        # From which groups ?
+        rmdgrps = mygrps.intersection(remgrps)
 
+        # Get list of service_id:
+        service_ids = []
+        for g in rmdgrps:
+            service_ids.extend([srv.id for srv in g.services])
+
+        # TODO: remove all user-cipher for user `usr` where service.id matches
+        # service_ids
+        ciphers = usr.userciphers
+
+        newciphers = [ciph for ciph in ciphers
+                      if ciph.service_id in service_ids]
+        
+        #for ciph in ciphers:
+            
+        
+        return vaultMsg(True, "Revoked stuff", {'service_ids': service_ids})
+
+            
         # TODO(future): Make sure when you remove a Usercipher for a service
         # that matches the specified groups, that you keep it if another group
         # that you are not removing still exists for the user.
