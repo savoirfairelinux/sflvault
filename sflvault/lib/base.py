@@ -35,7 +35,8 @@ from datetime import *
 import xmlrpclib
 
 import sflvault.lib.helpers as h
-import sflvault.model as model
+from sflvault import model
+from sflvault.model import query
 from sflvault.lib.common.crypto import *
 
 from base64 import b64decode, b64encode
@@ -136,7 +137,7 @@ class BaseController(WSGIController):
         try:
             return WSGIController.__call__(self, environ, start_response)
         finally:
-            model.Session.remove()
+            model.meta.Session.remove()
 
 class MyXMLRPCController(XMLRPCController):
     """This controller is required to call model.Session.remove()
@@ -150,7 +151,7 @@ class MyXMLRPCController(XMLRPCController):
         try:
             return XMLRPCController.__call__(self, environ, start_response)
         finally:
-            model.Session.remove()
+            model.meta.Session.remove()
 
 
 

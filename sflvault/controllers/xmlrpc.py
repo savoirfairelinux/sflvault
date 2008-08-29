@@ -55,9 +55,10 @@ class XmlrpcController(MyXMLRPCController):
         # Return 'cryptok', encrypted with pubkey.
         # Save decoded version to user's db field.
         try:
-            u = User.query().filter_by(username=username).one()
+            u = query(User).filter_by(username=username).one()
         except Exception, e:
             return vaultMsg(False, "User unknown: %s" % e.message )
+        
         # TODO: implement throttling ?
 
         rnd = randfunc(32)
@@ -65,8 +66,8 @@ class XmlrpcController(MyXMLRPCController):
         u.logging_timeout = datetime.now() + timedelta(0, 15)
         u.logging_token = b64encode(rnd)
 
-        Session.flush()
-        Session.commit()
+        meta.Session.flush()
+        meta.Session.commit()
 
         e = u.elgamal()
         cryptok = serial_elgamal_msg(e.encrypt(rnd, randfunc(32)))
@@ -77,7 +78,7 @@ class XmlrpcController(MyXMLRPCController):
 
         u = None
         try:
-            u = User.query.filter_by(username=username).one()
+            u = query(User).filter_by(username=username).one()
         except:
             return vaultMsg(False, 'Invalid user')
 
@@ -101,11 +102,11 @@ class XmlrpcController(MyXMLRPCController):
 
         # First, remove ALL users that have waiting_setup expired, where
         # waiting_setup isn't NULL.
-        #Session.delete(User.query().filter(User.waiting_setup != None).filter(User.waiting_setup < datetime.now()))
+        #meta.Session.delete(query(User).filter(User.waiting_setup != None).filter(User.waiting_setup < datetime.now()))
         #raise RuntimeError
-        cnt = User.query().count()
+        cnt = query(User).count()
         
-        u = User.query().filter_by(username=username).first()
+        u = query(User).filter_by(username=username).first()
 
 
         if (cnt):
@@ -119,7 +120,7 @@ class XmlrpcController(MyXMLRPCController):
         u.waiting_setup = None
         u.pubkey = pubkey
 
-        Session.commit()
+        meta.Session.commit()
 
         return vaultMsg(True, 'User setup complete for %s' % username)
 
@@ -128,13 +129,13 @@ class XmlrpcController(MyXMLRPCController):
     def sflvault_show(self, authtok, vid):
         """Get the specified service ID and return the hierarchy to connect to it."""
         try:
-            s = Service.query.filter_by(id=vid).options(model.eagerload('group')).one()
+            s = query(Service).filter_by(id=vid).options(model.eagerload('group')).one()
         except Exception, e:
             return vaultMsg(False, "Service not found: %s" % e.message)
 
         out = []
         while True:
-            ucipher = Usercipher.query.filter_by(service_id=s.id, user_id=self.sess['userobj'].id).first()
+            ucipher = query(Usercipher).filter_by(service_id=s.id, user_id=self.sess['userobj'].id).first()
             if ucipher and ucipher.stuff:
                 cipher = ucipher.stuff
             else:
@@ -165,14 +166,14 @@ class XmlrpcController(MyXMLRPCController):
 
 
     @authenticated_user
-    def sflvault_search(self, authtok, query, verbose=False):
+    def sflvault_search(self, authtok, search_query, verbose=False):
         """Do the search, and return the result tree."""
         # TODO: narrow down search (instead of all(), doh!)
-        cs = Customer.query.all()
-        ms = Machine.query.all()
-        ss = Service.query.all()
+        cs = query(Customer).all()
+        ms = query(Machine).all()
+        ss = query(Service).all()
 
-        search = model.search_query(query, verbose)
+        search = model.search_query(search_query, verbose)
 
 
         # Quick helper funcs, to create the hierarchical 'out' structure.
@@ -218,7 +219,7 @@ class XmlrpcController(MyXMLRPCController):
     @authenticated_admin
     def sflvault_adduser(self, authtok, username, admin):
 
-        usr = User.query().filter_by(username=username).first()
+        usr = query(User).filter_by(username=username).first()
 
         msg = ''
         if usr == None:
@@ -243,7 +244,7 @@ class XmlrpcController(MyXMLRPCController):
         else:
             return vaultMsg(False, 'User %s already exists.' % username)
         
-        Session.commit()
+        meta.Session.commit()
 
         return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "setup" command' % \
                         (admin and 'Admin user' or 'User',
@@ -272,12 +273,12 @@ class XmlrpcController(MyXMLRPCController):
         
 
         # Only in those groups
-        srvs = Service.query.filter(Service.group_id.in_(group_ids)).all()
+        srvs = query(Service).filter(Service.group_id.in_(group_ids)).all()
 
         # Grab mine and his Userciphers, we're going to fill in the gap
         hisid = usr.id
         myid = self.sess['userobj'].id
-        usrci = Usercipher.query \
+        usrci = query(Usercipher) \
                     .filter(Usercipher.user_id.in_([hisid, myid])) \
                     .filter(Usercipher.service_id.in_([s.id for s in srvs])) \
                     .all()
@@ -325,7 +326,7 @@ class XmlrpcController(MyXMLRPCController):
         # Add groups that weren't there.
         usr.groups.extend(list(add_groups))
         
-        Session.commit()
+        meta.Session.commit()
 
         msg.append("waiting for encryption round-trip" if len(lst) else \
                    "no round-trip required")
@@ -352,7 +353,7 @@ class XmlrpcController(MyXMLRPCController):
 
         
         hisid = usr.id
-        usrci = Usercipher.query.filter_by(user_id=hisid) \
+        usrci = query(Usercipher).filter_by(user_id=hisid) \
                     .filter(Usercipher.service_id.in_( \
                                                 [s['id'] for s in ciphers])) \
                     .all()
@@ -379,7 +380,7 @@ class XmlrpcController(MyXMLRPCController):
             
 
         # Loop received ciphers, make sure they aren't already in, and add them
-        Session.commit()
+        meta.Session.commit()
 
         # TODO: Log this event somewhere! thanks :)
 
@@ -412,7 +413,7 @@ class XmlrpcController(MyXMLRPCController):
         usr.groups = list(mygrps.difference(remgrps))
         
         # Pull the groups from the DB, TODO: DRY
-        groups = Group.query.filter(Group.id.in_(group_ids)).all()
+        groups = query(Group).filter(Group.id.in_(group_ids)).all()
 
         # Remove all user-ciphers for services in those groups
         # From which groups ?
@@ -509,7 +510,7 @@ class XmlrpcController(MyXMLRPCController):
         n.location = location or ''
         n.notes = notes or ''
 
-        Session.commit()
+        meta.Session.commit()
 
         return vaultMsg(True, "Machine added.", {'machine_id': n.id})
 
@@ -521,7 +522,7 @@ class XmlrpcController(MyXMLRPCController):
         # parent_service_id takes precedence over machine_id.
         if parent_service_id:
             try:
-                parent = Service.query.get(parent_service_id)
+                parent = query(Service).get(parent_service_id)
                 # No, you should be able to specify the machine, and not take
                 # the parent's machine, since services can be inherited and
                 # be on different machines (obvious example: ssh -> ssh, most
@@ -542,11 +543,11 @@ class XmlrpcController(MyXMLRPCController):
         ns.secret_last_modified = datetime.now()
         ns.notes = notes
 
-        Session.commit()
+        meta.Session.commit()
 
         # Get all users from the group_id, and all admins.
-        encusers = Group.query.get(group_id).users
-        admusers = User.query.filter_by(is_admin=True).all()
+        encusers = query(Group).get(group_id).users
+        admusers = query(User).filter_by(is_admin=True).all()
 
         # Merge two lists
         for adm in admusers:
@@ -574,7 +575,7 @@ class XmlrpcController(MyXMLRPCController):
             
             userlist.append(usr.username) # To return listing.
 
-        Session.commit()
+        meta.Session.commit()
 
         del(seckey)
 
@@ -590,8 +591,8 @@ class XmlrpcController(MyXMLRPCController):
         except LookupError, e:
             return vaultMsg(False, str(e))
 
-        Session.delete(u)
-        Session.commit()
+        meta.Session.delete(u)
+        meta.Session.commit()
 
         return vaultMsg(True, "User successfully deleted")
 
@@ -602,14 +603,14 @@ class XmlrpcController(MyXMLRPCController):
         nc.name = customer_name
         nc.created_time = datetime.now()
         nc.created_user = self.sess['username']
-        Session.commit()
+        meta.Session.commit()
 
         return vaultMsg(True, 'Customer added', {'customer_id': nc.id})
 
 
     @authenticated_user
     def sflvault_listcustomers(self, authtok):
-        lst = Customer.query.all()
+        lst = query(Customer).all()
 
         out = []
         for x in lst:
@@ -626,7 +627,7 @@ class XmlrpcController(MyXMLRPCController):
 
         ng.name = group_name
 
-        Session.commit()
+        meta.Session.commit()
 
         return vaultMsg(True, "Added group '%s'" % ng.name,
                         {'name': ng.name, 'group_id': int(ng.id)})
@@ -634,7 +635,7 @@ class XmlrpcController(MyXMLRPCController):
 
     @authenticated_user
     def sflvault_listgroups(self, authtok):
-        groups = Group.query.group_by(Group.name).all()
+        groups = query(Group).group_by(Group.name).all()
 
         out = []
         for x in groups:
@@ -645,7 +646,7 @@ class XmlrpcController(MyXMLRPCController):
 
     @authenticated_user
     def sflvault_listmachines(self, authtok):
-        lst = Machine.query.all()
+        lst = query(Machine).all()
 
         out = []
         for x in lst:
@@ -660,7 +661,7 @@ class XmlrpcController(MyXMLRPCController):
 
     @authenticated_user
     def sflvault_listusers(self, authtok):
-        lst = User.query.all()
+        lst = query(User).all()
 
         out = []
         for x in lst:

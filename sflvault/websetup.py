@@ -16,10 +16,10 @@ def setup_config(command, filename, section, vars):
 
     from sflvault import model
     log.info("Creating tables")
-    model.metadata.create_all(bind=config['pylons.g'].sa_engine)
+    model.meta.metadata.create_all(bind=model.meta.engine)
     ## Add default user 'admin' with 5 minutes for the client to call "sflvault setup"
     try:
-        model.User.query.filter_by(username='admin').one()
+        model.query(model.User).filter_by(username='admin').one()
         log.info("User 'admin' already exists, skipping insertion of admin user.")
     except:
         log.info("Adding 'admin' user, you have 5 minutes to setup from your client")
@@ -28,6 +28,7 @@ def setup_config(command, filename, section, vars):
         u.username = u'admin'
         u.created_time = datetime.now()
         u.is_admin = True
+        
         model.Session.commit()
     
     log.info("Successfully setup")

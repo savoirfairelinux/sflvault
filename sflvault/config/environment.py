@@ -4,6 +4,7 @@ import os
 from pylons import config
 
 from sqlalchemy import engine_from_config
+from sflvault.model import init_model
 
 import sflvault.lib.app_globals as app_globals
 import sflvault.lib.helpers
@@ -33,4 +34,5 @@ def load_environment(global_conf, app_conf):
 
     # CONFIGURATION OPTIONS HERE (note: all config options will override
     # any Pylons config options)
-    config['pylons.g'].sa_engine = engine_from_config(config, 'sqlalchemy.')
+    engine = engine_from_config(config, 'sqlalchemy.')
+    init_model(engine)

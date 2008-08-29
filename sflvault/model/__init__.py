@@ -19,32 +19,37 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from pylons import config
+import re
+
+# Unused, now engine is in meta.engine
+#from pylons import config
 from sqlalchemy import Column, MetaData, Table, types, ForeignKey
 from sqlalchemy.orm import mapper, relation, backref
 from sqlalchemy.orm import scoped_session, sessionmaker, eagerload, lazyload
 from sqlalchemy.orm import eagerload_all
 from sqlalchemy import sql
-from datetime import *
-
-import re
+from datetime import datetime
 
 from Crypto.PublicKey import ElGamal
 from base64 import b64decode, b64encode
 
+from sflvault.model import meta
+from sflvault.model.meta import Session, metadata
 from sflvault.lib.common.crypto import *
 
-# Global session manager.  Session() returns the session object
-# appropriate for the current web request.
-Session = scoped_session(sessionmaker(autoflush=True, transactional=True,
-                                      bind=config['pylons.g'].sa_engine))
 
-mapper = Session.mapper
+def init_model(engine):
+    """Call me before using any of the tables or classes in the model."""
+    sm = sessionmaker(autoflush=True, transactional=True, bind=engine)
+
+    meta.engine = engine
+    meta.Session = scoped_session(sm)
 
 
-# Global metadata. If you have multiple databases with overlapping table
-# names, you'll need a metadata for each database.
-metadata = MetaData()
+# Use the contextually Session-linked please!
+#-Useless, it doesn't map anymore. Use query() intead.
+#if meta.mapper:
+#    mapper = meta.mapper
 
 
 users_table = Table("users", metadata,
@@ -225,6 +230,10 @@ mapper(Usercipher, userciphers_table, {
 
 ################ Helper functions ################
 
+def query(cls):
+    """Shortcut to meta.Session.query(cls)"""
+    return meta.Session.query(cls)
+
 
 def get_user(user, eagerload_all_=None):
     """Get a user provided a username or an int(user_id), possibly eager
@@ -232,9 +241,9 @@ def get_user(user, eagerload_all_=None):
     """
     # TODO: DRY
     if isinstance(user, int):
-        uq = User.query().filter_by(id=user)
+        uq = query(User).filter_by(id=user)
     else:
-        uq = User.query().filter_by(username=user)
+        uq = query(User).filter_by(username=user)
 
     if eagerload_all_:
         uq = uq.options(eagerload_all(eagerload_all_))
@@ -263,7 +272,7 @@ def get_groups_list(group_ids, eagerload_all_=None):
 
 
     # Pull the groups from the DB
-    groups_q = Group.query.filter(Group.id.in_(group_ids))
+    groups_q = query(Group).filter(Group.id.in_(group_ids))
 
     if eagerload_all_:
         groups_q = groups_q.options(eagerload_all(eagerload_all_))
@@ -307,4 +316,4 @@ def search_query(swords, verbose=False):
 
     sel = sel.where(sql.and_(*andlist))
 
-    return Session.execute(sel)
+    return meta.Session.execute(sel)
