@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+__version__ = __import__('pkg_resources').get_distribution('SFLvault').version
 
 # TODO: DECOUPLE CONFIG STUFF FROM THE SFLvaultClient OBJECT
 # THIS SHOULD STRICTLY BE IN CLI-CLIENT CODE.

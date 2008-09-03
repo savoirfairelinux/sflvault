@@ -21,8 +21,8 @@
 
 
 PROGRAM = "SFLvault"
-# TODO: remove this!
-VERSION = "0.6.2"
+__version__ = __import__('pkg_resources').get_distribution('SFLvault').version
+
 
 import optparse
 import os
@@ -108,7 +108,7 @@ class SFLvaultParser(object):
             sys.exit()
 
         # Normal help screen.
-        print "%s version %s" % (PROGRAM, VERSION)
+        print "%s version %s" % (PROGRAM, __version__)
         print "---------------------------------------------"
 
         if not cmd:
