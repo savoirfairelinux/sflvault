@@ -25,7 +25,7 @@ import urlparse
 
 __all__ = ['shred', 'urlparse', 'AuthenticationError', 'VaultError',
            'VaultIDFormatError', 'VaultConfigurationError', 'RemotingError',
-           'ServiceRequireError']
+           'ServiceRequireError', 'ServiceExpectError']
 
 
 
@@ -82,4 +82,10 @@ class RemotingError(Exception):
 
 class ServiceRequireError(Exception):
     """When the required() elements can't do what we want."""
+    pass
+
+class ServiceExpectError(Exception):
+    """When an error occurs in the expected values in prework to set up a service.
+
+    We assume the interact() will be called for the parent at that point."""
     pass

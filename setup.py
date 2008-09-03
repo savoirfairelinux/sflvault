@@ -43,6 +43,8 @@ setup(
     ssh = sflvault.client.services:ssh
     vnc = sflvault.client.services:vnc
     mysql = sflvault.client.services:mysql
+    su = sflvault.client.services:su
+    sudo = sflvault.client.services:sudo
 
     """,
 )

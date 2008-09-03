@@ -38,9 +38,9 @@ class Service(object):
     objects (ssh, vnc, rdp, mysql, http, https, drac, ftp, postgresql, su,
     sudo, etc..)"""
 
-    provides_modes = []     # List what a service handler supports (gives SHELL access
-                            # or can provide PORT_FORWARD, etc. Defaults to nothing
-                            # special: plugin is always an end-point.
+    provides_modes = [] # List what a service handler supports (gives SHELL
+                        # access or can provide PORT_FORWARD, etc. Defaults to
+                        # nothing special: plugin is always an end-point.
 
     parent = None  # Used for link-listing
     child = None   # Used for link-listing
@@ -52,16 +52,14 @@ class Service(object):
     # This will be filled for child requiring a `shell` handle
     shell_handle = None
 
-    # This will be assigned when running required()
-    provides = None
-
     # This is set by __init__, from Chain::__init__(). It's a dict. received by
     # XML-RPC mostly..
     data = None
 
-    def __init__(self, data):
+    def __init__(self, data, timeout=30):
         self.data = data
         self.url = urlparse.urlparse(data['url'])
+        self.timeout = timeout
 
     def set_child(self, child):
         """Set the child of this service (sets the parent on the child too)"""
