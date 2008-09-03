@@ -195,6 +195,34 @@ class ssh(ShellService):
 
     def prework(self):
 
+        # Prework classes
+        class expect_shell(ExpectClass):
+            def shell(self):
+                r'[^ ]*@.*:.*[$#]'
+                pass # We're in :)
+
+        class expect_login(ExpectClass): 
+            def sendlogin(self):
+                'assword:'
+                sys.stdout.write(" [sending password...] ")
+                self.cnx.sendline(self.service.data['plaintext'])
+
+                expect_shell(self.service)
+
+            def werein(self):
+                'Last login'
+                print "We're in! (using shared-key?)"
+           
+
+        class expect_login_first(expect_login):
+            def are_you_sure(self):
+                "(?i)are you sure you want to continue connecting"
+                # TODO: are you always sure ??
+                self.cnx.sendline('yes')
+
+                expect_login(self.service)
+            
+
         # Default user:
         user = self.url.username or 'root'
 
@@ -215,28 +243,7 @@ class ssh(ShellService):
 
         self.shell_handle = cnx
 
-        idx = cnx.expect(['assword:', 'Last login',
-                         "(?i)are you sure you want to continue connecting"],
-                         timeout=self.timeout)
-
-        print_cnx(cnx)
-        
-        if idx == 2:
-            cnx.sendline('yes')
-            idx = cnx.expect(['assword:', 'Last login'],
-                             timeout=self.timeout)
-            print_cnx(cnx)
-        
-        if idx == 0:
-            # Send password
-            sys.stdout.write(" [sending password...] ")
-            cnx.sendline(self.data['plaintext'])
-            idx = cnx.expect([r'[^ ]*@.*:.*[$#]'], timeout=self.timeout)
-            if idx == 0:
-                print_cnx(cnx)
-        else:
-            # We're in!
-            print "We're in! (using shared-key?)"
+        expect_login_first(self)
 
 
 
@@ -270,7 +277,6 @@ class sudo(ShellService):
         class expect_waitshell(ExpectClass):
             def gotshell(self):
                 r'[^ ]*@.*:.*[$#]'
-                
                 return True
 
             def failed(self):
@@ -312,17 +318,11 @@ class su(ShellService):
 
 
 
-# Inheritance from 'ssh'
 class mysql(ShellService):
     """mysql app. service handler"""
 
     provides_modes = [PROV_MYSQL_CONSOLE]
-
-    def __init__(self, data, timeout=45):
-
-        # Call parent
-        ssh.__init__(self, data, timeout)
-        
+       
     def required(self, provide=None):
         """Verify if this service handler can provide `provide` type of connection.
 
@@ -348,6 +348,28 @@ class mysql(ShellService):
 
     def prework(self):
 
+        class expect_mysql_shell(ExpectClass):
+            def shell(self):
+                'mysql>'
+                pass # We're in :)
+
+            def error(self):
+                'ERROR \d*'
+                raise ServiceExpectError('Failed to authenticate with mysql')
+
+        class expect_mysql(ExpectClass):
+            def login(self):
+                'assword:'
+                sys.stdout.write(" [sending password...] ")
+                self.cnx.sendline(self.service.data['plaintext'])
+
+                expect_mysql_shell(self.service)
+
+            def error(self):
+                'ERROR \d*'
+                raise ServiceExpectError("Failed authentication for mysql "\
+                                         "at program launch")
+
         # Bring over here the parent's shell handle.
         cnx = self.parent.shell_handle
         self.shell_handle = cnx
@@ -362,24 +384,12 @@ class mysql(ShellService):
 
         cnx.sendline(cmd)
 
-        idx = cnx.expect(['assword:', 'ERROR \d*'], timeout=self.timeout)
-        sys.stdout.write(cnx.before)
-        sys.stdout.write(cnx.after)
-        
-        if idx == 0:
-            sys.stdout.write(" [sending password...] ")
-            cnx.sendline(self.data['plaintext'])
-            idx = cnx.expect(['mysql>', 'ERROR \d*'], timeout=self.timeout)
-            if idx == 0:
-                sys.stdout.write(cnx.before)
-                sys.stdout.write(cnx.after)
-            else:
-                raise RemotingError("Failed to authenticate with mysql")
-        else:
-            raise RemotingError("Failed authentication for mysql at program launch")
+
+        expect_mysql(self)
 
 
     # interact() and postwork() inherited
+    
 
 class vnc(Service):
     """vnc protocol service handler"""
