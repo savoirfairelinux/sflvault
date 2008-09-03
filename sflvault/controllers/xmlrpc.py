@@ -229,6 +229,8 @@ class XmlrpcController(MyXMLRPCController):
             usr.username = username
             usr.is_admin = bool(admin)
             usr.created_time = datetime.now()
+
+            meta.Session.save(usr)
             
             msg = 'added'
         elif usr.waiting_setup:
@@ -377,7 +379,8 @@ class XmlrpcController(MyXMLRPCController):
             nu.user_id = hisid
             nu.service_id = ci['id']
             nu.stuff = ci['stuff']
-            
+
+            meta.Session.save(nu)
 
         # Loop received ciphers, make sure they aren't already in, and add them
         meta.Session.commit()
@@ -498,21 +501,23 @@ class XmlrpcController(MyXMLRPCController):
     @authenticated_user
     def sflvault_addmachine(self, authtok, customer_id, name, fqdn, ip,
                             location, notes):
-        
-        n = Machine()
-        n.customer_id = int(customer_id)
-        n.created_time = datetime.now()
+
+        nm = Machine()
+        nm.customer_id = int(customer_id)
+        nm.created_time = datetime.now()
         if not name:
             return vaultMsg(False, "Missing requierd argument: name")
-        n.name = name
-        n.fqdn = fqdn or ''
-        n.ip = ip or ''
-        n.location = location or ''
-        n.notes = notes or ''
+        nm.name = name
+        nm.fqdn = fqdn or ''
+        nm.ip = ip or ''
+        nm.location = location or ''
+        nm.notes = notes or ''
 
+        meta.Session.save(nm)
+        
         meta.Session.commit()
 
-        return vaultMsg(True, "Machine added.", {'machine_id': n.id})
+        return vaultMsg(True, "Machine added.", {'machine_id': nm.id})
 
 
     @authenticated_user
@@ -543,6 +548,8 @@ class XmlrpcController(MyXMLRPCController):
         ns.secret_last_modified = datetime.now()
         ns.notes = notes
 
+        meta.Session.save(ns)
+
         meta.Session.commit()
 
         # Get all users from the group_id, and all admins.
@@ -572,6 +579,8 @@ class XmlrpcController(MyXMLRPCController):
             eg = usr.elgamal()
             nu.stuff = serial_elgamal_msg(eg.encrypt(seckey, randfunc(32)))
             del(eg)
+
+            meta.Session.save(nu)
             
             userlist.append(usr.username) # To return listing.
 
@@ -603,6 +612,9 @@ class XmlrpcController(MyXMLRPCController):
         nc.name = customer_name
         nc.created_time = datetime.now()
         nc.created_user = self.sess['username']
+
+        meta.Session.save(nc)
+        
         meta.Session.commit()
 
         return vaultMsg(True, 'Customer added', {'customer_id': nc.id})
@@ -626,6 +638,8 @@ class XmlrpcController(MyXMLRPCController):
         ng = Group()
 
         ng.name = group_name
+
+        meta.Session.save(ng)
 
         meta.Session.commit()
 

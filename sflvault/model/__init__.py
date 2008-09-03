@@ -151,7 +151,8 @@ class Service(object):
 
 class Machine(object):
     def __repr__(self):
-        return "<Machine m#%d: %s (%s %s)>" % (self.id, self.name, self.fqdn, self.ip)
+        return "<Machine m#%d: %s (%s %s)>" % (self.id if self.id else 0,
+                                               self.name, self.fqdn, self.ip)
 
 class Usercipher(object):
     def __repr__(self):

@@ -328,7 +328,7 @@ class SFLvaultClient(object):
                                                   notes or ''),
                             "Error adding machine")
         print "Success: %s" % retval['message']
-        print "New machine ID: m#%d" % retval['machine_id']
+        print "New machine ID: m#%d" % int(retval['machine_id'])
 
 
     @authenticate()
