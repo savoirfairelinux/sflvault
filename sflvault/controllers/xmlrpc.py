@@ -31,6 +31,8 @@ import time as stdtime
 from sflvault.lib.base import *
 from sflvault.model import *
 
+from sqlalchemy import sql
+
 log = logging.getLogger(__name__)
 
 #
@@ -267,6 +269,9 @@ class XmlrpcController(MyXMLRPCController):
             return vaultMsg(False, str(e))
 
 
+        # TODO: implement the service in multiple groups behavior.
+
+
         # Get groups
         try:
             groups, group_ids = model.get_groups_list(group_ids)
@@ -463,8 +468,19 @@ class XmlrpcController(MyXMLRPCController):
         all_servs = []
         for g in usr1.groups:
             all_servs.extend(g.services)
+            
         # Services for which user has already ciphers
-        ciph_servs = [uc.service for uc in usr2.userciphers]
+        ciph_servs = [uc.service for uc in usr2.userciphers \
+                      if uc.service is not None]
+
+        # TODO: remove all userciphers that point to no service
+        #       (uc.service == None)
+        cleaned_ciphers = 0
+        for uc in usr2.userciphers:
+            if uc.service is None:
+                cleaned_ciphers += 1
+                meta.Session.delete(uc)
+                
 
         all_set = set(all_servs)
         ciph_set = set(ciph_servs)
@@ -482,7 +498,11 @@ class XmlrpcController(MyXMLRPCController):
         # List groups that are over (to be revoked)
         over_groups = {}
         for o in over_set:
+            # When there is a 'None' in here
             over_groups[str(o.group.id)] = o.group.name
+
+        # Finish clean up..
+        meta.Session.commit()
 
         # Generate report:
 
@@ -493,6 +513,7 @@ class XmlrpcController(MyXMLRPCController):
         report['missing_groups'] = missing_groups
         report['over_ciphers'] = len(over_set)
         report['over_groups'] = over_groups
+        report['cleaned_ciphers'] = cleaned_ciphers
 
         return vaultMsg(True, "Analysis report for user %s" % usr1.username,
                         report)
@@ -523,6 +544,10 @@ class XmlrpcController(MyXMLRPCController):
     @authenticated_user
     def sflvault_addservice(self, authtok, machine_id, parent_service_id, url,
                             group_id, secret, notes):
+        # TODO: accept group_ids (list of groups) to put the service in
+        # multiple groups.
+
+        # TODO: centralise the grant and users matching service resolution.
 
         # parent_service_id takes precedence over machine_id.
         if parent_service_id:
@@ -592,7 +617,7 @@ class XmlrpcController(MyXMLRPCController):
                                                  'encrypted_for': userlist})
 
     @authenticated_admin
-    def sflvault_deluser(self, authtok, username):
+    def sflvault_deluser(self, authtok, user):
 
         # Get user
         try:
@@ -600,10 +625,79 @@ class XmlrpcController(MyXMLRPCController):
         except LookupError, e:
             return vaultMsg(False, str(e))
 
-        meta.Session.delete(u)
+        meta.Session.execute(model.usergroups_table.delete(user_id=usr.id))
+        meta.Session.execute(model.userciphers_table.delete(user_id=usr.id))
+        
+        meta.Session.delete(usr)
         meta.Session.commit()
 
         return vaultMsg(True, "User successfully deleted")
+
+
+    @authenticated_admin
+    def sflvault_delmachine(self, authtok, machine_id):
+        # Get machine
+        machine = model.Machine.get(int(machine_id))
+
+        # TODO: get all the services
+        # TODO: check for all services if no one is a child of those
+        #       services, that will not be deleted with them.
+        # TODO: delete all userciphers related to all services being removed
+        # TODO: delete all services related to machine.
+        # TODO: remove the machine definition
+
+
+    @authenticated_admin
+    def sflvault_delcustomer(self, authtok, customer_id):
+        # Get customer
+        cust = model.Customer.get(int(customer_id))
+
+        # TODO: get all services for customer (via machines)
+        # TODO: check for all services if no one is a child of those
+        #       services, that will not be deleted with them.
+        #       WARN about that, or with some kind of -f attribute,
+        #       set those child to 0 (which may or may not render them
+        #       useless).
+        # TODO: delete all userciphers related to services
+        # TODO: delete all services related to customer via machines
+        # TODO: delete all machines related to customer
+        # TODO: delete the customer instance.
+
+    @authenticated_admin
+    def sflvault_delservice(self, authtok, service_id):
+        """Delete a service, making sure no other child remains attached."""
+        # Integerize
+        service_id = int(service_id)
+        # Get service
+        serv = query(model.Service).get(int(service_id))
+
+        if not serv:
+            return vaultMsg(True, "No such service: s#%s" % service_id)
+
+        # TODO: make sure no service is child of this one
+        childs = query(model.Service).filter_by(parent_service_id=service_id).all()
+
+        if len(childs):
+            # There are still some childs left, we can't delete this one.
+            retval = []
+            for x in childs:
+                retval.append({'id': x.id, 'url': x.url})
+                
+            return vaultMsg(False, 'Services still child of this service',
+                            {'childs': retval})
+        
+        # TODO: delete all related user-ciphers
+        d = sql.delete(userciphers_table) \
+               .where(userciphers_table.c.service_id == service_id)
+        # TODO: delete the service
+        d2 = sql.delete(services_table) \
+                .where(services_table.c.id == service_id)
+
+        meta.Session.execute(d)
+        meta.Session.execute(d2)
+        meta.Session.commit()
+
+        return vaultMsg(True, 'Deleted service s#%s successfully' % service_id)
 
 
     @authenticated_user

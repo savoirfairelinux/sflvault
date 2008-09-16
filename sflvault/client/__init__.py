@@ -309,6 +309,24 @@ class SFLvaultClient(object):
 
 
     @authenticate()
+    def del_service(self, service_id):
+        retval = self.vault.delservice(self.authtok, service_id)
+
+        if retval['error']:
+            print "Error: %s" % retval['message']
+
+            if retval.has_key('childs'):
+                print "Those services rely on services you were going "\
+                      "to delete:"
+                for x in retval['childs']:
+                    print "     s#%s%s%s" % (x['id'],
+                                             ' ' * (6 - len(str(x['id']))),
+                                             x['url'])
+        else:
+            print "Success: %s" % retval['message']
+        
+
+    @authenticate()
     def add_customer(self, customer_name):
         retval = vaultReply(self.vault.addcustomer(self.authtok,
                                                    customer_name),
@@ -348,6 +366,8 @@ class SFLvaultClient(object):
         notes - Simple text field, with notes.
         secret - Password for the service. Plain-text.
         """
+
+        # TODO: accept group_id as group_ids, accept list and send list.
 
         retval = vaultReply(self.vault.addservice(self.authtok,
                                                   int(machine_id),
@@ -395,11 +415,17 @@ class SFLvaultClient(object):
             print "Groups to be re-granted to complete membership:"
             for x in retval['missing_groups'].keys():
                 print "    g#%s  %s" % (x, retval['missing_groups'][x])
+            print '-' * 79
+
         if retval['over_ciphers']:
             # Print the groups to be revoked as quickly as possible
             print "Groups to be revoked on user to clean database:"
             for x in retval['over_groups'].keys():
                 print "    g#%s  %s" % (x, retval['over_groups'][x])
+            print '-' * 79
+                        
+        print "Cleaned:                     %d ciphers "\
+              "(from deleted services)" % retval['cleaned_ciphers']
         print '-' * 79
         print "End of analysis report"
 
@@ -589,6 +615,8 @@ class SFLvaultClient(object):
                                                              
 
                 spc2 = spc1 + add
+                #print "%s" % (spc2) + ' ' * 6 + '-' * (74 - len(spc2))
+                print ""
                 for s_id, s in m['services'].items():
                     level = 2
                     # TODO: display service infos

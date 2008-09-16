@@ -21,8 +21,6 @@
 
 import re
 
-# Unused, now engine is in meta.engine
-#from pylons import config
 from sqlalchemy import Column, MetaData, Table, types, ForeignKey
 from sqlalchemy.orm import mapper, relation, backref
 from sqlalchemy.orm import scoped_session, sessionmaker, eagerload, lazyload
@@ -37,6 +35,8 @@ from sflvault.model import meta
 from sflvault.model.meta import Session, metadata
 from sflvault.lib.common.crypto import *
 
+# TODO: add an __all__ statement here, to speed up loading...
+
 
 def init_model(engine):
     """Call me before using any of the tables or classes in the model."""
@@ -45,11 +45,6 @@ def init_model(engine):
     meta.engine = engine
     meta.Session = scoped_session(sm)
 
-
-# Use the contextually Session-linked please!
-#-Useless, it doesn't map anymore. Use query() intead.
-#if meta.mapper:
-#    mapper = meta.mapper
 
 
 users_table = Table("users", metadata,
@@ -240,7 +235,6 @@ def get_user(user, eagerload_all_=None):
     """Get a user provided a username or an int(user_id), possibly eager
     loading some relations.
     """
-    # TODO: DRY
     if isinstance(user, int):
         uq = query(User).filter_by(id=user)
     else:
@@ -261,7 +255,7 @@ def get_groups_list(group_ids, eagerload_all_=None):
     """Get a group_ids list, or string, or int, and make sure we
     return a list of integers.
     """
-    # Get groups, TODO: DRY
+    # Get groups
     if isinstance(group_ids, str):
         groupids = [int(group_ids)]
     elif isinstance(group_ids, int):
@@ -300,14 +294,20 @@ def search_query(swords, verbose=False):
                                                    .select(use_labels=True)
 
     # Fields to search in..
-    allfields = [Customer.c.name,
+    allfields = [Customer.c.id,
+                 Customer.c.name,
+                 Machine.c.id,
                  Machine.c.name,
                  Machine.c.fqdn,
                  Machine.c.ip,
                  Machine.c.location,
                  Machine.c.notes,
+                 Service.c.id,
                  Service.c.url,
                  Service.c.notes]
+    
+    # TODO: distinguish between INTEGER fields and STRINGS and search
+    # differently (check only ==, and only if word can be converted to int())
 
     andlist = []
     for word in swords:
@@ -318,3 +318,4 @@ def search_query(swords, verbose=False):
     sel = sel.where(sql.and_(*andlist))
 
     return meta.Session.execute(sel)
+

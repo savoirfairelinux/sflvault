@@ -249,6 +249,20 @@ class SFLvaultParser(object):
         self.vault.del_user(username)
 
 
+    def del_service(self):
+        """Delete an existing service. Make sure you have detached all
+        childs before removing a parent service."""
+        self.parser.set_usage("del-service service_id")
+        self._parse()
+
+        if len(self.args) != 1:
+            raise SFLvaultParserError("Invalid number of arguments")
+
+        service_id = int(self.args[0])
+
+        self.vault.del_service(service_id)
+        
+
     def add_machine(self):
         """Add a machine to the Vault's database."""
         self.parser.set_usage("add-machine [options]")
@@ -299,6 +313,7 @@ class SFLvaultParser(object):
 
         self.parser.add_option('-s', '--parent', dest="parent_id",
                                help="Parent's Service ID for this new one.")
+        # TODO: support multiple groups (add service in multiple groups)
         self.parser.add_option('-g', '--group', dest="group_id", default='',
                                help="Access group_id for this service, as 'g#123' or '123'. Use list-groups to view complete list.")
         self.parser.add_option('--notes', dest="notes",
