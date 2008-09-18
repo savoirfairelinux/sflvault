@@ -249,16 +249,52 @@ class SFLvaultParser(object):
         self.vault.del_user(username)
 
 
+    def del_customer(self):
+        """Delete an existing customer, it's machines and all services.
+        Make sure you have detached all services' childs before removing a
+        customer with machines which has services that are parents to other
+        services."""
+        
+        self.parser.set_usage("del-customer customer_id")
+        self._parse()
+
+        # TODO someday: DRY
+        if len(self.args) != 1:
+            raise SFLvaultParserError("Invalid number of arguments")
+
+        customer_id = self.vault.vaultId(self.args[0], 'c')
+
+        self.vault.del_customer(customer_id)
+
+
+    def del_machine(self):
+        """Delete an existing machine, including all services. Make sure
+        you have detached all services' childs before removing a machine
+        which has services that are parents to other services."""
+        
+        self.parser.set_usage("del-machine machine_id")
+        self._parse()
+
+        # TODO someday: DRY
+        if len(self.args) != 1:
+            raise SFLvaultParserError("Invalid number of arguments")
+
+        machine_id = self.vault.vaultId(self.args[0], 'm')
+
+        self.vault.del_machine(machine_id)
+
+
     def del_service(self):
         """Delete an existing service. Make sure you have detached all
         childs before removing a parent service."""
         self.parser.set_usage("del-service service_id")
         self._parse()
 
+        # TODO someday: DRY
         if len(self.args) != 1:
             raise SFLvaultParserError("Invalid number of arguments")
 
-        service_id = int(self.args[0])
+        service_id = self.vault.vaultId(self.args[0], 's')
 
         self.vault.del_service(service_id)
         

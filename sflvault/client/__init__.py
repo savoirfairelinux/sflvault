@@ -308,10 +308,9 @@ class SFLvaultClient(object):
         print "Success: %s" % retval['message']
 
 
-    @authenticate()
-    def del_service(self, service_id):
-        retval = self.vault.delservice(self.authtok, service_id)
-
+    def _services_returned(self, retval):
+        """Helper function for del_customer, del_machine and del_service."""
+        
         if retval['error']:
             print "Error: %s" % retval['message']
 
@@ -324,7 +323,28 @@ class SFLvaultClient(object):
                                              x['url'])
         else:
             print "Success: %s" % retval['message']
+
+
+    @authenticate()
+    def del_customer(self, customer_id):
+        retval = self.vault.delcustomer(self.authtok, customer_id)
+
+        self._services_returned(retval)
         
+
+    @authenticate()
+    def del_machine(self, machine_id):
+        retval = self.vault.delmachine(self.authtok, machine_id)
+
+        self._services_returned(retval)
+        
+
+    @authenticate()
+    def del_service(self, service_id):
+        retval = self.vault.delservice(self.authtok, service_id)
+
+        self._services_returned(retval)
+
 
     @authenticate()
     def add_customer(self, customer_name):
