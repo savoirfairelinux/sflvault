@@ -562,6 +562,12 @@ class XmlrpcController(MyXMLRPCController):
                 return vaultMsg(False, "No such parent service ID.",
                                 {'parent_service_id': parent_service_id})
 
+        # Get all users from the group_id, and all admins.
+        encusers = query(Group).get(group_id).users
+        admusers = query(User).filter_by(is_admin=True).all()
+
+
+        # Add service effectively..
         ns = Service()
         ns.machine_id = int(machine_id)
         ns.parent_service_id = parent_service_id or None
@@ -577,11 +583,9 @@ class XmlrpcController(MyXMLRPCController):
 
         meta.Session.commit()
 
-        # Get all users from the group_id, and all admins.
-        encusers = query(Group).get(group_id).users
-        admusers = query(User).filter_by(is_admin=True).all()
 
-        # Merge two lists
+        # Add to users
+        # Merge two lists (encusers, admusers)
         for adm in admusers:
             if adm not in encusers:
                 encusers.append(adm)
