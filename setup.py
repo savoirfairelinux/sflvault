@@ -19,7 +19,7 @@ setup(
                       "SQLAlchemy>=0.4",
                       "pycrypto",
                       "pysqlite",
-                      #"SFLvault_common>=0.5.0",
+                      "pexpect>=2.3",
                       ],
     packages=find_packages(exclude=['ez_setup']),
     include_package_data=True,
