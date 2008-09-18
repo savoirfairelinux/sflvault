@@ -73,7 +73,7 @@ def authenticate(keep_privkey=False):
         try:
             privkey = decrypt_privkey(privkey_enc, privpass)
         except DecryptError, e:
-            print "[SFLvault] Invalid pass-phrase"
+            print "[SFLvault] Invalid passphrase"
             return False
             
         privpass = randfunc(len(privpass))
@@ -127,7 +127,7 @@ class SFLvaultClient(object):
     """
     def __init__(self, cfg=None):
         """Set up initial configuration for function calls"""
-        # The function to call upon @authenticate to get password from user.
+        # The function to call upon @authenticate to get passphrase from user.
         self.getpassfunc = self._getpass
         # Load configuration
         self.config_read()
@@ -139,8 +139,8 @@ class SFLvaultClient(object):
             self.vault = xmlrpclib.Server(url).sflvault
 
     def _getpass(self):
-        """Default function to get password from user, for authentication."""
-        return getpass.getpass("Vault password: ")
+        """Default function to get passphrase from user, for authentication."""
+        return getpass.getpass("Vault passphrase: ")
 
 
     def config_check(self):
@@ -196,12 +196,12 @@ class SFLvaultClient(object):
         fp.close()
 
     def set_getpassfunc(self, func):
-        """Set the function to ask for password.
+        """Set the function to ask for passphrase.
 
-        By default, it is set to _getpass, which asks for the password on the
+        By default, it is set to _getpass, which asks for the passphrase on the
         command line, but you can create a new function, that would for example
-        pop-up a window, or use another mechanism to ask for password and continue
-        authentication."""
+        pop-up a window, or use another mechanism to ask for passphrase and
+        continue authentication."""
         self.getpassfunc = func
         
     def _set_vault(self, url, save=False):

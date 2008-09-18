@@ -359,7 +359,7 @@ class SFLvaultParser(object):
 
         # TODO: plug-in-ize password capture.
         if not secret:
-            secret = getpass.getpass("Enter service secret (password): ")
+            secret = getpass.getpass("Enter service's password: ")
 
 
         machine_id = 0
