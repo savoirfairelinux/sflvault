@@ -138,8 +138,8 @@ class XmlrpcController(MyXMLRPCController):
         out = []
         while True:
             ucipher = query(Usercipher).filter_by(service_id=s.id, user_id=self.sess['userobj'].id).first()
-            if ucipher and ucipher.stuff:
-                cipher = ucipher.stuff
+            if ucipher and ucipher.cryptsymkey:
+                cipher = ucipher.cryptsymkey
             else:
                 cipher = ''
 
@@ -311,7 +311,7 @@ class XmlrpcController(MyXMLRPCController):
             uc = mine[ucid]
             
             item = {'id': uc.service_id,
-                    'stuff': uc.stuff}
+                    'cryptsymkey': uc.cryptsymkey}
             lst.append(item)
 
         # Check if user has already access to groups
@@ -349,7 +349,8 @@ class XmlrpcController(MyXMLRPCController):
         """Receive a user and ciphers to be stored into the database.
 
         user - either username, or user_id
-        ciphers - hash composed of 'id' (service_id) and encrypted 'stuff'.
+        ciphers - hash composed of 'id' (service_id) and encrypted
+                  'cryptsymkey'.
         """
 
         # Get user, and relations
@@ -370,8 +371,8 @@ class XmlrpcController(MyXMLRPCController):
 
         for ci in ciphers:
             if not isinstance(ci, dict) or not ci.has_key('id') \
-                                         or not ci.has_key('stuff'):
-                return vaultMsg(False, "Malformed ciphers (must be dicts, with 'id' and 'stuff')");
+                                         or not ci.has_key('cryptsymkey'):
+                return vaultMsg(False, "Malformed ciphers (must be dicts, with 'id' and 'cryptsymkey')");
 
 
             if ci['id'] in usr_services:
@@ -383,7 +384,7 @@ class XmlrpcController(MyXMLRPCController):
             nu = Usercipher()
             nu.user_id = hisid
             nu.service_id = ci['id']
-            nu.stuff = ci['stuff']
+            nu.cryptsymkey = ci['cryptsymkey']
 
             meta.Session.save(nu)
 
@@ -440,7 +441,7 @@ class XmlrpcController(MyXMLRPCController):
                       if ciph.service_id in service_ids]
         
         #for ciph in ciphers:
-            
+        # TODO: terminate that...
         
         return vaultMsg(True, "Revoked stuff", {'service_ids': service_ids})
 
@@ -606,7 +607,8 @@ class XmlrpcController(MyXMLRPCController):
             nu.user_id = usr.id
 
             eg = usr.elgamal()
-            nu.stuff = serial_elgamal_msg(eg.encrypt(seckey, randfunc(32)))
+            nu.cryptsymkey = serial_elgamal_msg(eg.encrypt(seckey,
+                                                           randfunc(32)))
             del(eg)
 
             meta.Session.save(nu)

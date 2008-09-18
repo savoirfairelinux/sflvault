@@ -75,30 +75,30 @@ def chksum(sumval):
 
 # _msg are used to store Userciphers in the database (symkey
 # encrypted for each user)
-def serial_elgamal_msg(stuff):
+def serial_elgamal_msg(cryptsymkey):
     """Get a 2-elements tuple of str(), return a string."""
-    ns = b64encode(stuff[0]) + ':' + \
-         b64encode(stuff[1])
+    ns = b64encode(cryptsymkey[0]) + ':' + \
+         b64encode(cryptsymkey[1])
     return ns
 
-def unserial_elgamal_msg(stuff):
+def unserial_elgamal_msg(cryptsymkey):
     """Get a string, return a 2-elements tuple of str()"""
-    x = stuff.split(':')
+    x = cryptsymkey.split(':')
     return (b64decode(x[0]),
             b64decode(x[1]))
 
 # _pubkey are used to encode the public key stored in the database
 # (El Gamal pub key, packed together)
-def serial_elgamal_pubkey(stuff):
+def serial_elgamal_pubkey(pubkey):
     """Get a 3-elements tuple of long(), return a string."""
-    ns = b64encode(long_to_bytes(stuff[0])) + ':' + \
-         b64encode(long_to_bytes(stuff[1])) + ':' + \
-         b64encode(long_to_bytes(stuff[2]))         
+    ns = b64encode(long_to_bytes(pubkey[0])) + ':' + \
+         b64encode(long_to_bytes(pubkey[1])) + ':' + \
+         b64encode(long_to_bytes(pubkey[2]))         
     return ns
 
-def unserial_elgamal_pubkey(stuff):
+def unserial_elgamal_pubkey(pubkey):
     """Get a string, return a 3-elements tuple of long()"""
-    x = stuff.split(':')
+    x = pubkey.split(':')
     return (bytes_to_long(b64decode(x[0])),
             bytes_to_long(b64decode(x[1])),
             bytes_to_long(b64decode(x[2])))
@@ -106,21 +106,21 @@ def unserial_elgamal_pubkey(stuff):
 
 # _privkey are used to encode the key in a storable manner
 # to go in the ~/.sflvault/config file, as the 'key' key.
-def serial_elgamal_privkey(stuff):
+def serial_elgamal_privkey(privkey):
     """Get a 4-elements tuple of long(), return a string.
 
     This contains the private (two first elements) and the public key."""
-    ns = b64encode(long_to_bytes(stuff[0])) + ':' + \
-         b64encode(long_to_bytes(stuff[1])) + ':' + \
-         b64encode(long_to_bytes(stuff[2])) + ':' + \
-         b64encode(long_to_bytes(stuff[3]))
+    ns = b64encode(long_to_bytes(privkey[0])) + ':' + \
+         b64encode(long_to_bytes(privkey[1])) + ':' + \
+         b64encode(long_to_bytes(privkey[2])) + ':' + \
+         b64encode(long_to_bytes(privkey[3]))
     return ns
 
-def unserial_elgamal_privkey(stuff):
+def unserial_elgamal_privkey(privkey):
     """Get a string, return a 4-elements tuple of long()
 
     This contains the private (two first elements) and the public key."""
-    x = stuff.split(':')
+    x = privkey.split(':')
     return (bytes_to_long(b64decode(x[0])),
             bytes_to_long(b64decode(x[1])),
             bytes_to_long(b64decode(x[2])),

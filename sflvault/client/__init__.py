@@ -473,15 +473,15 @@ class SFLvaultClient(object):
         count = 0
         print "Encrypting ciphers for user..."
         for cipher in retval['ciphers']:
-            # cipher = {'id': service_id, 'stuff': encrypted_symkey}
+            # cipher = {'id': service_id, 'cryptsymkey': encrypted_symkey}
             # Decrypt the encrypted_symkey with my privkey
             try:
-                aeskey = self.privkey.decrypt(unserial_elgamal_msg(cipher['stuff']))
+                aeskey = self.privkey.decrypt(unserial_elgamal_msg(cipher['cryptsymkey']))
             except Exception, e:
                 raise DecryptError("Unable to decrypt my Usercipher: %s" % e.message)
             
             # Encrypt the symkey with his pubkey
-            stuff = serial_elgamal_msg(his_el.encrypt(aeskey, randfunc(32)))
+            cryptsymkey = serial_elgamal_msg(his_el.encrypt(aeskey, randfunc(32)))
             
             # Report progress
             count += 1
@@ -490,7 +490,7 @@ class SFLvaultClient(object):
             
             # Add to the list to be returned in grantupdate() call.
             encstuff.append({'id': cipher['id'],
-                             'stuff': stuff})
+                             'cryptsymkey': cryptsymkey})
 
         sys.stdout.write("\ndone.\n")
 
@@ -509,7 +509,7 @@ class SFLvaultClient(object):
         Vault.
 
         user - user_id or username
-        ciphers - list of dicts {'id': service_id, 'stuff': encrypted_cipher}
+        ciphers - list of dicts {'id': service_id, 'cryptsymkey': encrypted_cipher}
         """
         retval = vaultReply(self.vault.grantupdate(self.authtok, user,
                                                    ciphers),

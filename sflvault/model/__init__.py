@@ -137,7 +137,7 @@ userciphers_table = Table('userciphers', metadata,
                           # The user for which this secret is encrypted
                           Column('user_id', types.Integer, ForeignKey('users.id')),
                           # Encrypted symkey with user's pubkey.
-                          Column('stuff', types.Text)
+                          Column('cryptsymkey', types.Text)
                           )
 
 class Service(object):
