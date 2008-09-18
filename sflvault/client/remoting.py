@@ -25,8 +25,9 @@ ssh to ssh to http)"""
 
 from sflvault.client.utils import *
 
-__all__ = ['Service', 'Chain']
+import pexpect
 
+__all__ = ['Service', 'Chain']
 
 # Mother class for service handlers.
 class Service(object):
@@ -194,17 +195,26 @@ class Chain(object):
             raise RemotingException("Chain not ready. Call setup() first.")
 
         last = None
-        
+        active_services = []
         # Setup communication
         for srv in self.service_list:
-            srv.prework()
-            last = srv
+            try:
+                srv.prework()
+                active_services.append(srv)
+                last = srv
+            except ServiceExpectError, e:
+                # Show error, fall back, and interact to last if it exists.
+                print "Error connecting to %s: %s" % (srv.data['url'], e.message)
+            except pexpect.EOF, e:
+                print "Child exited"
+
 
         # Interact with end-point
-        last.interact()
+        if last:
+            last.interact()
 
         # Close-up communication
-        for srv in reversed(self.service_list):
+        for srv in reversed(active_services):
             srv.postwork()
 
-        print "Chain::connect() done"
+        #print "Chain::connect() done"

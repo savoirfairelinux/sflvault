@@ -25,7 +25,7 @@ import struct, fcntl, termios, signal # for term size signaling..
 import pexpect
 import pxssh
 import sys
-
+import os
 
 # Enum used in the services' `provides`
 PROV_PORT_FORWARD  = 'port-forward'
@@ -33,15 +33,14 @@ PROV_SHELL_ACCESS  = 'shell-access'
 PROV_MYSQL_CONSOLE = 'mysql-console'
 
 # Operational modes
-OP_DIRECT = 'direct-access'            # - When, let's say 'ssh' is going to spawn a
-                                       # process.
-OP_THRGH_FWD_PORT = 'through-fwd-port' # - When we must go through a port that's been
-                                       # forwarded.
-                                       # In that case, the parent must provide with
-                                       # forwarded host and port.
-OP_THRGH_SHELL = 'through-shell'       # - When a command must be sent through an open
-                                       # shell
-
+OP_DIRECT = 'direct-access'            # - When, let's say 'ssh' is going to
+                                       # spawn a process.
+OP_THRGH_FWD_PORT = 'through-fwd-port' # - When we must go through a port
+                                       # that's been forwarded.
+                                       # In that case, the parent must provide
+                                       # with  forwarded host and port.
+OP_THRGH_SHELL = 'through-shell'       # - When a command must be sent through
+                                       # an open shell
 
 
 # Helper func
@@ -200,27 +199,51 @@ class ssh(ShellService):
             def shell(self):
                 r'[^ ]*@.*:.*[$#]'
                 pass # We're in :)
+            
+            def denied(self):
+                'Permission denied.*$'
+                self.cnx.sendcontrol('c')
+                raise ServiceExpectError("Failed to authenticate ssh://")
 
         class expect_login(ExpectClass): 
             def sendlogin(self):
                 'assword:'
                 sys.stdout.write(" [sending password...] ")
                 self.cnx.sendline(self.service.data['plaintext'])
+                sys.stdout.flush()
 
                 expect_shell(self.service)
 
             def werein(self):
                 'Last login'
                 print "We're in! (using shared-key?)"
-           
 
         class expect_login_first(expect_login):
             def are_you_sure(self):
-                "(?i)are you sure you want to continue connecting"
+                "(?i)are you sure you want to continue connecting.*\? "
                 # TODO: are you always sure ??
-                self.cnx.sendline('yes')
+                ans = raw_input()
+                self.cnx.sendline(ans)
 
                 expect_login(self.service)
+
+            def remote_host_changed(self):
+                "REMOTE HOST IDENTIFICATION HAS CHANGED!.*Offending key in (.*):(\d*)[^\d]*$"
+                ans = raw_input("Would you like SFLvault to remove that offending line and try again (yes/no)? ")
+
+                if ans.lower() == 'yes':
+                    cmd = 'sed -i %sd "%s"' % (self.cnx.match.group(2),
+                                               self.cnx.match.group(1))
+
+                    if self.service.operation_mode == OP_DIRECT:
+                        # Remove the line
+                        os.system(cmd)
+                    else: # operation_mode == OP_THRGH_SHELL
+                        self.cnx.sendline(cmd)
+
+                    raise ServiceExpectError("SFLvault removed offending key. Please try again.")
+                else:
+                    raise ServiceExpectError("Remote host identification has changed. Please resolve problem.")
             
 
         # Default user:
