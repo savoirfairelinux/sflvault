@@ -643,6 +643,8 @@ def main():
     except DecryptError, e:
         print "[SFLvault] There has been an error in decrypting messages: %s" \
               % e.message
+    except VaultIDSpecError, e:
+        print "[SFLvault] VaultID spec. error: %s" % e.message
 
     
 

@@ -24,7 +24,7 @@
 import urlparse
 
 __all__ = ['shred', 'urlparse', 'AuthenticationError', 'VaultError',
-           'VaultIDFormatError', 'VaultConfigurationError', 'RemotingError',
+           'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
            'ServiceRequireError', 'ServiceExpectError']
 
 
@@ -66,7 +66,7 @@ class VaultError(StandardError):
     def __str__(self):
         return self.message
 
-class VaultIDFormatError(Exception):
+class VaultIDSpecError(Exception):
     """When bad parameters are passed to vaultId"""
     pass
 

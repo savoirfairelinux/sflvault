@@ -274,15 +274,20 @@ class SFLvaultClient(object):
         tid = re.match(r'(.)#(\d+)', vid)
         if tid:
             if tid.group(1) != prefix:
-                raise VaultIDFormatError("Bad prefix for VaultID, context requires '%s': %s" % (prefix, vid))
+                raise VaultIDSpecError("Bad prefix for VaultID, "\
+                                         "context requires '%s': %s"\
+                                         % (prefix, vid))
             return int(tid.group(2))
 
         if check_alias:
             nid = self.alias_get(vid)
 
+            if not nid:
+                raise VaultIDSpecError("No such alias '%s'. Use `alias %s s#[ID]` to set." % (vid, vid))
+
             return self.vaultId(nid, prefix, False)
 
-        raise VaultIDFormatError("Invalid alias of bad VaultID format: %s" % vid)
+        raise VaultIDSpecError("Invalid VaultID format: %s" % vid)
 
 
 
