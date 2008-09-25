@@ -94,7 +94,8 @@ class XmlrpcController(MyXMLRPCController):
             newtok = b64encode(randfunc(32))
             set_session(newtok, {'username': username,
                                  'timeout': datetime.now() + timedelta(0, SESSION_TIMEOUT),
-                                 'userobj': u
+                                 'userobj': u,
+                                 'user_id': u.id
                                  })
 
             return vaultMsg(True, 'Authentication successful', {'authtok': newtok})
@@ -399,7 +400,7 @@ class XmlrpcController(MyXMLRPCController):
 
     @authenticated_admin
     def sflvault_revoke(self, authtok, user, group_ids):
-        """Revoke permissions (and destroy ciphers for user) of a group
+        """Revoke permisssions (and destroy ciphers for user) of a group
         for a user"""
         
         # Get user, and relations
@@ -441,14 +442,17 @@ class XmlrpcController(MyXMLRPCController):
                       if ciph.service_id in service_ids]
         
         #for ciph in ciphers:
-        # TODO: terminate that...
+        # TODO: terminate that, is STILL DOESN'T REMOVE THE CIPHERS!
+        # TODO: verify that the cipher is still available somewhere before
+        #       removing it, otherwise some services may be rendered useless.
+        #       of the password could be lost.
         
-        return vaultMsg(True, "Revoked stuff", {'service_ids': service_ids})
-
-            
         # TODO(future): Make sure when you remove a Usercipher for a service
         # that matches the specified groups, that you keep it if another group
         # that you are not removing still exists for the user.
+
+        return vaultMsg(True, "Revoked stuff", {'service_ids': service_ids})
+
 
 
     @authenticated_admin
@@ -564,8 +568,9 @@ class XmlrpcController(MyXMLRPCController):
                                 {'parent_service_id': parent_service_id})
 
         # Get all users from the group_id, and all admins.
-        encusers = query(Group).get(group_id).users
+        encusers = list(query(Group).get(group_id).users)
         admusers = query(User).filter_by(is_admin=True).all()
+        myselfuser = query(User).get(self.sess['user_id'])
 
 
         # Add service effectively..
@@ -590,13 +595,15 @@ class XmlrpcController(MyXMLRPCController):
         for adm in admusers:
             if adm not in encusers:
                 encusers.append(adm)
+        # Add myself
+        encusers.append(myselfuser)
                 
         ## TODO: move all that to centralised 'save_service_password'
         ## that can be used on add-service calls and also on change-password
         ## calls
 
         userlist = []
-        for usr in encusers:
+        for usr in set(encusers): # take out doubles..
             # pubkey required to encrypt for user
             if not usr.pubkey:
                 continue

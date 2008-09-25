@@ -331,6 +331,53 @@ class SFLvaultParser(object):
                               o.ip, o.location, o.notes)
 
 
+    def _service_options(self):
+        """Add options for calls to `add_service` and `mod_service`"""
+        
+        self.parser.add_option('-m', '--machine', dest="machine_id",
+                               help="Attach Service to Machine #, as "\
+                                    "'m#123', '123' or an alias")
+        self.parser.add_option('-u', '--url', dest="url",
+                               help="Service URL, full proto://[username@]"\
+                               "fqdn.example.org[:port][/path[#fragment]], "\
+                               "WITHOUT the secret.")
+
+        self.parser.add_option('-p', '--parent', dest="parent_id",
+                               help="Make this Service child of Parent "\
+                                    "Service #")
+        # TODO: support multiple groups (add service in multiple groups)
+        self.parser.add_option('-g', '--group', dest="group_id", default='',
+                               help="Access group_id for this service, as "\
+                               "'g#123' or '123'. Use list-groups to view "\
+                               "complete list.")
+        self.parser.add_option('--notes', dest="notes",
+                               help="Notes about the service, references, "\
+                                    "URLs.")
+
+    def _service_clean_url(self, url):
+        """Remove password in URL, and notify about rewrite."""
+
+        # Rewrite url if a password was included... strip the port and
+        #       username from the URL too.
+        if url.password:
+            out = []
+            if url.username:
+                out.append('%s@' % url.username)
+            
+            out.append(url.hostname)
+            
+            if url.port:
+                out.append(":%d" % url.port)
+            
+            url = urlparse.urlunparse((url[0],
+                                       ''.join(out),
+                                       url[2], url[3], url[4], url[5]))
+
+            print "NOTE: Do not specify password in URL. Rewritten: %s" % url
+
+        return url
+
+
     def add_service(self):
         """Add a service to a particular machine in the Vault's database.
 
@@ -342,19 +389,7 @@ class SFLvaultParser(object):
                history.
         """
         
-        self.parser.add_option('-m', '--machine', dest="machine_id",
-                               help="Service will be attached to machine, as 'm#123' or '123'")
-        self.parser.add_option('-u', '--url', dest="url",
-                               help="Service URL, full proto://[username@]fqdn.example.org[:port][/path[#fragment]], WITHOUT the secret.")
-
-        self.parser.add_option('-s', '--parent', dest="parent_id",
-                               help="Parent's Service ID for this new one.")
-        # TODO: support multiple groups (add service in multiple groups)
-        self.parser.add_option('-g', '--group', dest="group_id", default='',
-                               help="Access group_id for this service, as 'g#123' or '123'. Use list-groups to view complete list.")
-        self.parser.add_option('--notes', dest="notes",
-                               help="Notes about the service, references, URLs.")
-
+        self._service_options()
         self._parse()
 
         if not self.opts.url:
@@ -362,41 +397,25 @@ class SFLvaultParser(object):
         
         ## TODO: make a list-customers and provide a selection using arrows or
         #        or something alike.
-        if not self.opts.machine_id and not self.opts.parent_id:
-            raise SFLvaultParserError("Parent ID or Machine ID required. Please specify -r|--parent VaultID or -m|--machine VaultID")
+        if not self.opts.machine_id:
+            raise SFLvaultParserError("Machine ID required. Please specify -m|--machine [VaultID]")
 
+        if not self.opts.group_id:
+            raise SFLvaultParserError("Group required")
+        
+        
         o = self.opts
 
         url = urlparse.urlparse(o.url)
+        url = self._service_clean_url(url)
 
-        # TODO: check if we're on the command line (and not in the SFLvault
-        #       shell. If we're not in the CLI, then we can take the secret
-        #       from the URL, if available. Otherwise, ask.
         secret = None
 
-        # Rewrite url if a password was included... strip the port and
-        #       username from the URL too.
-        if url.password:
-            out = []
-            if url.username:
-                out.append('%s@' % url.username)
-                
-            out.append(url.hostname)
-            
-            if url.port:
-                out.append(":%d" % url.port)
-            
-            url = urlparse.urlunparse((url[0],
-                                       ''.join(out),
-                                       url[2], url[3], url[4], url[5]))
-
-            print "Do not specify password in URL. Rewritten: %s" % url
-
-
-        # TODO: plug-in-ize password capture.
         if not secret:
-            secret = getpass.getpass("Enter service's password: ")
-
+            # Use raw_input so that we see the password. To make sure we enter
+            # a valid and the one we want (what if copy&paste didn't work, and
+            # you didn't know ?)
+            secret = raw_input("Enter service's password: ")
 
         machine_id = 0
         parent_id = 0
@@ -410,7 +429,22 @@ class SFLvaultParser(object):
             
         self.vault.add_service(machine_id, parent_id, o.url, group_id, secret,
                                o.notes)
-        del(secret)
+        
+
+
+    def mod_service(self):
+        """Modify service informations"""
+
+        self._service_options()
+        self._parse()
+
+        # TODO: Get the first parameter: service_id
+        # TODO: check all the specified parameters in self.args and
+        #       add them to the service definition, otherwise pass
+        #       None values.
+        
+
+
 
     def chg_service_passwd(self):
         """Change the password for a service
@@ -425,7 +459,12 @@ class SFLvaultParser(object):
 
         if not self.opts.service_id:
             raise SFLvaultParserError("Required parameter '-s' omitted")
+
         
+
+
+
+
     def alias(self):
         """Set an alias, local shortcut to VaultIDs (s#123, m#87, etc..)
 
