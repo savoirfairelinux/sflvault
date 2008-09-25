@@ -450,7 +450,7 @@ class SFLvaultParser(object):
             
             # List aliases
             l = self.vault.alias_list()
-            print "Aliases:"
+            print "Aliased VaultIDs:"
             for x in l:
                 print "\t%s\t%s" % (x[0], x[1])
 
@@ -459,7 +459,7 @@ class SFLvaultParser(object):
             # Show this alias's value
             a = self.vault.alias_get(self.args[0])
             if a:
-                print "Alias:"
+                print "Aliased VaultID:"
                 print "\t%s\t%s" % (self.args[0], a)
             else:
                 print "Invalid alias"
