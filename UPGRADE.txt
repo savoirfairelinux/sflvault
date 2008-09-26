@@ -22,3 +22,16 @@ To upgrade to 0.6.6, you should rename the column `stuff` to `cryptsymkey`  in
 the `userciphers` table. This is to have better semantics as suggested by
 Yannick Gingras.
 
+
+
+UPGRADE TO 0.6.7:
+-----------------
+
+Issue SQL:
+
+  INSERT INTO services_groups (group_id, service_id) SELECT group_id,id FROM services;
+
+Remove column:
+
+  services.group_id
+

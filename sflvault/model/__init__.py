@@ -77,7 +77,16 @@ groups_table = Table('groups', metadata,
                      Column('id', types.Integer, primary_key=True),
                      Column('name', types.Unicode(50)),
                      )
-                                
+
+
+servicegroups_table = Table('services_groups', metadata,
+                            Column('id', types.Integer, primary_key=True),
+                            Column('service_id', types.Integer,
+                                   ForeignKey('services.id')),
+                            Column('group_id', types.Integer,
+                                   ForeignKey('groups.id')),
+                            )
+
 # This is deprecated by usergroups + groups
 #userlevels_table = Table('userlevels', metadata,
 #                         Column('id', types.Integer, primary_key=True),
@@ -120,8 +129,9 @@ services_table = Table('services', metadata,
                        # Hierarchical service required to access this one ?
                        Column('parent_service_id', types.Integer,
                               ForeignKey('services.id')),
-                       Column('group_id', types.Integer,
-                              ForeignKey('groups.id')),
+                       # REMOVED: replaced by servicegroups_table many-to-many.
+                       #Column('group_id', types.Integer,
+                       #       ForeignKey('groups.id')),
                        Column('url', types.String(250)), # Full service desc.
                        # simplejson'd python structures, depends on url scheme
                        Column('metadata', types.Text), # reserved.
@@ -170,36 +180,41 @@ class User(object):
     def __repr__(self):
         return "<User u#%d: %s>" % (self.id, self.username)
 
-class UserGroup(object):    
-    def __repr__(self):
-        return "<UserGroup element>"
+# Should never be used, removed temporarily to see if everything works without:
+#class UserGroup(object):    
+#    def __repr__(self):
+#        return "<UserGroup element>"
+#class ServiceGroup(object):
+#    def __repr__(self):
+#        return "<ServiceGroup element>"
 
 class Group(object):
     def __repr__(self):
         return "<Group: %s>" % (self.name)
     
-# Deprecated by UserGroup + Group
-#class UserLevel(object):
-#    def __repr__(self):
-#        return "<UserLevel: %s>" % (self.level)
-
 class Customer(object):
     def __repr__(self):
         return "<Customer c#%d: %s>" % (self.id, self.name)
+
+# 2-hops join:
+#user_serv_join = sql.join(users_table, usergroups_table)\
+#                    .onclause(users_table.c.id == usergroups_table.c.user_id)\
+#                    .join(usergroups_table, servicegroups_table)\
+#                    .onclause(usergroups_table.c.group_id == servicegroups.c.group_id)\
+#                    .join(services_table)\
+#                    .onclause(servicegroups_table.c.service_id == services_table.id)
 
 # Map each class to its corresponding table.
 mapper(User, users_table, {
     'groups': relation(Group, secondary=usergroups_table,
                        backref='users'), # don't eagerload, we'll ask if needed
     'userciphers': relation(Usercipher, backref='user'),
+    'services': relation(Service, viewonly=True,
+                         secondary=usergroups_table.join(servicegroups_table, usergroups_table.c.group_id==servicegroups_table.c.group_id),
+                         backref='users',
+                         viewonly=True,
+                         )
     })
-
-# Not required, the usergroups_table goes through the secondary option
-# of mapper(User).. just above..
-#
-#mapper(UserLevel, userlevels_table, {
-#    
-#    })
 
 mapper(Group, groups_table, {
     #'userciphers': relation(Usercipher, backref='group'),
@@ -216,7 +231,8 @@ mapper(Service, services_table, {
                          backref=backref('parent', uselist=False,
                                          remote_side=[services_table.c.id]),
                          primaryjoin=services_table.c.parent_service_id==services_table.c.id),
-    'group': relation(Group, backref='services'),
+    'groups': relation(Group, secondary=servicegroups_table,
+                       backref='services'),
     'userciphers': relation(Usercipher, backref='service'),
     })
 mapper(Usercipher, userciphers_table, {
@@ -257,9 +273,9 @@ def get_groups_list(group_ids, eagerload_all_=None):
     """
     # Get groups
     if isinstance(group_ids, str):
-        groupids = [int(group_ids)]
+        group_ids = [int(group_ids)]
     elif isinstance(group_ids, int):
-        groupids = [group_ids]
+        group_ids = [group_ids]
     elif isinstance(group_ids, list):
         group_ids = [int(x) for x in group_ids]
     else:
@@ -290,8 +306,8 @@ def get_groups_list(group_ids, eagerload_all_=None):
 def search_query(swords, verbose=False):
 
     # Create the join..
-    sel = sql.join(Customer, Machine).join(Service).join(Group) \
-                                                   .select(use_labels=True)
+    sel = sql.join(Customer, Machine).join(Service) \
+             .select(use_labels=True)
 
     # Fields to search in..
     allfields = [Customer.c.id,

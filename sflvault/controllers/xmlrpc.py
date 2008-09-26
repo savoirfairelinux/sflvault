@@ -31,7 +31,7 @@ import time as stdtime
 from sflvault.lib.base import *
 from sflvault.model import *
 
-from sqlalchemy import sql
+from sqlalchemy import sql, exceptions
 
 log = logging.getLogger(__name__)
 
@@ -132,8 +132,9 @@ class XmlrpcController(MyXMLRPCController):
     def sflvault_show(self, authtok, vid):
         """Get the specified service ID and return the hierarchy to connect to it."""
         try:
-            s = query(Service).filter_by(id=vid).options(model.eagerload('group')).one()
-        except Exception, e:
+            s = query(Service).filter_by(id=vid).one()
+            #.options(model.eagerload('group'))
+        except exceptions.InvalidRequestError, e:
             return vaultMsg(False, "Service not found: %s" % e.message)
 
         out = []
@@ -146,7 +147,7 @@ class XmlrpcController(MyXMLRPCController):
 
             out.append({'id': s.id,
                         'url': s.url,
-                        'group': s.group.name or '',
+                        #'group': s.group.name or '',
                         'secret': s.secret,
                         'usercipher': cipher,
                         'secret_last_modified': s.secret_last_modified,
@@ -198,8 +199,6 @@ class XmlrpcController(MyXMLRPCController):
             
         def set_service(subsubout, s):
             subsubout[str(s.services_id)] = {'url': s.services_url,
-                         #TODO: make sure groups goes through correctly
-                         'group': s.groups_name or '',
                          'parent_service_id': s.services_parent_service_id \
                                               or '',
                          'metadata': s.services_metadata or '',
@@ -463,30 +462,24 @@ class XmlrpcController(MyXMLRPCController):
 
         # Get user, and relations
         try:
-            usr1 = model.get_user(user, 'groups.services')
-            usr2 = model.get_user(user, 'userciphers.service.group')
+            usr = model.get_user(user, 'userciphers.service.group')
         except LookupError, e:
             return vaultMsg(False, str(e))
 
-
         # All services user should have access to
-        all_servs = []
-        for g in usr1.groups:
-            all_servs.extend(g.services)
+        all_servs = usr.services
             
         # Services for which user has already ciphers
-        ciph_servs = [uc.service for uc in usr2.userciphers \
+        ciph_servs = [uc.service for uc in usr.userciphers \
                       if uc.service is not None]
 
-        # TODO: remove all userciphers that point to no service
-        #       (uc.service == None)
+        # Remove all userciphers that point to no service (uc.service == None)
         cleaned_ciphers = 0
         for uc in usr2.userciphers:
             if uc.service is None:
                 cleaned_ciphers += 1
                 meta.Session.delete(uc)
-                
-
+        
         all_set = set(all_servs)
         ciph_set = set(ciph_servs)
 
@@ -495,16 +488,22 @@ class XmlrpcController(MyXMLRPCController):
         missing_set = all_set.difference(ciph_set)
         over_set = ciph_set.difference(all_set)
 
+        #REMOVAL: These can't work anymore with many-to-many service-group
+        #         relation. We'll have to find another way to do it.
+        #   TODO: probably, have a -c|--clean option, that would just
+        #         remove unnecessary stuff, and a -g|--grant that would
+        #         start a grantupdate process for those things.
+        #
         # List groups that are missing (to be re-granted)
-        missing_groups = {}
-        for m in missing_set:
-            missing_groups[str(m.group.id)] = m.group.name
-
+        #missing_groups = {}
+        #for m in missing_set:
+        #    missing_groups[str(m.group.id)] = m.group.name
+        #
         # List groups that are over (to be revoked)
-        over_groups = {}
-        for o in over_set:
-            # When there is a 'None' in here
-            over_groups[str(o.group.id)] = o.group.name
+        #over_groups = {}
+        #for o in over_set:
+        #    # When there is a 'None' in here
+        #    over_groups[str(o.group.id)] = o.group.name
 
         # Finish clean up..
         meta.Session.commit()
@@ -515,9 +514,9 @@ class XmlrpcController(MyXMLRPCController):
         report['total_services'] = len(all_set)
         report['total_ciphers'] = len(ciph_set)
         report['missing_ciphers'] = len(missing_set)
-        report['missing_groups'] = missing_groups
+        #report['missing_groups'] = missing_groups
         report['over_ciphers'] = len(over_set)
-        report['over_groups'] = over_groups
+        #report['over_groups'] = over_groups
         report['cleaned_ciphers'] = cleaned_ciphers
 
         return vaultMsg(True, "Analysis report for user %s" % usr1.username,
@@ -548,29 +547,22 @@ class XmlrpcController(MyXMLRPCController):
 
     @authenticated_user
     def sflvault_addservice(self, authtok, machine_id, parent_service_id, url,
-                            group_id, secret, notes):
-        # TODO: accept group_ids (list of groups) to put the service in
-        # multiple groups.
-
+                            group_ids, secret, notes):
+        # Get groups
+        try:
+            groups, group_ids = model.get_groups_list(group_ids)
+        except ValueError, e:
+            return vaultMsg(False, str(e))
+        
         # TODO: centralise the grant and users matching service resolution.
 
-        # parent_service_id takes precedence over machine_id.
+        # Make sure the parent service exists, if specified
         if parent_service_id:
             try:
                 parent = query(Service).get(parent_service_id)
-                # No, you should be able to specify the machine, and not take
-                # the parent's machine, since services can be inherited and
-                # be on different machines (obvious example: ssh -> ssh, most
-                # probably on two different machines)
-                #machine_id = parent.machine_id
             except:
                 return vaultMsg(False, "No such parent service ID.",
                                 {'parent_service_id': parent_service_id})
-
-        # Get all users from the group_id, and all admins.
-        encusers = list(query(Group).get(group_id).users)
-        admusers = query(User).filter_by(is_admin=True).all()
-        myselfuser = query(User).get(self.sess['user_id'])
 
 
         # Add service effectively..
@@ -578,7 +570,7 @@ class XmlrpcController(MyXMLRPCController):
         ns.machine_id = int(machine_id)
         ns.parent_service_id = parent_service_id or None
         ns.url = url
-        ns.group_id = int(group_id)
+        ns.groups = groups
         # seckey is the AES256 symmetric key, to be encrypted for each user.
         (seckey, ciphertext) = encrypt_secret(secret)
         ns.secret = ciphertext
@@ -590,12 +582,15 @@ class XmlrpcController(MyXMLRPCController):
         meta.Session.commit()
 
 
-        # Add to users
-        # Merge two lists (encusers, admusers)
+        # Get all users from the group_ids, and all admins and the requestor.
+        encusers = []
+        admusers = query(User).filter_by(is_admin=True).all()
+        myselfuser = query(User).get(self.sess['user_id'])
+
+        for grp in groups:
+            encusers.extend(grp.users)
         for adm in admusers:
-            if adm not in encusers:
-                encusers.append(adm)
-        # Add myself
+            encusers.append(adm)
         encusers.append(myselfuser)
                 
         ## TODO: move all that to centralised 'save_service_password'
