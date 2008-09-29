@@ -32,8 +32,9 @@ __all__ = ['shred', 'urlparse', 'AuthenticationError', 'VaultError',
 #
 # Add protocols to urlparse, for correct parsing of ssh and others.
 #
+# TODO: add protocols dynamically!!
 urlparse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
-                             'bzr+ssh', 'vnc', 'mysql'])
+                             'bzr+ssh', 'vnc', 'mysql', 'sudo', 'su'])
 
 
 def shred(var):

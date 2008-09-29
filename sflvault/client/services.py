@@ -282,12 +282,11 @@ class sudo(ShellService):
 
         # We must be over an 'ssh' to do anything!
         if not self.parent or not self.parent.required(PROV_SHELL_ACCESS):
-            raise ServiceRequireError("Sudo must be child of a shell")
+            raise ServiceRequireError("`sudo` must be child of a shell")
 
         # We can provide SHELL
         if not self.provides(provide):
-            
-            raise ServiceRequireError("sudo module can't provide '%s'" % provide)
+            raise ServiceRequireError("`sudo` module can't provide '%s'" % provide)
 
         # TODO: pass-through PORT_FORWARD provisioning if child supports it..
         return True
@@ -324,11 +323,8 @@ class sudo(ShellService):
 
         expect_sudowork(self)
         
-        
-
     # Call parent
     #def interact(self):
-
     # Call parent
     #def postwork(self):
 
@@ -336,8 +332,64 @@ class sudo(ShellService):
 class su(ShellService):
     """su app. service handler"""
 
-    # Modes this service handler provides
     provides_modes = [PROV_SHELL_ACCESS]
+
+    def required(self, provide=None):
+        """Check requirements for su"""
+
+        # We must be over an 'ssh' to do anything!
+        if not self.parent or not self.parent.required(PROV_SHELL_ACCESS):
+            raise ServiceRequireError("`su` must be child of a shell")
+
+        # We can provide SHELL
+        if not self.provides(provide):
+            raise ServiceRequireError("`su` module can't provide "\
+                                      "'%s'" % provide)
+
+        # TODO: pass-through PORT_FORWARD provisioning if child supports it..
+        return True
+
+
+    def prework(self):
+        # Inherit shell handle
+        self.shell_handle = self.parent.shell_handle
+
+        class expect_waitshell(ExpectClass):
+            def gotshell(self):
+                r'[^ ]*@.*:.*[$#]'
+                return True
+
+            def failed(self):
+                'assword:'
+                raise ServiceExpectError("Failed to authenticate su://")
+
+            def failed2(self):
+                'incorrect'
+                self.failed()
+
+        class expect_suwork(ExpectClass):
+            def sendpass(self):
+                'assword:'
+
+                sys.stdout.write(" [sending password...] ")
+                self.cnx.sendline(self.service.data['plaintext'])
+
+                expect_waitshell(self.service)
+
+            def gotshell(self):
+                r'[^ ]*@.*:.*[$#]'
+                return True
+                
+
+        # Send command
+        self.shell_handle.sendline('su %s' % self.url.username or 'root')
+
+        expect_suwork(self)
+        
+    # Call parent
+    #def interact(self):
+    # Call parent
+    #def postwork(self):
 
 
 
