@@ -277,20 +277,27 @@ class XmlrpcController(XMLRPCController):
 
         # Get user, and relations
         try:
-            usr = model.get_user(user, 'userciphers.service.group')
+            # IMPORTANT: load this WITHOUT the 'userciphers.service' first
+            # otherwise when we try to check the 'services' it will still
+            # try to load the other relations, and it will conflict.
+            usr = model.get_user(user)
+
         except LookupError, e:
             return vaultMsg(False, str(e))
-
+        
         # All services user should have access to
         all_servs = usr.services
-            
+
+        # *now* only should we get those relations loaded:
+        usr = model.get_user(user, 'userciphers.service')
+
         # Services for which user has already ciphers
         ciph_servs = [uc.service for uc in usr.userciphers \
                       if uc.service is not None]
 
         # Remove all userciphers that point to no service (uc.service == None)
         cleaned_ciphers = 0
-        for uc in usr2.userciphers:
+        for uc in usr.userciphers:
             if uc.service is None:
                 cleaned_ciphers += 1
                 meta.Session.delete(uc)
@@ -334,7 +341,7 @@ class XmlrpcController(XMLRPCController):
         #report['over_groups'] = over_groups
         report['cleaned_ciphers'] = cleaned_ciphers
 
-        return vaultMsg(True, "Analysis report for user %s" % usr1.username,
+        return vaultMsg(True, "Analysis report for user %s" % usr.username,
                         report)
 
 
