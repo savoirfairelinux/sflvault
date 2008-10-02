@@ -69,11 +69,14 @@ def authenticate(keep_privkey=False):
         except:
             raise VaultConfigurationError("No private key in local config, init with: setup username vault-url")
         
-        privpass = self.getpassfunc()
         try:
+            privpass = self.getpassfunc()
             privkey = decrypt_privkey(privkey_enc, privpass)
         except DecryptError, e:
             print "[SFLvault] Invalid passphrase"
+            return False
+        except KeyboardInterrupt, e:
+            print "[aborted]"
             return False
             
         privpass = randfunc(len(privpass))
