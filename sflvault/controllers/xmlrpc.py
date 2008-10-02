@@ -21,6 +21,8 @@
 
 import logging
 
+
+# ALL THE FOLLOWING IMPORTS MOVED TO vault.py:
 import xmlrpclib
 #import pylons
 #from pylons import request
@@ -29,27 +31,38 @@ from datetime import *
 import time as stdtime
 
 from sflvault.lib.base import *
+from sflvault.lib.vault import SFLvaultAccess
 from sflvault.model import *
 
 from sqlalchemy import sql, exceptions
 
 log = logging.getLogger(__name__)
 
-#
-# Configuration
-#
-# TODO: make those configurable
+
+# MOVED TO vault.py:
 SETUP_TIMEOUT = 300
 SESSION_TIMEOUT = 300
-
-
 
 
 ##
 ## See: http://wiki.pylonshq.com/display/pylonsdocs/Using+the+XMLRPCController
 ##
-class XmlrpcController(MyXMLRPCController):
-    """All XML-RPC calls to control and query the Vault"""
+class XmlrpcController(XMLRPCController):
+    """This controller is required to call model.Session.remove()
+    after each call, otherwise, junk remains in the SQLAlchemy caches."""
+    
+    def __call__(self, environ, start_response):
+        """Invoke the Controller"""
+        # WSGIController.__call__ dispatches to the Controller method
+        # the request is routed to. This routing information is
+        # available in environ['pylons.routes_dict']
+        
+        self.vault = SFLvaultAccess()
+        
+        try:
+            return XMLRPCController.__call__(self, environ, start_response)
+        finally:
+            model.meta.Session.remove()
     
     allow_none = True # Enable marshalling of None values through XMLRPC.
 
@@ -129,220 +142,20 @@ class XmlrpcController(MyXMLRPCController):
 
 
     @authenticated_user
-    def sflvault_show(self, authtok, vid):
-        """Get the specified service ID and return the hierarchy to connect to it."""
-        try:
-            s = query(Service).filter_by(id=vid).one()
-            #.options(model.eagerload('group'))
-        except exceptions.InvalidRequestError, e:
-            return vaultMsg(False, "Service not found: %s" % e.message)
-
-        out = []
-        while True:
-            ucipher = query(Usercipher).filter_by(service_id=s.id, user_id=self.sess['userobj'].id).first()
-            if ucipher and ucipher.cryptsymkey:
-                cipher = ucipher.cryptsymkey
-            else:
-                cipher = ''
-
-            out.append({'id': s.id,
-                        'url': s.url,
-                        #'group': s.group.name or '',
-                        'secret': s.secret,
-                        'usercipher': cipher,
-                        'secret_last_modified': s.secret_last_modified,
-                        'metadata': s.metadata or '',
-                        'notes': s.notes or ''})
-
-            if not s.parent:
-                break
-
-            # Load the parent...
-            s = s.parent
-
-            # check if we're not in an infinite loop!
-            if s.id in [x['id'] for x in out]:
-                return vaultMsg(False, "Circular references of parent services, aborting.")
-
-        out.reverse()
-
-        return vaultMsg(True, "Here are the services", {'services': out})
-
+    def sflvault_show(self, authtok, service_id):
+        return self.vault.show(self.sess['user_id'], service_id)
 
     @authenticated_user
     def sflvault_search(self, authtok, search_query, verbose=False):
-        """Do the search, and return the result tree."""
-        # TODO: narrow down search (instead of all(), doh!)
-        cs = query(Customer).all()
-        ms = query(Machine).all()
-        ss = query(Service).all()
-
-        search = model.search_query(search_query, verbose)
-
-
-        # Quick helper funcs, to create the hierarchical 'out' structure.
-        def set_customer(out, c):
-            if out.has_key(str(c.customers_id)):
-                return
-            out[str(c.customers_id)] = {'name': c.customers_name,
-                                        'machines': {}}
-            
-        def set_machine(subout, m):
-            if subout.has_key(str(m.machines_id)):
-                return
-            subout[str(m.machines_id)] = {'name': m.machines_name,
-                            'fqdn': m.machines_fqdn or '',
-                            'ip': m.machines_ip or '',
-                            'location': m.machines_location or '',
-                            'notes': m.machines_notes or '',
-                            'services': {}}
-            
-        def set_service(subsubout, s):
-            subsubout[str(s.services_id)] = {'url': s.services_url,
-                         'parent_service_id': s.services_parent_service_id \
-                                              or '',
-                         'metadata': s.services_metadata or '',
-                         'notes': s.services_notes or ''}
-
-        out = {}
-        # Loop services, setup machines and customers first.
-        for x in search:
-            # Setup customer dans le out, pour le service
-            set_customer(out, x)
-            set_machine(out[str(x.customers_id)]['machines'], x)
-            set_service(out[str(x.customers_id)]['machines'] \
-                            [str(x.machines_id)]['services'], x)
-
-
-        # Return 'out', in a nicely structured hierarchical form.
-        return vaultMsg(True, "Here are the search results", {'results': out})
-        
+        return self.vault.search(search_query, verbose)
 
     @authenticated_admin
-    def sflvault_adduser(self, authtok, username, admin):
-
-        usr = query(User).filter_by(username=username).first()
-
-        msg = ''
-        if usr == None:
-            # New user
-            usr = User()
-            usr.waiting_setup =  datetime.now() + timedelta(0, SETUP_TIMEOUT)
-            usr.username = username
-            usr.is_admin = bool(admin)
-            usr.created_time = datetime.now()
-
-            meta.Session.save(usr)
-            
-            msg = 'added'
-        elif usr.waiting_setup:
-            if usr.waiting_setup < datetime.now():
-                # Verify if it's a waiting_setup user that has expired.
-                usr.waiting_setup = datetime.now() + \
-                                    timedelta(0, SETUP_TIMEOUT)
-            
-                msg = 'updated (had setup timeout expired)'
-            else:
-                return vaultMsg(False, "User %s is waiting for setup" % \
-                                username)
-        else:
-            return vaultMsg(False, 'User %s already exists.' % username)
-        
-        meta.Session.commit()
-
-        return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "setup" command' % \
-                        (admin and 'Admin user' or 'User',
-                         msg, SETUP_TIMEOUT), {'user_id': usr.id})
-
+    def sflvault_adduser(self, authtok, username, is_admin):
+        return self.vault.add_user(username, is_admin)
 
     @authenticated_admin
     def sflvault_grant(self, authtok, user, group_ids):
-        """Grant privileges to a user, for certain groups.
-
-        user - either a numeric user_id, or a username
-        group_ids - list of numeric `group_id`s or a single group_id
-        """
-        # Get user, and relations
-        try:
-            usr = model.get_user(user)
-        except LookupError, e:
-            return vaultMsg(False, str(e))
-
-
-        # TODO: implement the service in multiple groups behavior.
-
-
-        # Get groups
-        try:
-            groups, group_ids = model.get_groups_list(group_ids)
-        except ValueError, e:
-            return vaultMsg(False, str(e))
-        
-
-        # Only in those groups
-        srvs = query(Service).filter(Service.group_id.in_(group_ids)).all()
-
-        # Grab mine and his Userciphers, we're going to fill in the gap
-        hisid = usr.id
-        myid = self.sess['userobj'].id
-        usrci = query(Usercipher) \
-                    .filter(Usercipher.user_id.in_([hisid, myid])) \
-                    .filter(Usercipher.service_id.in_([s.id for s in srvs])) \
-                    .all()
-
-        mine = {}
-        his = {}
-        for uc in usrci:
-            if uc.user_id == myid:
-                mine[uc.service_id] = uc
-            elif uc.user_id == hisid:
-                his[uc.service_id] = uc
-            else:
-                raise Exception("We didn't ask for those! We should never get there")
-
-        # Now find the missing Ciphers for that user
-        lst = []
-        for ucid in mine.keys():
-
-            # If he already has that Cipher..
-            if his.has_key(ucid):
-                continue
-
-            uc = mine[ucid]
-            
-            item = {'id': uc.service_id,
-                    'cryptsymkey': uc.cryptsymkey}
-            lst.append(item)
-
-        # Check if user has already access to groups
-        add_groupset = set(groups)
-        his_groupset = set(usr.groups)
-        add_groups = add_groupset.difference(his_groupset)
-        has_groups = his_groupset.intersection(his_groupset)
-
-        # Just generate the message..
-        msg = []
-        if len(add_groups):
-            txt_groups = ', '.join([g.name for g in add_groups])
-            msg.append("Added groups: %s" % txt_groups)
-        if len(has_groups):
-            txt_groups = ', '.join([g.name for g in has_groups])
-            msg.append("Already was in group: %s" % txt_groups)
-
-
-        # Add groups that weren't there.
-        usr.groups.extend(list(add_groups))
-        
-        meta.Session.commit()
-
-        msg.append("waiting for encryption round-trip" if len(lst) else \
-                   "no round-trip required")
-                   
-        return vaultMsg(True, ', '.join(msg),
-                        {'user_pubkey': usr.pubkey,
-                         'user_id': usr.id,
-                         'ciphers': lst})
-  
+        return self.vault.grant(user, group_ids)
 
     @authenticated_admin
     def sflvault_grantupdate(self, authtok, user, ciphers):

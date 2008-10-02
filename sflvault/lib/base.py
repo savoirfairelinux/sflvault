@@ -54,6 +54,7 @@ def vaultMsg(success, message, dict=None):
 
 
 
+
 #
 # Session management functions
 #
@@ -139,21 +140,7 @@ class BaseController(WSGIController):
         finally:
             model.meta.Session.remove()
 
-class MyXMLRPCController(XMLRPCController):
-    """This controller is required to call model.Session.remove()
-    after each call, otherwise, junk remains in the SQLAlchemy caches."""
-    
-    def __call__(self, environ, start_response):
-        """Invoke the Controller"""
-        # WSGIController.__call__ dispatches to the Controller method
-        # the request is routed to. This routing information is
-        # available in environ['pylons.routes_dict']
-        try:
-            return XMLRPCController.__call__(self, environ, start_response)
-        finally:
-            model.meta.Session.remove()
-
-
+# XMLRPC definition bac in xmlrpc.py
 
 
 # Include the '_' function in the public names
