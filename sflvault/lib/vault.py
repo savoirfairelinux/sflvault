@@ -56,8 +56,19 @@ SESSION_TIMEOUT = 300
 
 
 class SFLvaultAccess(object):
-    def show(self, myself_id, service_id):
-        """Get the specified service ID and return the hierarchy to connect to it."""
+    def __init__(self):
+        """Init obj."""
+
+        # This gives this object the knowledge of which user_id is currently
+        # using the Vault
+        self.myself_id = None
+
+    
+    def show(self, service_id):
+        """Get the specified service ID and return the hierarchy to connect to it.
+
+        We need self.myself_id to be set for this function.
+        """
         try:
             s = query(Service).filter_by(id=service_id).one()
             #.options(model.eagerload('group'))
@@ -66,7 +77,7 @@ class SFLvaultAccess(object):
 
         out = []
         while True:
-            ucipher = query(Usercipher).filter_by(service_id=s.id, user_id=myself_id).first()
+            ucipher = query(Usercipher).filter_by(service_id=s.id, user_id=self.myself_id).first()
             if ucipher and ucipher.cryptsymkey:
                 cipher = ucipher.cryptsymkey
             else:
@@ -203,11 +214,16 @@ class SFLvaultAccess(object):
         
 
         # Only in those groups
-        srvs = query(Service).filter(Service.group_id.in_(group_ids)).all()
+        srvs = []
+        for g in groups:
+            srvs.extend(g.services)
+
+        # Unique-ify:
+        srvs = list(set(srvs))
 
         # Grab mine and his Userciphers, we're going to fill in the gap
         hisid = usr.id
-        myid = self.sess['userobj'].id
+        myid = self.myself_id
         usrci = query(Usercipher) \
                     .filter(Usercipher.user_id.in_([hisid, myid])) \
                     .filter(Usercipher.service_id.in_([s.id for s in srvs])) \

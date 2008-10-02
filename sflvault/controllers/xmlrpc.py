@@ -143,7 +143,8 @@ class XmlrpcController(XMLRPCController):
 
     @authenticated_user
     def sflvault_show(self, authtok, service_id):
-        return self.vault.show(self.sess['user_id'], service_id)
+        self.vault.myself_id = self.sess['user_id']
+        return self.vault.show(service_id)
 
     @authenticated_user
     def sflvault_search(self, authtok, search_query, verbose=False):
@@ -155,6 +156,7 @@ class XmlrpcController(XMLRPCController):
 
     @authenticated_admin
     def sflvault_grant(self, authtok, user, group_ids):
+        self.vault.myself_id = self.sess['user_id']
         return self.vault.grant(user, group_ids)
 
     @authenticated_admin

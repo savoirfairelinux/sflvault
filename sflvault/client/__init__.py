@@ -379,18 +379,17 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def add_service(self, machine_id, parent_service_id, url, group_id, secret,
+    def add_service(self, machine_id, parent_service_id, url, group_ids, secret,
                     notes):
         """Add a service to the Vault's database.
 
-        machine_id - A m#id machine identifier. Specify either machine_id or
-                    parent_service_id. 
+        machine_id - A m#id machine identifier.
         parent_service_id - A s#id, parent service ID, to which you should
                             connect before connecting to the service you're
                             adding. Specify 0 of None if no parent exist.
                             If you set this, machine_id is disregarded.
-        url - URL of the service, with username, port and path if non-standard.
-        group_id - Group of the service. See `list-groups`
+        url - URL of the service, with username, port and path if required
+        group_ids - Multiple group IDs the service is part of. See `list-groups`
         notes - Simple text field, with notes.
         secret - Password for the service. Plain-text.
         """
@@ -401,7 +400,7 @@ class SFLvaultClient(object):
                                                   int(machine_id),
                                                   int(parent_service_id),
                                                   url,
-                                                  int(group_id), secret,
+                                                  group_ids, secret,
                                                   notes or ''),
                             "Error adding service")
 
