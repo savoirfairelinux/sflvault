@@ -311,17 +311,17 @@ def search_query(swords, verbose=False):
              .select(use_labels=True)
 
     # Fields to search in..
-    allfields = [Customer.c.id,
-                 Customer.c.name,
-                 Machine.c.id,
-                 Machine.c.name,
-                 Machine.c.fqdn,
-                 Machine.c.ip,
-                 Machine.c.location,
-                 Machine.c.notes,
-                 Service.c.id,
-                 Service.c.url,
-                 Service.c.notes]
+    allfields = [Customer.id,
+                 Customer.name,
+                 Machine.id,
+                 Machine.name,
+                 Machine.fqdn,
+                 Machine.ip,
+                 Machine.location,
+                 Machine.notes,
+                 Service.id,
+                 Service.url,
+                 Service.notes]
     
     # TODO: distinguish between INTEGER fields and STRINGS and search
     # differently (check only ==, and only if word can be converted to int())
