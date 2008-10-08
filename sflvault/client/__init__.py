@@ -437,19 +437,23 @@ class SFLvaultClient(object):
         print "There are:                   %d ciphers to be removed" % \
                                             retval['over_ciphers']
         print '-' * 79
-        if retval['missing_ciphers']:
-            # Print the groups to be re-granted
-            print "Groups to be re-granted to complete membership:"
-            for x in retval['missing_groups'].keys():
-                print "    g#%s  %s" % (x, retval['missing_groups'][x])
-            print '-' * 79
 
-        if retval['over_ciphers']:
-            # Print the groups to be revoked as quickly as possible
-            print "Groups to be revoked on user to clean database:"
-            for x in retval['over_groups'].keys():
-                print "    g#%s  %s" % (x, retval['over_groups'][x])
-            print '-' * 79
+        # REMOVED until vault sends those back, but it was difficult
+        # with the new many-to-many group-service relationship.
+        #
+        #if retval['missing_ciphers']:
+        #    # Print the groups to be re-granted
+        #    print "Groups to be re-granted to complete membership:"
+        #    for x in retval['missing_groups'].keys():
+        #        print "    g#%s  %s" % (x, retval['missing_groups'][x])
+        #    print '-' * 79
+        #
+        #if retval['over_ciphers']:
+        #    # Print the groups to be revoked as quickly as possible
+        #    print "Groups to be revoked on user to clean database:"
+        #    for x in retval['over_groups'].keys():
+        #        print "    g#%s  %s" % (x, retval['over_groups'][x])
+        #    print '-' * 79
                         
         print "Cleaned:                     %d ciphers "\
               "(from deleted services)" % retval['cleaned_ciphers']

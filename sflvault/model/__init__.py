@@ -19,8 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
-
 from sqlalchemy import Column, MetaData, Table, types, ForeignKey
 from sqlalchemy.orm import mapper, relation, backref
 from sqlalchemy.orm import scoped_session, sessionmaker, eagerload, lazyload
@@ -34,6 +32,9 @@ from base64 import b64decode, b64encode
 from sflvault.model import meta
 from sflvault.model.meta import Session, metadata
 from sflvault.lib.common.crypto import *
+
+import re
+
 
 # TODO: add an __all__ statement here, to speed up loading...
 

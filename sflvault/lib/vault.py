@@ -44,15 +44,15 @@ from sqlalchemy import sql, exceptions
 from sflvault.model import *
 from sflvault.lib.base import *
 
+import logging
+log = logging.getLogger('sflvault')
+
 #
 # Configuration
 #
 # TODO: make those configurable
 SETUP_TIMEOUT = 300
 SESSION_TIMEOUT = 300
-
-
-
 
 
 class SFLvaultAccess(object):
@@ -153,6 +153,7 @@ class SFLvaultAccess(object):
 
         # Return 'out', in a nicely structured hierarchical form.
         return vaultMsg(True, "Here are the search results", {'results': out})
+
         
     def add_user(self, username, is_admin):
 
@@ -282,3 +283,293 @@ class SFLvaultAccess(object):
                          'user_id': usr.id,
                          'ciphers': lst})
   
+
+    def grant_update(self, user, ciphers):
+        """Receive a user and ciphers to be stored into the database.
+
+        user - either username, or user_id
+        ciphers - hash composed of 'id' (service_id) and encrypted
+                  'cryptsymkey'.
+        """
+
+        # Get user, and relations
+        try:
+            usr = model.get_user(user)
+        except LookupError, e:
+            return vaultMsg(False, str(e))
+
+        
+        hisid = usr.id
+        usrci = query(Usercipher).filter_by(user_id=hisid) \
+                    .filter(Usercipher.service_id.in_( \
+                                                [s['id'] for s in ciphers])) \
+                    .all()
+
+        # Get a list of all service_id he already has
+        usr_services = [uc.service_id for uc in usrci]
+
+        for ci in ciphers:
+            if not isinstance(ci, dict) or not ci.has_key('id') \
+                                         or not ci.has_key('cryptsymkey'):
+                return vaultMsg(False, "Malformed ciphers (must be dicts, with 'id' and 'cryptsymkey')");
+
+
+            if ci['id'] in usr_services:
+                # Hey, don't send me stuff I already have!
+                # TODO: log this event, raise an error ??
+                #continue
+                return vaultMsg(False, "Encrypted ciphers already present for user %s" % usr.username)
+
+            nu = Usercipher()
+            nu.user_id = hisid
+            nu.service_id = ci['id']
+            nu.cryptsymkey = ci['cryptsymkey']
+
+            meta.Session.save(nu)
+
+        # Loop received ciphers, make sure they aren't already in, and add them
+        meta.Session.commit()
+
+        # TODO: Log this event somewhere! thanks :)
+
+        return vaultMsg(True, "Privileges granted successfully")
+
+
+    def revoke(self, user, group_ids):
+        """Revoke permisssions (and destroy ciphers for user) of a group
+        for a user"""
+        
+        # Get user, and relations
+        try:
+            usr = model.get_user(user, 'groups.services')
+        except LookupError, e:
+            return vaultMsg(False, str(e))
+
+        # Get groups
+        try:
+            groups, group_ids = model.get_groups_list(group_ids)
+        except ValueError, e:
+            return vaultMsg(False, str(e))
+
+        
+        remgrps = set(groups)
+        mygrps = set(usr.groups)
+        
+        # Remove groups
+        usr.groups = list(mygrps.difference(remgrps))
+        
+        # Pull the groups from the DB, TODO: DRY
+        groups = query(Group).filter(Group.id.in_(group_ids)).all()
+
+        # Remove all user-ciphers for services in those groups
+        # From which groups ?
+        rmdgrps = mygrps.intersection(remgrps)
+
+        # Get list of service_id:
+        service_ids = []
+        for g in rmdgrps:
+            service_ids.extend([srv.id for srv in g.services])
+
+        # TODO: remove all user-cipher for user `usr` where service.id matches
+        # service_ids
+        ciphers = usr.userciphers
+
+        newciphers = [ciph for ciph in ciphers
+                      if ciph.service_id in service_ids]
+        
+        #for ciph in ciphers:
+        # TODO: terminate that, is STILL DOESN'T REMOVE THE CIPHERS!
+        # TODO: verify that the cipher is still available somewhere before
+        #       removing it, otherwise some services may be rendered useless.
+        #       of the password could be lost.
+        
+        # TODO(future): Make sure when you remove a Usercipher for a service
+        # that matches the specified groups, that you keep it if another group
+        # that you are not removing still exists for the user.
+
+        return vaultMsg(True, "Revoked stuff", {'service_ids': service_ids})
+
+
+    def analyze(self, user):
+        """Return a report of the left-overs (if any) of ciphers on a certain
+        user. Report the number of missing ciphers, the amount to be removed,
+        etc.."""
+
+        # Get user, and relations
+        try:
+            # IMPORTANT: load this WITHOUT the 'userciphers.service' first
+            # otherwise when we try to check the 'services' it will still
+            # try to load the other relations, and it will conflict.
+            usr = model.get_user(user)
+
+        except LookupError, e:
+            return vaultMsg(False, str(e))
+        
+        # All services user should have access to
+        all_servs = usr.services
+
+        # *now* only should we get those relations loaded:
+        usr = model.get_user(user, 'userciphers.service')
+
+        # Services for which user has already ciphers
+        ciph_servs = [uc.service for uc in usr.userciphers \
+                      if uc.service is not None]
+
+        # Remove all userciphers that point to no service (uc.service == None)
+        cleaned_ciphers = 0
+        for uc in usr.userciphers:
+            if uc.service is None:
+                cleaned_ciphers += 1
+                meta.Session.delete(uc)
+        
+        all_set = set(all_servs)
+        ciph_set = set(ciph_servs)
+
+        common_set = all_set.intersection(ciph_set)
+
+        missing_set = all_set.difference(ciph_set)
+        over_set = ciph_set.difference(all_set)
+
+        #REMOVAL: These can't work anymore with many-to-many service-group
+        #         relation. We'll have to find another way to do it.
+        #   TODO: probably, have a -c|--clean option, that would just
+        #         remove unnecessary stuff, and a -g|--grant that would
+        #         start a grantupdate process for those things.
+        #
+        # List groups that are missing (to be re-granted)
+        #missing_groups = {}
+        #for m in missing_set:
+        #    missing_groups[str(m.group.id)] = m.group.name
+        #
+        # List groups that are over (to be revoked)
+        #over_groups = {}
+        #for o in over_set:
+        #    # When there is a 'None' in here
+        #    over_groups[str(o.group.id)] = o.group.name
+
+        # Finish clean up..
+        meta.Session.commit()
+
+        # Generate report:
+
+        report = {}
+        report['total_services'] = len(all_set)
+        report['total_ciphers'] = len(ciph_set)
+        report['missing_ciphers'] = len(missing_set)
+        #report['missing_groups'] = missing_groups
+        report['over_ciphers'] = len(over_set)
+        #report['over_groups'] = over_groups
+        report['cleaned_ciphers'] = cleaned_ciphers
+
+        return vaultMsg(True, "Analysis report for user %s" % usr.username,
+                        report)
+
+
+
+    def add_machine(self, customer_id, name, fqdn, ip, location, notes):
+        """Add a new machine to the database"""
+        
+        nm = Machine()
+        nm.customer_id = int(customer_id)
+        nm.created_time = datetime.now()
+        if not name:
+            return vaultMsg(False, "Missing requierd argument: name")
+        nm.name = name
+        nm.fqdn = fqdn or ''
+        nm.ip = ip or ''
+        nm.location = location or ''
+        nm.notes = notes or ''
+
+        meta.Session.save(nm)
+        
+        meta.Session.commit()
+
+        return vaultMsg(True, "Machine added.", {'machine_id': nm.id})
+
+
+    def add_service(self, machine_id, parent_service_id, url,
+                    group_ids, secret, notes):
+        # Get groups
+        try:
+            groups, group_ids = model.get_groups_list(group_ids)
+        except ValueError, e:
+            return vaultMsg(False, str(e))
+        
+        # TODO: centralise the grant and users matching service resolution.
+
+        # Make sure the parent service exists, if specified
+        if parent_service_id:
+            try:
+                parent = query(Service).get(parent_service_id)
+            except:
+                return vaultMsg(False, "No such parent service ID.",
+                                {'parent_service_id': parent_service_id})
+
+
+        # Add service effectively..
+        ns = Service()
+        ns.machine_id = int(machine_id)
+        ns.parent_service_id = parent_service_id or None
+        ns.url = url
+        ns.groups = groups
+        # seckey is the AES256 symmetric key, to be encrypted for each user.
+        (seckey, ciphertext) = encrypt_secret(secret)
+        ns.secret = ciphertext
+        ns.secret_last_modified = datetime.now()
+        ns.notes = notes
+
+        meta.Session.save(ns)
+
+        meta.Session.commit()
+
+
+        # Get all users from the group_ids, and all admins and the requestor.
+        encusers = []
+        admusers = query(User).filter_by(is_admin=True).all()
+
+        for grp in groups:
+            encusers.extend(grp.users)
+        for adm in admusers:
+            encusers.append(adm)
+
+        
+        if self.myself_id:
+            myselfuser = query(User).get(self.myself_id)
+            encusers.append(myselfuser)
+        else:
+            log.warning("You should *always* set myself_id on the " + \
+                        self.__class__.__name__ + " object when calling "\
+                        "add_service() to make sure the secret is "\
+                        "encrypted for you at least.")
+
+                
+        ## TODO: move all that to centralised 'save_service_password'
+        ## that can be used on add-service calls and also on change-password
+        ## calls
+
+        userlist = []
+        for usr in set(encusers): # take out doubles..
+            # pubkey required to encrypt for user
+            if not usr.pubkey:
+                continue
+
+            # Encode for that user, store in UserCiphers
+            nu = Usercipher()
+            nu.service_id = ns.id
+            nu.user_id = usr.id
+
+            eg = usr.elgamal()
+            nu.cryptsymkey = serial_elgamal_msg(eg.encrypt(seckey,
+                                                           randfunc(32)))
+            del(eg)
+
+            meta.Session.save(nu)
+            
+            userlist.append(usr.username) # To return listing.
+
+        meta.Session.commit()
+
+        del(seckey)
+
+        return vaultMsg(True, "Service added.", {'service_id': ns.id,
+                                                 'encrypted_for': userlist})
