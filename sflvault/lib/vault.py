@@ -62,6 +62,9 @@ class SFLvaultAccess(object):
         # This gives this object the knowledge of which user_id is currently
         # using the Vault
         self.myself_id = None
+        # This gives this object the knowledge of which username is currently
+        # using the Vault
+        self.myself_username = None
 
     
     def show(self, service_id):
@@ -155,42 +158,6 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Here are the search results", {'results': out})
 
         
-    def add_user(self, username, is_admin):
-
-        usr = query(User).filter_by(username=username).first()
-
-        msg = ''
-        if usr == None:
-            # New user
-            usr = User()
-            usr.waiting_setup =  datetime.now() + timedelta(0, SETUP_TIMEOUT)
-            usr.username = username
-            usr.is_admin = bool(is_admin)
-            usr.created_time = datetime.now()
-
-            meta.Session.save(usr)
-            
-            msg = 'added'
-        elif usr.waiting_setup:
-            if usr.waiting_setup < datetime.now():
-                # Verify if it's a waiting_setup user that has expired.
-                usr.waiting_setup = datetime.now() + \
-                                    timedelta(0, SETUP_TIMEOUT)
-            
-                msg = 'updated (had setup timeout expired)'
-            else:
-                return vaultMsg(False, "User %s is waiting for setup" % \
-                                username)
-        else:
-            return vaultMsg(False, 'User %s already exists.' % username)
-        
-        meta.Session.commit()
-
-        return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "setup" command' % \
-                        ('Admin user' if is_admin else 'User',
-                         msg, SETUP_TIMEOUT), {'user_id': usr.id})
-        
-
     def grant(self, user, group_ids):
         """Grant privileges to a user, for certain groups.
 
@@ -463,6 +430,61 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, "Analysis report for user %s" % usr.username,
                         report)
+
+
+    def add_user(self, username, is_admin):
+
+        usr = query(User).filter_by(username=username).first()
+
+        msg = ''
+        if usr == None:
+            # New user
+            usr = User()
+            usr.waiting_setup =  datetime.now() + timedelta(0, SETUP_TIMEOUT)
+            usr.username = username
+            usr.is_admin = bool(is_admin)
+            usr.created_time = datetime.now()
+
+            meta.Session.save(usr)
+            
+            msg = 'added'
+        elif usr.waiting_setup:
+            if usr.waiting_setup < datetime.now():
+                # Verify if it's a waiting_setup user that has expired.
+                usr.waiting_setup = datetime.now() + \
+                                    timedelta(0, SETUP_TIMEOUT)
+            
+                msg = 'updated (had setup timeout expired)'
+            else:
+                return vaultMsg(False, "User %s is waiting for setup" % \
+                                username)
+        else:
+            return vaultMsg(False, 'User %s already exists.' % username)
+        
+        meta.Session.commit()
+
+        return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "setup" command' % \
+                        ('Admin user' if is_admin else 'User',
+                         msg, SETUP_TIMEOUT), {'user_id': usr.id})
+        
+
+
+    def add_customer(self, customer_name):
+        """Add a new customer to the database"""
+        nc = Customer()
+        nc.name = customer_name
+        nc.created_time = datetime.now()
+        nc.created_user = self.myself_username
+        if not self.myself_username:
+            log.warning("You should *always* set myself_username on the " + \
+                        self.__class__.__name__ + " object when calling "\
+                        "add_customer() to log creation time and user infos.")
+
+        meta.Session.save(nc)
+        
+        meta.Session.commit()
+
+        return vaultMsg(True, 'Customer added', {'customer_id': nc.id})
 
 
 
@@ -739,3 +761,79 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, 'Deleted service s#%s successfully' % service_id)
 
+
+
+    def list_customers(self):
+        lst = query(Customer).all()
+
+        out = []
+        for x in lst:
+            nx = {'id': x.id, 'name': x.name}
+            out.append(nx)
+
+        return vaultMsg(True, 'Here is the customer list', {'list': out})
+
+
+    def add_group(self, group_name):
+        """Add a new group the database. Nothing will be added to it
+        by default"""
+        
+        ng = Group()
+        ng.name = group_name
+
+        meta.Session.save(ng)
+        meta.Session.commit()
+
+        return vaultMsg(True, "Added group '%s'" % ng.name,
+                        {'name': ng.name, 'group_id': int(ng.id)})
+
+    def list_groups(self):
+        """Return a simple list of the available groups"""
+        # TODO: implement hidden groups, you shouldn't show those groups,
+        #       unless you're admin of that group.
+        groups = query(Group).group_by(Group.name).all()
+
+        out = []
+        for x in groups:
+            out.append({'id': x.id, 'name': x.name})
+
+        return vaultMsg(True, 'Here is the list of groups', {'list': out})
+
+
+    def list_machines(self):
+        """Return a simple list of the machines"""
+        lst = query(Machine).all()
+
+        out = []
+        for x in lst:
+            nx = {'id': x.id, 'name': x.name, 'fqdn': x.fqdn, 'ip': x.ip,
+                  'location': x.location, 'notes': x.notes,
+                  'customer_id': x.customer_id,
+                  'customer_name': x.customer.name}
+            out.append(nx)
+
+        return vaultMsg(True, "Here is the machines list", {'list': out})
+    
+
+    def list_users(self):
+        """Return a simple list of the users"""
+        lst = query(User).all()
+
+        out = []
+        for x in lst:
+            # perhaps add the pubkey ?
+            if x.created_time:
+                stmp = xmlrpclib.DateTime(x.created_time)
+            else:
+                stmp = 0
+                
+            nx = {'id': x.id, 'username': x.username,
+                  'created_stamp': stmp,
+                  'is_admin': x.is_admin,
+                  'setup_expired': x.setup_expired(),
+                  'waiting_setup': bool(x.waiting_setup)}
+            out.append(nx)
+
+        # Can use: datetime.fromtimestamp(x.created_stamp)
+        # to get a datetime object back from the x.created_time
+        return vaultMsg(True, "Here is the user list", {'list': out})

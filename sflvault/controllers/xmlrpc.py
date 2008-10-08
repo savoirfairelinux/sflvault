@@ -184,6 +184,11 @@ class XmlrpcController(XMLRPCController):
         return self.vault.add_service(machine_id, parent_service_id, url,
                                       group_ids, secret, notes)
         
+    @authenticated_user
+    def sflvault_addcustomer(self, authtok, customer_name):
+        self.vault.myself_username = self.sess['username']
+        return self.vault.add_customer(customer_name)
+
     @authenticated_admin
     def sflvault_deluser(self, authtok, user):
         return self.vault.del_user(user)
@@ -201,91 +206,21 @@ class XmlrpcController(XMLRPCController):
         return self.vault.del_service(service_id)
 
     @authenticated_user
-    def sflvault_addcustomer(self, authtok, customer_name):
-        nc = Customer()
-        nc.name = customer_name
-        nc.created_time = datetime.now()
-        nc.created_user = self.sess['username']
-
-        meta.Session.save(nc)
-        
-        meta.Session.commit()
-
-        return vaultMsg(True, 'Customer added', {'customer_id': nc.id})
-
-
-    @authenticated_user
     def sflvault_listcustomers(self, authtok):
-        lst = query(Customer).all()
-
-        out = []
-        for x in lst:
-            nx = {'id': x.id, 'name': x.name}
-            out.append(nx)
-
-        return vaultMsg(True, 'Here is the customer list', {'list': out})
-
+        return self.vault.list_customers()
 
     @authenticated_admin
     def sflvault_addgroup(self, authtok, group_name):
-
-        ng = Group()
-
-        ng.name = group_name
-
-        meta.Session.save(ng)
-
-        meta.Session.commit()
-
-        return vaultMsg(True, "Added group '%s'" % ng.name,
-                        {'name': ng.name, 'group_id': int(ng.id)})
-
+        return self.vault.add_group(group_name)
 
     @authenticated_user
     def sflvault_listgroups(self, authtok):
-        groups = query(Group).group_by(Group.name).all()
-
-        out = []
-        for x in groups:
-            out.append({'id': x.id, 'name': x.name})
-
-        return vaultMsg(True, 'Here is the list of groups', {'list': out})
-
+        return self.vault.list_groups()
 
     @authenticated_user
     def sflvault_listmachines(self, authtok):
-        lst = query(Machine).all()
-
-        out = []
-        for x in lst:
-            nx = {'id': x.id, 'name': x.name, 'fqdn': x.fqdn, 'ip': x.ip,
-                  'location': x.location, 'notes': x.notes,
-                  'customer_id': x.customer_id,
-                  'customer_name': x.customer.name}
-            out.append(nx)
-
-        return vaultMsg(True, "Here is the machines list", {'list': out})
-    
+        return self.vault.list_machines()
 
     @authenticated_user
     def sflvault_listusers(self, authtok):
-        lst = query(User).all()
-
-        out = []
-        for x in lst:
-            # perhaps add the pubkey ?
-            if x.created_time:
-                stmp = xmlrpclib.DateTime(x.created_time)
-            else:
-                stmp = 0
-                
-            nx = {'id': x.id, 'username': x.username,
-                  'created_stamp': stmp,
-                  'is_admin': x.is_admin,
-                  'setup_expired': x.setup_expired(),
-                  'waiting_setup': bool(x.waiting_setup)}
-            out.append(nx)
-
-        # Can use: datetime.fromtimestamp(x.created_stamp)
-        # to get a datetime object back from the x.created_time
-        return vaultMsg(True, "Here is the user list", {'list': out})
+        return self.vault.list_users()
