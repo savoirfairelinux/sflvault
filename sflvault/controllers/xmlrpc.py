@@ -186,166 +186,19 @@ class XmlrpcController(XMLRPCController):
         
     @authenticated_admin
     def sflvault_deluser(self, authtok, user):
-
-        # Get user
-        try:
-            usr = model.get_user(user)
-        except LookupError, e:
-            return vaultMsg(False, str(e))
-
-        meta.Session.execute(model.usergroups_table.delete(user_id=usr.id))
-        meta.Session.execute(model.userciphers_table.delete(user_id=usr.id))
-        
-        meta.Session.delete(usr)
-        meta.Session.commit()
-
-        return vaultMsg(True, "User successfully deleted")
-
+        return self.vault.del_user(user)
 
     @authenticated_admin
     def sflvault_delcustomer(self, authtok, customer_id):
-        # Get customer
-        cust = query(model.Customer).options(model.eagerload('machines'))\
-                                    .get(int(customer_id))
-
-        if not cust:
-            return vaultMsg(True, "No such customer: c#%s" % customer_id)
-
-        # Get all the services that will be deleted
-        servs = query(model.Service).join(['machine', 'customer']) \
-                     .filter(model.Customer.id == customer_id) \
-                     .all()
-        servs_ids = [s.id for s in servs]
-
-        # Make sure no service is child of this one
-        childs = query(model.Service) \
-                     .filter(model.Service.parent_service_id.in_(servs_ids))\
-                     .all()
-
-        # Don't bother for parents/childs if we're going to delete it anyway.
-        remnants = list(set(childs).difference(set(servs)))
-
-        if len(remnants):
-            # There are still some childs left, we can't delete this one.
-            retval = []
-            for x in remnants:
-                retval.append({'id': x.id, 'url': x.url})
-                
-            return vaultMsg(False, "Services still child of this customer's machine's services",
-                            {'childs': retval})
-
-        # Delete all related user-ciphers
-        d = sql.delete(model.userciphers_table) \
-               .where(model.userciphers_table.c.service_id.in_(servs_ids))
-        # Delete the services related to customer_id's machines
-        d2 = sql.delete(model.services_table) \
-                .where(model.services_table.c.id.in_(servs_ids))
-        # Delete the machines related to customer_id
-        mach_ids = [m.id for m in cust.machines]
-        d3 = sql.delete(model.machines_table) \
-                .where(model.machines_table.c.id.in_(mach_ids))
-        # Delete the customer
-        d4 = sql.delete(model.customers_table) \
-                .where(model.customers_table.c.id == customer_id)
-
-        meta.Session.execute(d)
-        meta.Session.execute(d2)
-        meta.Session.execute(d3)
-        meta.Session.execute(d4)
-        
-        meta.Session.commit()
-
-        return vaultMsg(True,
-                        'Deleted customer c#%s successfully' % customer_id)
-
-
+        return self.vault.del_customer(customer_id)
 
     @authenticated_admin
     def sflvault_delmachine(self, authtok, machine_id):
-        # Get machine
-        machine = query(model.Machine).get(int(machine_id))
-
-        if not machine:
-            return vaultMsg(True, "No such machine: m#%s" % machine_id)
-
-        # Get all the services that will be deleted
-        servs = query(model.Service).join('machine') \
-                     .filter(model.Machine.id == machine_id).all()
-        servs_ids = [s.id for s in servs]
-
-        # Make sure no service is child of this one
-        childs = query(model.Service) \
-                     .filter(model.Service.parent_service_id.in_(servs_ids))\
-                     .all()
-
-        # Don't bother for parents/childs if we're going to delete it anyway.
-        remnants = list(set(childs).difference(set(servs)))
-
-        if len(remnants):
-            # There are still some childs left, we can't delete this one.
-            retval = []
-            for x in remnants:
-                retval.append({'id': x.id, 'url': x.url})
-                
-            return vaultMsg(False, "Services still child of this machine's services",
-                            {'childs': retval})
-
-
-        # Delete all related user-ciphers
-        d = sql.delete(model.userciphers_table) \
-               .where(model.userciphers_table.c.service_id.in_(servs_ids))
-        # Delete the services related to machine_id
-        d2 = sql.delete(model.services_table) \
-                .where(model.services_table.c.id.in_(servs_ids))
-        # Delete the machine
-        d3 = sql.delete(model.machines_table) \
-                .where(model.machines_table.c.id == machine_id)
-
-        meta.Session.execute(d)
-        meta.Session.execute(d2)
-        meta.Session.execute(d3)
-        
-        meta.Session.commit()
-
-        return vaultMsg(True, 'Deleted machine m#%s successfully' % machine_id)
-
+        return self.vault.del_machine(machine_id)
 
     @authenticated_admin
     def sflvault_delservice(self, authtok, service_id):
-        """Delete a service, making sure no other child remains attached."""
-        # Integerize
-        service_id = int(service_id)
-        # Get service
-        serv = query(model.Service).get(int(service_id))
-
-        if not serv:
-            return vaultMsg(True, "No such service: s#%s" % service_id)
-
-        # Make sure no service is child of this one
-        childs = query(model.Service).filter_by(parent_service_id=service_id).all()
-
-        if len(childs):
-            # There are still some childs left, we can't delete this one.
-            retval = []
-            for x in childs:
-                retval.append({'id': x.id, 'url': x.url})
-                
-            return vaultMsg(False, 'Services still child of this service',
-                            {'childs': retval})
-        
-        # Delete all related user-ciphers
-        d = sql.delete(model.userciphers_table) \
-               .where(model.userciphers_table.c.service_id == service_id)
-        # Delete the service
-        d2 = sql.delete(services_table) \
-                .where(services_table.c.id == service_id)
-        
-        meta.Session.execute(d)
-        meta.Session.execute(d2)
-        meta.Session.commit()
-
-        return vaultMsg(True, 'Deleted service s#%s successfully' % service_id)
-
+        return self.vault.del_service(service_id)
 
     @authenticated_user
     def sflvault_addcustomer(self, authtok, customer_name):
