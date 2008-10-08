@@ -752,14 +752,19 @@ class SFLvaultAccess(object):
 
     def list_machines(self):
         """Return a simple list of the machines"""
-        lst = query(Machine).all()
+        
+        sel = sql.join(Machine, Customer) \
+                 .select(use_labels=True) \
+                 .order_by(Customer.id)
+        lst = meta.Session.execute(sel)
 
         out = []
         for x in lst:
-            nx = {'id': x.id, 'name': x.name, 'fqdn': x.fqdn, 'ip': x.ip,
-                  'location': x.location, 'notes': x.notes,
-                  'customer_id': x.customer_id,
-                  'customer_name': x.customer.name}
+            nx = {'id': x.machines_id, 'name': x.machines_name,
+                  'fqdn': x.machines_fqdn, 'ip': x.machines_ip,
+                  'location': x.machines_location, 'notes': x.machines_notes,
+                  'customer_id': x.customers_id,
+                  'customer_name': x.customers_name}
             out.append(nx)
 
         return vaultMsg(True, "Here is the machines list", {'list': out})
