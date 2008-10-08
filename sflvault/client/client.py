@@ -452,17 +452,15 @@ class SFLvaultParser(object):
         Do not specify password on command line, it will be asked on the
         next line.
         """
-        self.parser.add_option('-s', dest="service_id",
-                               help="Service ID for which to change password")
-        
+        self.parser.set_usage("chg-service-passwd [service_id]")        
         self._parse()
 
-        if not self.opts.service_id:
-            raise SFLvaultParserError("Required parameter '-s' omitted")
+        if not len(self.args):
+            raise SFLvaultParserError("Required argument: service_id")
 
-        
+        newsecret = raw_input("Enter new service password: ")
 
-
+        self.vault.chg_service_passwd(self.args[0], newsecret)
 
 
     def alias(self):

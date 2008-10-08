@@ -29,6 +29,7 @@ import xmlrpclib
 from base64 import b64decode, b64encode
 from datetime import *
 import time as stdtime
+from decorator import decorator
 
 from sflvault.lib.base import *
 from sflvault.lib.vault import SFLvaultAccess
@@ -39,9 +40,45 @@ from sqlalchemy import sql, exceptions
 log = logging.getLogger(__name__)
 
 
-# MOVED TO vault.py:
-SETUP_TIMEOUT = 300
-SESSION_TIMEOUT = 300
+#
+# Permissions decorators for XML-RPC calls
+#
+
+@decorator
+def authenticated_user(func, self, *args, **kwargs):
+    """Aborts if user isn't authenticated.
+
+    Timeout check done in get_session.
+
+    WARNING: authenticated_user READ the FIRST non-keyword argument
+             (should be authtok)
+    """
+    s = get_session(args[0])
+
+    if not s:
+        return xmlrpclib.Fault(0, "Permission denied")
+
+    self.sess = s
+
+    return func(self, *args, **kwargs)
+
+@decorator
+def authenticated_admin(func, self, *args, **kwargs):
+    """Aborts if user isn't admin.
+
+    Check authenticated_user , everything written then applies here as well.
+    """
+    s = get_session(args[0])
+
+    if not s:
+        return xmlrpclib.Fault(0, "Permission denied")
+    if not s['userobj'].is_admin:
+        return xmlrpclib.Fault(0, "Permission denied, admin priv. required")
+
+    self.sess = s
+
+    return func(self, *args, **kwargs)
+
 
 
 ##
@@ -50,6 +87,8 @@ SESSION_TIMEOUT = 300
 class XmlrpcController(XMLRPCController):
     """This controller is required to call model.Session.remove()
     after each call, otherwise, junk remains in the SQLAlchemy caches."""
+
+    allow_none = True # Enable marshalling of None values through XMLRPC.
     
     def __call__(self, environ, start_response):
         """Invoke the Controller"""
@@ -59,13 +98,13 @@ class XmlrpcController(XMLRPCController):
         
         self.vault = SFLvaultAccess()
         
+        self.vault.setup_timeout = config['sflvault.vault.setup_timeout']
+
         try:
             return XMLRPCController.__call__(self, environ, start_response)
         finally:
             model.meta.Session.remove()
     
-    allow_none = True # Enable marshalling of None values through XMLRPC.
-
     def sflvault_login(self, username):
         # Return 'cryptok', encrypted with pubkey.
         # Save decoded version to user's db field.
@@ -106,7 +145,7 @@ class XmlrpcController(XMLRPCController):
         else:
             newtok = b64encode(randfunc(32))
             set_session(newtok, {'username': username,
-                                 'timeout': datetime.now() + timedelta(0, SESSION_TIMEOUT),
+                                 'timeout': datetime.now() + timedelta(0, int(config['sflvault.vault.session_timeout'])),
                                  'userobj': u,
                                  'user_id': u.id
                                  })
@@ -224,3 +263,8 @@ class XmlrpcController(XMLRPCController):
     @authenticated_user
     def sflvault_listusers(self, authtok):
         return self.vault.list_users()
+
+    @authenticated_user
+    def sflvault_chgservicepasswd(self, authtok, service_id, newsecret):
+        self.vault.myself_id = self.sess['user_id']        
+        return self.vault.chg_service_passwd(service_id, newsecret)

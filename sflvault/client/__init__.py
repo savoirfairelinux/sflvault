@@ -407,6 +407,36 @@ class SFLvaultClient(object):
         print "Success: %s" % retval['message']
         print "New service ID: s#%d" % retval['service_id']
 
+
+
+    @authenticate()
+    def mod_service(self, machine_id, parent_service_id, url, group_id, secret,
+                    notes):
+        """Modify a service, and store in the Vault's database.
+
+        machine_id - An id identifying the machine the service is on.
+        parent_service_id - An id identifying the parent's service id,
+                            this rearranges the hierarchy for the `connect`
+                            function
+        url - URL of the service, with username, port and path if required
+        group_ids - Group IDs the service is part of
+        notes - Simple text field with notes
+        secret - Password for the service. Plain-text.
+        """
+        print "Currently unimplemented. Check out again soon :)"
+
+    @authenticate()
+    def chg_service_passwd(self, service_id, newsecret):
+        """Updates the password on the Vault for a certain service"""
+        retval = vaultReply(self.vault.chgservicepasswd(self.authtok,
+                                                        service_id,
+                                                        newsecret),
+                            "Error changing password for "\
+                            "service %s" % service_id)
+
+        print "Success: %s" % retval['message']
+        print "Password updated for service: s#%d" % int(retval['service_id'])
+
     @authenticate()
     def analyze(self, user):
         """Analyze the status of ciphers for a certain user.

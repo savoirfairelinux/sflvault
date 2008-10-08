@@ -47,12 +47,6 @@ from sflvault.lib.base import *
 import logging
 log = logging.getLogger('sflvault')
 
-#
-# Configuration
-#
-# TODO: make those configurable
-SETUP_TIMEOUT = 300
-SESSION_TIMEOUT = 300
 
 
 class SFLvaultAccess(object):
@@ -65,6 +59,8 @@ class SFLvaultAccess(object):
         # This gives this object the knowledge of which username is currently
         # using the Vault
         self.myself_username = None
+
+        self.setup_timeout = 300
 
     
     def show(self, service_id):
@@ -440,7 +436,7 @@ class SFLvaultAccess(object):
         if usr == None:
             # New user
             usr = User()
-            usr.waiting_setup =  datetime.now() + timedelta(0, SETUP_TIMEOUT)
+            usr.waiting_setup =  datetime.now() + timedelta(0, self.setup_timeout)
             usr.username = username
             usr.is_admin = bool(is_admin)
             usr.created_time = datetime.now()
@@ -452,7 +448,7 @@ class SFLvaultAccess(object):
             if usr.waiting_setup < datetime.now():
                 # Verify if it's a waiting_setup user that has expired.
                 usr.waiting_setup = datetime.now() + \
-                                    timedelta(0, SETUP_TIMEOUT)
+                                    timedelta(0, self.setup_timeout)
             
                 msg = 'updated (had setup timeout expired)'
             else:
@@ -465,7 +461,7 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "setup" command' % \
                         ('Admin user' if is_admin else 'User',
-                         msg, SETUP_TIMEOUT), {'user_id': usr.id})
+                         msg, self.setup_timeout), {'user_id': usr.id})
         
 
 
@@ -545,53 +541,7 @@ class SFLvaultAccess(object):
         meta.Session.commit()
 
 
-        # Get all users from the group_ids, and all admins and the requestor.
-        encusers = []
-        admusers = query(User).filter_by(is_admin=True).all()
-
-        for grp in groups:
-            encusers.extend(grp.users)
-        for adm in admusers:
-            encusers.append(adm)
-
-        
-        if self.myself_id:
-            myselfuser = query(User).get(self.myself_id)
-            encusers.append(myselfuser)
-        else:
-            log.warning("You should *always* set myself_id on the " + \
-                        self.__class__.__name__ + " object when calling "\
-                        "add_service() to make sure the secret is "\
-                        "encrypted for you at least.")
-
-                
-        ## TODO: move all that to centralised 'save_service_password'
-        ## that can be used on add-service calls and also on change-password
-        ## calls
-
-        userlist = []
-        for usr in set(encusers): # take out doubles..
-            # pubkey required to encrypt for user
-            if not usr.pubkey:
-                continue
-
-            # Encode for that user, store in UserCiphers
-            nu = Usercipher()
-            nu.service_id = ns.id
-            nu.user_id = usr.id
-
-            eg = usr.elgamal()
-            nu.cryptsymkey = serial_elgamal_msg(eg.encrypt(seckey,
-                                                           randfunc(32)))
-            del(eg)
-
-            meta.Session.save(nu)
-            
-            userlist.append(usr.username) # To return listing.
-
-        meta.Session.commit()
-
-        del(seckey)
+        userlist = self._encrypt_service_seckey(ns.id, seckey, groups)
 
         return vaultMsg(True, "Service added.", {'service_id': ns.id,
                                                  'encrypted_for': userlist})
@@ -837,3 +787,82 @@ class SFLvaultAccess(object):
         # Can use: datetime.fromtimestamp(x.created_stamp)
         # to get a datetime object back from the x.created_time
         return vaultMsg(True, "Here is the user list", {'list': out})
+
+
+    def _encrypt_service_seckey(self, service_id, seckey, groups):
+        """Encrypt secret for a given service with the public key of
+        everyone who has access to it."""
+        # Get all users from the group_ids, and all admins and the requestor.
+        encusers = []
+        admusers = query(User).filter_by(is_admin=True).all()
+
+        for grp in groups:
+            encusers.extend(grp.users)
+        for adm in admusers:
+            encusers.append(adm)
+
+        # Add myself to the list
+        if self.myself_id:
+            myselfuser = query(User).get(self.myself_id)
+            encusers.append(myselfuser)
+        else:
+            log.warning("You should *always* set myself_id on the " + \
+                        self.__class__.__name__ + " object when calling "\
+                        "add_service() to make sure the secret is "\
+                        "encrypted for you at least.")
+
+                
+        ## TODO: move all that to centralised 'save_service_password'
+        ## that can be used on add-service calls and also on change-password
+        ## calls
+
+        userlist = []
+        for usr in set(encusers): # take out doubles..
+            # pubkey required to encrypt for user
+            if not usr.pubkey:
+                continue
+
+            # Encode for that user, store in UserCiphers
+            nu = Usercipher()
+            nu.service_id = service_id
+            nu.user_id = usr.id
+
+            eg = usr.elgamal()
+            nu.cryptsymkey = serial_elgamal_msg(eg.encrypt(seckey,
+                                                           randfunc(32)))
+            del(eg)
+
+            meta.Session.save(nu)
+            
+            userlist.append(usr.username) # To return listing.
+
+        meta.Session.commit()
+
+        del(seckey)
+
+        return userlist
+        
+
+    def chg_service_passwd(self, service_id, newsecret):
+        """Change the passwd for a given service"""
+        # number please
+        service_id = int(service_id)
+
+        serv = query(Service).get(service_id)
+        groups = serv.groups
+
+        (seckey, ciphertext) = encrypt_secret(newsecret)
+        serv.secret = ciphertext
+        
+        # Effacer tous les Ciphers pour ce service avant.
+        # TODO: we must check out that we don't delete VERSIONED ciphers
+        #       when we add versioning to the userciphers_table.
+        t1 = model.userciphers_table
+        meta.Session.execute(t1.delete(t1.c.service_id == service_id))
+
+        meta.Session.commit()
+
+        userlist = self._encrypt_service_seckey(service_id, seckey, groups)
+        
+        return vaultMsg(True, "Service added.", {'service_id': service_id,
+                                                 'encrypted_for': userlist})

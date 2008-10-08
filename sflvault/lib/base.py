@@ -30,7 +30,6 @@ from pylons.controllers.util import abort, etag_cache, redirect_to
 from pylons.decorators import jsonify, validate
 from pylons.i18n import _, ungettext, N_
 from pylons.templating import render
-from decorator import decorator
 from datetime import *
 import xmlrpclib
 
@@ -87,45 +86,6 @@ def get_session(authtok):
         return None
 
     return g.vaultSessions[authtok]
-
-#
-# Permissions decorators for XML-RPC calls
-#
-
-@decorator
-def authenticated_user(func, self, *args, **kwargs):
-    """Aborts if user isn't authenticated.
-
-    Timeout check done in get_session.
-
-    WARNING: authenticated_user READ the FIRST non-keyword argument
-             (should be authtok)
-    """
-    s = get_session(args[0])
-
-    if not s:
-        return xmlrpclib.Fault(0, "Permission denied")
-
-    self.sess = s
-
-    return func(self, *args, **kwargs)
-
-@decorator
-def authenticated_admin(func, self, *args, **kwargs):
-    """Aborts if user isn't admin.
-
-    Check authenticated_user , everything written then applies here as well.
-    """
-    s = get_session(args[0])
-
-    if not s:
-        return xmlrpclib.Fault(0, "Permission denied")
-    if not s['userobj'].is_admin:
-        return xmlrpclib.Fault(0, "Permission denied, admin priv. required")
-
-    self.sess = s
-
-    return func(self, *args, **kwargs)
 
 
 
