@@ -62,15 +62,88 @@ class SFLvaultAccess(object):
 
         self.setup_timeout = 300
 
-    
-    def show(self, service_id):
-        """Get the specified service ID and return the hierarchy to connect to it.
 
-        We need self.myself_id to be set for this function.
+    def put_service(self, service_id, data):
+        """Saves modified data for service_id to the database.
+
+        data should contain only the fields to be modified.
         """
         try:
             s = query(Service).filter_by(id=service_id).one()
-            #.options(model.eagerload('group'))
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Service not found: %s" % e.message)
+
+        if 'parent_service_id' in data:
+            s.parent_service_id = int(data['parent_service_id'])
+        if 'machine_id' in data:
+            s.machine_id = int(data['machine_id'])
+        if 'url' in data:
+            s.url = data['url']
+        if 'notes' in data:
+            s.notes = data['notes']
+
+        meta.Session.commit()
+
+        return vaultMsg(True, "Successfully saved service s#%s" % service_id)
+
+    def get_service(self, service_id):
+        """Get a single service's data"""
+        try:
+            s = query(Service).filter_by(id=service_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Service not found: %s" % e.message)
+
+        ucipher = query(Usercipher).filter_by(service_id=s.id, user_id=self.myself_id).first()
+        if ucipher and ucipher.cryptsymkey:
+            cipher = ucipher.cryptsymkey
+        else:
+            cipher = ''
+
+        out = {'id': s.id,
+               'machine_id': s.machine_id or '',
+               'parent_service_id': s.parent_service_id or '',
+               'url': s.url or '',
+               'secret': s.secret,
+               'usercipher': cipher,
+               'secret_last_modified': s.secret_last_modified,
+               'metadata': s.metadata or '',
+               'notes': s.notes or ''}
+
+        return vaultMsg(True, "Here is the service", {'service': out})  
+
+
+    def put_service(self, service_id, data):
+        """Put a single service's data back to the vault's database"""
+
+        try:
+            s = query(Service).filter_by(id=service_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Service not found: %s" % e.message)
+
+        #Save:
+        # machine_id
+        # parent_service_id
+        # url
+        # notes
+        # location
+        if 'machine_id' in data:
+            s.machine_id = int(data['machine_id'])
+        if 'parent_service_id' in data:
+            s.parent_service_id = int(data['parent_service_id'])
+        if 'notes' in data:
+            s.notes = data['notes']
+        if 'url' in data:
+            s.url = data['url']
+
+        meta.Session.commit()
+
+        return vaultMsg(True, "Service s#%s saved successfully" % service_id)
+
+    def get_service_tree(self, service_id):
+        """Get a service tree, starting with service_id"""
+        
+        try:
+            s = query(Service).filter_by(id=service_id).one()
         except exceptions.InvalidRequestError, e:
             return vaultMsg(False, "Service not found: %s" % e.message)
 
@@ -84,7 +157,6 @@ class SFLvaultAccess(object):
 
             out.append({'id': s.id,
                         'url': s.url,
-                        #'group': s.group.name or '',
                         'secret': s.secret,
                         'usercipher': cipher,
                         'secret_last_modified': s.secret_last_modified,
@@ -104,6 +176,15 @@ class SFLvaultAccess(object):
         out.reverse()
 
         return vaultMsg(True, "Here are the services", {'services': out})    
+
+    
+    def show(self, service_id):
+        """Get the specified service ID and return the hierarchy to connect
+        to it or to show it.
+
+        We need self.myself_id to be set for this function.
+        """
+        return self.get_service_tree(service_id)
 
 
     def search(self, search_query, verbose=False):
@@ -436,7 +517,7 @@ class SFLvaultAccess(object):
         if usr == None:
             # New user
             usr = User()
-            usr.waiting_setup =  datetime.now() + timedelta(0, self.setup_timeout)
+            usr.waiting_setup =  datetime.now() + timedelta(0, int(self.setup_timeout))
             usr.username = username
             usr.is_admin = bool(is_admin)
             usr.created_time = datetime.now()
@@ -448,7 +529,7 @@ class SFLvaultAccess(object):
             if usr.waiting_setup < datetime.now():
                 # Verify if it's a waiting_setup user that has expired.
                 usr.waiting_setup = datetime.now() + \
-                                    timedelta(0, self.setup_timeout)
+                                    timedelta(0, int(self.setup_timeout))
             
                 msg = 'updated (had setup timeout expired)'
             else:
@@ -461,7 +542,7 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "setup" command' % \
                         ('Admin user' if is_admin else 'User',
-                         msg, self.setup_timeout), {'user_id': usr.id})
+                         msg, int(self.setup_timeout)), {'user_id': usr.id})
         
 
 
@@ -750,12 +831,17 @@ class SFLvaultAccess(object):
         return vaultMsg(True, 'Here is the list of groups', {'list': out})
 
 
-    def list_machines(self):
+    def list_machines(self, customer_id=None):
         """Return a simple list of the machines"""
         
         sel = sql.join(Machine, Customer) \
                  .select(use_labels=True) \
                  .order_by(Customer.id)
+
+        # Filter also..
+        if customer_id:
+            sel = sel.where(Customer.id==customer_id)
+        
         lst = meta.Session.execute(sel)
 
         out = []

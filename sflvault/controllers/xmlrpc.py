@@ -181,6 +181,21 @@ class XmlrpcController(XMLRPCController):
 
 
     @authenticated_user
+    def sflvault_get_service(self, authtok, service_id):
+        self.vault.myself_id = self.sess['user_id']
+        return self.vault.get_service(service_id)
+
+    @authenticated_user
+    def sflvault_get_service_tree(self, authtok, service_id):
+        self.vault.myself_id = self.sess['user_id']
+        return self.vault.get_service_tree(service_id)
+
+    @authenticated_user
+    def sflvault_put_service(self, authtok, service_id, data):
+        self.vault.myself_id = self.sess['user_id']
+        return self.vault.put_service(service_id, data)
+
+    @authenticated_user
     def sflvault_show(self, authtok, service_id):
         self.vault.myself_id = self.sess['user_id']
         return self.vault.show(service_id)
@@ -257,8 +272,8 @@ class XmlrpcController(XMLRPCController):
         return self.vault.list_groups()
 
     @authenticated_user
-    def sflvault_listmachines(self, authtok):
-        return self.vault.list_machines()
+    def sflvault_listmachines(self, authtok, customer_id=None):
+        return self.vault.list_machines(customer_id)
 
     @authenticated_user
     def sflvault_listusers(self, authtok):

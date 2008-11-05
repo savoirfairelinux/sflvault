@@ -62,6 +62,13 @@ def authenticate(keep_privkey=False):
         
         self is there because it's called on class elements.
         """
+
+        # Check if we've logged in already
+        if hasattr(self, 'privkey'):
+            # TODO: verify the timeout of the server..
+            return func(self, *args, **kwargs)
+
+        
         username = self.cfg.get('SFLvault', 'username')
 
         try:
@@ -78,12 +85,12 @@ def authenticate(keep_privkey=False):
         except KeyboardInterrupt, e:
             print "[aborted]"
             return False
-            
+
+        # try to remove privpass from memory, but strings in python are immutable
+        # so it won't change anything.. this is useless:
         privpass = randfunc(len(privpass))
         del(privpass)
 
-        # TODO: maybe check when we're already logged in, and check
-        #       the timeout.
         # TODO: check also is the privkey (ElGamal obj) has been cached
         #       in self.privkey (when invoked with keep_privkey)
         retval = self.vault.login(username)
@@ -425,6 +432,7 @@ class SFLvaultClient(object):
         """
         print "Currently unimplemented. Check out again soon :)"
 
+
     @authenticate()
     def chg_service_passwd(self, service_id, newsecret):
         """Updates the password on the Vault for a certain service"""
@@ -436,6 +444,7 @@ class SFLvaultClient(object):
 
         print "Success: %s" % retval['message']
         print "Password updated for service: s#%d" % int(retval['service_id'])
+
 
     @authenticate()
     def analyze(self, user):
@@ -695,81 +704,105 @@ class SFLvaultClient(object):
             if level in [0,1]:
                 print "%s" % (spc1) + '-' * (80 - len(spc1))
             
+    @authenticate(True)
+    def get_service(self, service_id):
+        """Get information to be edited"""
+        retval = vaultReply(self.vault.get_service(self.authtok, service_id),
+                            "Error fetching data for service %s" % service_id)
+
+        serv = retval['service']
+        # Decrypt secret
+        aeskey = ''
+        secret = ''
+
+        # Add it only if we can!
+        if serv['usercipher']:
+            try:
+                aeskey = self.privkey.decrypt( \
+                    unserial_elgamal_msg(serv['usercipher']))
+            except:
+                raise DecryptError("Unable to decrypt Usercipher.")
+
+            serv['plaintext'] = decrypt_secret(aeskey, serv['secret'])
+
+        return serv
 
 
     @authenticate(True)
-    def show(self, vid, verbose=False):
-        """Show informations to connect to a particular service"""
+    def get_service_tree(self, service_id):
+        """Get information to be edited"""
+        retval = vaultReply(self.vault.get_service_tree(self.authtok,
+                                                        service_id),
+                "Error fetching data-tree for service %s" % service_id)
 
-        retval = vaultReply(self.vault.show(self.authtok, vid),
-                            "Error fetching 'show' info.")
-        
-        print "Results:"
-
-        # TODO: call pager `less` when too long.
-        servs = retval['services']
-        pre = ''
-        for x in retval['services']:
-            # Show separator
-            if pre:
-                pass
-                print "%s%s" % (pre, '-' * (80-len(pre)))
-                
-            spc = len(str(x['id'])) * ' '
-
-            # Decrypt secret
-            aeskey = ''
-            secret = ''
-            if x['usercipher']:
-                try:
-                    aeskey = self.privkey.decrypt(unserial_elgamal_msg(x['usercipher']))
-                except:
-                    raise DecryptError("Unable to decrypt Usercipher.")
-            
-                secret = decrypt_secret(aeskey, x['secret'])
-            
-            print "%ss#%d %s" % (pre, x['id'], x['url'])
-            print "%s%s   secret: %s" % (pre,spc, secret or '[access denied]')
-            if verbose:
-                print "%s%s   notes: %s" % (pre,spc, x['notes'])
-            del(secret)
-            del(aeskey)
-
-            pre = pre + '   ' + spc
-
-        # Clean the cache with the private key.
-        del(self.privkey)
-
-
-
-    @authenticate(True)
-    def connect(self, vid):
-        """Connect to a distant machine (using SSH for now)"""
-
-        retval = vaultReply(self.vault.show(self.authtok, vid),
-                            "Error fetching 'show' info for 'connect()' call.")
-
-        # Check and decrypt all ciphers prior to start connection,
-        # if there are some missing, it's not useful to start.
-        servs = retval['services']
         for x in retval['services']:
             # Decrypt secret
             aeskey = ''
             secret = ''
 
             if not x['usercipher']:
-                raise RemotingError("We don't have access to password for service %s" % x['url'])
-                del(self.privkey) # Clean the cache with the private key.
-                break
+                # Don't add a plaintext if we can't.
+                continue
 
             try:
-                aeskey = self.privkey.decrypt(unserial_elgamal_msg(x['usercipher']))
+                aeskey = self.privkey.decrypt( \
+                    unserial_elgamal_msg(x['usercipher']))
             except:
-                raise PermissionError("Unable to decrypt Usercipher.")
+                raise DecryptError("Unable to decrypt Usercipher.")
 
             x['plaintext'] = decrypt_secret(aeskey, x['secret'])
 
-        del(self.privkey) # Clean the cache with the private key.
+        return retval['services']
+
+
+    @authenticate(True)
+    def put_service(self, service_id, data):
+        """Save the (potentially modified) service to the Vault"""
+        retval = vaultReply(self.vault.put_service(self.authtok, service_id,
+                                                   data),
+                            "Error saving data to vault, aborting.")
+
+        print "Success: %s " % retval['message']
+        
+
+    @authenticate(True)
+    def show(self, service_id, verbose=False):
+        """Show informations to connect to a particular service"""
+        servs = self.get_service_tree(service_id)
+
+        print "Results:"
+
+        # TODO: call pager `less` when too long.
+        pre = ''
+        for x in servs:
+            # Show separator
+            if pre:
+                pass
+                #print "%s%s" % (pre, '-' * (80-len(pre)))
+                
+            spc = len(str(x['id'])) * ' '
+
+            secret = x['plaintext'] if 'usercipher' in x else '[access denied]'
+            print "%ss#%d %s" % (pre, x['id'], x['url'])
+            print "%s%s   secret: %s" % (pre, spc, secret)
+            
+            if verbose:
+                print "%s%s   notes: %s" % (pre,spc, x['notes'])
+            del(secret)
+
+            pre = pre + '   ' + spc
+
+
+    @authenticate(True)
+    def connect(self, vid):
+        """Connect to a distant machine (using SSH for now)"""
+        servs = self.get_service_tree(vid)
+
+        # Check and decrypt all ciphers prior to start connection,
+        # if there are some missing, it's not useful to start.
+        for x in servs:
+            if not x['usercipher']:
+                raise RemotingError("We don't have access to password for service %s" % x['url'])
 
         connection = remoting.Chain(servs)
         connection.setup()
@@ -835,8 +868,8 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def list_machines(self, verbose=False):
-        retval = vaultReply(self.vault.listmachines(self.authtok),
+    def list_machines(self, verbose=False, customer_id=None):
+        retval = vaultReply(self.vault.listmachines(self.authtok, customer_id),
                             "Error listing machines")
 
         print "Machines list:"
@@ -854,7 +887,7 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def list_customers(self):
+    def list_customers(self, customer_id=None):
         retval = vaultReply(self.vault.listcustomers(self.authtok),
                             "Error listing customers")
 

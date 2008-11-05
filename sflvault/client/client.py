@@ -435,15 +435,32 @@ class SFLvaultParser(object):
     def mod_service(self):
         """Modify service informations"""
 
-        self._service_options()
+        self.parser.set_usage("mod-service [service_id]")
         self._parse()
+
+        if not len(self.args):
+            raise SFLvaultParserError("Required argument: service_id")
 
         # TODO: Get the first parameter: service_id
         # TODO: check all the specified parameters in self.args and
         #       add them to the service definition, otherwise pass
         #       None values.
-        
 
+        # TODO: 
+
+        service_id = self.vault.vaultId(self.args[0], 's')
+
+        serv = self.vault.get_service(service_id)
+
+        from sflvault.client import ui
+        dialog = ui.ModServiceDialogDisplay(serv)
+        save, data = dialog.run()
+
+        if save:
+            print "Sending data to vault..."
+            self.vault.put_service(service_id, data)
+        else:
+            print "mod-service aborted"
 
 
     def chg_service_passwd(self):
@@ -452,7 +469,7 @@ class SFLvaultParser(object):
         Do not specify password on command line, it will be asked on the
         next line.
         """
-        self.parser.set_usage("chg-service-passwd [service_id]")        
+        self.parser.set_usage("chg-service-passwd [service_id]")
         self._parse()
 
         if not len(self.args):
@@ -484,7 +501,6 @@ class SFLvaultParser(object):
                 print "No such alias"
 
         elif len(self.args) == 0:
-            
             # List aliases
             l = self.vault.alias_list()
             print "Aliased VaultIDs:"
@@ -492,7 +508,6 @@ class SFLvaultParser(object):
                 print "\t%s\t%s" % (x[0], x[1])
 
         elif len(self.args) == 1:
-
             # Show this alias's value
             a = self.vault.alias_get(self.args[0])
             if a:
@@ -569,12 +584,18 @@ class SFLvaultParser(object):
         self.parser.add_option('-v', '--verbose', action="store_true",
                                dest='verbose', default=False,
                                help="Enable verbose output (location and notes)")
+        self.parser.add_option('-c', '--customer', dest='customer_id',
+                               help="Customer id")
         self._parse()
+
+        customer_id = None
+        if hasattr(self.opts, 'customer_id'):
+            customer_id = self.vault.vaultId(self.opts.customer_id, 'c')
 
         if len(self.args):
             raise SFLvaultParserError("Invalid number of arguments")
 
-        self.vault.list_machines(self.opts.verbose)
+        self.vault.list_machines(self.opts.verbose, customer_id)
         
 
     def setup(self):
@@ -638,8 +659,8 @@ class SFLvaultParser(object):
 
 
     def search(self):
-        """Search the Vault's database for those space separated regexp"""
-        self.parser.set_usage('search [opts] regexp1 ["reg exp2" ...]')
+        """Search the Vault's database for those space separated keywords"""
+        self.parser.set_usage('search [opts] keyword1 ["key word2" ...]')
         self.parser.add_option('-v', '--verbose', dest="verbose",
                                action="store_true", default=False,
                                help="Show verbose output (include notes, location)")
