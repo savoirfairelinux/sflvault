@@ -589,7 +589,7 @@ class SFLvaultParser(object):
         self._parse()
 
         customer_id = None
-        if hasattr(self.opts, 'customer_id'):
+        if self.opts.customer_id:
             customer_id = self.vault.vaultId(self.opts.customer_id, 'c')
 
         if len(self.args):

@@ -43,14 +43,6 @@ OP_THRGH_SHELL = 'through-shell'       # - When a command must be sent through
                                        # an open shell
 
 
-# Helper func
-
-def print_cnx(cnx):
-    sys.stdout.write(cnx.before)
-    sys.stdout.write(cnx.after)
-    sys.stdout.flush()
-
-
 
 ### Service definitions
 
@@ -196,6 +188,12 @@ class ssh(ShellService):
 
         # Prework classes
         class expect_shell(ExpectClass):
+            def terminal_type(self):
+                "Terminal type\?.*$"
+                sys.stdout.write(" [sending: xterm] ")
+                self.cnx.sendline("xterm")
+                sys.stdout.flush()
+            
             def shell(self):
                 r'[^ ]*@.*:.*[$#]'
                 pass # We're in :)
@@ -317,6 +315,10 @@ class sudo(ShellService):
                 self.cnx.sendline(self.service.parent.data['plaintext'])
 
                 expect_waitshell(self.service)
+
+            def sendpass2(self):
+                r'assword for.*:'
+                self.sendpass()
 
         # Send command
         self.shell_handle.sendline('sudo -s')

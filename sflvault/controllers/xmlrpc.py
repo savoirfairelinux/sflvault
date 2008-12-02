@@ -164,12 +164,18 @@ class XmlrpcController(XMLRPCController):
         u = query(User).filter_by(username=username).first()
 
 
-        if (cnt):
-            if (not u):
+        if cnt:
+            if not u:
                 return vaultMsg(False, 'No such user %s' % username)
         
-            if (u.setup_expired()):
+            if u.setup_expired():
                 return vaultMsg(False, 'Setup expired for user %s' % username)
+
+            if u.pubkey:
+                return vaultMsg(False, 'User %s already have a public '\
+                                       'key stored' % username)
+
+        # TODO: verify the user doesn't already have a pubkey !
 
         # Ok, let's save the things and reset waiting_setup.
         u.waiting_setup = None

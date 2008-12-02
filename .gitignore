@@ -15,5 +15,6 @@ dist
 
 docs/*.html
 
-SFLvault.egg-info
+# We need to track paste_deploy_config.ini_tmpl .. and why not the other files?
+#SFLvault.egg-info
 

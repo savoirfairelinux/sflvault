@@ -129,7 +129,10 @@ class SFLvaultAccess(object):
         if 'machine_id' in data:
             s.machine_id = int(data['machine_id'])
         if 'parent_service_id' in data:
-            s.parent_service_id = int(data['parent_service_id'])
+            if data['parent_service_id'] == '':
+                s.parent_service_id = None
+            else:
+                s.parent_service_id = int(data['parent_service_id'])
         if 'notes' in data:
             s.notes = data['notes']
         if 'url' in data:
