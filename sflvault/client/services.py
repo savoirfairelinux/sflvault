@@ -123,7 +123,7 @@ class ShellService(Service):
 
         try:
             # Go ahead, you're free to go !
-            self.shell_handle.interact()
+            self.shell_handle.interact(escape_character=chr(30))
 
             # Reset signal
             signal.signal(signal.SIGWINCH, signal.SIG_DFL)
