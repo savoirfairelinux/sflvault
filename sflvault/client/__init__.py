@@ -63,32 +63,42 @@ def authenticate(keep_privkey=False):
         self is there because it's called on class elements.
         """
 
-        # Check if we've logged in already
-        if hasattr(self, 'privkey'):
-            # TODO: verify the timeout of the server..
-            return func(self, *args, **kwargs)
-
-        
         username = self.cfg.get('SFLvault', 'username')
+        privkey = None
 
-        try:
-            privkey_enc = self.cfg.get('SFLvault', 'key')
-        except:
-            raise VaultConfigurationError("No private key in local config, init with: setup username vault-url")
+        # Check if we've cached the decrypted private key
+        if hasattr(self, 'privkey'):
+            # Use cached private key.
+            privkey = self.privkey
+
+        else:
+
+            try:
+                privkey_enc = self.cfg.get('SFLvault', 'key')
+            except:
+                raise VaultConfigurationError("No private key in local config, init with: setup username vault-url")
         
-        try:
-            privpass = self.getpassfunc()
-            privkey = decrypt_privkey(privkey_enc, privpass)
-        except DecryptError, e:
-            print "[SFLvault] Invalid passphrase"
-            return False
-        except KeyboardInterrupt, e:
-            print "[aborted]"
-            return False
+            try:
+                privpass = self.getpassfunc()
+                privkey_packed = decrypt_privkey(privkey_enc, privpass)
+                del(privpass)
+                eg = ElGamal.ElGamalobj()
+                (eg.p, eg.x, eg.g, eg.y) = unserial_elgamal_privkey(privkey_packed)
+                privkey = eg
 
-        # try to remove privpass from memory, but strings in python are
-        # immutable
-        del(privpass)
+            except DecryptError, e:
+                print "[SFLvault] Invalid passphrase"
+                return False
+            except KeyboardInterrupt, e:
+                print "[aborted]"
+                return False
+
+            # When we ask to keep the privkey, keep the ElGamal obj.
+            if keep_privkey or self.shell_mode:
+                self.privkey = privkey
+
+
+        # Go for the login/authenticate roundtrip
 
         # TODO: check also is the privkey (ElGamal obj) has been cached
         #       in self.privkey (when invoked with keep_privkey)
@@ -96,16 +106,8 @@ def authenticate(keep_privkey=False):
         self.authret = retval
         if not retval['error']:
             # decrypt token.
-            eg = ElGamal.ElGamalobj()
-            (eg.p, eg.x, eg.g, eg.y) = unserial_elgamal_privkey(privkey)
-            privkey = randfunc(len(privkey))
-            del(privkey)
 
-            # When we ask to keep the privkey, keep the ElGamal obj.
-            if keep_privkey or self.shell_mode:
-                self.privkey = eg
-
-            cryptok = eg.decrypt(unserial_elgamal_msg(retval['cryptok']))
+            cryptok = privkey.decrypt(unserial_elgamal_msg(retval['cryptok']))
             retval2 = self.vault.authenticate(username, b64encode(cryptok))
             self.authret = retval2
         
