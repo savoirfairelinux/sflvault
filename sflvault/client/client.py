@@ -30,6 +30,8 @@ import re
 import sys
 import xmlrpclib
 import getpass
+import shlex
+import socket
 
 from Crypto.PublicKey import ElGamal
 from base64 import b64decode, b64encode
@@ -43,26 +45,59 @@ class SFLvaultParserError(Exception):
     """For invalid options on the command line"""
     pass
 
-class SFLvaultParser(object):
+class SFLvaultShell(object):
+    def __init__(self, vault=None):
+        self.vault = (vault or SFLvaultClient(shell=True))
+
+    def _run(self):
+        """Go through all commands on a pseudo-shell, and execute them,
+        caching the passphrase at some point."""
+        
+        print "Welcome to SFLvault. Type 'help' for help."
+        while True:
+            print "SFLvault>",
+            cmd = raw_input()
+            if not cmd:
+                continue
+            
+            # Get sys.argv-like parameters
+            args = shlex.split(cmd)
+
+            # Local (shell) cmds take precedence over SFLvaultCommand cmds.
+            if len(args) and hasattr(self, args[0]):
+                getattr(self, args[0])()
+            else:
+                runcmd = SFLvaultCommand(self.vault)
+                runcmd._run(args)
+
+    def quit(self):
+        """Quit command, only available in the shell"""
+        raise KeyboardInterrupt()
+
+class SFLvaultCommand(object):
     """Parse command line arguments, and call SFLvault commands
     on them."""
-    def __init__(self, argv, vault = None):
+    def __init__(self, vault=None):
         """Setup the SFLvaultParser object.
 
         argv - arguments from the command line
         sflvault - SFLvault object (optional)"""
         self.parser = optparse.OptionParser(usage=optparse.SUPPRESS_USAGE)
-        self.argv = argv[1:] # Bump the first (command name)
-        self.args = []       # Used after a call to _parse()
-        self.opts = object() #  idem.
         
         # Use the specified, or create a new one.
         self.vault = (vault or SFLvaultClient())
 
+
+    def _run(self, argv):
+        """Run a certain command"""
+        self.argv = argv     # Bump the first (command name)
+        self.args = []       # Used after a call to _parse()
+        self.opts = object() #  idem.
+
         # Setup default action = help
         action = 'help'
         self.listcmds = False
-        if (len(self.argv)):
+        if len(self.argv):
             # Take out the action.
             action = self.argv.pop(0)
             if action in ['-h', '--help', '--list-commands']:
@@ -75,14 +110,36 @@ class SFLvaultParser(object):
         # Check the first parameter, if it's in the local object.
 
         # Call it or show the help.
-        if hasattr(self, action):
-            self.action = action
-            try:
-                getattr(self, action)()
-            except SFLvaultParserError, e:
-                self.help(cmd=action, error=e)
-        else:
-            self.help()
+        if not hasattr(self, action):
+            print "[SFLvault] Invalid command: %s" % action
+            return
+
+        self.action = action
+        try:
+            getattr(self, action)()
+        except SFLvaultParserError, e:
+            self.help(cmd=action, error=e)
+        except AuthenticationError:
+            raise
+        except VaultError:
+            #raise
+            pass
+        except xmlrpclib.Fault, e:
+            # On is_admin check failed, on user authentication failed.
+            print "[SFLvault] XML-RPC Fault: %s" % e.faultString
+        except VaultConfigurationError, e:
+            print "[SFLvault] Configuration error: %s" % e
+        except RemotingError, e:
+            print "[SFLvault] Remoting error: %s" % e.message
+        except ServiceRequireError, e:
+            print "[SFLvault] Service-chain setup error: %s" % e.message
+        except DecryptError, e:
+            print "[SFLvault] There has been an error in decrypting messages: %s" % e.message
+        except VaultIDSpecError, e:
+            print "[SFLvault] VaultID spec. error: %s" % e.message
+        except socket.error, e:
+            print "[SFLvault] Connection error: %s" % e.message
+            
         
 
     def _parse(self):
@@ -681,28 +738,17 @@ class SFLvaultParser(object):
 ###    
 def main():
     # Call the appropriate function of the 'f' object, according to 'action'
-    
-    try:
-        f = SFLvaultParser(sys.argv)
-    except AuthenticationError:
-        raise
-    except VaultError:
-        #raise
-        pass
-    except xmlrpclib.Fault, e:
-        # On is_admin check failed, on user authentication failed.
-        print "[SFLvault] XML-RPC Fault: %s" % e.faultString
-    except VaultConfigurationError, e:
-        print "[SFLvault] Configuration error: %s" % e
-    except RemotingError, e:
-        print "[SFLvault] Remoting error: %s" % e.message
-    except ServiceRequireError, e:
-        print "[SFLvault] Service-chain setup error: %s" % e.message
-    except DecryptError, e:
-        print "[SFLvault] There has been an error in decrypting messages: %s" \
-              % e.message
-    except VaultIDSpecError, e:
-        print "[SFLvault] VaultID spec. error: %s" % e.message
+
+    if len(sys.argv) == 1 or sys.argv[1] == 'shell':
+        s = SFLvaultShell()
+        try:
+            s._run()
+        except KeyboardInterrupt, e:
+            print "\nExiting."
+            sys.exit()
+    else:
+        f = SFLvaultCommand()
+        f._run(sys.argv[1:])
 
     
 

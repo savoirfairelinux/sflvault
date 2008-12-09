@@ -85,6 +85,10 @@ def get_session(authtok):
         del(g.vaultSessions[authtok])
         return None
 
+    if g.vaultSessions[authtok]['remote_addr'] != request.environ.get('REMOTE_ADDR', 'gibberish'):
+        del(g.vaultSessions[authtok])
+        return None
+
     return g.vaultSessions[authtok]
 
 

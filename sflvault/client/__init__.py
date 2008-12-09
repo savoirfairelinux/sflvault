@@ -86,9 +86,8 @@ def authenticate(keep_privkey=False):
             print "[aborted]"
             return False
 
-        # try to remove privpass from memory, but strings in python are immutable
-        # so it won't change anything.. this is useless:
-        privpass = randfunc(len(privpass))
+        # try to remove privpass from memory, but strings in python are
+        # immutable
         del(privpass)
 
         # TODO: check also is the privkey (ElGamal obj) has been cached
@@ -103,7 +102,7 @@ def authenticate(keep_privkey=False):
             del(privkey)
 
             # When we ask to keep the privkey, keep the ElGamal obj.
-            if keep_privkey:
+            if keep_privkey or self.shell_mode:
                 self.privkey = eg
 
             cryptok = eg.decrypt(unserial_elgamal_msg(retval['cryptok']))
@@ -135,22 +134,26 @@ class SFLvaultClient(object):
     This is the object all clients will use to communicate with a remote
     or local Vault.
     """
-    def __init__(self, cfg=None):
-        """Set up initial configuration for function calls"""
+    def __init__(self, cfg=None, shell=False):
+        """Set up initial configuration for function calls
+
+        When shell = True, privkey will be cached for a while.
+        """
         # The function to call upon @authenticate to get passphrase from user.
         self.getpassfunc = self._getpass
         # Load configuration
         self.config_read()
+        self.shell_mode = shell
         self.authtok = ''
         self.authret = None
         # Set the default route to the Vault
         url = self.cfg.get('SFLvault', 'url')
         if url:
-            self.vault = xmlrpclib.Server(url).sflvault
+            self.vault = xmlrpclib.Server(url, allow_none=True).sflvault
 
     def _getpass(self):
         """Default function to get passphrase from user, for authentication."""
-        return getpass.getpass("Vault passphrase: ")
+        return getpass.getpass("Vault passphrase: ", stream=sys.stderr)
 
 
     def config_check(self):
