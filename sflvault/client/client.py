@@ -32,6 +32,8 @@ import xmlrpclib
 import getpass
 import shlex
 import socket
+import readline
+
 
 from Crypto.PublicKey import ElGamal
 from base64 import b64decode, b64encode
@@ -45,6 +47,9 @@ class SFLvaultParserError(Exception):
     """For invalid options on the command line"""
     pass
 
+
+
+
 class SFLvaultShell(object):
     def __init__(self, vault=None):
         self.vault = (vault or SFLvaultClient(shell=True))
@@ -54,9 +59,10 @@ class SFLvaultShell(object):
         caching the passphrase at some point."""
         
         print "Welcome to SFLvault. Type 'help' for help."
+        prompt = "SFLvault> "
+        
         while True:
-            print "SFLvault>",
-            cmd = raw_input()
+            cmd = raw_input(prompt)
             if not cmd:
                 continue
             
@@ -73,6 +79,8 @@ class SFLvaultShell(object):
     def quit(self):
         """Quit command, only available in the shell"""
         raise KeyboardInterrupt()
+
+
 
 class SFLvaultCommand(object):
     """Parse command line arguments, and call SFLvault commands

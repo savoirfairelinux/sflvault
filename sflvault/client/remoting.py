@@ -204,10 +204,10 @@ class Chain(object):
                 last = srv
             except ServiceExpectError, e:
                 # Show error, fall back, and interact to last if it exists.
-                print "Error connecting to %s: %s" % (srv.data['url'], e.message)
+                print "[SFLvault] Error connecting to %s: %s" % (srv.data['url'], e.message)
                 break
             except pexpect.EOF, e:
-                print "Child exited"
+                print "[SFLvault] Child exited"
                 break
             except KeyboardInterrupt, e:
                 print ""

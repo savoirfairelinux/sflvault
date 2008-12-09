@@ -123,7 +123,7 @@ class ShellService(Service):
 
         try:
             # Go ahead, you're free to go !
-            self.shell_handle.interact(escape_character=chr(30))
+            self.shell_handle.interact(escape_character=sflvault_escape_chr)
 
             # Reset signal
             signal.signal(signal.SIGWINCH, signal.SIG_DFL)
@@ -446,6 +446,11 @@ class mysql(ShellService):
                 'ERROR \d*'
                 raise ServiceExpectError("Failed authentication for mysql "\
                                          "at program launch")
+            
+            def notfound(self):
+                'command not found.*$'
+                raise ServiceExpectError('mysql client not installed on server')
+
 
         # Bring over here the parent's shell handle.
         cnx = self.parent.shell_handle

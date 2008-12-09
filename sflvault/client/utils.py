@@ -25,7 +25,7 @@ import urlparse
 
 __all__ = ['shred', 'urlparse', 'AuthenticationError', 'VaultError',
            'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
-           'ServiceRequireError', 'ServiceExpectError']
+           'ServiceRequireError', 'ServiceExpectError', 'sflvault_escape_chr']
 
 
 
@@ -35,6 +35,10 @@ __all__ = ['shred', 'urlparse', 'AuthenticationError', 'VaultError',
 # TODO: add protocols dynamically!!
 urlparse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
                              'bzr+ssh', 'vnc', 'mysql', 'sudo', 'su'])
+
+
+# Issue: Ctrl+Alt+;
+sflvault_escape_chr = chr(30)
 
 
 def shred(var):
