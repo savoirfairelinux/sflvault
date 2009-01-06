@@ -393,8 +393,7 @@ class SFLvaultCommand(object):
         self.vault.del_service(service_id)
         
 
-    def add_machine(self):
-        """Add a machine to the Vault's database."""
+    def _machine_options(self):
         self.parser.set_usage("add-machine [options]")
         self.parser.add_option('-c', '--customer', dest="customer_id",
                                help="Customer id, as 'c#123' or '123'")
@@ -408,7 +407,11 @@ class SFLvaultCommand(object):
                                help="Machine's physical location, position in racks, address, etc..")
         self.parser.add_option('--notes', dest="notes",
                                help="Notes about the machine, references, URLs.")
+        
+    def add_machine(self):
+        """Add a machine to the Vault's database."""
 
+        self._machine_options()
         self._parse()
 
         if not self.opts.name:
