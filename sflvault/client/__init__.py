@@ -31,6 +31,7 @@ import getpass
 import sys
 import re
 import os
+from subprocess import Popen, PIPE
 
 from decorator import decorator
 from pprint import pprint
@@ -126,6 +127,41 @@ def authenticate(keep_privkey=False):
     return decorator(do_authenticate)
 
 ###
+### Différentes façons d'obtenir la passphrase
+###
+class AskPassMethods(object):
+
+    def test(self):
+        print "Test AskPassMethods"
+        sys.exit()
+
+    def program(self):
+        env_var = 'SFLVAULT_ASKPASS'
+        if env_var not in os.environ:
+            msg = "askpass 'program' method needs the program path to "
+            msg += "execute in the %s environment variable" % env_var
+            raise ValueError(msg)
+        try:
+            p = Popen(args=[os.environ[env_var]], shell=False, stdout=PIPE)
+            p.wait()
+            return p.stdout.read()
+        except OSError, e:
+            msg = "Failed to run '%s' : %s" % (os.environ[env_var], e)
+            raise ValueError(msg)
+
+    def default(self):
+        """Default function to get passphrase from user, for authentication."""
+        return getpass.getpass("Vault passphrase: ", stream=sys.stderr)
+    
+    def __init__(self, name):
+        self.getpass = self.default
+        if name is not None:
+            if hasattr(self, name):
+                self.getpass = getattr(self, name)
+
+    
+
+###
 ### On définit les fonctions qui vont traiter chaque sorte de requête.
 ###
 class SFLvaultClient(object):
@@ -141,10 +177,18 @@ class SFLvaultClient(object):
 
         When shell = True, privkey will be cached for a while.
         """
-        # The function to call upon @authenticate to get passphrase from user.
-        self.getpassfunc = self._getpass
+
         # Load configuration
         self.config_read()
+
+        # The function to call upon @authenticate to get passphrase from user.
+        if self.cfg.has_option('SFLvault', 'askpass_method'):
+            self.getpassfunc = AskPassMethods(self.cfg.get('SFLvault',
+                                                           'askpass_method')).getpass
+        else:
+            self.getpassfunc = AskPassMethods("default").getpass
+            
+
         self.shell_mode = shell
         self.authtok = ''
         self.authret = None
@@ -152,11 +196,6 @@ class SFLvaultClient(object):
         url = self.cfg.get('SFLvault', 'url')
         if url:
             self.vault = xmlrpclib.Server(url, allow_none=True).sflvault
-
-    def _getpass(self):
-        """Default function to get passphrase from user, for authentication."""
-        return getpass.getpass("Vault passphrase: ", stream=sys.stderr)
-
 
     def config_check(self):
         """Checks for ownership and modes for all paths and files, à-la SSH"""
@@ -334,7 +373,7 @@ class SFLvaultClient(object):
         if retval['error']:
             print "Error: %s" % retval['message']
 
-            if retval.has_key('childs'):
+            if 'childs' in retval:
                 print "Those services rely on services you were going "\
                       "to delete:"
                 for x in retval['childs']:
