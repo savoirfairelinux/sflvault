@@ -80,6 +80,9 @@ class SFLvaultShell(object):
         """Quit command, only available in the shell"""
         raise KeyboardInterrupt()
 
+    def exit(self):
+        """Exit command, only available in the shell"""
+        raise KeyboardInterrupt()
 
 
 class SFLvaultCommand(object):
