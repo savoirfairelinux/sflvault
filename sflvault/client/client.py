@@ -754,7 +754,7 @@ def main():
         s = SFLvaultShell()
         try:
             s._run()
-        except KeyboardInterrupt, e:
+        except (KeyboardInterrupt, EOFError), e:
             print "\nExiting."
             sys.exit()
     else:
