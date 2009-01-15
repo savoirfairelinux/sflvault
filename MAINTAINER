@@ -1,0 +1,11 @@
+Steps to perform when releasing SFLvault
+----------------------------------------
+
+* Modify setup.py and change the version number
+* Run `python setup.py develop` to regenerate the EGG-INFO stuff
+* Commit the release commit INCLUDING the Release Notes inside that commit.
+* Run `python setup.py bdist_egg upload` to send the new egg.
+* Modify the UpgradePath page with everything required to upgrade.
+* Modify the wiki's front-page to announce it
+* Tag the commit with the version number
+* Announce by other means, IRC, Freshmeat, Slashdot, etc...
