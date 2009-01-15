@@ -130,19 +130,13 @@ def authenticate(keep_privkey=False):
 ### Différentes façons d'obtenir la passphrase
 ###
 class AskPassMethods(object):
-
-    def test(self):
-        print "Test AskPassMethods"
-        sys.exit()
+    """Wrapper for askpass methods"""
+    
+    env_var = 'SFLVAULT_ASKPASS'
 
     def program(self):
-        env_var = 'SFLVAULT_ASKPASS'
-        if env_var not in os.environ:
-            msg = "askpass 'program' method needs the program path to "
-            msg += "execute in the %s environment variable" % env_var
-            raise ValueError(msg)
         try:
-            p = Popen(args=[os.environ[env_var]], shell=False, stdout=PIPE)
+            p = Popen(args=[self._program_value], shell=False, stdout=PIPE)
             p.wait()
             return p.stdout.read()
         except OSError, e:
@@ -153,11 +147,15 @@ class AskPassMethods(object):
         """Default function to get passphrase from user, for authentication."""
         return getpass.getpass("Vault passphrase: ", stream=sys.stderr)
     
-    def __init__(self, name):
+    def __init__(self):
+        # Default
         self.getpass = self.default
-        if name is not None:
-            if hasattr(self, name):
-                self.getpass = getattr(self, name)
+
+        # Use 'program' is SFLVAULT_ASKPASS env var exists
+        env_var = AskPassMethods.env_var
+        if env_var in os.environ:
+            self._program_value = os.environ[env_var]
+            self.getpass = self.program
 
     
 
@@ -182,12 +180,7 @@ class SFLvaultClient(object):
         self.config_read()
 
         # The function to call upon @authenticate to get passphrase from user.
-        if self.cfg.has_option('SFLvault', 'askpass_method'):
-            self.getpassfunc = AskPassMethods(self.cfg.get('SFLvault',
-                                                           'askpass_method')).getpass
-        else:
-            self.getpassfunc = AskPassMethods("default").getpass
-            
+        self.getpassfunc = AskPassMethods().getpass    
 
         self.shell_mode = shell
         self.authtok = ''
