@@ -48,7 +48,29 @@ class SFLvaultParserError(Exception):
     pass
 
 
+class ExitParser(Exception):
+    """Tells when the parser showed the help for a command."""
+    pass
 
+class NoExitParser(optparse.OptionParser):
+    """Simple overriding of error handling, so that no sys.exit() is being
+    called
+
+    Reference: http://bugs.python.org/issue3079
+    """
+    def exit(self, status=0, msg=None):
+        if msg:
+            sys.stderr.write(msg)
+        raise ExitParser()
+
+    def error(self, msg):
+        """error(msg : string)
+
+        Print a usage message incorporating 'msg' to stderr and exit.
+        If you override this in a subclass, it should not return -- it
+        should either exit or raise an exception.
+        """
+        self.print_usage(sys.stderr)
 
 class SFLvaultShell(object):
     def __init__(self, vault=None):
@@ -73,8 +95,12 @@ class SFLvaultShell(object):
             if len(args) and hasattr(self, args[0]):
                 getattr(self, args[0])()
             else:
-                runcmd = SFLvaultCommand(self.vault)
-                runcmd._run(args)
+                parser = NoExitParser(usage=optparse.SUPPRESS_USAGE)
+                runcmd = SFLvaultCommand(self.vault, parser)
+                try:
+                    runcmd._run(args)
+                except ExitParser, e:
+                    pass
 
     def quit(self):
         """Quit command, only available in the shell"""
@@ -88,12 +114,12 @@ class SFLvaultShell(object):
 class SFLvaultCommand(object):
     """Parse command line arguments, and call SFLvault commands
     on them."""
-    def __init__(self, vault=None):
+    def __init__(self, vault=None, parser=None):
         """Setup the SFLvaultParser object.
 
         argv - arguments from the command line
         sflvault - SFLvault object (optional)"""
-        self.parser = optparse.OptionParser(usage=optparse.SUPPRESS_USAGE)
+        self.parser = (parser or optparse.OptionParser(usage=optparse.SUPPRESS_USAGE))
         
         # Use the specified, or create a new one.
         self.vault = (vault or SFLvaultClient())
