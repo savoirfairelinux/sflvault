@@ -173,7 +173,7 @@ class ModServiceDialogDisplay(DialogDisplay):
                                  'editbx', 'editfc')]),
             
             urwid.Columns([('fixed', 15, urwid.Text('Notes ', align="right")),
-                           urwid.AttrWrap(inputs['notes'], 'editbx','editfc' )]),
+                  urwid.AttrWrap(inputs['notes'], 'editbx','editfc' )]),
             
             # Temp disabled (read above)
             #urwid.Divider(),

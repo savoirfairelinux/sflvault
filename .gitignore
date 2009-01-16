@@ -4,7 +4,7 @@
 *.pyc
 
 # Database
-vault-database.db
+sflvault.sqlite
 
 # Ignore eggs
 SFLvault_client.egg-info
