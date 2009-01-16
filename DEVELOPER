@@ -1,0 +1,4 @@
+Instructions for developers
+
+* Get a copy of a vault database (or create one with setup-app)
+  * Name it development.db
