@@ -29,7 +29,6 @@ to manage SFLvault elements (customers, machines, services)
 
 import urwid
 import urwid.raw_display
-import pdb
 
 class DialogExit(Exception):
     pass

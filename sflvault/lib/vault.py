@@ -63,29 +63,6 @@ class SFLvaultAccess(object):
         self.setup_timeout = 300
 
 
-    def put_service(self, service_id, data):
-        """Saves modified data for service_id to the database.
-
-        data should contain only the fields to be modified.
-        """
-        try:
-            s = query(Service).filter_by(id=service_id).one()
-        except exceptions.InvalidRequestError, e:
-            return vaultMsg(False, "Service not found: %s" % e.message)
-
-        if 'parent_service_id' in data:
-            s.parent_service_id = int(data['parent_service_id'])
-        if 'machine_id' in data:
-            s.machine_id = int(data['machine_id'])
-        if 'url' in data:
-            s.url = data['url']
-        if 'notes' in data:
-            s.notes = data['notes']
-
-        meta.Session.commit()
-
-        return vaultMsg(True, "Successfully saved service s#%s" % service_id)
-
     def get_service(self, service_id):
         """Get a single service's data"""
         try:
@@ -109,8 +86,8 @@ class SFLvaultAccess(object):
                'metadata': s.metadata or '',
                'notes': s.notes or ''}
 
-        return vaultMsg(True, "Here is the service", {'service': out})  
-
+        return vaultMsg(True, "Here is the service", {'service': out})
+    
 
     def put_service(self, service_id, data):
         """Put a single service's data back to the vault's database"""

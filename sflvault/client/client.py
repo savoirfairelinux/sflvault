@@ -538,7 +538,6 @@ class SFLvaultCommand(object):
         if not len(self.args):
             raise SFLvaultParserError("Required argument: service_id")
 
-        # TODO: Get the first parameter: service_id
         # TODO: check all the specified parameters in self.args and
         #       add them to the service definition, otherwise pass
         #       None values.
