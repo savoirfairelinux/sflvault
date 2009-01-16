@@ -559,6 +559,36 @@ class SFLvaultCommand(object):
             print "mod-service aborted"
 
 
+    def mod_machine(self):
+        """Modify machine informations"""
+
+        self.parser.set_usage("mod-machine [machine_id]")
+        self._parse()
+
+        if not len(self.args):
+            raise SFLvaultParserError("Required argument: machine_id")
+
+        # TODO: check all the specified parameters in self.args and
+        #       add them to the service definition, otherwise pass
+        #       None values.
+
+        # TODO: 
+
+        machine_id = self.vault.vaultId(self.args[0], 'm')
+
+        mach = self.vault.get_machine(machine_id)
+
+        from sflvault.client import ui
+        dialog = ui.ModMachineDialogDisplay(mach)
+        save, data = dialog.run()
+
+        if save:
+            print "Sending data to vault..."
+            self.vault.put_machine(machine_id, data)
+        else:
+            print "mod-machine aborted"
+
+
     def chg_service_passwd(self):
         """Change the password for a service
 

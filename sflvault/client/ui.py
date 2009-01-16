@@ -214,9 +214,85 @@ class ModServiceDialogDisplay(DialogDisplay):
             return False, None
 
 
+    def unhandled_key(self, size, k):
+        if k in ('up','page up'):
+            self.frame.set_focus('body')
+        if k in ('down','page down'):
+            self.frame.set_focus('footer')
+        if k == 'enter':
+            # pass enter to the "ok" button
+            self.frame.set_focus('footer')
+            self.buttons.set_focus(0)
+            self.view.keypress( size, k )
 
-    #SNIP: to be deleted, here for temporary reference.
-    #
+
+
+class ModMachineDialogDisplay(DialogDisplay):
+    """Modify a machine"""
+    def __init__(self, data):
+
+        # Create fields..
+        inputs = {'customer_id': urwid.Edit("", str(data['customer_id']))}
+        for x in ['ip', 'name', 'fqdn', 'location', 'notes']:
+            inputs[x] = urwid.Edit("", str(data[x])) # , wrap='clip'
+                  
+        l = [
+            urwid.Columns([('fixed', 15, urwid.Text('Customer ID ',
+                                                    align="right")),
+                  urwid.AttrWrap(inputs['customer_id'], 'editbx', 'editfc')]),
+            
+            urwid.Columns([('fixed', 15, urwid.Text('Name ', align="right")),
+                  urwid.AttrWrap(inputs['name'], 'editbx', 'editfc' )]),
+            
+            urwid.Columns([('fixed', 15, urwid.Text('IP ', align="right")),
+                  urwid.AttrWrap(inputs['ip'], 'editbx', 'editfc' )]),
+            
+            urwid.Columns([('fixed', 15, urwid.Text('FQDN ', align="right")),
+                  urwid.AttrWrap(inputs['fqdn'], 'editbx', 'editfc' )]),
+            
+            urwid.Columns([('fixed', 15, urwid.Text('Location ',
+                                                    align="right")),
+                  urwid.AttrWrap(inputs['location'], 'editbx', 'editfc' )]),
+            
+            urwid.Columns([('fixed', 15, urwid.Text('Notes ', align="right")),
+                  urwid.AttrWrap(inputs['notes'], 'editbx','editfc' )]),
+            
+
+            ]
+
+
+        walker = urwid.SimpleListWalker(l)
+        lb = urwid.ListBox( walker )
+        DialogDisplay.__init__(self, "Modify service", 22, 70, lb)
+
+        self.frame.set_focus('body')
+        
+        self.add_buttons([("OK", 1), ("Cancel", 0)])
+
+        self.data = data
+        self.inputs = inputs
+
+
+
+    def run(self):
+        """Show the dialog box, and get the results afterwards."""
+
+        exitcode, exitstring = self.main()
+
+        if exitcode:
+            data = {}
+            # prepare to save
+            t = ['customer_id', 'ip', 'name', 'fqdn', 'location', 'notes']
+            for x in t:
+                if self.inputs[x].edit_text != self.data[x]:
+                    data[x] = self.inputs[x].edit_text
+
+            return True, data
+        else:
+            # return nothing..
+            return False, None
+
+
     def unhandled_key(self, size, k):
         if k in ('up','page up'):
             self.frame.set_focus('body')

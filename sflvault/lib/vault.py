@@ -544,6 +544,53 @@ class SFLvaultAccess(object):
         return vaultMsg(True, 'Customer added', {'customer_id': nc.id})
 
 
+    def put_machine(self, machine_id, data):
+        """Put a single machine's data back to the vault"""
+        try:
+            m = query(Machine).filter_by(id=machine_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Machine not found: %s" % e.message)
+
+        if 'customer_id' in data:
+            m.customer_id = int(data['customer_id'])
+
+        for x in ['ip', 'name', 'fqdn', 'location', 'notes']:
+            if x in data:
+                m.__setattr__(x, data[x])
+        
+        #         if 'ip' in data:
+        #             m.ip = data['ip']
+        #         if 'name' in data:
+        #             m.name = data['name']
+        #         if 'fqdn' in data:
+        #             m.fqdn = data['fqdn']
+        #         if 'location' in data:
+        #             m.location = data['location']
+        #         if 'notes' in data:
+        #             m.notes = data['notes']
+
+        meta.Session.commit()
+
+        return vaultMsg(True, "Machine m#%s saved successfully" % machine_id)
+
+    def get_machine(self, machine_id):
+        """Get a single machine's data"""
+        try:
+            m = query(Machine).filter_by(id=machine_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Machine not found: %s" % e.message)
+
+
+        out = {'id': m.id,
+               'ip': m.ip or '',
+               'fqdn': m.fqdn or '',
+               'name': m.name or '',
+               'location': m.location or '',
+               'notes': m.notes or '',
+               'customer_id': m.customer_id}
+
+        return vaultMsg(True, "Here is the machine", {'machine': out})  
+
 
     def add_machine(self, customer_id, name, fqdn, ip, location, notes):
         """Add a new machine to the database"""

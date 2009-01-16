@@ -786,6 +786,25 @@ class SFLvaultClient(object):
         
 
     @authenticate(True)
+    def get_machine(self, machine_id):
+        """Get information to be edited"""
+        retval = vaultReply(self.vault.get_machine(self.authtok, machine_id),
+                            "Error fetching data for service %s" % machine_id)
+
+        return retval['machine']
+
+    @authenticate(True)
+    def put_machine(self, machine_id, data):
+        """Save the (potentially modified) machine to the Vault"""
+        retval = vaultReply(self.vault.put_machine(self.authtok, machine_id,
+                                                   data),
+                            "Error saving data to vault, aborting.")
+
+        print "Success: %s " % retval['message']
+        
+
+
+    @authenticate(True)
     def show(self, service_id, verbose=False):
         """Show informations to connect to a particular service"""
         servs = self.get_service_tree(service_id)

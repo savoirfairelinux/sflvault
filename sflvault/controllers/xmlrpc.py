@@ -186,6 +186,13 @@ class XmlrpcController(XMLRPCController):
 
         return vaultMsg(True, 'User setup complete for %s' % username)
 
+    @authenticated_user
+    def sflvault_get_machine(self, authtok, machine_id):
+        return self.vault.get_machine(machine_id)
+
+    @authenticated_user
+    def sflvault_put_machine(self, authtok, machine_id, data):
+        return self.vault.put_machine(machine_id, data)
 
     @authenticated_user
     def sflvault_get_service(self, authtok, service_id):
