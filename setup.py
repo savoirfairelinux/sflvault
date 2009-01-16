@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name='SFLvault',
-    version="0.6.10.1",
+    version="0.6.11",
     description='Networked credentials store and authentication manager',
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
