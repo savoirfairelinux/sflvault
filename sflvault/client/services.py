@@ -53,8 +53,7 @@ class ExpectClass(object):
         self.error = None
 
         # Quick references..
-        self.cnx = service_obj.shell_handle
-        timeout = service_obj.timeout
+        self.cnx = self.service.shell_handle
 
         funcs = []
         strings = []
@@ -68,6 +67,13 @@ class ExpectClass(object):
                 funcs.append(func)
                 strings.append(func.__doc__)
 
+        idx = self._expect(strings)
+
+        funcs[idx]()
+
+    def _expect(self, strings):
+        """Wrap the expect() call"""
+        timeout = self.service.timeout
 
         try:
             idx = self.cnx.expect(strings, timeout=timeout)
@@ -83,8 +89,7 @@ class ExpectClass(object):
 
         self._flush()
 
-        funcs[idx]()
-    
+        return idx
     
     def _flush(self):
         sys.stdout.write(self.cnx.before)
@@ -216,7 +221,6 @@ class ssh(ShellService):
                 'Last login'
                 print "We're in! (using shared-key?)"
 
-        class expect_login_first(expect_login):
             def are_you_sure(self):
                 "(?i)are you sure you want to continue connecting.*\? "
                 # TODO: are you always sure ??
@@ -226,10 +230,11 @@ class ssh(ShellService):
                 expect_login(self.service)
 
             def remote_host_changed(self):
-                "REMOTE HOST IDENTIFICATION HAS CHANGED!.*Offending key in (.*):(\d*)[^\d]*$"
-                ans = raw_input("Would you like SFLvault to remove that offending line and try again (yes/no)? ")
+                "REMOTE HOST IDENTIFICATION HAS CHANGED!"
 
-                if ans.lower() == 'yes':
+                ans = raw_input("Would you like SFLvault to remove that offending line and try again (yes/no)? ")
+                if ans.lower() == 'yes' or ans.lower() == 'y':
+                    idx = self._expect([r"Offending key in ([^:]+):(\d+)"])
                     cmd = 'sed -i %sd "%s"' % (self.cnx.match.group(2),
                                                self.cnx.match.group(1))
 
@@ -242,6 +247,8 @@ class ssh(ShellService):
                     raise ServiceExpectError("SFLvault removed offending key. Please try again.")
                 else:
                     raise ServiceExpectError("Remote host identification has changed. Please resolve problem.")
+
+                self._expect([pexpect.EOF])
             
 
         # Default user:
@@ -264,7 +271,7 @@ class ssh(ShellService):
 
         self.shell_handle = cnx
 
-        expect_login_first(self)
+        expect_login(self)
 
 
 
@@ -301,6 +308,7 @@ class sudo(ShellService):
 
             def failed(self):
                 'assword:'
+                self.cnx.sendintr()
                 raise ServiceExpectError("Failed to authenticate sudo://")
 
             def failed2(self):
