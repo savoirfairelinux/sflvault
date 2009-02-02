@@ -70,8 +70,29 @@ def chksum(sumval):
 
 
 #
+# Generate ElGamal keys (for users and groups)
+#
+def generate_elgamal_keypair():
+    """Return an ElGamal object with newly generated keypair"""
+    return ElGamal.generate(1536, randfunc)
+
+def elgamal_pubkey(eg):
+    """Return only the pubkey from the given ElGamal object"""
+    return (eg.p, eg.g, eg.y)
+
+def elgamal_privkey(eg):
+    """Return only the privkey from the given ElGamal object"""
+    return (eg.p, eg.x)
+
+def elgamal_bothkeys(eg):
+    """Return serializable pubkey and privkey from the given ElGamal object"""
+    return (eg.p, eg.x, eg.g, eg.y)
+
+
+#
 # Deal with ElGamal pubkey and messages serialization.
 #
+
 
 # _msg are used to store Userciphers in the database (symkey
 # encrypted for each user)
@@ -192,3 +213,9 @@ def decrypt_secret(seckey, ciphertext):
     del(a)
     del(ciphertext)
     return secret
+
+
+
+
+# Include the '_' function in the public names
+__all__ = [__name for __name in locals().keys() if not __name.startswith('_')]

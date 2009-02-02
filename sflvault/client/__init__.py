@@ -620,10 +620,10 @@ class SFLvaultClient(object):
         
         # Generate a new key:
         print "Generating new ElGamal key-pair..."
-        eg = ElGamal.generate(1536, randfunc)
+        eg = generate_elgamal_keypair()
 
         # Marshal the ElGamal key
-        pubkey = (eg.p, eg.g, eg.y)
+        pubkey = elgamal_pubkey(eg)
 
         print "You will need a passphrase to secure your private key. The"
         print "encrypted key will be stored on this machine in %s" % CONFIG_FILE
@@ -646,7 +646,7 @@ class SFLvaultClient(object):
         print "Sending request to vault..."
         # Send it to the vault, with username
         retval = vaultReply(self.vault.user_setup(username,
-                                                  serial_elgamal_pubkey(pubkey)),
+                                                serial_elgamal_pubkey(pubkey)),
                             "Setup failed")
 
         # If Vault sends a SUCCESS, save all the stuff (username, vault_url)
@@ -660,12 +660,10 @@ class SFLvaultClient(object):
         # p and x form the private key, add the public key, add g and y.
         # if encryption is required at some point.
         self.cfg.set('SFLvault', 'key',
-                     encrypt_privkey(serial_elgamal_privkey([eg.p, eg.x, \
-                                                             eg.g, eg.y]),
-                                     privpass))
+                   encrypt_privkey(serial_elgamal_privkey(elgamal_bothkeys(eg)),
+                                   privpass))
         privpass = randfunc(len(privpass))
-        eg.p = randfunc(32)
-        eg.x = randfunc(32)
+
         del(eg)
         del(privpass)
 
