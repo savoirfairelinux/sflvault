@@ -77,7 +77,7 @@ def authenticate(keep_privkey=False):
             try:
                 privkey_enc = self.cfg.get('SFLvault', 'key')
             except:
-                raise VaultConfigurationError("No private key in local config, init with: setup username vault-url")
+                raise VaultConfigurationError("No private key in local config, init with: user-setup username vault-url")
         
             try:
                 privpass = self.getpassfunc()
@@ -342,10 +342,10 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def add_user(self, username, admin=False):
+    def user_add(self, username, admin=False):
         # TODO: add support for --admin, to give admin privileges
 
-        retval = vaultReply(self.vault.adduser(self.authtok, username, admin),
+        retval = vaultReply(self.vault.user_add(self.authtok, username, admin),
                             "Error adding user")
 
         print "Success: %s" % retval['message']
@@ -353,15 +353,15 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def del_user(self, username):
-        retval = vaultReply(self.vault.deluser(self.authtok, username),
+    def user_del(self, username):
+        retval = vaultReply(self.vault.user_del(self.authtok, username),
                             "Error removing user")
 
         print "Success: %s" % retval['message']
 
 
     def _services_returned(self, retval):
-        """Helper function for del_customer, del_machine and del_service."""
+        """Helper function for customer_del, machine_del and service_del."""
         
         if retval['error']:
             print "Error: %s" % retval['message']
@@ -378,30 +378,30 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def del_customer(self, customer_id):
-        retval = self.vault.delcustomer(self.authtok, customer_id)
+    def customer_del(self, customer_id):
+        retval = self.vault.customer_del(self.authtok, customer_id)
 
         self._services_returned(retval)
         
 
     @authenticate()
-    def del_machine(self, machine_id):
-        retval = self.vault.delmachine(self.authtok, machine_id)
+    def machine_del(self, machine_id):
+        retval = self.vault.machine_del(self.authtok, machine_id)
 
         self._services_returned(retval)
         
 
     @authenticate()
-    def del_service(self, service_id):
-        retval = self.vault.delservice(self.authtok, service_id)
+    def service_del(self, service_id):
+        retval = self.vault.service_del(self.authtok, service_id)
 
         self._services_returned(retval)
 
 
     @authenticate()
-    def add_customer(self, customer_name):
-        retval = vaultReply(self.vault.addcustomer(self.authtok,
-                                                   customer_name),
+    def customer_add(self, customer_name):
+        retval = vaultReply(self.vault.customer_add(self.authtok,
+                                                    customer_name),
                             "Error adding customer")
 
         print "Success: %s" % retval['message']
@@ -409,21 +409,21 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def add_machine(self, customer_id, name, fqdn, ip, location, notes):
+    def machine_add(self, customer_id, name, fqdn, ip, location, notes):
         """Add a machine to the database."""
         # customer_id REQUIRED
-        retval = vaultReply(self.vault.addmachine(self.authtok,
-                                                  int(customer_id),
-                                                  name or '', fqdn or '',
-                                                  ip or '', location or '',
-                                                  notes or ''),
+        retval = vaultReply(self.vault.machine_add(self.authtok,
+                                                   int(customer_id),
+                                                   name or '', fqdn or '',
+                                                   ip or '', location or '',
+                                                   notes or ''),
                             "Error adding machine")
         print "Success: %s" % retval['message']
         print "New machine ID: m#%d" % int(retval['machine_id'])
 
 
     @authenticate()
-    def add_service(self, machine_id, parent_service_id, url, group_ids, secret,
+    def service_add(self, machine_id, parent_service_id, url, group_ids, secret,
                     notes):
         """Add a service to the Vault's database.
 
@@ -440,7 +440,7 @@ class SFLvaultClient(object):
 
         # TODO: accept group_id as group_ids, accept list and send list.
 
-        retval = vaultReply(self.vault.addservice(self.authtok,
+        retval = vaultReply(self.vault.service_add(self.authtok,
                                                   int(machine_id),
                                                   int(parent_service_id),
                                                   url,
@@ -453,9 +453,9 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def chg_service_passwd(self, service_id, newsecret):
+    def service_passwd(self, service_id, newsecret):
         """Updates the password on the Vault for a certain service"""
-        retval = vaultReply(self.vault.chgservicepasswd(self.authtok,
+        retval = vaultReply(self.vault.service_passwd(self.authtok,
                                                         service_id,
                                                         newsecret),
                             "Error changing password for "\
@@ -608,7 +608,7 @@ class SFLvaultClient(object):
 
                             
     
-    def setup(self, username, vault_url):
+    def user_setup(self, username, vault_url):
         """Sets up the local configuration to communicate with the Vault.
 
         username  - the name with which an admin prepared (with add-user)
@@ -645,8 +645,8 @@ class SFLvaultClient(object):
         
         print "Sending request to vault..."
         # Send it to the vault, with username
-        retval = vaultReply(self.vault.setup(username,
-                                             serial_elgamal_pubkey(pubkey)),
+        retval = vaultReply(self.vault.user_setup(username,
+                                                  serial_elgamal_pubkey(pubkey)),
                             "Setup failed")
 
         # If Vault sends a SUCCESS, save all the stuff (username, vault_url)
@@ -724,9 +724,9 @@ class SFLvaultClient(object):
                 print "%s" % (spc1) + '-' * (80 - len(spc1))
             
     @authenticate(True)
-    def get_service(self, service_id):
+    def service_get(self, service_id):
         """Get information to be edited"""
-        retval = vaultReply(self.vault.get_service(self.authtok, service_id),
+        retval = vaultReply(self.vault.service_get(self.authtok, service_id),
                             "Error fetching data for service %s" % service_id)
 
         serv = retval['service']
@@ -748,9 +748,9 @@ class SFLvaultClient(object):
 
 
     @authenticate(True)
-    def get_service_tree(self, service_id):
+    def service_get_tree(self, service_id):
         """Get information to be edited"""
-        retval = vaultReply(self.vault.get_service_tree(self.authtok,
+        retval = vaultReply(self.vault.service_get_tree(self.authtok,
                                                         service_id),
                 "Error fetching data-tree for service %s" % service_id)
 
@@ -776,9 +776,9 @@ class SFLvaultClient(object):
 
 
     @authenticate(True)
-    def put_service(self, service_id, data):
+    def service_put(self, service_id, data):
         """Save the (potentially modified) service to the Vault"""
-        retval = vaultReply(self.vault.put_service(self.authtok, service_id,
+        retval = vaultReply(self.vault.service_put(self.authtok, service_id,
                                                    data),
                             "Error saving data to vault, aborting.")
 
@@ -786,17 +786,17 @@ class SFLvaultClient(object):
         
 
     @authenticate(True)
-    def get_machine(self, machine_id):
+    def machine_get(self, machine_id):
         """Get information to be edited"""
-        retval = vaultReply(self.vault.get_machine(self.authtok, machine_id),
+        retval = vaultReply(self.vault.machine_get(self.authtok, machine_id),
                             "Error fetching data for service %s" % machine_id)
 
         return retval['machine']
 
     @authenticate(True)
-    def put_machine(self, machine_id, data):
+    def machine_put(self, machine_id, data):
         """Save the (potentially modified) machine to the Vault"""
-        retval = vaultReply(self.vault.put_machine(self.authtok, machine_id,
+        retval = vaultReply(self.vault.machine_put(self.authtok, machine_id,
                                                    data),
                             "Error saving data to vault, aborting.")
 
@@ -848,14 +848,14 @@ class SFLvaultClient(object):
         connection.connect()
 
     @authenticate()
-    def list_users(self):
+    def user_list(self):
         # Receive: [{'id': x.id, 'username': x.username,
         #            'created_time': x.created_time,
         #            'is_admin': x.is_admin,
         #            'setup_expired': x.setup_expired()}
         #            {}, {}, ...]
         #    
-        retval = vaultReply(self.vault.listusers(self.authtok),
+        retval = vaultReply(self.vault.user_list(self.authtok),
                             "Error listing users")
 
         print "User list (with creation date):"
@@ -885,9 +885,9 @@ class SFLvaultClient(object):
         
 
     @authenticate()
-    def add_group(self, group_name):
+    def group_add(self, group_name):
         """Add a named group to the Vault. Return the group id."""
-        retval = vaultReply(self.vault.addgroup(self.authtok, group_name),
+        retval = vaultReply(self.vault.group_add(self.authtok, group_name),
                             "Error adding group")
 
         print "Success: %s " % retval['message']
@@ -895,9 +895,9 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def list_groups(self):
+    def group_list(self):
         """Simply list the available groups"""
-        retval = vaultReply(self.vault.listgroups(self.authtok),
+        retval = vaultReply(self.vault.group_list(self.authtok),
                             "Error listing groups")
 
         print "Groups:"
@@ -907,8 +907,8 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def list_machines(self, verbose=False, customer_id=None):
-        retval = vaultReply(self.vault.listmachines(self.authtok, customer_id),
+    def machine_list(self, verbose=False, customer_id=None):
+        retval = vaultReply(self.vault.machine_list(self.authtok, customer_id),
                             "Error listing machines")
 
         print "Machines list:"
@@ -926,8 +926,8 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def list_customers(self, customer_id=None):
-        retval = vaultReply(self.vault.listcustomers(self.authtok),
+    def customer_list(self, customer_id=None):
+        retval = vaultReply(self.vault.customer_list(self.authtok),
                             "Error listing customers")
 
         # Receive a list: [{'id': '%d',

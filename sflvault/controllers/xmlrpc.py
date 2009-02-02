@@ -154,7 +154,7 @@ class XmlrpcController(XMLRPCController):
             return vaultMsg(True, 'Authentication successful', {'authtok': newtok})
 
 
-    def sflvault_setup(self, username, pubkey):
+    def sflvault_user_setup(self, username, pubkey):
 
         # First, remove ALL users that have waiting_setup expired, where
         # waiting_setup isn't NULL.
@@ -187,27 +187,27 @@ class XmlrpcController(XMLRPCController):
         return vaultMsg(True, 'User setup complete for %s' % username)
 
     @authenticated_user
-    def sflvault_get_machine(self, authtok, machine_id):
-        return self.vault.get_machine(machine_id)
+    def sflvault_machine_get(self, authtok, machine_id):
+        return self.vault.machine_get(machine_id)
 
     @authenticated_user
-    def sflvault_put_machine(self, authtok, machine_id, data):
-        return self.vault.put_machine(machine_id, data)
+    def sflvault_machine_put(self, authtok, machine_id, data):
+        return self.vault.machine_put(machine_id, data)
 
     @authenticated_user
-    def sflvault_get_service(self, authtok, service_id):
+    def sflvault_service_get(self, authtok, service_id):
         self.vault.myself_id = self.sess['user_id']
-        return self.vault.get_service(service_id)
+        return self.vault.service_get(service_id)
 
     @authenticated_user
-    def sflvault_get_service_tree(self, authtok, service_id):
+    def sflvault_service_get_tree(self, authtok, service_id):
         self.vault.myself_id = self.sess['user_id']
-        return self.vault.get_service_tree(service_id)
+        return self.vault.service_get(service_id)
 
     @authenticated_user
-    def sflvault_put_service(self, authtok, service_id, data):
+    def sflvault_service_put(self, authtok, service_id, data):
         self.vault.myself_id = self.sess['user_id']
-        return self.vault.put_service(service_id, data)
+        return self.vault.service_put(service_id, data)
 
     @authenticated_user
     def sflvault_show(self, authtok, service_id):
@@ -219,8 +219,8 @@ class XmlrpcController(XMLRPCController):
         return self.vault.search(search_query, verbose)
 
     @authenticated_admin
-    def sflvault_adduser(self, authtok, username, is_admin):
-        return self.vault.add_user(username, is_admin)
+    def sflvault_user_add(self, authtok, username, is_admin):
+        return self.vault.user_add(username, is_admin)
 
     @authenticated_admin
     def sflvault_grant(self, authtok, user, group_ids):
@@ -240,60 +240,60 @@ class XmlrpcController(XMLRPCController):
         return self.vault.analyze(user)
 
     @authenticated_user
-    def sflvault_addmachine(self, authtok, customer_id, name, fqdn, ip,
-                            location, notes):
-        return self.vault.add_machine(customer_id, name, fqdn, ip,
+    def sflvault_machine_add(self, authtok, customer_id, name, fqdn, ip,
+                             location, notes):
+        return self.vault.machine_add(customer_id, name, fqdn, ip,
                                       location, notes)
 
     @authenticated_user
-    def sflvault_addservice(self, authtok, machine_id, parent_service_id, url,
-                            group_ids, secret, notes):
+    def sflvault_service_add(self, authtok, machine_id, parent_service_id, url,
+                             group_ids, secret, notes):
         self.vault.myself_id = self.sess['user_id']
-        return self.vault.add_service(machine_id, parent_service_id, url,
+        return self.vault.service_add(machine_id, parent_service_id, url,
                                       group_ids, secret, notes)
         
     @authenticated_user
-    def sflvault_addcustomer(self, authtok, customer_name):
+    def sflvault_customer_add(self, authtok, customer_name):
         self.vault.myself_username = self.sess['username']
-        return self.vault.add_customer(customer_name)
+        return self.vault.customer_add(customer_name)
 
     @authenticated_admin
-    def sflvault_deluser(self, authtok, user):
-        return self.vault.del_user(user)
+    def sflvault_user_del(self, authtok, user):
+        return self.vault.user_del(user)
 
     @authenticated_admin
-    def sflvault_delcustomer(self, authtok, customer_id):
-        return self.vault.del_customer(customer_id)
+    def sflvault_customer_del(self, authtok, customer_id):
+        return self.vault.customer_del(customer_id)
 
     @authenticated_admin
-    def sflvault_delmachine(self, authtok, machine_id):
-        return self.vault.del_machine(machine_id)
+    def sflvault_machine_del(self, authtok, machine_id):
+        return self.vault.machine_del(machine_id)
 
     @authenticated_admin
-    def sflvault_delservice(self, authtok, service_id):
-        return self.vault.del_service(service_id)
+    def sflvault_service_del(self, authtok, service_id):
+        return self.vault.service_del(service_id)
 
     @authenticated_user
-    def sflvault_listcustomers(self, authtok):
-        return self.vault.list_customers()
+    def sflvault_customer_list(self, authtok):
+        return self.vault.customer_list()
 
     @authenticated_admin
-    def sflvault_addgroup(self, authtok, group_name):
-        return self.vault.add_group(group_name)
+    def sflvault_group_add(self, authtok, group_name):
+        return self.vault.group_add(group_name)
 
     @authenticated_user
-    def sflvault_listgroups(self, authtok):
-        return self.vault.list_groups()
+    def sflvault_group_list(self, authtok):
+        return self.vault.group_list()
 
     @authenticated_user
-    def sflvault_listmachines(self, authtok, customer_id=None):
-        return self.vault.list_machines(customer_id)
+    def sflvault_machine_list(self, authtok, customer_id=None):
+        return self.vault.machine_list(customer_id)
 
     @authenticated_user
-    def sflvault_listusers(self, authtok):
-        return self.vault.list_users()
+    def sflvault_user_list(self, authtok):
+        return self.vault.user_list()
 
     @authenticated_user
-    def sflvault_chgservicepasswd(self, authtok, service_id, newsecret):
+    def sflvault_service_passwd(self, authtok, service_id, newsecret):
         self.vault.myself_id = self.sess['user_id']        
-        return self.vault.chg_service_passwd(service_id, newsecret)
+        return self.vault.service_passwd(service_id, newsecret)

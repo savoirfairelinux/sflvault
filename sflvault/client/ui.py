@@ -141,8 +141,8 @@ class DialogDisplay(object):
 
 
 
-class ModServiceDialogDisplay(DialogDisplay):
-    """Modify a service"""
+class ServiceEditDialogDisplay(DialogDisplay):
+    """Edit a service"""
     def __init__(self, data):
         # Temporarily disabled. We'll look into editing right here the groups
         # at anothe moment. We must be able to edit services right now.
@@ -184,7 +184,7 @@ class ModServiceDialogDisplay(DialogDisplay):
 
         walker = urwid.SimpleListWalker(l)
         lb = urwid.ListBox( walker )
-        DialogDisplay.__init__(self, "Modify service", 22, 70, lb)
+        DialogDisplay.__init__(self, "Edit service", 22, 70, lb)
 
         self.frame.set_focus('body')
         
@@ -227,8 +227,8 @@ class ModServiceDialogDisplay(DialogDisplay):
 
 
 
-class ModMachineDialogDisplay(DialogDisplay):
-    """Modify a machine"""
+class MachineEditDialogDisplay(DialogDisplay):
+    """Edit a machine"""
     def __init__(self, data):
 
         # Create fields..
@@ -263,7 +263,7 @@ class ModMachineDialogDisplay(DialogDisplay):
 
         walker = urwid.SimpleListWalker(l)
         lb = urwid.ListBox( walker )
-        DialogDisplay.__init__(self, "Modify service", 22, 70, lb)
+        DialogDisplay.__init__(self, "Edit machine", 22, 70, lb)
 
         self.frame.set_focus('body')
         

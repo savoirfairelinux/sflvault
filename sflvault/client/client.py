@@ -246,9 +246,9 @@ class SFLvaultCommand(object):
         return
             
 
-    def add_user(self):
+    def user_add(self):
         """Add a user to the Vault."""
-        self.parser.set_usage("add-user [options] username")
+        self.parser.set_usage("user-add [options] username")
         self.parser.add_option('-a', '--admin', dest="is_admin",
                                action="store_true", default=False,
                                help="Give admin privileges to the added user")
@@ -261,7 +261,7 @@ class SFLvaultCommand(object):
         username = self.args[0]
         admin = self.opts.is_admin
 
-        self.vault.add_user(username, admin)
+        self.vault.user_add(username, admin)
 
     def analyze(self):
         """Analyze user's ciphers state. Check for over-grants and under-grants
@@ -317,9 +317,9 @@ class SFLvaultCommand(object):
         retval = self.vault.revoke(username, groups)
 
 
-    def add_customer(self):
+    def customer_add(self):
         """Add a new customer to the Vault's database."""
-        self.parser.set_usage('add-customer "customer name"')
+        self.parser.set_usage('customer-add "customer name"')
         self._parse()
         
         if (len(self.args) != 1):
@@ -327,12 +327,12 @@ class SFLvaultCommand(object):
 
         customer_name = self.args[0]
 
-        self.vault.add_customer(customer_name)
+        self.vault.customer_add(customer_name)
 
 
-    def del_user(self):
+    def user_del(self):
         """Delete an existing user."""
-        self.parser.set_usage("del-user username")
+        self.parser.set_usage("user-del username")
         self._parse()
 
         if (len(self.args) != 1):
@@ -340,16 +340,16 @@ class SFLvaultCommand(object):
 
         username = self.args[0]
 
-        self.vault.del_user(username)
+        self.vault.user_del(username)
 
 
-    def del_customer(self):
+    def customer_del(self):
         """Delete an existing customer, it's machines and all services.
         Make sure you have detached all services' childs before removing a
         customer with machines which has services that are parents to other
         services."""
         
-        self.parser.set_usage("del-customer customer_id")
+        self.parser.set_usage("customer-del customer_id")
         self._parse()
 
         # TODO someday: DRY
@@ -358,15 +358,15 @@ class SFLvaultCommand(object):
 
         customer_id = self.vault.vaultId(self.args[0], 'c')
 
-        self.vault.del_customer(customer_id)
+        self.vault.customer_del(customer_id)
 
 
-    def del_machine(self):
+    def machine_del(self):
         """Delete an existing machine, including all services. Make sure
         you have detached all services' childs before removing a machine
         which has services that are parents to other services."""
         
-        self.parser.set_usage("del-machine machine_id")
+        self.parser.set_usage("machine-del machine_id")
         self._parse()
 
         # TODO someday: DRY
@@ -375,13 +375,13 @@ class SFLvaultCommand(object):
 
         machine_id = self.vault.vaultId(self.args[0], 'm')
 
-        self.vault.del_machine(machine_id)
+        self.vault.machine_del(machine_id)
 
 
-    def del_service(self):
+    def service_del(self):
         """Delete an existing service. Make sure you have detached all
         childs before removing a parent service."""
-        self.parser.set_usage("del-service service_id")
+        self.parser.set_usage("service-del service_id")
         self._parse()
 
         # TODO someday: DRY
@@ -390,11 +390,11 @@ class SFLvaultCommand(object):
 
         service_id = self.vault.vaultId(self.args[0], 's')
 
-        self.vault.del_service(service_id)
+        self.vault.service_del(service_id)
         
 
     def _machine_options(self):
-        self.parser.set_usage("add-machine [options]")
+        self.parser.set_usage("machine-add [options]")
         self.parser.add_option('-c', '--customer', dest="customer_id",
                                help="Customer id, as 'c#123' or '123'")
         self.parser.add_option('-n', '--name', dest="name",
@@ -408,7 +408,7 @@ class SFLvaultCommand(object):
         self.parser.add_option('--notes', dest="notes",
                                help="Notes about the machine, references, URLs.")
         
-    def add_machine(self):
+    def machine_add(self):
         """Add a machine to the Vault's database."""
 
         self._machine_options()
@@ -424,12 +424,12 @@ class SFLvaultCommand(object):
 
         o = self.opts
         customer_id = self.vault.vaultId(o.customer_id, 'c')
-        self.vault.add_machine(customer_id, o.name, o.fqdn,
-                              o.ip, o.location, o.notes)
+        self.vault.machine_add(customer_id, o.name, o.fqdn,
+                               o.ip, o.location, o.notes)
 
 
     def _service_options(self):
-        """Add options for calls to `add_service` and `mod_service`"""
+        """Add options for calls to `service-add` and `service-edit`"""
         
         self.parser.add_option('-m', '--machine', dest="machine_id",
                                help="Attach Service to Machine #, as "\
@@ -445,7 +445,7 @@ class SFLvaultCommand(object):
         # TODO: support multiple groups (add service in multiple groups)
         self.parser.add_option('-g', '--group', dest="group_id", default='',
                                help="Access group_id for this service, as "\
-                               "'g#123' or '123'. Use list-groups to view "\
+                               "'g#123' or '123'. Use group-list to view "\
                                "complete list.")
         self.parser.add_option('--notes', dest="notes",
                                help="Notes about the service, references, "\
@@ -475,7 +475,7 @@ class SFLvaultCommand(object):
         return url
 
 
-    def add_service(self):
+    def service_add(self):
         """Add a service to a particular machine in the Vault's database.
 
         The secret/password/authentication key will be asked in the
@@ -524,15 +524,15 @@ class SFLvaultCommand(object):
         if o.group_id:
             group_id = self.vault.vaultId(o.group_id, 'g')
             
-        self.vault.add_service(machine_id, parent_id, o.url, group_id, secret,
+        self.vault.service_add(machine_id, parent_id, o.url, group_id, secret,
                                o.notes)
         
 
 
-    def mod_service(self):
+    def service_edit(self):
         """Modify service informations"""
 
-        self.parser.set_usage("mod-service [service_id]")
+        self.parser.set_usage("service-edit [service_id]")
         self._parse()
 
         if not len(self.args):
@@ -546,23 +546,23 @@ class SFLvaultCommand(object):
 
         service_id = self.vault.vaultId(self.args[0], 's')
 
-        serv = self.vault.get_service(service_id)
+        serv = self.vault.service_get(service_id)
 
         from sflvault.client import ui
-        dialog = ui.ModServiceDialogDisplay(serv)
+        dialog = ui.ServiceEditDialogDisplay(serv)
         save, data = dialog.run()
 
         if save:
             print "Sending data to vault..."
-            self.vault.put_service(service_id, data)
+            self.vault.service_put(service_id, data)
         else:
-            print "mod-service aborted"
+            print "service-edit aborted"
 
 
-    def mod_machine(self):
+    def machine_edit(self):
         """Modify machine informations"""
 
-        self.parser.set_usage("mod-machine [machine_id]")
+        self.parser.set_usage("machine-edit [machine_id]")
         self._parse()
 
         if not len(self.args):
@@ -576,26 +576,26 @@ class SFLvaultCommand(object):
 
         machine_id = self.vault.vaultId(self.args[0], 'm')
 
-        mach = self.vault.get_machine(machine_id)
+        mach = self.vault.machine_get(machine_id)
 
         from sflvault.client import ui
-        dialog = ui.ModMachineDialogDisplay(mach)
+        dialog = ui.MachineEditDialogDisplay(mach)
         save, data = dialog.run()
 
         if save:
             print "Sending data to vault..."
-            self.vault.put_machine(machine_id, data)
+            self.vault.machine_put(machine_id, data)
         else:
             print "mod-machine aborted"
 
 
-    def chg_service_passwd(self):
+    def service_passwd(self):
         """Change the password for a service
 
         Do not specify password on command line, it will be asked on the
         next line.
         """
-        self.parser.set_usage("chg-service-passwd [service_id]")
+        self.parser.set_usage("service-passwd [service_id]")
         self._parse()
 
         if not len(self.args):
@@ -603,7 +603,7 @@ class SFLvaultCommand(object):
 
         newsecret = raw_input("Enter new service password: ")
 
-        self.vault.chg_service_passwd(self.args[0], newsecret)
+        self.vault.service_passwd(self.args[0], newsecret)
 
 
     def alias(self):
@@ -654,7 +654,7 @@ class SFLvaultCommand(object):
             raise SFLvaultParserError("Invalid number of parameters")
 
 
-    def list_customers(self):
+    def customer_list(self):
         """List existing customers.
 
         This option takes no argument, it just lists customers with their IDs."""
@@ -663,9 +663,9 @@ class SFLvaultCommand(object):
         if len(self.args):
             raise SFLvaultParserError('Invalid number of arguments')
 
-        self.vault.list_customers()
+        self.vault.customer_list()
 
-    def list_users(self):
+    def user_list(self):
         """List existing users.
 
         This option takes no argument, it lists the current users and their
@@ -675,9 +675,9 @@ class SFLvaultCommand(object):
         if len(self.args):
             raise SFLvaultParserError("Invalid number of arguments")
 
-        self.vault.list_users()
+        self.vault.user_list()
 
-    def add_group(self):
+    def group_add(self):
         """Add a group to the Vault
 
         This command accepts a group name (as string) as first and only
@@ -688,20 +688,20 @@ class SFLvaultCommand(object):
         if len(self.args) != 1:
             raise SFLvaultParserError("Group name (as string) required")
 
-        self.vault.add_group(self.args[0])
+        self.vault.group_add(self.args[0])
 
 
-    def list_groups(self):
+    def group_list(self):
         """List existing groups."""
         self._parse()
 
         if len(self.args):
             raise SFLvaultParserError("Invalid number of arguments")
 
-        self.vault.list_groups()
+        self.vault.group_list()
 
 
-    def list_machines(self):
+    def machine_list(self):
         """List existing machines.
 
         This command will list all machines in the Vault's database."""
@@ -721,15 +721,15 @@ class SFLvaultCommand(object):
         if len(self.args):
             raise SFLvaultParserError("Invalid number of arguments")
 
-        self.vault.list_machines(self.opts.verbose, customer_id)
+        self.vault.machine_list(self.opts.verbose, customer_id)
         
 
-    def setup(self):
+    def user_setup(self):
         """Setup a new user on the vault.
 
-        Call this after an admin has called `add-user` on the Vault.
+        Call this after an admin has called `user-add` on the Vault.
         
-        username  - the username used in the `add-user` call.
+        username  - the username used in the `user-add` call.
         vault_url - the URL (http://example.org:port/vault/rpc) to the
                     Vault"""
         
@@ -742,7 +742,7 @@ class SFLvaultCommand(object):
         username = self.args[0]
         url      = self.args[1]
 
-        self.vault.setup(username, url)
+        self.vault.user_setup(username, url)
 
     def show(self):
         """Show informations to connect to a particular service.

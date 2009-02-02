@@ -63,7 +63,7 @@ class SFLvaultAccess(object):
         self.setup_timeout = 300
 
 
-    def get_service(self, service_id):
+    def service_get(self, service_id):
         """Get a single service's data"""
         try:
             s = query(Service).filter_by(id=service_id).one()
@@ -89,7 +89,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Here is the service", {'service': out})
     
 
-    def put_service(self, service_id, data):
+    def service_put(self, service_id, data):
         """Put a single service's data back to the vault's database"""
 
         try:
@@ -119,7 +119,7 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, "Service s#%s saved successfully" % service_id)
 
-    def get_service_tree(self, service_id):
+    def service_get_tree(self, service_id):
         """Get a service tree, starting with service_id"""
         
         try:
@@ -164,7 +164,7 @@ class SFLvaultAccess(object):
 
         We need self.myself_id to be set for this function.
         """
-        return self.get_service_tree(service_id)
+        return self.service_get_tree(service_id)
 
 
     def search(self, search_query, verbose=False):
@@ -489,7 +489,7 @@ class SFLvaultAccess(object):
                         report)
 
 
-    def add_user(self, username, is_admin):
+    def user_add(self, username, is_admin):
 
         usr = query(User).filter_by(username=username).first()
 
@@ -520,13 +520,13 @@ class SFLvaultAccess(object):
         
         meta.Session.commit()
 
-        return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "setup" command' % \
+        return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "user-setup" command' % \
                         ('Admin user' if is_admin else 'User',
                          msg, int(self.setup_timeout)), {'user_id': usr.id})
         
 
 
-    def add_customer(self, customer_name):
+    def customer_add(self, customer_name):
         """Add a new customer to the database"""
         nc = Customer()
         nc.name = customer_name
@@ -544,7 +544,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, 'Customer added', {'customer_id': nc.id})
 
 
-    def put_machine(self, machine_id, data):
+    def machine_put(self, machine_id, data):
         """Put a single machine's data back to the vault"""
         try:
             m = query(Machine).filter_by(id=machine_id).one()
@@ -573,7 +573,7 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, "Machine m#%s saved successfully" % machine_id)
 
-    def get_machine(self, machine_id):
+    def machine_get(self, machine_id):
         """Get a single machine's data"""
         try:
             m = query(Machine).filter_by(id=machine_id).one()
@@ -592,7 +592,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Here is the machine", {'machine': out})  
 
 
-    def add_machine(self, customer_id, name, fqdn, ip, location, notes):
+    def machine_add(self, customer_id, name, fqdn, ip, location, notes):
         """Add a new machine to the database"""
         
         nm = Machine()
@@ -613,7 +613,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Machine added.", {'machine_id': nm.id})
 
 
-    def add_service(self, machine_id, parent_service_id, url,
+    def service_add(self, machine_id, parent_service_id, url,
                     group_ids, secret, notes):
         # Get groups
         try:
@@ -655,7 +655,7 @@ class SFLvaultAccess(object):
                                                  'encrypted_for': userlist})
 
 
-    def del_user(self, user):
+    def user_del(self, user):
         """Delete a user from database"""
         # Get user
         try:
@@ -674,7 +674,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "User successfully deleted")
 
 
-    def del_customer(self, customer_id):
+    def customer_del(self, customer_id):
         """Delete a customer from database, bringing along all it's machines
         and services
         """
@@ -733,7 +733,7 @@ class SFLvaultAccess(object):
                         'Deleted customer c#%s successfully' % customer_id)
 
 
-    def del_machine(self, machine_id):
+    def machine_del(self, machine_id):
         """Delete a machine from database, bringing on all child services."""
         
         # Get machine
@@ -784,7 +784,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, 'Deleted machine m#%s successfully' % machine_id)
 
 
-    def del_service(self, service_id):
+    def service_del(self, service_id):
         """Delete a service, making sure no other child remains attached."""
         # Integerize
         service_id = int(service_id)
@@ -821,7 +821,7 @@ class SFLvaultAccess(object):
 
 
 
-    def list_customers(self):
+    def customer_list(self):
         lst = query(Customer).all()
 
         out = []
@@ -832,7 +832,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, 'Here is the customer list', {'list': out})
 
 
-    def add_group(self, group_name):
+    def group_add(self, group_name):
         """Add a new group the database. Nothing will be added to it
         by default"""
         
@@ -845,7 +845,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Added group '%s'" % ng.name,
                         {'name': ng.name, 'group_id': int(ng.id)})
 
-    def list_groups(self):
+    def group_list(self):
         """Return a simple list of the available groups"""
         # TODO: implement hidden groups, you shouldn't show those groups,
         #       unless you're admin of that group.
@@ -858,7 +858,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, 'Here is the list of groups', {'list': out})
 
 
-    def list_machines(self, customer_id=None):
+    def machine_list(self, customer_id=None):
         """Return a simple list of the machines"""
         
         sel = sql.join(Machine, Customer) \
@@ -883,7 +883,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Here is the machines list", {'list': out})
     
 
-    def list_users(self):
+    def user_list(self):
         """Return a simple list of the users"""
         lst = query(User).all()
 
@@ -961,7 +961,7 @@ class SFLvaultAccess(object):
         return userlist
         
 
-    def chg_service_passwd(self, service_id, newsecret):
+    def service_passwd(self, service_id, newsecret):
         """Change the passwd for a given service"""
         # number please
         service_id = int(service_id)
