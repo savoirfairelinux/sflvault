@@ -263,59 +263,6 @@ class SFLvaultCommand(object):
 
         self.vault.user_add(username, admin)
 
-    def analyze(self):
-        """Analyze user's ciphers state. Check for over-grants and under-grants
-        """
-        self.parser.set_usage("analyze username|user_id")
-
-        self._parse()
-
-        if len(self.args) != 1:
-            raise SFLvaultParserError("Invalid number of arguments, 'user' required.")
-
-        user = self.args[0]
-        retval = self.vault.analyze(user)
-
-
-    def grant(self):
-        """Grant group permissions to user.
-
-        Admin privileges required. Use list-groups to have a list."""
-        self.parser.set_usage('grant username [options]')
-        self.parser.add_option('-g', '--group', dest="groups",
-                               action="append", type="string",
-                               help="Group membership to grant to user")
-        self._parse()
-
-        if (len(self.args) != 1):
-            raise SFLvaultParserError("Invalid number of arguments, 'username' required.")
-
-        username = self.args[0]
-        groups = [int(x) for x in self.opts.groups]
-
-        # Calls grant and grandupdate on the Vault
-        retval = self.vault.grant(username, groups)
-
-
-    def revoke(self):
-        """Revoke group permissions to user.
-
-        Admin privileges required. Use list-groups to have a list."""
-        self.parser.set_usage('revoke username [options]')
-        self.parser.add_option('-g', '--group', dest="groups",
-                               action="append", type="string",
-                               help="Group membership to grant to user")
-        self._parse()
-
-        if (len(self.args) != 1):
-            raise SFLvaultParserError("Invalid number of arguments, 'username' required.")
-
-        username = self.args[0]
-        groups = [int(x) for x in self.opts.groups]
-
-        # Calls revoke
-        retval = self.vault.revoke(username, groups)
-
 
     def customer_add(self):
         """Add a new customer to the Vault's database."""

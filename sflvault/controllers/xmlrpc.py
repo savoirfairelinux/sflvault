@@ -222,23 +222,6 @@ class XmlrpcController(XMLRPCController):
     def sflvault_user_add(self, authtok, username, is_admin):
         return self.vault.user_add(username, is_admin)
 
-    @authenticated_admin
-    def sflvault_grant(self, authtok, user, group_ids):
-        self.vault.myself_id = self.sess['user_id']
-        return self.vault.grant(user, group_ids)
-
-    @authenticated_admin
-    def sflvault_grantupdate(self, authtok, user, ciphers):
-        return self.vault.grant_update(user, ciphers)
-
-    @authenticated_admin
-    def sflvault_revoke(self, authtok, user, group_ids):
-        return self.vault.revoke(user, group_ids)
-        
-    @authenticated_admin
-    def sflvault_analyze(self, authtok, user):
-        return self.vault.analyze(user)
-
     @authenticated_user
     def sflvault_machine_add(self, authtok, customer_id, name, fqdn, ip,
                              location, notes):

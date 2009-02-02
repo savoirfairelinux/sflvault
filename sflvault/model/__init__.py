@@ -51,7 +51,7 @@ def init_model(engine):
 users_table = Table("users", metadata,
                     Column('id', types.Integer, primary_key=True),
                     Column('username', types.Unicode(50)),
-                    # ElGamal public key.
+                    # ElGamal user's public key.
                     Column('pubkey', types.Text),
                     # Used in the login/authenticate challenge
                     Column('logging_token', types.Binary(35)),
@@ -72,11 +72,16 @@ usergroups_table = Table('users_groups', metadata,
                                 ForeignKey('users.id')),
                          Column('group_id', types.Integer,
                                 ForeignKey('groups.id')),
+                         Column('is_admin', types.Boolean, default=False),
+                         Column('cryptgroupkey', types.Text),
                          )
 
 groups_table = Table('groups', metadata,
                      Column('id', types.Integer, primary_key=True),
                      Column('name', types.Unicode(50)),
+                     Column('hidden', types.Boolean, default=False),
+                     # ElGamal group's public key
+                     Column('pubkey', types.Text),
                      )
 
 
@@ -86,15 +91,9 @@ servicegroups_table = Table('services_groups', metadata,
                                    ForeignKey('services.id')),
                             Column('group_id', types.Integer,
                                    ForeignKey('groups.id')),
+                            Column('cryptsymkey', types.Text),
                             )
 
-# This is deprecated by usergroups + groups
-#userlevels_table = Table('userlevels', metadata,
-#                         Column('id', types.Integer, primary_key=True),
-#                         Column('user_id', types.Integer,
-#                                ForeignKey('users.id')),
-#                         Column('level', types.Unicode(50), index=True)
-#                         )
 
 customers_table = Table('customers', metadata,
                         Column('id', types.Integer, primary_key=True),
@@ -141,15 +140,6 @@ services_table = Table('services', metadata,
                        Column('secret_last_modified', types.DateTime)
                        )
 
-# Table of encrypted symkeys for each 'secret' in the services_table, one for each user.
-userciphers_table = Table('userciphers', metadata,
-                          Column('id', types.Integer, primary_key=True),
-                          Column('service_id', types.Integer, ForeignKey('services.id')), # relation to services
-                          # The user for which this secret is encrypted
-                          Column('user_id', types.Integer, ForeignKey('users.id')),
-                          # Encrypted symkey with user's pubkey.
-                          Column('cryptsymkey', types.Text)
-                          )
 
 class Service(object):
     def __repr__(self):
@@ -159,11 +149,6 @@ class Machine(object):
     def __repr__(self):
         return "<Machine m#%d: %s (%s %s)>" % (self.id if self.id else 0,
                                                self.name, self.fqdn, self.ip)
-
-class Usercipher(object):
-    def __repr__(self):
-        return "<Usercipher: %s - service_id: %d>" % (self.user, self.service_id)
-
 class User(object):
     def setup_expired(self):
         """Return True/False if waiting_setup has expired"""
@@ -197,19 +182,10 @@ class Customer(object):
     def __repr__(self):
         return "<Customer c#%d: %s>" % (self.id, self.name)
 
-# 2-hops join:
-#user_serv_join = sql.join(users_table, usergroups_table)\
-#                    .onclause(users_table.c.id == usergroups_table.c.user_id)\
-#                    .join(usergroups_table, servicegroups_table)\
-#                    .onclause(usergroups_table.c.group_id == servicegroups.c.group_id)\
-#                    .join(services_table)\
-#                    .onclause(servicegroups_table.c.service_id == services_table.id)
-
 # Map each class to its corresponding table.
 mapper(User, users_table, {
     'groups': relation(Group, secondary=usergroups_table,
                        backref='users'), # don't eagerload, we'll ask if needed
-    'userciphers': relation(Usercipher, backref='user'),
     'services': relation(Service, viewonly=True,
                          secondary=usergroups_table.join(servicegroups_table, usergroups_table.c.group_id==servicegroups_table.c.group_id),
                          backref='users',
@@ -218,7 +194,6 @@ mapper(User, users_table, {
     })
 
 mapper(Group, groups_table, {
-    #'userciphers': relation(Usercipher, backref='group'),
     })
 mapper(Customer, customers_table, {
     'machines': relation(Machine, backref='customer', lazy=False)
@@ -234,10 +209,6 @@ mapper(Service, services_table, {
                          primaryjoin=services_table.c.parent_service_id==services_table.c.id),
     'groups': relation(Group, secondary=servicegroups_table,
                        backref='services'),
-    'userciphers': relation(Usercipher, backref='service'),
-    })
-mapper(Usercipher, userciphers_table, {
-    
     })
 
 
