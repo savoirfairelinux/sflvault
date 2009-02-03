@@ -98,15 +98,22 @@ def elgamal_bothkeys(eg):
 # encrypted for each user)
 def serial_elgamal_msg(cryptsymkey):
     """Get a 2-elements tuple of str(), return a string."""
-    ns = b64encode(cryptsymkey[0]) + ':' + \
-         b64encode(cryptsymkey[1])
+    try:
+        ns = b64encode(cryptsymkey[0]) + ':' + \
+             b64encode(cryptsymkey[1])
+    except IndexError, e:
+        raise DecryptError("Error decrypting: inconsistent message")
+    
     return ns
 
 def unserial_elgamal_msg(cryptsymkey):
     """Get a string, return a 2-elements tuple of str()"""
     x = cryptsymkey.split(':')
-    return (b64decode(x[0]),
-            b64decode(x[1]))
+    try:
+        return (b64decode(x[0]),
+                b64decode(x[1]))
+    except IndexError, e:
+        raise DecryptError("Error decrypting: inconsistent message")
 
 # _pubkey are used to encode the public key stored in the database
 # (El Gamal pub key, packed together)
@@ -215,7 +222,52 @@ def decrypt_secret(seckey, ciphertext):
     return secret
 
 
+#
+# Encrypt / decrypt group's privkeys
+#
+def encrypt_longmsg(eg, message):
+    """This takes a long message, and encrypts it as multiple ElGamal-encrypted
+    chunks.
 
+    You probably will want to have a serialized message as `message`.
+
+    This will return a b64 version of the encrypted message."""
+    # Tested and works to up to 192, but we'll use 96 for safety.
+    CHUNK_MAX_SIZE = 96
+
+    # TODO: split into chunks if too long
+    ptr = 0
+    chunks = []
+    while True:
+        chunk = message[ptr:ptr+CHUNK_MAX_SIZE]
+        if len(chunk):
+            chunks.append(chunk)
+        if len(chunk) < CHUNK_MAX_SIZE:
+            break
+        ptr += CHUNK_MAX_SIZE
+
+    out = []
+    for chunk in chunks:
+        b64chunk = serial_elgamal_msg(eg.encrypt(chunk, randfunc(32)))
+        out.append(b64chunk)
+
+    return '&'.join(out)
+
+
+def decrypt_longmsg(eg, ciphermessage):
+    """This takes the long cipher message, splits in chunks and decodes with
+    the provided ElGamal key (private key must be in).
+
+    This returns the original str()."""
+
+    chunks = ciphermessage.split('&')
+    out = []
+    for chunk in chunks:
+        snip = eg.decrypt(unserial_elgamal_msg(chunk))
+        out.append(snip)
+
+    return ''.join(out)
+        
 
 # Include the '_' function in the public names
 __all__ = [__name for __name in locals().keys() if not __name.startswith('_')]
