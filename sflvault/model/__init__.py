@@ -23,6 +23,7 @@ from sqlalchemy import Column, MetaData, Table, types, ForeignKey
 from sqlalchemy.orm import mapper, relation, backref
 from sqlalchemy.orm import scoped_session, sessionmaker, eagerload, lazyload
 from sqlalchemy.orm import eagerload_all
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy import sql
 from datetime import datetime
 
@@ -166,13 +167,21 @@ class User(object):
     def __repr__(self):
         return "<User u#%d: %s>" % (self.id, self.username)
 
-# Should never be used, removed temporarily to see if everything works without:
-#class UserGroup(object):    
-#    def __repr__(self):
-#        return "<UserGroup element>"
-#class ServiceGroup(object):
-#    def __repr__(self):
-#        return "<ServiceGroup element>"
+class UserGroup(object):
+    """Membership of a user to a group"""
+    def __init__(self, user):
+        self.user = user
+
+    def __repr__(self):
+        return "<UserGroup element>"
+
+class ServiceGroup(object):
+    """membership of a service to a group"""
+    def __init__(self, service):
+        self.service = service
+        
+    def __repr__(self):
+        return "<ServiceGroup element>"
 
 class Group(object):
     def __repr__(self):
@@ -184,33 +193,45 @@ class Customer(object):
 
 # Map each class to its corresponding table.
 mapper(User, users_table, {
-    'groups': relation(Group, secondary=usergroups_table,
-                       backref='users'), # don't eagerload, we'll ask if needed
+    # Quick access to services...
     'services': relation(Service, viewonly=True,
                          secondary=usergroups_table.join(servicegroups_table, usergroups_table.c.group_id==servicegroups_table.c.group_id),
                          backref='users',
                          viewonly=True,
-                         )
+                         ),
+    'groups_assoc': relation(UserGroup, backref='user')
+    })
+User.groups = association_proxy('groups_assoc', 'group')
+
+mapper(UserGroup, usergroups_table, {
+    'group': relation(Group, backref='users_assoc')
     })
 
 mapper(Group, groups_table, {
+    'services_assoc': relation(ServiceGroup, backref='group')
     })
-mapper(Customer, customers_table, {
-    'machines': relation(Machine, backref='customer', lazy=False)
+Group.users = association_proxy('users_assoc', 'user')
+Group.services = association_proxy('services_assoc', 'service')
+
+mapper(ServiceGroup, servicegroups_table, {
+    'service': relation(Service, backref='groups_assoc')
     })
-mapper(Machine, machines_table, {
-    'services': relation(Service, backref='machine', lazy=False)
-    })
+
 mapper(Service, services_table, {
     'children': relation(Service,
                          lazy=False,
                          backref=backref('parent', uselist=False,
                                          remote_side=[services_table.c.id]),
-                         primaryjoin=services_table.c.parent_service_id==services_table.c.id),
-    'groups': relation(Group, secondary=servicegroups_table,
-                       backref='services'),
+                         primaryjoin=services_table.c.parent_service_id==services_table.c.id)
     })
+Service.groups = association_proxy('groups_assoc', 'group')
 
+mapper(Machine, machines_table, {
+    'services': relation(Service, backref='machine', lazy=False)
+    })
+mapper(Customer, customers_table, {
+    'machines': relation(Machine, backref='customer', lazy=False)
+    })
 
 ################ Helper functions ################
 
