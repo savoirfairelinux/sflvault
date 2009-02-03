@@ -134,10 +134,11 @@ def unserial_elgamal_pubkey(pubkey):
 
 # _privkey are used to encode the key in a storable manner
 # to go in the ~/.sflvault/config file, as the 'key' key.
+# NOTE: privkey ALSO STORES pubkey!
 def serial_elgamal_privkey(privkey):
     """Get a 4-elements tuple of long(), return a string.
 
-    This contains the private (two first elements) and the public key."""
+    This contains the private (two first elements) *and* the public key."""
     ns = b64encode(long_to_bytes(privkey[0])) + ':' + \
          b64encode(long_to_bytes(privkey[1])) + ':' + \
          b64encode(long_to_bytes(privkey[2])) + ':' + \
