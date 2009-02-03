@@ -49,6 +49,18 @@ def init_model(engine):
 
 
 
+# DEPRECATED: Table of encrypted symkeys for each 'secret' in the services_table, one for each user.
+userciphers_table = Table('userciphers', metadata,
+                          Column('id', types.Integer, primary_key=True),
+                          Column('service_id', types.Integer, ForeignKey('services.id')), # relation to services
+                          # The user for which this secret is encrypted
+                          Column('user_id', types.Integer, ForeignKey('users.id')),
+                          # Encrypted symkey with user's pubkey.
+                          Column('cryptsymkey', types.Text)
+                          )
+
+
+
 users_table = Table("users", metadata,
                     Column('id', types.Integer, primary_key=True),
                     Column('username', types.Unicode(50)),
@@ -142,6 +154,13 @@ services_table = Table('services', metadata,
                        )
 
 
+# DEPRECATED (Usercipher):
+
+class Usercipher(object):
+    def __repr__(self):
+        return "<Usercipher: %s - service_id: %d>" % (self.user, self.service_id)
+
+
 class Service(object):
     def __repr__(self):
         return "<Service s#%d: %s>" % (self.id, self.url)
@@ -191,8 +210,15 @@ class Customer(object):
     def __repr__(self):
         return "<Customer c#%d: %s>" % (self.id, self.name)
 
+# DEPRECATED USERCIPHIER
+mapper(Usercipher, userciphers_table, {
+    })
+
+
 # Map each class to its corresponding table.
 mapper(User, users_table, {
+    # USERCIPHERS DEPRECATED
+    'userciphers': relation(Usercipher, backref='user'),
     # Quick access to services...
     'services': relation(Service, viewonly=True,
                          secondary=usergroups_table.join(servicegroups_table, usergroups_table.c.group_id==servicegroups_table.c.group_id),
@@ -218,6 +244,8 @@ mapper(ServiceGroup, servicegroups_table, {
     })
 
 mapper(Service, services_table, {
+    # USERCIPHERS DEPRECATED
+    'userciphers': relation(Usercipher, backref='service'),
     'children': relation(Service,
                          lazy=False,
                          backref=backref('parent', uselist=False,
