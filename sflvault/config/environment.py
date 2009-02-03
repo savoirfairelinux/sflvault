@@ -2,7 +2,8 @@
 import os
 
 from pylons import config
-
+from mako.lookup import TemplateLookup
+from pylons.error import handle_mako_error
 from sqlalchemy import engine_from_config
 from sflvault.model import init_model
 
@@ -22,15 +23,20 @@ def load_environment(global_conf, app_conf):
                  templates=[os.path.join(root, 'templates')])
 
     # Initialize config with the basic options
-    config.init_app(global_conf, app_conf, package='sflvault',
-                    template_engine='mako', paths=paths)
+    config.init_app(global_conf, app_conf, package='sflvault', paths=paths)
 
     config['routes.map'] = make_map()
-    config['pylons.g'] = app_globals.Globals()
+    config['pylons.app_globals'] = app_globals.Globals()
     config['pylons.h'] = sflvault.lib.helpers
 
-    # Customize templating options via this variable
-    tmpl_options = config['buffet.template_options']
+    # Create the Mako TemplateLookup, with the default auto-escaping
+    config['pylons.app_globals'].mako_lookup = TemplateLookup(
+            directories=paths['templates'],
+            error_handler=handle_mako_error,
+            module_directory=os.path.join(app_conf['cache_dir'], 'templates'),
+            input_encoding='utf-8', output_encoding='utf-8',
+            imports=['from webhelpers.html import escape'],
+            default_filters=['escape'])
 
     # CONFIGURATION OPTIONS HERE (note: all config options will override
     # any Pylons config options)
