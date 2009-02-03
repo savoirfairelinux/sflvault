@@ -42,6 +42,7 @@ from datetime import *
 from sflvault.client import SFLvaultClient
 from sflvault.lib.common.crypto import *
 from sflvault.client.utils import *
+from sflvault.client import ui
 
 class SFLvaultParserError(Exception):
     """For invalid options on the command line"""
@@ -477,63 +478,62 @@ class SFLvaultCommand(object):
 
 
     def service_edit(self):
-        """Modify service informations"""
-
-        self.parser.set_usage("service-edit [service_id]")
-        self._parse()
-
-        if not len(self.args):
-            raise SFLvaultParserError("Required argument: service_id")
-
-        # TODO: check all the specified parameters in self.args and
-        #       add them to the service definition, otherwise pass
-        #       None values.
-
-        # TODO: 
-
-        service_id = self.vault.vaultId(self.args[0], 's')
-
-        serv = self.vault.service_get(service_id)
-
-        from sflvault.client import ui
-        dialog = ui.ServiceEditDialogDisplay(serv)
-        save, data = dialog.run()
-
-        if save:
-            print "Sending data to vault..."
-            self.vault.service_put(service_id, data)
-        else:
-            print "service-edit aborted"
-
+        """Edit Service informations"""
+        self._something_edit("service-edit [service_id]",
+                             'service_id', 's',
+                             self.vault.service_get,
+                             self.vault.service_put,
+                             ui.ServiceEditDialogDisplay,
+                             'service-edit aborted')
 
     def machine_edit(self):
-        """Modify machine informations"""
+        """Edit Machine informations"""
+        self._something_edit("machine-edit [machine_id]",
+                             'machine_id', 'm',
+                             self.vault.machine_get,
+                             self.vault.machine_put,
+                             ui.MachineEditDialogDisplay,
+                             'machine-edit aborted')
 
-        self.parser.set_usage("machine-edit [machine_id]")
+    def customer_edit(self):
+        """Edit Customer informations"""
+        self._something_edit("customer-edit [customer_id]",
+                             'customer_id', 'c',
+                             self.vault.customer_get,
+                             self.vault.customer_put,
+                             ui.CustomerEditDialogDisplay,
+                             'customer-edit aborted')
+
+    def group_edit(self):
+        """Edit Group informations"""
+        self._something_edit("group-edit [group_id]",
+                             'group_id', 'g',
+                             self.vault.group_get,
+                             self.vault.group_put,
+                             ui.GroupEditDialogDisplay,
+                             'group-edit aborted')
+
+    def _something_edit(self, usage, required_args, vault_id_type,
+                        get_function, put_function, ui_class, abort_message):
+
+        self.parser.set_usage(usage)
         self._parse()
 
         if not len(self.args):
-            raise SFLvaultParserError("Required argument: machine_id")
+            raise SFLvaultParserError("Required argument: %s" % required_args)
 
-        # TODO: check all the specified parameters in self.args and
-        #       add them to the service definition, otherwise pass
-        #       None values.
+        thing_id = self.vault.vaultId(self.args[0], vault_id_type)
 
-        # TODO: 
+        thing = get_function(thing_id)
 
-        machine_id = self.vault.vaultId(self.args[0], 'm')
-
-        mach = self.vault.machine_get(machine_id)
-
-        from sflvault.client import ui
-        dialog = ui.MachineEditDialogDisplay(mach)
+        dialog = ui_class(thing)
         save, data = dialog.run()
 
         if save:
             print "Sending data to vault..."
-            self.vault.machine_put(machine_id, data)
+            put_function(thing_id, data)
         else:
-            print "mod-machine aborted"
+            print abort_message
 
 
     def service_passwd(self):

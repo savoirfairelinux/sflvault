@@ -186,6 +186,18 @@ class XmlrpcController(XMLRPCController):
 
         return vaultMsg(True, 'User setup complete for %s' % username)
 
+    @authenticated_admin
+    def sflvault_user_add(self, authtok, username, is_admin):
+        return self.vault.user_add(username, is_admin)
+
+    @authenticated_admin
+    def sflvault_user_del(self, authtok, user):
+        return self.vault.user_del(user)
+
+    @authenticated_user
+    def sflvault_user_list(self, authtok):
+        return self.vault.user_list()
+
     @authenticated_user
     def sflvault_machine_get(self, authtok, machine_id):
         return self.vault.machine_get(machine_id)
@@ -218,16 +230,6 @@ class XmlrpcController(XMLRPCController):
     def sflvault_search(self, authtok, search_query, verbose=False):
         return self.vault.search(search_query, verbose)
 
-    @authenticated_admin
-    def sflvault_user_add(self, authtok, username, is_admin):
-        return self.vault.user_add(username, is_admin)
-
-    @authenticated_user
-    def sflvault_machine_add(self, authtok, customer_id, name, fqdn, ip,
-                             location, notes):
-        return self.vault.machine_add(customer_id, name, fqdn, ip,
-                                      location, notes)
-
     @authenticated_user
     def sflvault_service_add(self, authtok, machine_id, parent_service_id, url,
                              group_ids, secret, notes):
@@ -235,30 +237,51 @@ class XmlrpcController(XMLRPCController):
         return self.vault.service_add(machine_id, parent_service_id, url,
                                       group_ids, secret, notes)
         
+    @authenticated_admin
+    def sflvault_service_del(self, authtok, service_id):
+        return self.vault.service_del(service_id)
+
+    @authenticated_user
+    def sflvault_machine_add(self, authtok, customer_id, name, fqdn, ip,
+                             location, notes):
+        return self.vault.machine_add(customer_id, name, fqdn, ip,
+                                      location, notes)
+    @authenticated_admin
+    def sflvault_machine_del(self, authtok, machine_id):
+        return self.vault.machine_del(machine_id)
+
+    @authenticated_user
+    def sflvault_machine_list(self, authtok, customer_id=None):
+        return self.vault.machine_list(customer_id)
+
+    @authenticated_user
+    def sflvault_customer_get(self, authtok, customer_id):
+        return self.vault.customer_get(customer_id)
+
+    @authenticated_user
+    def sflvault_customer_put(self, authtok, customer_id, data):
+        return self.vault.customer_put(customer_id, data)
+
     @authenticated_user
     def sflvault_customer_add(self, authtok, customer_name):
         self.vault.myself_username = self.sess['username']
         return self.vault.customer_add(customer_name)
 
     @authenticated_admin
-    def sflvault_user_del(self, authtok, user):
-        return self.vault.user_del(user)
-
-    @authenticated_admin
     def sflvault_customer_del(self, authtok, customer_id):
         return self.vault.customer_del(customer_id)
-
-    @authenticated_admin
-    def sflvault_machine_del(self, authtok, machine_id):
-        return self.vault.machine_del(machine_id)
-
-    @authenticated_admin
-    def sflvault_service_del(self, authtok, service_id):
-        return self.vault.service_del(service_id)
 
     @authenticated_user
     def sflvault_customer_list(self, authtok):
         return self.vault.customer_list()
+
+    @authenticated_user
+    def sflvault_group_get(self, authtok, group_id):
+        return self.vault.group_get(group_id)
+
+    @authenticated_user
+    def sflvault_group_put(self, authtok, group_id, data):
+        return self.vault.group_put(group_id, data)
 
     @authenticated_admin
     def sflvault_group_add(self, authtok, group_name):
@@ -288,14 +311,6 @@ class XmlrpcController(XMLRPCController):
     @authenticated_user
     def sflvault_group_list(self, authtok):
         return self.vault.group_list()
-
-    @authenticated_user
-    def sflvault_machine_list(self, authtok, customer_id=None):
-        return self.vault.machine_list(customer_id)
-
-    @authenticated_user
-    def sflvault_user_list(self, authtok):
-        return self.vault.user_list()
 
     @authenticated_user
     def sflvault_service_passwd(self, authtok, service_id, newsecret):

@@ -251,6 +251,32 @@ class SFLvaultAccess(object):
                          msg, int(self.setup_timeout)), {'user_id': usr.id})
         
 
+    def customer_get(self, customer_id):
+        """Get a single customer's data"""
+        try:
+            cust = query(Customer).filter_by(id=customer_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Customer not found: %s" % e.message)
+
+        out = {'id': cust.id,
+               'name': cust.name}
+
+        return vaultMsg(True, "Here is the customer", {'customer': out})
+
+    def customer_put(self, customer_id, data):
+        """Put a single customer's data back to the Vault"""
+        try:
+            cust = query(Customer).filter_by(id=customer_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Customer not found: %s" % e.message)
+
+        if 'name' in data:
+            cust.name = data['name']
+
+        meta.Session.commit()
+
+        return vaultMsg(True, "Customer c#%s saved successfully" % customer_id)
+
 
     def customer_add(self, customer_name):
         """Add a new customer to the database"""
@@ -380,6 +406,39 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Service added.", {'service_id': ns.id,
                                                  'encrypted_for': userlist})
 
+    def group_get(self, group_id):
+        """Get a single group's data"""
+        try:
+            grp = query(Group).filter_by(id=group_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Group not found: %s" % e.message)
+
+        # TODO: don't allow if grp.hidden == True and user isn't part of the
+        # group.
+
+        out = {'id': grp.id,
+               'name': grp.name,
+               'hidden': grp.hidden}
+
+        return vaultMsg(True, "Here is the group", {'group': out})
+
+    def group_put(self, group_id, data):
+        """Put a single group's data back to the Vault"""
+        try:
+            grp = query(Group).filter_by(id=group_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Group not found: %s" % e.message)
+
+        # TODO: same as group_get() permission check.
+
+        if 'name' in data:
+            grp.name = data['name']
+        if 'hidden' in data:
+            grp.hidden = bool(data['hidden'])
+
+        meta.Session.commit()
+
+        return vaultMsg(True, "Group g#%s saved successfully" % group_id)
 
     def group_add(self, group_name):
         """Add a new group the database. Nothing will be added to it

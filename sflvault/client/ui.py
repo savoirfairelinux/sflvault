@@ -136,10 +136,25 @@ class DialogDisplay(object):
     def on_exit(self, exitcode):
         return exitcode, ""
 
-    def unhandled_key(self, size, key):
-        pass
+    def unhandled_key(self, size, k):
+        if k in ('up','page up'):
+            self.frame.set_focus('body')
+        if k in ('down','page down'):
+            self.frame.set_focus('footer')
+        if k == 'enter':
+            # pass enter to the "ok" button
+            self.frame.set_focus('footer')
+            self.buttons.set_focus(0)
+            self.view.keypress( size, k )
 
 
+
+
+##
+##
+## Local dialogs for SFLvault
+##
+##
 
 class ServiceEditDialogDisplay(DialogDisplay):
     """Edit a service"""
@@ -214,18 +229,6 @@ class ServiceEditDialogDisplay(DialogDisplay):
             return False, None
 
 
-    def unhandled_key(self, size, k):
-        if k in ('up','page up'):
-            self.frame.set_focus('body')
-        if k in ('down','page down'):
-            self.frame.set_focus('footer')
-        if k == 'enter':
-            # pass enter to the "ok" button
-            self.frame.set_focus('footer')
-            self.buttons.set_focus(0)
-            self.view.keypress( size, k )
-
-
 
 class MachineEditDialogDisplay(DialogDisplay):
     """Edit a machine"""
@@ -293,15 +296,101 @@ class MachineEditDialogDisplay(DialogDisplay):
             return False, None
 
 
-    def unhandled_key(self, size, k):
-        if k in ('up','page up'):
-            self.frame.set_focus('body')
-        if k in ('down','page down'):
-            self.frame.set_focus('footer')
-        if k == 'enter':
-            # pass enter to the "ok" button
-            self.frame.set_focus('footer')
-            self.buttons.set_focus(0)
-            self.view.keypress( size, k )
 
+
+class CustomerEditDialogDisplay(DialogDisplay):
+    """Edit a customer"""
+    def __init__(self, data):
+
+        # Create fields..
+        inputs = {}
+        for x in ['name']:
+            inputs[x] = urwid.Edit("", unicode(data[x])) # , wrap='clip'
+                  
+        l = [
+            urwid.Columns([('fixed', 15, urwid.Text('Name ',
+                                                    align="right")),
+                           urwid.AttrWrap(inputs['name'], 'editbx', 'editfc')]),
+            ]
+
+
+        walker = urwid.SimpleListWalker(l)
+        lb = urwid.ListBox( walker )
+        DialogDisplay.__init__(self, "Edit customer", 22, 70, lb)
+
+        self.frame.set_focus('body')
+        
+        self.add_buttons([("OK", 1), ("Cancel", 0)])
+
+        self.data = data
+        self.inputs = inputs
+
+
+
+    def run(self):
+        """Show the dialog box, and get the results afterwards."""
+
+        exitcode, exitstring = self.main()
+
+        if exitcode:
+            data = {}
+            # prepare to save
+            t = ['name']
+            for x in t:
+                if self.inputs[x].edit_text != self.data[x]:
+                    data[x] = self.inputs[x].edit_text
+
+            return True, data
+        else:
+            # return nothing..
+            return False, None
+
+
+class GroupEditDialogDisplay(DialogDisplay):
+    """Edit a group"""
+    def __init__(self, data):
+
+        # Create fields..
+        inputs = {}
+        # TODO: Eventually add 'hidden' to tweak hidden status.
+        for x in ['name']:
+            inputs[x] = urwid.Edit("", unicode(data[x])) # , wrap='clip'
+                  
+        l = [
+            urwid.Columns([('fixed', 15, urwid.Text('Name ',
+                                                    align="right")),
+                           urwid.AttrWrap(inputs['name'], 'editbx', 'editfc')]),
+            ]
+
+
+        walker = urwid.SimpleListWalker(l)
+        lb = urwid.ListBox( walker )
+        DialogDisplay.__init__(self, "Edit group", 22, 70, lb)
+
+        self.frame.set_focus('body')
+        
+        self.add_buttons([("OK", 1), ("Cancel", 0)])
+
+        self.data = data
+        self.inputs = inputs
+
+
+
+    def run(self):
+        """Show the dialog box, and get the results afterwards."""
+
+        exitcode, exitstring = self.main()
+
+        if exitcode:
+            data = {}
+            # prepare to save
+            t = ['name']
+            for x in t:
+                if self.inputs[x].edit_text != self.data[x]:
+                    data[x] = self.inputs[x].edit_text
+
+            return True, data
+        else:
+            # return nothing..
+            return False, None
 

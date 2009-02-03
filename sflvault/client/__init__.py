@@ -391,6 +391,25 @@ class SFLvaultClient(object):
         self._services_returned(retval)
         
 
+
+    @authenticate(True)
+    def customer_get(self, customer_id):
+        """Get information to be edited"""
+        retval = vaultReply(self.vault.customer_get(self.authtok, customer_id),
+                            "Error fetching data for customer %s" % customer_id)
+
+        return retval['customer']
+
+    @authenticate(True)
+    def customer_put(self, customer_id, data):
+        """Save the (potentially modified) customer to the Vault"""
+        retval = vaultReply(self.vault.customer_put(self.authtok, customer_id,
+                                                   data),
+                            "Error saving data to vault, aborting.")
+
+        print "Success: %s " % retval['message']
+        
+
     @authenticate()
     def service_del(self, service_id):
         retval = self.vault.service_del(self.authtok, service_id)
@@ -644,7 +663,7 @@ class SFLvaultClient(object):
     def machine_get(self, machine_id):
         """Get information to be edited"""
         retval = vaultReply(self.vault.machine_get(self.authtok, machine_id),
-                            "Error fetching data for service %s" % machine_id)
+                            "Error fetching data for machine %s" % machine_id)
 
         return retval['machine']
 
@@ -737,6 +756,24 @@ class SFLvaultClient(object):
             print "There are expired users. To remove them, run:"
             for usr in to_clean:
                 print "   sflvault del-user %s" % usr
+        
+
+    @authenticate(True)
+    def group_get(self, group_id):
+        """Get information to be edited"""
+        retval = vaultReply(self.vault.group_get(self.authtok, group_id),
+                            "Error fetching data for group %s" % group_id)
+
+        return retval['group']
+
+    @authenticate(True)
+    def group_put(self, group_id, data):
+        """Save the (potentially modified) Group to the Vault"""
+        retval = vaultReply(self.vault.group_put(self.authtok, group_id,
+                                                   data),
+                            "Error saving data to vault, aborting.")
+
+        print "Success: %s " % retval['message']
         
 
 
