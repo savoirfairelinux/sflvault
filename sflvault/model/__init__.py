@@ -215,6 +215,25 @@ mapper(Usercipher, userciphers_table, {
     })
 
 
+# User
+#  .groups_assoc
+#    UserGroup
+#     .group
+#       Group
+#        .services_assoc
+#          ServiceGroup
+#           .service
+#             Service
+# Service
+#  .groups_assoc
+#    ServiceGroup
+#     .group
+#       Group
+#        .users_assoc
+#          UserGroup
+#           .user
+#             User
+
 # Map each class to its corresponding table.
 mapper(User, users_table, {
     # USERCIPHERS DEPRECATED
