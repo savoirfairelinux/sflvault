@@ -624,6 +624,85 @@ class SFLvaultCommand(object):
 
         self.vault.user_list()
 
+
+    def _group_service_options(self):
+        self.parser.add_option('-g', dest="group_id",
+                               help="Group to add the service to")
+        self.parser.add_option('-s', dest="service_id",
+                               help="Service to be added")
+
+    def _group_service_required(self):
+        if not self.opts.group_id or not self.opts.service_id:
+            raise SFLvaultParserError("-g and -s options required")
+
+
+    def group_add_service(self):
+        """Add a service to a group, doing necessary re-encryption"""
+        self.parser.set_usage("group-add-service -g <group_id> -s <service_id>")
+        self._group_service_options()
+        self._parse()
+
+        self._group_service_required()
+        
+        self.vault.group_add_service(self.opts.group_id, self.opts.service_id)
+
+    def group_del_service(self):
+        """Remove a service from a group"""
+        self.parser.set_usage("group-del-service -g <group_id> -s <service_id>")
+        self._group_service_options()
+        self._parse()
+
+        self._group_service_required()
+        
+        self.vault.group_del_service(self.opts.group_id, self.opts.service_id)
+
+
+    def _group_user_options(self):
+        self.parser.add_option('-g', dest="group_id",
+                               help="Group to add the service to")
+        self.parser.add_option('-u', dest="user",
+                               help="Service to be added")
+
+    def _group_user_required(self):
+        if not self.opts.group_id or not self.opts.user:
+            raise SFLvaultParserError("-g and -u options required")
+
+
+    def group_add_user(self):
+        """Add a user to a group, doing necessary re-encryption"""
+        self.parser.set_usage("group-add-user -g <group_id> -u <user>")
+        self._group_user_options()
+        self._parse()
+
+        self._group_user_required()
+        
+        self.vault.group_add_user(self.opts.group_id, self.opts.user)
+
+    def group_del_user(self):
+        """Remove a user from a group"""
+        self.parser.set_usage("group-del-user -g <group_id> -u <user>")
+        self._group_user_options()
+        self._parse()
+
+        self._group_user_required()
+        
+        self.vault.group_del_user(self.opts.group_id, self.opts.user)
+
+    def group_del(self):
+        """Remove a group from the Vault
+
+        For this to be successful, the group must have no more services
+        associated with it."""
+        self.parser.set_usage("group-del -g <group_id>")
+        self.parser.add_option('-g', dest="group_id",
+                               help="Group to be removed")
+        self._parse()
+
+        if not self.opts.group_id:
+            raise SFLvaultParserError("-g option required")
+
+        self.vault.group_del(self.opts.group_id)
+
     def group_add(self):
         """Add a group to the Vault
 

@@ -662,7 +662,7 @@ class SFLvaultClient(object):
     @authenticate(True)
     def show(self, service_id, verbose=False):
         """Show informations to connect to a particular service"""
-        servs = self.get_service_tree(service_id)
+        servs = self.service_get_tree(service_id)
 
         print "Results:"
 
@@ -690,7 +690,7 @@ class SFLvaultClient(object):
     @authenticate(True)
     def connect(self, vid):
         """Connect to a distant machine (using SSH for now)"""
-        servs = self.get_service_tree(vid)
+        servs = self.service_get_tree(vid)
 
         # Check and decrypt all ciphers prior to start connection,
         # if there are some missing, it's not useful to start.
@@ -739,6 +739,54 @@ class SFLvaultClient(object):
                 print "   sflvault del-user %s" % usr
         
 
+
+    @authenticate()
+    def group_add_service(self, group_id, service_id, retval=None):
+        retval = vaultReply(self.vault.group_add_service(self.authtok, group_id,
+                                                         service_id),
+                            "Error adding service to group")
+
+        print "Success: %s" % retval['message']
+
+        # TODO: do re-encryption over here...
+        retval = vaultReply(self.vault.group_add_service(self.authtok, group_id,
+                                                         service_id),
+                            "Error adding service to group")
+
+        print "Success: %s" % retval['message']
+
+
+    @authenticate()
+    def group_del_service(self, group_id, service_id):
+        retval = vaultReply(self.vault.group_del_service(self.authtok, group_id,
+                                                 service_id),
+                            "Error removing service from group")
+
+        print "Success: %s" % retval['message']
+
+    @authenticate()
+    def group_add_user(self, group_id, user, is_admin=False, retval=None):
+        retval = vaultReply(self.vault.group_add_user(self.authtok, group_id,
+                                                      user),
+                            "Error adding user to group")
+
+        print "Success: %s" % retval['message']
+
+        # TODO: do re-encryption over here...
+        retval = vaultReply(self.vault.group_add_user(self.authtok, group_id,
+                                                      user),
+                            "Error adding user to group")
+
+        print "Success: %s" % retval['message']
+
+    @authenticate()
+    def group_del_user(self, group_id, user):
+        retval = vaultReply(self.vault.group_del_user(self.authtok, group_id,
+                                                      user),
+                            "Error removing user from group")
+
+        print "Success: %s" % retval['message']
+    
     @authenticate()
     def group_add(self, group_name):
         """Add a named group to the Vault. Return the group id."""
@@ -748,6 +796,15 @@ class SFLvaultClient(object):
         print "Success: %s " % retval['message']
         print "New group id: g#%d" % retval['group_id']
 
+
+    @authenticate()
+    def group_del(self, group_id):
+        """Remove a group from the Vault, making sure no services are left
+        behind."""
+        retval = vaultReply(self.vault.group_del(self.authtok, group_id),
+                            "Error removing group")
+
+        print "Success: %s" % retval['message']
 
     @authenticate()
     def group_list(self):

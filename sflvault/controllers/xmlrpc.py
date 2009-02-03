@@ -264,6 +264,27 @@ class XmlrpcController(XMLRPCController):
     def sflvault_group_add(self, authtok, group_name):
         return self.vault.group_add(group_name)
 
+    @authenticated_admin
+    def sflvault_group_del(self, authtok, group_id):
+        return self.vault.group_del(group_id)
+
+    @authenticated_user
+    def sflvault_group_add_service(self, group_id, service_id, retval=None):
+        return self.vault.group_add_service(group_id, service_id, retval)
+
+    @authenticated_user
+    def sflvault_group_del_service(self, group_id, service_id):
+        return self.vault.group_del_service(group_id, service_id)
+
+    @authenticated_user
+    def sflvault_group_add_user(self, group_id, user, is_admin=False,
+                                retval=None):
+        return self.vault.group_add_user(group_id, user, is_admin, retval)
+
+    @authenticated_user
+    def sflvault_group_del_user(self, group_id, user):
+        return self.vault.group_del_user(group_id, user)
+
     @authenticated_user
     def sflvault_group_list(self, authtok):
         return self.vault.group_list()

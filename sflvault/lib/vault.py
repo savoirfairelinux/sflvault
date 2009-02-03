@@ -381,6 +381,94 @@ class SFLvaultAccess(object):
                                                  'encrypted_for': userlist})
 
 
+    def group_add(self, group_name):
+        """Add a new group the database. Nothing will be added to it
+        by default"""
+        
+        ng = Group()
+        ng.name = group_name
+
+        meta.Session.save(ng)
+        meta.Session.commit()
+
+        return vaultMsg(True, "Added group '%s'" % ng.name,
+                        {'name': ng.name, 'group_id': int(ng.id)})
+
+    def group_del(self, group_id):
+        """Remove a group from the vault. Only if no services are associated
+        with it anymore."""
+
+        # TODO: remove the group and check for stuff...
+        return vaultMsg(True, 'NOT_IMPLEMENTED: Removed group successfully', {})
+
+    def group_list(self):
+        """Return a simple list of the available groups"""
+        # TODO: implement hidden groups, you shouldn't show those groups,
+        #       unless you're admin of that group.
+        groups = query(Group).group_by(Group.name).all()
+
+        out = []
+        for x in groups:
+            out.append({'id': x.id, 'name': x.name})
+
+        return vaultMsg(True, 'Here is the list of groups', {'list': out})
+
+
+    def group_add_service(self, group_id, service_id, retval=None):
+        """Add a service to a group. Call once to retrieve information,
+        and a second time with retval to save cipher information.
+
+        The second call should give the service's symkey to be encrypted by
+        the vault with the group's pubkey.
+        """
+        # Add a GroupService to the Group object.
+        # Cryptographically, encrypt the symkey for the service with
+        #   the group's pubkey.
+        # Save in `cryptsymkey`
+        return vaultMsg(True, "NOT_IMPLEMENTED: Added service to group successfully", {})
+
+    def group_del_service(self, group_id, service_id):
+        """Remove the association between a group and a service, simply."""
+        # Remove the GRoupService from the Group object.
+        pass
+        return vaultMsg(True, "NOT_IMPLEMENTED: Remove service from group successfully", {})
+
+
+    def group_add_user(self, group_id, user, is_admin=False, retval=None):
+        """Add a user to a group. Call once to retrieve information,
+        and a second time with retval to save cipher information.
+
+        The second call should give the group's privkey, to be encrypted
+        by the vault with the user's pubkey.
+
+        is_admin - Gives admin privileges to the user being added or not.
+        user - User can be a username or a user_id
+        """
+        # TODO: permission to is_admin user_group assocs only.
+        # Assign is_admin flag.
+        # Add a UserGroup to the Group
+        # Crypto, encrypt the group,s privkey with the user's pubkey.
+        # Save in `cryptgroupkey`
+        return vaultMsg(True, "NOT_IMPLEMENTED: Added user to group successfully", {})
+
+    def group_del_user(self, group_id, user):
+        """Remove the association between a group and a user.
+
+        Make sure there are still 'is_admin' users associated with the group
+        to be able to give access to someone else in case of need.
+
+        SFLvault will refuse to delete a user from a group if no other users
+        are part of that group, and if the group still has some services
+        associated with it. First, call group_del_service from the group for
+        all services, then delete the users, and then the group.
+
+        user - can be a username or a user_id
+        """
+        # TODO: permission to is_admin user_group assocs only.
+        return vaultMsg(True, "NOT_IMPLEMENTED: Removed user from group successfully", {})
+        
+
+
     def user_del(self, user):
         """Delete a user from database"""
         # Get user
@@ -557,31 +645,6 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, 'Here is the customer list', {'list': out})
 
-
-    def group_add(self, group_name):
-        """Add a new group the database. Nothing will be added to it
-        by default"""
-        
-        ng = Group()
-        ng.name = group_name
-
-        meta.Session.save(ng)
-        meta.Session.commit()
-
-        return vaultMsg(True, "Added group '%s'" % ng.name,
-                        {'name': ng.name, 'group_id': int(ng.id)})
-
-    def group_list(self):
-        """Return a simple list of the available groups"""
-        # TODO: implement hidden groups, you shouldn't show those groups,
-        #       unless you're admin of that group.
-        groups = query(Group).group_by(Group.name).all()
-
-        out = []
-        for x in groups:
-            out.append({'id': x.id, 'name': x.name})
-
-        return vaultMsg(True, 'Here is the list of groups', {'list': out})
 
 
     def machine_list(self, customer_id=None):
