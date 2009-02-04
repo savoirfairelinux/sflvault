@@ -219,7 +219,7 @@ class ssh(ShellService):
 
             def werein(self):
                 'Last login'
-                print "We're in! (using shared-key?)"
+                print " [We're in! (using shared-key?)] ",
 
             def are_you_sure(self):
                 "(?i)are you sure you want to continue connecting.*\? "

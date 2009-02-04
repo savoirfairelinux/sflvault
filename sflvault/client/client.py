@@ -710,6 +710,7 @@ class SFLvaultCommand(object):
         This command accepts a group name (as string) as first and only
         parameter.
         """
+        self.parser.set_usage("group-add <group name>")
         self._parse()
 
         if len(self.args) != 1:
@@ -720,6 +721,7 @@ class SFLvaultCommand(object):
 
     def group_list(self):
         """List existing groups."""
+        self.parser.set_usage("group-list")
         self._parse()
 
         if len(self.args):
