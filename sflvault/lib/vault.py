@@ -387,28 +387,38 @@ class SFLvaultAccess(object):
                 return vaultMsg(False, "No such parent service ID.",
                                 {'parent_service_id': parent_service_id})
 
+        # seckey is the AES256 symmetric key, to be encrypted for each user.
+        (seckey, ciphertext) = encrypt_secret(secret)
 
         # Add service effectively..
         ns = Service()
         ns.machine_id = int(machine_id)
         ns.parent_service_id = parent_service_id or None
         ns.url = url
-        ns.groups = groups
-        # seckey is the AES256 symmetric key, to be encrypted for each user.
-        (seckey, ciphertext) = encrypt_secret(secret)
         ns.secret = ciphertext
         ns.secret_last_modified = datetime.now()
         ns.notes = notes
 
         meta.Session.save(ns)
 
+        # Encrypt symkey for each group, using it's own ElGamal pubkey
+        for g in groups:
+            eg = g.elgamal()
+            
+            nsg = ServiceGroup()
+            nsg.group_id = g.id
+            nsg.cryptsymkey = encrypt_longmsg(eg, seckey)
+            
+            ns.groups_assoc.append(nsg)
+
+        del(seckey)
+
         meta.Session.commit()
 
-
-        userlist = self._encrypt_service_seckey(ns.id, seckey, groups)
+        grouplist = [g.name for g in groups]
 
         return vaultMsg(True, "Service added.", {'service_id': ns.id,
-                                                 'encrypted_for': userlist})
+                                                 'encrypted_for': grouplist})
 
     def group_get(self, group_id):
         """Get a single group's data"""
@@ -587,10 +597,10 @@ class SFLvaultAccess(object):
         except LookupError, e:
             return vaultMsg(False, str(e))
 
+        # TODO: check if there's anything else to delete when deleting
+        #       a user.
         t1 = model.usergroups_table
-        t2 = model.userciphers_table
         meta.Session.execute(t1.delete(t1.c.user_id==usr.id))
-        meta.Session.execute(t2.delete(t2.c.user_id==usr.id))
         
         meta.Session.delete(usr)
         meta.Session.commit()
@@ -804,60 +814,6 @@ class SFLvaultAccess(object):
         # Can use: datetime.fromtimestamp(x.created_stamp)
         # to get a datetime object back from the x.created_time
         return vaultMsg(True, "Here is the user list", {'list': out})
-
-
-    def _encrypt_service_seckey(self, service_id, seckey, groups):
-        """Encrypt secret for a given service with the public key of
-        everyone who has access to it."""
-        # Get all users from the group_ids, and all admins and the requestor.
-        encusers = []
-        admusers = query(User).filter_by(is_admin=True).all()
-
-        for grp in groups:
-            encusers.extend(grp.users)
-        for adm in admusers:
-            encusers.append(adm)
-
-        # Add myself to the list
-        if self.myself_id:
-            myselfuser = query(User).get(self.myself_id)
-            encusers.append(myselfuser)
-        else:
-            log.warning("You should *always* set myself_id on the " + \
-                        self.__class__.__name__ + " object when calling "\
-                        "add_service() to make sure the secret is "\
-                        "encrypted for you at least.")
-
-                
-        ## TODO: move all that to centralised 'save_service_password'
-        ## that can be used on add-service calls and also on change-password
-        ## calls
-
-        userlist = []
-        for usr in set(encusers): # take out doubles..
-            # pubkey required to encrypt for user
-            if not usr.pubkey:
-                continue
-
-            # Encode for that user, store in UserCiphers
-            nu = Usercipher()
-            nu.service_id = service_id
-            nu.user_id = usr.id
-
-            eg = usr.elgamal()
-            nu.cryptsymkey = serial_elgamal_msg(eg.encrypt(seckey,
-                                                           randfunc(32)))
-            del(eg)
-
-            meta.Session.save(nu)
-            
-            userlist.append(usr.username) # To return listing.
-
-        meta.Session.commit()
-
-        del(seckey)
-
-        return userlist
         
 
     def service_passwd(self, service_id, newsecret):
@@ -871,15 +827,14 @@ class SFLvaultAccess(object):
         (seckey, ciphertext) = encrypt_secret(newsecret)
         serv.secret = ciphertext
         
-        # Effacer tous les Ciphers pour ce service avant.
-        # TODO: we must check out that we don't delete VERSIONED ciphers
-        #       when we add versioning to the userciphers_table.
-        t1 = model.userciphers_table
-        meta.Session.execute(t1.delete(t1.c.service_id == service_id))
+        for sg in serv.groups_assoc:
+            eg = [g for g in groups if g.id == sg.group_id][0].elgamal()
+            
+            sg.cryptsymkey = encrypt_longmsg(eg, seckey)
 
         meta.Session.commit()
 
-        userlist = self._encrypt_service_seckey(service_id, seckey, groups)
+        grouplist = [g.name for g in groups]
         
         return vaultMsg(True, "Service added.", {'service_id': service_id,
-                                                 'encrypted_for': userlist})
+                                                 'encrypted_for': grouplist})

@@ -178,8 +178,9 @@ class UserGroup(object):
 
 class ServiceGroup(object):
     """membership of a service to a group"""
-    def __init__(self, service):
-        self.service = service
+    def __init__(self, service=None):
+        if service:
+            self.service = service
         
     def __repr__(self):
         return "<ServiceGroup element>"
