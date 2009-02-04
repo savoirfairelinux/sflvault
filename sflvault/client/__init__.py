@@ -21,9 +21,6 @@
 
 __version__ = __import__('pkg_resources').get_distribution('SFLvault').version
 
-# TODO: DECOUPLE CONFIG STUFF FROM THE SFLvaultClient OBJECT
-# THIS SHOULD STRICTLY BE IN CLI-CLIENT CODE.
-CONFIG_FILE = '~/.sflvault/config'
 from ConfigParser import ConfigParser
 
 import xmlrpclib
@@ -40,6 +37,15 @@ from sflvault.lib.common import VaultError
 from sflvault.lib.common.crypto import *
 from sflvault.client.utils import *
 from sflvault.client import remoting
+
+
+# Default configuration
+
+# Default configuration file
+CONFIG_FILE = '~/.sflvault/config'
+# Environment variable to override default config file.
+CONFIG_FILE_ENV = 'SFLVAULT_CONFIG'
+
 
 
 ### Setup variables and functions
@@ -191,9 +197,9 @@ class SFLvaultClient(object):
         if url:
             self.vault = xmlrpclib.Server(url, allow_none=True).sflvault
 
-    def config_check(self):
+    def config_check(self, config_file):
         """Checks for ownership and modes for all paths and files, à-la SSH"""
-        fullfile = os.path.expanduser(CONFIG_FILE)
+        fullfile = os.path.expanduser(config_file)
         fullpath = os.path.dirname(fullfile)
     
         if not os.path.exists(fullpath):
@@ -215,13 +221,21 @@ class SFLvaultClient(object):
             print "Modes for %s must be 0600 (-rw-------)" % fullfile
             sys.exit()
 
-    def config_read(self):
+    @property
+    def config_filename(self):
+        """Return the configuration filename"""
+        if CONFIG_FILE_ENV in os.environ:
+            return os.environ[CONFIG_FILE_ENV]
+        else:
+            return CONFIG_FILE
 
+    def config_read(self):
         """Return the ConfigParser object, fully loaded"""
-        self.config_check()
+
+        self.config_check(self.config_filename)
     
         self.cfg = ConfigParser()
-        fp = open(os.path.expanduser(CONFIG_FILE), 'r')
+        fp = open(os.path.expanduser(self.config_filename), 'r')
         self.cfg.readfp(fp)
         fp.close()
 
@@ -239,7 +253,7 @@ class SFLvaultClient(object):
 
     def config_write(self):
         """Write the ConfigParser element to disk."""
-        fp = open(os.path.expanduser(CONFIG_FILE), 'w')
+        fp = open(os.path.expanduser(self.config_filename), 'w')
         self.cfg.write(fp)
         fp.close()
 
@@ -503,7 +517,7 @@ class SFLvaultClient(object):
         pubkey = elgamal_pubkey(eg)
 
         print "You will need a passphrase to secure your private key. The"
-        print "encrypted key will be stored on this machine in %s" % CONFIG_FILE
+        print "encrypted key will be stored on this machine in %s" % self.config_filename
         print '-' * 80
         
         while True:
@@ -819,7 +833,7 @@ class SFLvaultClient(object):
 
         # TODO: do re-encryption over here...
         retval = vaultReply(self.vault.group_add_user(self.authtok, group_id,
-                                                      user),
+                                                      user, data),
                             "Error adding user to group")
 
         print "Success: %s" % retval['message']
