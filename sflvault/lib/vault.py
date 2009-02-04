@@ -127,18 +127,23 @@ class SFLvaultAccess(object):
         except exceptions.InvalidRequestError, e:
             return vaultMsg(False, "Service not found: %s" % e.message)
 
+        me = query(User).filter_by(id=self.myself_id).one()
+
+        
         out = []
         while True:
-            ucipher = query(Usercipher).filter_by(service_id=s.id, user_id=self.myself_id).first()
-            if ucipher and ucipher.cryptsymkey:
-                cipher = ucipher.cryptsymkey
-            else:
-                cipher = ''
+            req = sql.join(ServiceGroup, UserGroup, ServiceGroup.group_id==UserGroup.group_id).join(User, User.id==UserGroup.user_id).select().where(User.id==self.myself_id).where(ServiceGroup.service_id==s.id)
+            res = meta.Session.execute(req)
 
+            # Take the first one
+            uciphers = [x for x in res]
+            ucipher = uciphers[0]
+            
             out.append({'id': s.id,
                         'url': s.url,
                         'secret': s.secret,
-                        'usercipher': cipher,
+                        'cryptgroupkey': ucipher.cryptgroupkey,
+                        'cryptsymkey': ucipher.cryptsymkey,
                         'secret_last_modified': s.secret_last_modified,
                         'metadata': s.metadata or '',
                         'notes': s.notes or ''})
@@ -581,9 +586,9 @@ class SFLvaultAccess(object):
             return vaultMsg(False, "Services still child of this customer's machine's services",
                             {'childs': retval})
 
-        # Delete all related user-ciphers
-        d = sql.delete(model.userciphers_table) \
-               .where(model.userciphers_table.c.service_id.in_(servs_ids))
+        # Delete all related groupciphers
+        d = sql.delete(model.servicegroups_table) \
+               .where(model.servicegroups_table.c.service_id.in_(servs_ids))
         # Delete the services related to customer_id's machines
         d2 = sql.delete(model.services_table) \
                 .where(model.services_table.c.id.in_(servs_ids))
@@ -638,9 +643,9 @@ class SFLvaultAccess(object):
                             {'childs': retval})
 
 
-        # Delete all related user-ciphers
-        d = sql.delete(model.userciphers_table) \
-               .where(model.userciphers_table.c.service_id.in_(servs_ids))
+        # Delete all related groupciphers
+        d = sql.delete(model.servicegroups_table) \
+               .where(model.servicegroups_table.c.service_id.in_(servs_ids))
         # Delete the services related to machine_id
         d2 = sql.delete(model.services_table) \
                 .where(model.services_table.c.id.in_(servs_ids))
@@ -680,8 +685,8 @@ class SFLvaultAccess(object):
                             {'childs': retval})
         
         # Delete all related user-ciphers
-        d = sql.delete(model.userciphers_table) \
-               .where(model.userciphers_table.c.service_id == service_id)
+        d = sql.delete(model.servicegroups_table) \
+               .where(model.servicegroups_table.c.service_id == service_id)
         # Delete the service
         d2 = sql.delete(services_table) \
                 .where(services_table.c.id == service_id)

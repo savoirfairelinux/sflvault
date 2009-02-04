@@ -214,7 +214,7 @@ class XmlrpcController(XMLRPCController):
     @authenticated_user
     def sflvault_service_get_tree(self, authtok, service_id):
         self.vault.myself_id = self.sess['user_id']
-        return self.vault.service_get(service_id)
+        return self.vault.service_get_tree(service_id)
 
     @authenticated_user
     def sflvault_service_put(self, authtok, service_id, data):

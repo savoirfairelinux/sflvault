@@ -188,6 +188,12 @@ class Group(object):
     def __repr__(self):
         return "<Group: %s>" % (self.name)
     
+    def elgamal(self):
+        """Return the ElGamal object, ready to encrypt stuff."""
+        e = ElGamal.ElGamalobj()
+        (e.p, e.g, e.y) = unserial_elgamal_pubkey(self.pubkey)
+        return e
+
 class Customer(object):
     def __repr__(self):
         return "<Customer c#%d: %s>" % (self.id, self.name)

@@ -597,6 +597,25 @@ class SFLvaultClient(object):
             if level in [0,1]:
                 print "%s" % (spc1) + '-' * (80 - len(spc1))
             
+    def _decrypt_service(self, serv):
+        # First decrypt groupkey
+        try:
+            grouppacked = decrypt_longmsg(self.privkey, serv['cryptgroupkey'])
+            eg = ElGamal.ElGamalobj()
+            (eg.p, eg.x, eg.g, eg.y) = unserial_elgamal_privkey(grouppacked)
+            groupkey = eg
+        except:
+            raise DecryptError("Unable to decrypt groupkey")
+
+        # Then decrypt symkey
+        try:
+            aeskey = decrypt_longmsg(groupkey, serv['cryptsymkey'])
+        except:
+            raise DecryptError("Unable to decrypt symkey")
+
+        serv['plaintext'] = decrypt_secret(aeskey, serv['secret'])
+
+
     @authenticate(True)
     def service_get(self, service_id):
         """Get information to be edited"""
@@ -610,13 +629,7 @@ class SFLvaultClient(object):
 
         # Add it only if we can!
         if serv['usercipher']:
-            try:
-                aeskey = self.privkey.decrypt( \
-                    unserial_elgamal_msg(serv['usercipher']))
-            except:
-                raise DecryptError("Unable to decrypt Usercipher.")
-
-            serv['plaintext'] = decrypt_secret(aeskey, serv['secret'])
+            self._decrypt_service(serv)
 
         return serv
 
@@ -633,17 +646,11 @@ class SFLvaultClient(object):
             aeskey = ''
             secret = ''
 
-            if not x['usercipher']:
+            if not x['cryptsymkey']:
                 # Don't add a plaintext if we can't.
                 continue
 
-            try:
-                aeskey = self.privkey.decrypt( \
-                    unserial_elgamal_msg(x['usercipher']))
-            except:
-                raise DecryptError("Unable to decrypt Usercipher.")
-
-            x['plaintext'] = decrypt_secret(aeskey, x['secret'])
+            self._decrypt_service(x)
 
         return retval['services']
 
@@ -695,7 +702,7 @@ class SFLvaultClient(object):
                 
             spc = len(str(x['id'])) * ' '
 
-            secret = x['plaintext'] if 'usercipher' in x else '[access denied]'
+            secret = x['plaintext'] if 'cryptsymkey' in x else '[access denied]'
             print "%ss#%d %s" % (pre, x['id'], x['url'])
             print "%s%s   secret: %s" % (pre, spc, secret)
             
@@ -714,7 +721,7 @@ class SFLvaultClient(object):
         # Check and decrypt all ciphers prior to start connection,
         # if there are some missing, it's not useful to start.
         for x in servs:
-            if not x['usercipher']:
+            if not x['cryptsymkey']:
                 raise RemotingError("We don't have access to password for service %s" % x['url'])
 
         connection = remoting.Chain(servs)
