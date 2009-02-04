@@ -65,8 +65,10 @@ class SFLvaultAccess(object):
 
     def service_get(self, service_id):
         """Get a single service's data"""
-
-        out = self._service_get_data(service_id)
+        try:
+            out = self._service_get_data(service_id)
+        except VaultError, e:
+            return vaultMsg(False, e.message)
 
         return vaultMsg(True, "Here is the service", {'service': out})
     
@@ -106,7 +108,8 @@ class SFLvaultAccess(object):
         try:
             s = query(Service).filter_by(id=service_id).one()
         except exceptions.InvalidRequestError, e:
-            return vaultMsg(False, "Service not found: %s" % e.message)
+            raise VaultError("Service not found: %s (%s)" % (service_id,
+                                                             e.message))
 
         me = query(User).get(self.myself_id)
 
@@ -137,7 +140,11 @@ class SFLvaultAccess(object):
         
         out = []
         while True:
-            data = self._service_get_data(service_id)
+            try:
+                data = self._service_get_data(service_id)
+            except VaultError, e:
+                return vaultMsg(False, e.message)
+            
             out.append(data)
 
             if not data['parent_service_id']:

@@ -30,8 +30,10 @@ from base64 import b64decode, b64encode
 from datetime import *
 import time as stdtime
 from decorator import decorator
+from pylons.controllers.xmlrpc import xmlrpc_fault
 
 from sflvault.lib.base import *
+from sflvault.lib.common import VaultError
 from sflvault.lib.vault import SFLvaultAccess
 from sflvault.model import *
 
@@ -44,6 +46,22 @@ log = logging.getLogger(__name__)
 # Permissions decorators for XML-RPC calls
 #
 
+def _authenticated_user_first(self, *args, **kwargs):
+    """DRYed authenticated_user to skip repetition in authenticated_admin"""
+    s = get_session(args[0])
+
+    if not s:
+        raise xmlrpclib.Fault(0, "Permission denied")
+
+    self.sess = s
+
+    if hasattr(self, 'vault'):
+        if 'user_id' in self.sess:
+            self.vault.myself_id = self.sess['user_id']
+        if 'username' in self.sess:
+            self.vault.myself_username = self.sess['username']
+
+
 @decorator
 def authenticated_user(func, self, *args, **kwargs):
     """Aborts if user isn't authenticated.
@@ -53,12 +71,7 @@ def authenticated_user(func, self, *args, **kwargs):
     WARNING: authenticated_user READ the FIRST non-keyword argument
              (should be authtok)
     """
-    s = get_session(args[0])
-
-    if not s:
-        return xmlrpclib.Fault(0, "Permission denied")
-
-    self.sess = s
+    _authenticated_user_first(self, *args, **kwargs)
 
     return func(self, *args, **kwargs)
 
@@ -68,14 +81,10 @@ def authenticated_admin(func, self, *args, **kwargs):
 
     Check authenticated_user , everything written then applies here as well.
     """
-    s = get_session(args[0])
-
-    if not s:
-        return xmlrpclib.Fault(0, "Permission denied")
-    if not s['userobj'].is_admin:
+    _authenticated_user_first(self, *args, **kwargs)
+            
+    if not self.sess['userobj'].is_admin:
         return xmlrpclib.Fault(0, "Permission denied, admin priv. required")
-
-    self.sess = s
 
     return func(self, *args, **kwargs)
 
@@ -102,6 +111,10 @@ class XmlrpcController(XMLRPCController):
 
         try:
             return XMLRPCController.__call__(self, environ, start_response)
+        # could be useful at some point:
+        #except VaultError, e:
+        #    print "ASLDJLASDJLASKJDKASJLD"
+        #    return xmlrpc_fault(0, e.message)(environ, start_response)
         finally:
             model.meta.Session.remove()
     
@@ -208,22 +221,18 @@ class XmlrpcController(XMLRPCController):
 
     @authenticated_user
     def sflvault_service_get(self, authtok, service_id):
-        self.vault.myself_id = self.sess['user_id']
         return self.vault.service_get(service_id)
 
     @authenticated_user
     def sflvault_service_get_tree(self, authtok, service_id):
-        self.vault.myself_id = self.sess['user_id']
         return self.vault.service_get_tree(service_id)
 
     @authenticated_user
     def sflvault_service_put(self, authtok, service_id, data):
-        self.vault.myself_id = self.sess['user_id']
         return self.vault.service_put(service_id, data)
 
     @authenticated_user
     def sflvault_show(self, authtok, service_id):
-        self.vault.myself_id = self.sess['user_id']
         return self.vault.show(service_id)
 
     @authenticated_user
@@ -233,7 +242,6 @@ class XmlrpcController(XMLRPCController):
     @authenticated_user
     def sflvault_service_add(self, authtok, machine_id, parent_service_id, url,
                              group_ids, secret, notes):
-        self.vault.myself_id = self.sess['user_id']
         return self.vault.service_add(machine_id, parent_service_id, url,
                                       group_ids, secret, notes)
         
@@ -264,7 +272,6 @@ class XmlrpcController(XMLRPCController):
 
     @authenticated_user
     def sflvault_customer_add(self, authtok, customer_name):
-        self.vault.myself_username = self.sess['username']
         return self.vault.customer_add(customer_name)
 
     @authenticated_admin
@@ -314,5 +321,4 @@ class XmlrpcController(XMLRPCController):
 
     @authenticated_user
     def sflvault_service_passwd(self, authtok, service_id, newsecret):
-        self.vault.myself_id = self.sess['user_id']        
         return self.vault.service_passwd(service_id, newsecret)

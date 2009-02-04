@@ -53,8 +53,6 @@ def vaultMsg(success, message, dict=None):
     return ret
 
 
-
-
 #
 # Session management functions
 #

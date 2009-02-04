@@ -849,6 +849,9 @@ class SFLvaultClient(object):
     @authenticate()
     def group_add(self, group_name):
         """Add a named group to the Vault. Return the group id."""
+        
+        print "Please wait, Vault generating keypair..."
+        
         retval = vaultReply(self.vault.group_add(self.authtok, group_name),
                             "Error adding group")
 
