@@ -236,6 +236,8 @@ def encrypt_longmsg(eg, message):
     # Tested and works to up to 192, but we'll use 96 for safety.
     CHUNK_MAX_SIZE = 96
 
+    message = wrapsum(message)
+
     # TODO: split into chunks if too long
     ptr = 0
     chunks = []
@@ -267,7 +269,9 @@ def decrypt_longmsg(eg, ciphermessage):
         snip = eg.decrypt(unserial_elgamal_msg(chunk))
         out.append(snip)
 
-    return ''.join(out)
+    message = chksum(''.join(out))
+
+    return message
         
 
 # Include the '_' function in the public names

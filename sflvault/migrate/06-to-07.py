@@ -122,7 +122,7 @@ for usercipher in userciphers:
         grp = [g for g in allgroups if gassoc.group_id == g.id][0]
         #utiliser g.keypair pour encrypter la symkey avec les clés du groupe.
         #remodifier le gassoc avec les bonnes données...
-        gassoc.cryptsymkey = encrypt_longmsg(g.keypair, symkey_plain)
+        gassoc.cryptsymkey = encrypt_longmsg(grp.keypair, symkey_plain)
         model.meta.Session.flush()
 
 model.meta.Session.commit()
