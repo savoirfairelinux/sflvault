@@ -65,26 +65,8 @@ class SFLvaultAccess(object):
 
     def service_get(self, service_id):
         """Get a single service's data"""
-        try:
-            s = query(Service).filter_by(id=service_id).one()
-        except exceptions.InvalidRequestError, e:
-            return vaultMsg(False, "Service not found: %s" % e.message)
 
-        ucipher = query(Usercipher).filter_by(service_id=s.id, user_id=self.myself_id).first()
-        if ucipher and ucipher.cryptsymkey:
-            cipher = ucipher.cryptsymkey
-        else:
-            cipher = ''
-
-        out = {'id': s.id,
-               'machine_id': s.machine_id or '',
-               'parent_service_id': s.parent_service_id or '',
-               'url': s.url or '',
-               'secret': s.secret,
-               'usercipher': cipher,
-               'secret_last_modified': s.secret_last_modified,
-               'metadata': s.metadata or '',
-               'notes': s.notes or ''}
+        out = self._service_get_data(service_id)
 
         return vaultMsg(True, "Here is the service", {'service': out})
     
@@ -119,43 +101,53 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, "Service s#%s saved successfully" % service_id)
 
-    def service_get_tree(self, service_id):
-        """Get a service tree, starting with service_id"""
-        
+    def _service_get_data(self, service_id):
+        """Retrieve the information for a given service."""
         try:
             s = query(Service).filter_by(id=service_id).one()
         except exceptions.InvalidRequestError, e:
             return vaultMsg(False, "Service not found: %s" % e.message)
 
-        me = query(User).filter_by(id=self.myself_id).one()
+        me = query(User).get(self.myself_id)
 
+        # We need no aliasing, because we'll only use `cryptgroupkey`,
+        # `cryptsymkey` and `group_id` in there.
+        req = sql.join(ServiceGroup, UserGroup, ServiceGroup.group_id==UserGroup.group_id).join(User, User.id==UserGroup.user_id).select().where(User.id==self.myself_id).where(ServiceGroup.service_id==s.id).order_by(ServiceGroup.group_id)
+        res = meta.Session.execute(req)
+
+        # Take the first one
+        uciphers = [x for x in res]
+        ucipher = uciphers[0]
+
+        out = {'id': s.id,
+               'url': s.url,
+               'secret': s.secret,
+               'cryptgroupkey': ucipher.cryptgroupkey,
+               'cryptsymkey': ucipher.cryptsymkey,
+               'group_id': ucipher.group_id,
+               'parent_service_id': s.parent_service_id,
+               'secret_last_modified': s.secret_last_modified,
+               'metadata': s.metadata or '',
+               'notes': s.notes or ''}
+
+        return out
+
+    def service_get_tree(self, service_id):
+        """Get a service tree, starting with service_id"""
         
         out = []
         while True:
-            req = sql.join(ServiceGroup, UserGroup, ServiceGroup.group_id==UserGroup.group_id).join(User, User.id==UserGroup.user_id).select().where(User.id==self.myself_id).where(ServiceGroup.service_id==s.id)
-            res = meta.Session.execute(req)
+            data = self._service_get_data(service_id)
+            out.append(data)
 
-            # Take the first one
-            uciphers = [x for x in res]
-            ucipher = uciphers[0]
-            
-            out.append({'id': s.id,
-                        'url': s.url,
-                        'secret': s.secret,
-                        'cryptgroupkey': ucipher.cryptgroupkey,
-                        'cryptsymkey': ucipher.cryptsymkey,
-                        'secret_last_modified': s.secret_last_modified,
-                        'metadata': s.metadata or '',
-                        'notes': s.notes or ''})
-
-            if not s.parent:
+            if not data['parent_service_id']:
                 break
 
             # Load the parent...
-            s = s.parent
+            service_id = data['parent_service_id']
 
             # check if we're not in an infinite loop!
-            if s.id in [x['id'] for x in out]:
+            if service_id in [x['id'] for x in out]:
                 return vaultMsg(False, "Circular references of parent services, aborting.")
 
         out.reverse()
@@ -445,14 +437,36 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, "Group g#%s saved successfully" % group_id)
 
-    def group_add(self, group_name):
+    def group_add(self, group_name, hidden=False):
         """Add a new group the database. Nothing will be added to it
         by default"""
+
+        # Get my User, to get my pubkey.
+        me = query(User).get(self.myself_id)
+        myeg = me.elgamal()
+        
+        # Generate keypair
+        newkeys = generate_elgamal_keypair()
         
         ng = Group()
         ng.name = group_name
+        ng.hidden = hidden
+        ng.pubkey = serial_elgamal_pubkey(elgamal_pubkey(newkeys))
 
         meta.Session.save(ng)
+
+        meta.Session.commit()
+
+        # Add myself to the group (add an assoc_users thing)
+        nug = UserGroup()
+        nug.user_id = self.myself_id
+        nug.group_id = ng.id
+        nug.cryptgroupkey = encrypt_longmsg(myeg,
+                                            serial_elgamal_privkey(
+                                                   elgamal_bothkeys(newkeys)))
+        
+        ng.users_assoc.append(nug)
+        
         meta.Session.commit()
 
         return vaultMsg(True, "Added group '%s'" % ng.name,
@@ -463,6 +477,8 @@ class SFLvaultAccess(object):
         with it anymore."""
 
         # TODO: remove the group and check for stuff...
+        # CHECK: that group.services = [] .. don't delete a group which
+        # isn't empty.
         return vaultMsg(True, 'NOT_IMPLEMENTED: Removed group successfully', {})
 
     def group_list(self):
@@ -485,6 +501,10 @@ class SFLvaultAccess(object):
         The second call should give the service's symkey to be encrypted by
         the vault with the group's pubkey.
         """
+        try:
+            grp = query(Group).filter_by(id=group_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Group not found: %s" % e.message)
         # Add a GroupService to the Group object.
         # Cryptographically, encrypt the symkey for the service with
         #   the group's pubkey.
@@ -493,8 +513,12 @@ class SFLvaultAccess(object):
 
     def group_del_service(self, group_id, service_id):
         """Remove the association between a group and a service, simply."""
-        # Remove the GRoupService from the Group object.
-        pass
+        try:
+            grp = query(Group).filter_by(id=group_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Group not found: %s" % e.message)
+        # Remove the GroupService from the Group object.
+        # CHECK: no check ?
         return vaultMsg(True, "NOT_IMPLEMENTED: Remove service from group successfully", {})
 
 
@@ -508,6 +532,10 @@ class SFLvaultAccess(object):
         is_admin - Gives admin privileges to the user being added or not.
         user - User can be a username or a user_id
         """
+        try:
+            grp = query(Group).filter_by(id=group_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Group not found: %s" % e.message)
         # TODO: permission to is_admin user_group assocs only.
         # Assign is_admin flag.
         # Add a UserGroup to the Group
@@ -528,7 +556,18 @@ class SFLvaultAccess(object):
 
         user - can be a username or a user_id
         """
+        try:
+            grp = query(Group).filter_by(id=group_id).one()
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Group not found: %s" % e.message)
+        
         # TODO: permission to is_admin user_group assocs only.
+        # CHECK: verify there are still users in the group after disassociation
+        # of that user from the group, that there is still one admin at least.
+        # Don't allow myself to be removed from the group. That way, there
+        # should always be an admin in the group.
+        # By not allowing a group to be removed unless no service is part of
+        # that group anymore ensures integrity.
         return vaultMsg(True, "NOT_IMPLEMENTED: Removed user from group successfully", {})
         
 

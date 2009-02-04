@@ -1,6 +1,7 @@
-Pylons>=0.9.6.2
+Pylons>=0.9.7rc4
 SQLAlchemy<=0.4.9999
 pycrypto
 pysqlite
 pexpect>=2.3
 urwid>=0.9.8.1
+ipython
