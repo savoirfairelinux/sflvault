@@ -492,11 +492,26 @@ class SFLvaultAccess(object):
     def group_del(self, group_id):
         """Remove a group from the vault. Only if no services are associated
         with it anymore."""
+        try:
+            grp = query(Group).options(eagerload('services_assoc')).get(group_id)
+        except exceptions.InvalidRequestError, e:
+            return vaultMsg(False, "Group not found: %s" % e.message)
 
-        # TODO: remove the group and check for stuff...
-        # CHECK: that group.services = [] .. don't delete a group which
-        # isn't empty.
-        return vaultMsg(True, 'NOT_IMPLEMENTED: Removed group successfully', {})
+        if len(grp.services_assoc):
+            return vaultMsg(False, "Group not empty, cannot delete")
+
+        # Delete UserGroup elements...
+        q1 = usergroups_table.delete(UserGroup.group_id==grp.id)
+        meta.Session.execute(q1)
+
+        name = grp.name
+        # Delete Group and commit..
+        meta.Session.delete(grp)
+        meta.Session.commit()
+
+        retval = {'name': name,
+                  'group_id': group_id}
+        return vaultMsg(True, 'Removed group "%s" successfully' % name, retval)
 
     def group_list(self):
         """Return a simple list of the available groups"""
