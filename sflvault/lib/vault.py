@@ -115,7 +115,7 @@ class SFLvaultAccess(object):
 
         # We need no aliasing, because we'll only use `cryptgroupkey`,
         # `cryptsymkey` and `group_id` in there.
-        req = sql.join(ServiceGroup, UserGroup, ServiceGroup.group_id==UserGroup.group_id).join(User, User.id==UserGroup.user_id).select().where(User.id==self.myself_id).where(ServiceGroup.service_id==s.id).order_by(ServiceGroup.group_id)
+        req = sql.join(ServiceGroup, UserGroup, ServiceGroup.group_id==UserGroup.group_id).join(User, User.id==UserGroup.user_id).select(use_labels=True).where(User.id==self.myself_id).where(ServiceGroup.service_id==s.id).order_by(ServiceGroup.group_id)
         res = meta.Session.execute(req)
 
         # Take the first one
@@ -124,10 +124,10 @@ class SFLvaultAccess(object):
 
         out = {'id': s.id,
                'url': s.url,
-               'secret': s.secret,
-               'cryptgroupkey': ucipher.cryptgroupkey,
-               'cryptsymkey': ucipher.cryptsymkey,
-               'group_id': ucipher.group_id,
+               'secret': s.secret, # WARN: these are table-name dependent!!
+               'cryptgroupkey': ucipher.users_groups_cryptgroupkey,
+               'cryptsymkey': ucipher.services_groups_cryptsymkey,
+               'group_id': ucipher.users_groups_group_id,
                'parent_service_id': s.parent_service_id,
                'secret_last_modified': s.secret_last_modified,
                'metadata': s.metadata or '',
