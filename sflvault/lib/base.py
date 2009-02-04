@@ -37,6 +37,7 @@ import sflvault.lib.helpers as h
 from sflvault import model
 from sflvault.model import query
 from sflvault.lib.common.crypto import *
+from sflvault.lib.common import VaultError
 
 from base64 import b64decode, b64encode
 

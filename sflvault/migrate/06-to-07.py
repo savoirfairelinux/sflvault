@@ -31,7 +31,7 @@
 
 from sflvault.client import client
 from sflvault import model
-from sflvault.client.utils import VaultError
+from sflvault.lib.common import VaultError
 from sflvault.lib.common.crypto import *
 from sqlalchemy import sql
 from sqlalchemy import Table, Column, types, ForeignKey

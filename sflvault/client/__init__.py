@@ -36,6 +36,7 @@ from subprocess import Popen, PIPE
 from decorator import decorator
 from pprint import pprint
 
+from sflvault.lib.common import VaultError
 from sflvault.lib.common.crypto import *
 from sflvault.client.utils import *
 from sflvault.client import remoting

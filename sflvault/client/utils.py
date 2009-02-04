@@ -23,11 +23,9 @@
 
 import urlparse
 
-__all__ = ['shred', 'urlparse', 'AuthenticationError', 'VaultError',
+__all__ = ['shred', 'urlparse', 'AuthenticationError',
            'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
            'ServiceRequireError', 'ServiceExpectError', 'sflvault_escape_chr']
-
-
 
 #
 # Add protocols to urlparse, for correct parsing of ssh and others.
@@ -62,15 +60,11 @@ class AuthenticationError(StandardError):
         return self.message
 
 
+### VaultError is in lib.common
+
+
 ### Vault-communication Exceptions
     
-class VaultError(StandardError):
-    def __init__(self, message):
-        """Sets an error message"""
-        self.message = message
-    def __str__(self):
-        return self.message
-
 class VaultIDSpecError(Exception):
     """When bad parameters are passed to vaultId"""
     pass

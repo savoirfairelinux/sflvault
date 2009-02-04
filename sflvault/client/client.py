@@ -41,6 +41,7 @@ from datetime import *
 
 from sflvault.client import SFLvaultClient
 from sflvault.lib.common.crypto import *
+from sflvault.lib.common import VaultError
 from sflvault.client.utils import *
 from sflvault.client import ui
 
