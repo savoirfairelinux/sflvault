@@ -612,23 +612,36 @@ class SFLvaultClient(object):
             if level in [0,1]:
                 print "%s" % (spc1) + '-' * (80 - len(spc1))
             
-    def _decrypt_service(self, serv):
+    def _decrypt_service(self, serv, onlysymkey=False, onlygroupkey=False):
+        """Decrypt the information return from the vault.
+
+        onlysymkey - return the plain symkey in the result
+        onlygroupkey - return the plain groupkey ElGamal obj in result
+        """
         # First decrypt groupkey
         try:
             grouppacked = decrypt_longmsg(self.privkey, serv['cryptgroupkey'])
-            eg = ElGamal.ElGamalobj()
-            (eg.p, eg.x, eg.g, eg.y) = unserial_elgamal_privkey(grouppacked)
-            groupkey = eg
-        except:
-            raise DecryptError("Unable to decrypt groupkey")
+        except StandardException, e:
+            raise DecryptError("Unable to decrypt groupkey (%s)" % e.message)
 
+        eg = ElGamal.ElGamalobj()
+        (eg.p, eg.x, eg.g, eg.y) = unserial_elgamal_privkey(grouppacked)
+        groupkey = eg
+        
+        if onlygroupkey:
+            serv['groupkey'] = eg
+            
         # Then decrypt symkey
         try:
             aeskey = decrypt_longmsg(groupkey, serv['cryptsymkey'])
-        except:
-            raise DecryptError("Unable to decrypt symkey")
+        except StandardException, e:
+            raise DecryptError("Unable to decrypt symkey (%s)" % e.message)
 
-        serv['plaintext'] = decrypt_secret(aeskey, serv['secret'])
+        if onlysymkey:
+            serv['symkey'] = aeskey
+
+        if not onlygroupkey and not onlysymkey:
+            serv['plaintext'] = decrypt_secret(aeskey, serv['secret'])
 
 
     @authenticate(True)
@@ -799,17 +812,24 @@ class SFLvaultClient(object):
         
 
 
-    @authenticate()
+    @authenticate(True)
     def group_add_service(self, group_id, service_id, retval=None):
-        retval = vaultReply(self.vault.group_add_service(self.authtok, group_id,
-                                                         service_id),
-                            "Error adding service to group")
+        print "Fetching service info..."
+        retval = vaultReply(self.vault.service_get(self.authtok, service_id),
+                            "Error loading service infos")
 
-        print "Success: %s" % retval['message']
+        # TODO: decrypt the symkey with the group's decrypted privkey.
+        serv = retval['service']
 
-        # TODO: do re-encryption over here...
-        retval = vaultReply(self.vault.group_add_service(self.authtok, group_id,
-                                                         service_id),
+        print "Decrypting symkey..."
+        self._decrypt_service(serv, onlysymkey=True)
+
+
+        print "Sending data back to vault"
+        retval = vaultReply(self.vault.group_add_service(self.authtok,
+                                                         group_id,
+                                                         service_id,
+                                                         serv['symkey']),
                             "Error adding service to group")
 
         print "Success: %s" % retval['message']

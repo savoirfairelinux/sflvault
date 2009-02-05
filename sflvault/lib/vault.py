@@ -63,10 +63,13 @@ class SFLvaultAccess(object):
         self.setup_timeout = 300
 
 
-    def service_get(self, service_id):
-        """Get a single service's data"""
+    def service_get(self, service_id, group_id=None):
+        """Get a single service's data.
+
+        group_id - return this group's key, otherwise, use first available
+        """
         try:
-            out = self._service_get_data(service_id)
+            out = self._service_get_data(service_id, group_id)
         except VaultError, e:
             return vaultMsg(False, e.message)
 
@@ -103,7 +106,7 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, "Service s#%s saved successfully" % service_id)
 
-    def _service_get_data(self, service_id):
+    def _service_get_data(self, service_id, group_id=None):
         """Retrieve the information for a given service."""
         try:
             s = query(Service).filter_by(id=service_id).one()
@@ -116,6 +119,11 @@ class SFLvaultAccess(object):
         # We need no aliasing, because we'll only use `cryptgroupkey`,
         # `cryptsymkey` and `group_id` in there.
         req = sql.join(ServiceGroup, UserGroup, ServiceGroup.group_id==UserGroup.group_id).join(User, User.id==UserGroup.user_id).select(use_labels=True).where(User.id==self.myself_id).where(ServiceGroup.service_id==s.id).order_by(ServiceGroup.group_id)
+
+        # Deal with group if specified..
+        if group_id:
+            req = req.where(ServiceGroup.group_id==group_id)
+        
         res = meta.Session.execute(req)
 
         # Take the first one
@@ -526,22 +534,38 @@ class SFLvaultAccess(object):
         return vaultMsg(True, 'Here is the list of groups', {'list': out})
 
 
-    def group_add_service(self, group_id, service_id, retval=None):
-        """Add a service to a group. Call once to retrieve information,
-        and a second time with retval to save cipher information.
+    def group_add_service(self, group_id, service_id, symkey):
+        """Add a service to a group.
 
-        The second call should give the service's symkey to be encrypted by
-        the vault with the group's pubkey.
+        Call servie_get() first to get the information and decrypt the symkey
+        on your side, then call this function to store the symkey.
+
+        The server-side Vault will encrypt it for the given group.
         """
+
         try:
             grp = query(Group).filter_by(id=group_id).one()
         except exceptions.InvalidRequestError, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
-        # Add a GroupService to the Group object.
-        # Cryptographically, encrypt the symkey for the service with
-        #   the group's pubkey.
-        # Save in `cryptsymkey`
-        return vaultMsg(True, "NOT_IMPLEMENTED: Added service to group successfully", {})
+
+        grpeg = grp.elgamal()
+
+        serv = query(ServiceGroup).filter_by(group_id=group_id,
+                                             service_id=service_id).all()
+
+        if len(serv):
+            return vaultMsg(False, "Service is already in group")
+
+        # Store the data in the vault.
+        nsg = ServiceGroup()
+        nsg.group_id = group_id
+        nsg.service_id = service_id
+        nsg.cryptsymkey = encrypt_longmsg(grpeg, symkey)
+
+        meta.Session.save(nsg)
+        meta.Session.commit()
+        
+        return vaultMsg(True, "Added service to group successfully", {})
 
     def group_del_service(self, group_id, service_id):
         """Remove the association between a group and a service, simply."""

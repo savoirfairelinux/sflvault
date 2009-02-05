@@ -220,8 +220,8 @@ class XmlrpcController(XMLRPCController):
         return self.vault.machine_put(machine_id, data)
 
     @authenticated_user
-    def sflvault_service_get(self, authtok, service_id):
-        return self.vault.service_get(service_id)
+    def sflvault_service_get(self, authtok, service_id, group_id=None):
+        return self.vault.service_get(service_id, group_id)
 
     @authenticated_user
     def sflvault_service_get_tree(self, authtok, service_id):
@@ -299,20 +299,20 @@ class XmlrpcController(XMLRPCController):
         return self.vault.group_del(group_id)
 
     @authenticated_user
-    def sflvault_group_add_service(self, group_id, service_id, retval=None):
-        return self.vault.group_add_service(group_id, service_id, retval)
+    def sflvault_group_add_service(self, authtok, group_id, service_id, symkey):
+        return self.vault.group_add_service(group_id, service_id, symkey)
 
     @authenticated_user
-    def sflvault_group_del_service(self, group_id, service_id):
+    def sflvault_group_del_service(self, authtok, group_id, service_id):
         return self.vault.group_del_service(group_id, service_id)
 
     @authenticated_user
-    def sflvault_group_add_user(self, group_id, user, is_admin=False,
-                                retval=None):
-        return self.vault.group_add_user(group_id, user, is_admin, retval)
+    def sflvault_group_add_user(self, authtok, group_id, user, is_admin=False,
+                                data=None):
+        return self.vault.group_add_user(group_id, user, is_admin, data)
 
     @authenticated_user
-    def sflvault_group_del_user(self, group_id, user):
+    def sflvault_group_del_user(self, authtok, group_id, user):
         return self.vault.group_del_user(group_id, user)
 
     @authenticated_user
