@@ -38,7 +38,8 @@ from base64 import b64decode, b64encode
 from datetime import *
 import time as stdtime
 
-from sqlalchemy import sql, exceptions
+from sqlalchemy import sql
+from sqlalchemy.exceptions import InvalidRequestError as InvalidReq
 
 # from sflvault.lib:
 from sflvault.model import *
@@ -147,8 +148,14 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "User successfully deleted")
 
 
-    def user_list(self):
-        """Return a simple list of the users"""
+    def user_list(self, groups=False):
+        """Return a simple list of the users
+
+        groups - return the list of groups for each user, or not
+        """
+        req = query(User)
+        if groups:
+            req = req.options(eagerload_all('groups_assoc.group'))
         lst = query(User).all()
 
         out = []
@@ -164,6 +171,16 @@ class SFLvaultAccess(object):
                   'is_admin': x.is_admin,
                   'setup_expired': x.setup_expired(),
                   'waiting_setup': bool(x.waiting_setup)}
+
+            if groups:
+                # Loop group_assocs for that user..
+                nx['groups'] = []
+                for ug in x.groups_assoc:
+                    nxgrp = {'is_admin': ug.is_admin,
+                             'name': ug.group.name,
+                             'id': ug.group_id}
+                    nx['groups'].append(nxgrp)
+                    
             out.append(nx)
 
         # Can use: datetime.fromtimestamp(x.created_stamp)
@@ -189,7 +206,7 @@ class SFLvaultAccess(object):
 
         try:
             s = query(Service).filter_by(id=service_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Service not found: %s" % e.message)
 
         #Save:
@@ -218,7 +235,7 @@ class SFLvaultAccess(object):
         """Retrieve the information for a given service."""
         try:
             s = query(Service).filter_by(id=service_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             raise VaultError("Service not found: %s (%s)" % (service_id,
                                                              e.message))
 
@@ -339,7 +356,7 @@ class SFLvaultAccess(object):
         """Get a single customer's data"""
         try:
             cust = query(Customer).filter_by(id=customer_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Customer not found: %s" % e.message)
 
         out = {'id': cust.id,
@@ -351,7 +368,7 @@ class SFLvaultAccess(object):
         """Put a single customer's data back to the Vault"""
         try:
             cust = query(Customer).filter_by(id=customer_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Customer not found: %s" % e.message)
 
         if 'name' in data:
@@ -384,7 +401,7 @@ class SFLvaultAccess(object):
         """Put a single machine's data back to the vault"""
         try:
             m = query(Machine).filter_by(id=machine_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Machine not found: %s" % e.message)
 
         if 'customer_id' in data:
@@ -413,7 +430,7 @@ class SFLvaultAccess(object):
         """Get a single machine's data"""
         try:
             m = query(Machine).filter_by(id=machine_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Machine not found: %s" % e.message)
 
 
@@ -504,8 +521,11 @@ class SFLvaultAccess(object):
         """Get a single group's data"""
         try:
             grp = query(Group).filter_by(id=group_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
+
+        ug = query(UserGroup).filter_by(user_id=self.myself_id,
+                                        group_id=group_id).first()
 
         # TODO: don't allow if grp.hidden == True and user isn't part of the
         # group.
@@ -514,25 +534,38 @@ class SFLvaultAccess(object):
                'name': grp.name,
                'hidden': grp.hidden}
 
+        if grp.hidden and (not ug or not ug.is_admin):
+            return vaultMsg(False, "Group not found*")
+
         return vaultMsg(True, "Here is the group", {'group': out})
+
 
     def group_put(self, group_id, data):
         """Put a single group's data back to the Vault"""
         try:
             grp = query(Group).filter_by(id=group_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
 
-        # TODO: same as group_get() permission check.
+        ug = query(UserGroup).filter_by(user_id=self.myself_id,
+                                        group_id=group_id).first()
+        if not ug:
+            return vaultMsg(False, "Cannot write to group: not member of group")
 
         if 'name' in data:
             grp.name = data['name']
+            
         if 'hidden' in data:
-            grp.hidden = bool(data['hidden'])
+            newhidden = bool(data['hidden'])
+            if not ug.is_admin and newhidden:
+                return vaultMsg(False, "You need to be admin on this group "
+                                "to hide the group")
+            grp.hidden = newhidden
 
         meta.Session.commit()
 
         return vaultMsg(True, "Group g#%s saved successfully" % group_id)
+
 
     def group_add(self, group_name, hidden=False):
         """Add a new group the database. Nothing will be added to it
@@ -574,7 +607,7 @@ class SFLvaultAccess(object):
         with it anymore."""
         try:
             grp = query(Group).options(eagerload('services_assoc')).get(group_id)
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
 
         if len(grp.services_assoc):
@@ -593,15 +626,37 @@ class SFLvaultAccess(object):
                   'group_id': group_id}
         return vaultMsg(True, 'Removed group "%s" successfully' % name, retval)
 
+
     def group_list(self):
         """Return a simple list of the available groups"""
-        # TODO: implement hidden groups, you shouldn't show those groups,
-        #       unless you're admin of that group.
         groups = query(Group).group_by(Group.name).all()
 
+        # TODO: implement hidden groups, you shouldn't show those groups,
+        #       unless you're admin of that group.
+        ugs = query(UserGroup).filter_by(user_id=self.myself_id).all()
+
+        me = query(User).get(self.myself_id)
+
         out = []
-        for x in groups:
-            out.append({'id': x.id, 'name': x.name})
+        for grp in groups:
+            myug = [ug for ug in ugs if ug.group_id == grp.id]
+            
+            res = {'id': grp.id, 'name': grp.name,
+                   'member': False, 'hidden': False, 'admin': False}
+
+            if not myug and not me.is_admin:
+                # Don't add if you're not a member and you're not global admin.
+                continue
+
+            res['member'] = bool(myug)
+
+            if grp.hidden:
+                res['hidden'] = True
+
+            if len(myug) and myug[0].is_admin:
+                res['admin'] = True
+                    
+            out.append(res)
 
         return vaultMsg(True, 'Here is the list of groups', {'list': out})
 
@@ -617,15 +672,14 @@ class SFLvaultAccess(object):
 
         try:
             grp = query(Group).filter_by(id=group_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
 
         grpeg = grp.elgamal()
 
-        serv = query(ServiceGroup).filter_by(group_id=group_id,
-                                             service_id=service_id).all()
-
-        if len(serv):
+        sg = query(ServiceGroup).filter_by(group_id=group_id,
+                                           service_id=service_id).all()
+        if len(sg):
             return vaultMsg(False, "Service is already in group")
 
         # Store the data in the vault.
@@ -639,15 +693,27 @@ class SFLvaultAccess(object):
         
         return vaultMsg(True, "Added service to group successfully", {})
 
+
     def group_del_service(self, group_id, service_id):
         """Remove the association between a group and a service, simply."""
         try:
             grp = query(Group).filter_by(id=group_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
-        # Remove the GroupService from the Group object.
+
+        try:
+            sg = query(ServiceGroup).filter_by(group_id=group_id,
+                                               service_id=service_id).one()
+        except InvalidReq, e:
+            return vaultMsg(False, "Service is not in group: %s" % e.message)
+
         # CHECK: no check ?
-        return vaultMsg(True, "NOT_IMPLEMENTED: Remove service from group successfully", {})
+
+        # Remove the GroupService from the Group object.
+        meta.Session.delete(sg)
+        meta.Session.commit()
+
+        return vaultMsg(True, "Removed service from group successfully", {})
 
 
     def group_add_user(self, group_id, user, is_admin=False, retval=None):
@@ -662,7 +728,7 @@ class SFLvaultAccess(object):
         """
         try:
             grp = query(Group).filter_by(id=group_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
         # TODO: permission to is_admin user_group assocs only.
         # Assign is_admin flag.
@@ -686,7 +752,7 @@ class SFLvaultAccess(object):
         """
         try:
             grp = query(Group).filter_by(id=group_id).one()
-        except exceptions.InvalidRequestError, e:
+        except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
         
         # TODO: permission to is_admin user_group assocs only.

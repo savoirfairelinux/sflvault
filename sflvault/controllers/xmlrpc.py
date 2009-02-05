@@ -179,8 +179,8 @@ class XmlrpcController(XMLRPCController):
         return self.vault.user_del(user)
 
     @authenticated_user
-    def sflvault_user_list(self, authtok):
-        return self.vault.user_list()
+    def sflvault_user_list(self, authtok, groups=False):
+        return self.vault.user_list(groups)
 
     @authenticated_user
     def sflvault_machine_get(self, authtok, machine_id):

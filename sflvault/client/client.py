@@ -618,12 +618,16 @@ class SFLvaultCommand(object):
 
         This option takes no argument, it lists the current users and their
         privileges."""
+        self.parser.set_usage("user-list [-g]")
+        self.parser.add_option('-g', '--groups', default=False,
+                               action="store_true", dest="groups",
+                               help="List user's group infos")
         self._parse()
 
         if len(self.args):
             raise SFLvaultParserError("Invalid number of arguments")
 
-        self.vault.user_list()
+        self.vault.user_list(self.opts.groups)
 
 
     def _group_service_options(self):

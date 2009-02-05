@@ -760,14 +760,18 @@ class SFLvaultClient(object):
         connection.connect()
 
     @authenticate()
-    def user_list(self):
+    def user_list(self, groups=False):
+        """List users
+
+        ``groups`` - if True, list groups for each user also
+        """
         # Receive: [{'id': x.id, 'username': x.username,
         #            'created_time': x.created_time,
         #            'is_admin': x.is_admin,
         #            'setup_expired': x.setup_expired()}
         #            {}, {}, ...]
         #    
-        retval = vaultReply(self.vault.user_list(self.authtok),
+        retval = vaultReply(self.vault.user_list(self.authtok, groups),
                             "Error listing users")
 
         print "User list (with creation date):"
@@ -776,7 +780,7 @@ class SFLvaultClient(object):
         for x in retval['list']:
             add = ''
             if x['is_admin']:
-                add += ' [is admin]'
+                add += ' [global admin]'
             if x['setup_expired']:
                 add += ' [setup expired]'
                 to_clean.append(x['username'])
@@ -787,6 +791,11 @@ class SFLvaultClient(object):
             #       to deal with! Some day..
             print "u#%d\t%s\t%s %s" % (x['id'], x['username'],
                                        x['created_stamp'], add)
+
+            if 'groups' in x:
+                for grp in x['groups']:
+                    add = ' [admin]' if grp['is_admin'] else ''
+                    print "\t\tg#%s\t%s %s" % (grp['id'], grp['name'], add)
 
         print '-' * 80
 
@@ -899,8 +908,15 @@ class SFLvaultClient(object):
 
         print "Groups:"
 
-        for x in retval['list']:
-            print "\tg#%d\t%s" % (x['id'], x['name'])
+        for grp in retval['list']:
+            add = []
+            if grp.get('hidden', False):
+                add.append('[hidden]')
+            if grp.get('member', False):
+                add.append('[member]')
+            if grp.get('admin', False):
+                add.append('[admin]')
+            print "\tg#%d\t%s %s" % (grp['id'], grp['name'], ' '.join(add))
 
 
     @authenticate()
