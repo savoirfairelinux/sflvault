@@ -622,6 +622,8 @@ class SFLvaultClient(object):
         """
         # First decrypt groupkey
         try:
+            # TODO: implement a groupkey cache system, since it's the longest
+            #       thing to decrypt (over a second on a 3GHz machine)
             grouppacked = decrypt_longmsg(self.privkey, serv['cryptgroupkey'])
         except StandardException, e:
             raise DecryptError("Unable to decrypt groupkey (%s)" % e.message)
@@ -854,17 +856,28 @@ class SFLvaultClient(object):
 
         print "Success: %s" % retval['message']
 
-    @authenticate()
+    @authenticate(True)
     def group_add_user(self, group_id, user, is_admin=False, retval=None):
         retval = vaultReply(self.vault.group_add_user(self.authtok, group_id,
                                                       user),
                             "Error adding user to group")
 
-        print "Success: %s" % retval['message']
-
-        # TODO: do re-encryption over here...
+        # Decrypt cryptgroupkey
+        # TODO: make use of a cache
+        grouppacked = decrypt_longmsg(self.privkey, retval['cryptgroupkey'])
+        
+        # Get userpubkey and unpack
+        eg = ElGamal.ElGamalobj()
+        (eg.p, eg.g, eg.y) = unserial_elgamal_pubkey(retval['userpubkey'])
+        
+        # Re-encrypt for user
+        newcryptgroupkey = encrypt_longmsg(eg, grouppacked)
+        
+        # Return a well-formed database-ready cryptgroupkey for user,
+        # also, give the param is_admin.. as desired.
         retval = vaultReply(self.vault.group_add_user(self.authtok, group_id,
-                                                      user, data),
+                                                      user, is_admin,
+                                                      newcryptgroupkey),
                             "Error adding user to group")
 
         print "Success: %s" % retval['message']

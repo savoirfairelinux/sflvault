@@ -280,8 +280,9 @@ class XmlrpcController(XMLRPCController):
 
     @authenticated_user
     def sflvault_group_add_user(self, authtok, group_id, user, is_admin=False,
-                                data=None):
-        return self.vault.group_add_user(group_id, user, is_admin, data)
+                                cryptgroupkey=None):
+        return self.vault.group_add_user(group_id, user, is_admin,
+                                         cryptgroupkey)
 
     @authenticated_user
     def sflvault_group_del_user(self, authtok, group_id, user):

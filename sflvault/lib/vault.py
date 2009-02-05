@@ -719,12 +719,13 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Removed service from group successfully", {})
 
 
-    def group_add_user(self, group_id, user, is_admin=False, retval=None):
+    def group_add_user(self, group_id, user, is_admin=False,
+                       cryptgroupkey=None):
         """Add a user to a group. Call once to retrieve information,
         and a second time with retval to save cipher information.
 
-        The second call should give the group's privkey, to be encrypted
-        by the vault with the user's pubkey.
+        The second call should give the group's privkey, encrypted by the
+        remote user for the user being added.
 
         is_admin - Gives admin privileges to the user being added or not.
         user - User can be a username or a user_id
@@ -733,12 +734,50 @@ class SFLvaultAccess(object):
             grp = query(Group).filter_by(id=group_id).one()
         except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
-        # TODO: permission to is_admin user_group assocs only.
-        # Assign is_admin flag.
-        # Add a UserGroup to the Group
-        # Crypto, encrypt the group,s privkey with the user's pubkey.
-        # Save in `cryptgroupkey`
-        return vaultMsg(True, "NOT_IMPLEMENTED: Added user to group successfully", {})
+
+        # Verify if I'm is_admin on that group
+        ug = query(UserGroup).filter_by(group_id=group_id,
+                                        user_id=self.myself_id).first()
+
+        # Make sure I'm in that group (to be able to decrypt the groupkey)
+        if not ug:
+            return vaultMsg(False, "You are not part of that group")
+
+        me = query(User).get(self.myself_id)
+        
+        if not ug.is_admin and not me.is_admin:
+            return vaultMsg(False, "You are not admin on that group (nor global admin)")
+
+        # Find remote user
+        try:
+            usr = get_user(user)
+        except LookupError, e:
+            return vaultMsg(False, "User %s not found: %s" % (user, e.message))
+
+        if not cryptgroupkey:
+            # Return the required information for a second call to work.
+            ret = {'user_id': int(usr.id),
+                   'group_id': int(group_id),
+                   'userpubkey': usr.pubkey,
+                   'cryptgroupkey': ug.cryptgroupkey}
+            return vaultMsg(True, "Continue, send the cryptgroupkey back, encrypted by the userpubkey provided", ret)
+        
+        nug = UserGroup()
+        nug.user_id = usr.id
+        nug.group_id = group_id
+        nug.is_admin = is_admin
+        # NOTE: This command trusts that the remote user adding another user
+        # enters valid data as a cryptgroupkey. If junk is added in that field,
+        # the added user simply won't be able to access the group's data.
+        # Also will he need to be removed and added successfully to the group
+        # for everything to work.
+        nug.cryptgroupkey = cryptgroupkey
+
+        meta.Session.save(nug)
+        meta.Session.commit()
+        
+        return vaultMsg(True, "Added user to group successfully")
+
 
     def group_del_user(self, group_id, user):
         """Remove the association between a group and a user.
