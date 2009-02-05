@@ -253,14 +253,23 @@ class SFLvaultAccess(object):
 
         # Take the first one
         uciphers = [x for x in res]
-        ucipher = uciphers[0]
+        if not uciphers:
+            ugcgk = ''
+            sgcsk = ''
+            uggi = ''
+        else:
+            ucipher = uciphers[0]
+            # WARN: these are table-name dependent!!
+            ugcgk = ucipher.users_groups_cryptgroupkey
+            sgcsk = ucipher.services_groups_cryptsymkey
+            uggi = ucipher.users_groups_group_id
 
         out = {'id': s.id,
                'url': s.url,
-               'secret': s.secret, # WARN: these are table-name dependent!!
-               'cryptgroupkey': ucipher.users_groups_cryptgroupkey,
-               'cryptsymkey': ucipher.services_groups_cryptsymkey,
-               'group_id': ucipher.users_groups_group_id,
+               'secret': s.secret,
+               'cryptgroupkey': ugcgk,
+               'cryptsymkey': sgcsk,
+               'group_id': uggi,
                'parent_service_id': s.parent_service_id,
                'secret_last_modified': s.secret_last_modified,
                'metadata': s.metadata or '',
@@ -748,7 +757,7 @@ class SFLvaultAccess(object):
         if not ug.is_admin and not me.is_admin:
             return vaultMsg(False, "You are not admin on that group (nor global admin)")
 
-        # Find remote user
+        # Find added user
         try:
             usr = get_user(user)
         except LookupError, e:
@@ -792,19 +801,44 @@ class SFLvaultAccess(object):
 
         user - can be a username or a user_id
         """
+        # TODO: DRY out this place, much copy from group_add_user
         try:
             grp = query(Group).filter_by(id=group_id).one()
         except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
+
+        # Verify if I'm is_admin on that group
+        ugs = query(UserGroup).filter_by(group_id=group_id).all()
+
+        myug = [ug for ug in ugs if ug.user_id == self.myself_id]
+        if not myug:
+            return vaultMsg(False, "You are not part of that group")
+
+        ug = myug[0] # This is my UserGroup row.
         
-        # TODO: permission to is_admin user_group assocs only.
-        # CHECK: verify there are still users in the group after disassociation
-        # of that user from the group, that there is still one admin at least.
-        # Don't allow myself to be removed from the group. That way, there
-        # should always be an admin in the group.
-        # By not allowing a group to be removed unless no service is part of
-        # that group anymore ensures integrity.
-        return vaultMsg(True, "NOT_IMPLEMENTED: Removed user from group successfully", {})
+        me = query(User).get(self.myself_id)
+        
+        if not ug.is_admin and not me.is_admin:
+            return vaultMsg(False, "You are not admin on that group (nor global admin)")
+
+        # Find added user
+        try:
+            usr = get_user(user)
+        except LookupError, e:
+            return vaultMsg(False, "User %s not found: %s" % (user, e.message))
+
+        hisug = [ug for ug in ugs if ug.user_id == usr.id]
+
+        if not hisug:
+            return vaultMsg(False, "User isn't part of the group")
+
+        if len(ugs) < 2:
+            return vaultMsg(False, "Cannot remove a group where no one is left")
+
+        meta.Session.delete(hisug[0])
+        meta.Session.commit()
+
+        return vaultMsg(True, "Removed user from group successfully", {})
         
 
     def customer_del(self, customer_id):

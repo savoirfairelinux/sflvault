@@ -734,7 +734,7 @@ class SFLvaultClient(object):
                 
             spc = len(str(x['id'])) * ' '
 
-            secret = x['plaintext'] if 'cryptsymkey' in x else '[access denied]'
+            secret = x['plaintext'] if 'plaintext' in x else '[access denied]'
             print "%ss#%d %s" % (pre, x['id'], x['url'])
             print "%s%s   secret: %s" % (pre, spc, secret)
             
