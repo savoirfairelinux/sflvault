@@ -63,6 +63,114 @@ class SFLvaultAccess(object):
         self.setup_timeout = 300
 
 
+    def user_setup(self, username, pubkey):
+        """Setup the user's account"""
+        cnt = query(User).count()
+        
+        u = query(User).filter_by(username=username).first()
+
+
+        if cnt:
+            if not u:
+                return vaultMsg(False, 'No such user %s' % username)
+        
+            if u.setup_expired():
+                return vaultMsg(False, 'Setup expired for user %s' % username)
+
+            if u.pubkey:
+                return vaultMsg(False, 'User %s already have a public '\
+                                       'key stored' % username)
+
+        # TODO: verify the user doesn't already have a pubkey !
+
+        # Ok, let's save the things and reset waiting_setup.
+        u.waiting_setup = None
+        u.pubkey = pubkey
+
+        meta.Session.commit()
+
+        return vaultMsg(True, 'User setup complete for %s' % username)
+
+
+    def user_add(self, username, is_admin):
+
+        usr = query(User).filter_by(username=username).first()
+
+        msg = ''
+        if usr == None:
+            # New user
+            usr = User()
+            usr.waiting_setup =  datetime.now() + timedelta(0, int(self.setup_timeout))
+            usr.username = username
+            usr.is_admin = bool(is_admin)
+            usr.created_time = datetime.now()
+
+            meta.Session.save(usr)
+            
+            msg = 'added'
+        elif usr.waiting_setup:
+            if usr.waiting_setup < datetime.now():
+                # Verify if it's a waiting_setup user that has expired.
+                usr.waiting_setup = datetime.now() + \
+                                    timedelta(0, int(self.setup_timeout))
+            
+                msg = 'updated (had setup timeout expired)'
+            else:
+                return vaultMsg(False, "User %s is waiting for setup" % \
+                                username)
+        else:
+            return vaultMsg(False, 'User %s already exists.' % username)
+        
+        meta.Session.commit()
+
+        return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "user-setup" command' % \
+                        ('Admin user' if is_admin else 'User',
+                         msg, int(self.setup_timeout)), {'user_id': usr.id})
+        
+
+    def user_del(self, user):
+        """Delete a user from database"""
+        # Get user
+        try:
+            usr = model.get_user(user)
+        except LookupError, e:
+            return vaultMsg(False, str(e))
+
+        # TODO: check if there's anything else to delete when deleting
+        #       a user.
+        t1 = model.usergroups_table
+        meta.Session.execute(t1.delete(t1.c.user_id==usr.id))
+        
+        meta.Session.delete(usr)
+        meta.Session.commit()
+
+        return vaultMsg(True, "User successfully deleted")
+
+
+    def user_list(self):
+        """Return a simple list of the users"""
+        lst = query(User).all()
+
+        out = []
+        for x in lst:
+            # perhaps add the pubkey ?
+            if x.created_time:
+                stmp = xmlrpclib.DateTime(x.created_time)
+            else:
+                stmp = 0
+                
+            nx = {'id': x.id, 'username': x.username,
+                  'created_stamp': stmp,
+                  'is_admin': x.is_admin,
+                  'setup_expired': x.setup_expired(),
+                  'waiting_setup': bool(x.waiting_setup)}
+            out.append(nx)
+
+        # Can use: datetime.fromtimestamp(x.created_stamp)
+        # to get a datetime object back from the x.created_time
+        return vaultMsg(True, "Here is the user list", {'list': out})
+        
+
     def service_get(self, service_id, group_id=None):
         """Get a single service's data.
 
@@ -226,42 +334,6 @@ class SFLvaultAccess(object):
         # Return 'out', in a nicely structured hierarchical form.
         return vaultMsg(True, "Here are the search results", {'results': out})
 
-
-    def user_add(self, username, is_admin):
-
-        usr = query(User).filter_by(username=username).first()
-
-        msg = ''
-        if usr == None:
-            # New user
-            usr = User()
-            usr.waiting_setup =  datetime.now() + timedelta(0, int(self.setup_timeout))
-            usr.username = username
-            usr.is_admin = bool(is_admin)
-            usr.created_time = datetime.now()
-
-            meta.Session.save(usr)
-            
-            msg = 'added'
-        elif usr.waiting_setup:
-            if usr.waiting_setup < datetime.now():
-                # Verify if it's a waiting_setup user that has expired.
-                usr.waiting_setup = datetime.now() + \
-                                    timedelta(0, int(self.setup_timeout))
-            
-                msg = 'updated (had setup timeout expired)'
-            else:
-                return vaultMsg(False, "User %s is waiting for setup" % \
-                                username)
-        else:
-            return vaultMsg(False, 'User %s already exists.' % username)
-        
-        meta.Session.commit()
-
-        return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "user-setup" command' % \
-                        ('Admin user' if is_admin else 'User',
-                         msg, int(self.setup_timeout)), {'user_id': usr.id})
-        
 
     def customer_get(self, customer_id):
         """Get a single customer's data"""
@@ -627,26 +699,6 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "NOT_IMPLEMENTED: Removed user from group successfully", {})
         
 
-
-    def user_del(self, user):
-        """Delete a user from database"""
-        # Get user
-        try:
-            usr = model.get_user(user)
-        except LookupError, e:
-            return vaultMsg(False, str(e))
-
-        # TODO: check if there's anything else to delete when deleting
-        #       a user.
-        t1 = model.usergroups_table
-        meta.Session.execute(t1.delete(t1.c.user_id==usr.id))
-        
-        meta.Session.delete(usr)
-        meta.Session.commit()
-
-        return vaultMsg(True, "User successfully deleted")
-
-
     def customer_del(self, customer_id):
         """Delete a customer from database, bringing along all it's machines
         and services
@@ -830,30 +882,6 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, "Here is the machines list", {'list': out})
     
-
-    def user_list(self):
-        """Return a simple list of the users"""
-        lst = query(User).all()
-
-        out = []
-        for x in lst:
-            # perhaps add the pubkey ?
-            if x.created_time:
-                stmp = xmlrpclib.DateTime(x.created_time)
-            else:
-                stmp = 0
-                
-            nx = {'id': x.id, 'username': x.username,
-                  'created_stamp': stmp,
-                  'is_admin': x.is_admin,
-                  'setup_expired': x.setup_expired(),
-                  'waiting_setup': bool(x.waiting_setup)}
-            out.append(nx)
-
-        # Can use: datetime.fromtimestamp(x.created_stamp)
-        # to get a datetime object back from the x.created_time
-        return vaultMsg(True, "Here is the user list", {'list': out})
-        
 
     def service_passwd(self, service_id, newsecret):
         """Change the passwd for a given service"""

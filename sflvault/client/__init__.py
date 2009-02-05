@@ -268,6 +268,10 @@ class SFLvaultClient(object):
         
     def _set_vault(self, url, save=False):
         """Set the vault's URL and optionally save it"""
+        # When testing, don't tweak the vault.
+        if not url:
+            return
+        
         self.vault = xmlrpclib.Server(url).sflvault
         if save:
             self.cfg.set('SFLvault', 'url', url)
@@ -499,7 +503,7 @@ class SFLvaultClient(object):
         print "Password updated for service: s#%d" % int(retval['service_id'])
                             
     
-    def user_setup(self, username, vault_url):
+    def user_setup(self, username, vault_url, passphrase=None):
         """Sets up the local configuration to communicate with the Vault.
 
         username  - the name with which an admin prepared (with add-user)
@@ -519,19 +523,20 @@ class SFLvaultClient(object):
         print "You will need a passphrase to secure your private key. The"
         print "encrypted key will be stored on this machine in %s" % self.config_filename
         print '-' * 80
-        
-        while True:
-            privpass = getpass.getpass("Enter passphrase (to secure your private key): ")
-            privpass2 = getpass.getpass("Enter passphrase again: ")
 
-            if privpass != privpass2:
-                print "Passphrase mismatch, try again."
-            elif privpass == '':
-                print "Passphrase cannot be null."
-            else:
-                # Ok, let's go..
-                privpass2 = randfunc(len(privpass2))
-                break
+        if not passphrase:
+            while True:
+                passphrase = getpass.getpass("Enter passphrase (to secure "
+                                             "your private key): ")
+                passph2 = getpass.getpass("Enter passphrase again: ")
+
+                if passphrase != passph2:
+                    print "Passphrase mismatch, try again."
+                elif passphrase == '':
+                    print "Passphrase cannot be null."
+                else:
+                    del(passph2)
+                    break
 
         
         print "Sending request to vault..."
@@ -552,11 +557,9 @@ class SFLvaultClient(object):
         # if encryption is required at some point.
         self.cfg.set('SFLvault', 'key',
                    encrypt_privkey(serial_elgamal_privkey(elgamal_bothkeys(eg)),
-                                   privpass))
-        privpass = randfunc(len(privpass))
-
+                                   passphrase))
+        del(passphrase)
         del(eg)
-        del(privpass)
 
         print "Saving settings..."
         self.config_write()

@@ -22,13 +22,15 @@ def setup_config(command, filename, section, vars):
         model.query(model.User).filter_by(username='admin').one()
         log.info("User 'admin' already exists, skipping insertion of admin user.")
     except:
-        log.info("Adding 'admin' user, you have 5 minutes to setup from your client")
+        log.info("Adding 'admin' user, you have 15 minutes to setup from your client")
         u = model.User()
-        u.waiting_setup = datetime.now() + timedelta(0, 300)
+        u.waiting_setup = datetime.now() + timedelta(0, 900)
         u.username = u'admin'
         u.created_time = datetime.now()
         u.is_admin = True
+
+        model.meta.Session.save(u)
         
-        model.Session.commit()
+        model.meta.Session.commit()
     
     log.info("Successfully setup")

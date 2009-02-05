@@ -168,36 +168,7 @@ class XmlrpcController(XMLRPCController):
 
 
     def sflvault_user_setup(self, username, pubkey):
-
-        # First, remove ALL users that have waiting_setup expired, where
-        # waiting_setup isn't NULL.
-        #meta.Session.delete(query(User).filter(User.waiting_setup != None).filter(User.waiting_setup < datetime.now()))
-        #raise RuntimeError
-        cnt = query(User).count()
-        
-        u = query(User).filter_by(username=username).first()
-
-
-        if cnt:
-            if not u:
-                return vaultMsg(False, 'No such user %s' % username)
-        
-            if u.setup_expired():
-                return vaultMsg(False, 'Setup expired for user %s' % username)
-
-            if u.pubkey:
-                return vaultMsg(False, 'User %s already have a public '\
-                                       'key stored' % username)
-
-        # TODO: verify the user doesn't already have a pubkey !
-
-        # Ok, let's save the things and reset waiting_setup.
-        u.waiting_setup = None
-        u.pubkey = pubkey
-
-        meta.Session.commit()
-
-        return vaultMsg(True, 'User setup complete for %s' % username)
+        return self.vault.user_setup(username, pubkey)
 
     @authenticated_admin
     def sflvault_user_add(self, authtok, username, is_admin):

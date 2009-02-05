@@ -18,6 +18,10 @@ import paste.script.appinstall
 from paste.deploy import loadapp
 from routes import url_for
 
+from pylons import config
+from sflvault.client import SFLvaultClient
+from sflvault.lib.vault import SFLvaultAccess
+
 __all__ = ['url_for', 'TestController']
 
 here_dir = os.path.dirname(os.path.abspath(__file__))
@@ -37,4 +41,15 @@ class TestController(TestCase):
     def __init__(self, *args, **kwargs):
         wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
         self.app = paste.fixture.TestApp(wsgiapp)
+
+        # Create the vault test obj.
+        if 'SFLVAULT_ASKPASS' in os.environ:
+            del(os.environ['SFLVAULT_ASKPASS'])
+        os.environ['SFLVAULT_CONFIG'] = config['sflvault.testconfig']
+        
+        self.vault = SFLvaultClient(shell=True)
+        self.vault.vault = SFLvaultAccess()
+        self.passphrase = 'test'
+        self.username = 'admin'
+        
         TestCase.__init__(self, *args, **kwargs)

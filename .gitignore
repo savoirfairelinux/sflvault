@@ -18,4 +18,10 @@ docs/*.html
 # We need to track paste_deploy_config.ini_tmpl .. and why not the other files?
 #SFLvault.egg-info
 
+# virtualenv link (to be activated with . env/bin/activate)
 env
+
+# Test stuff
+test-database.db
+test-config
+
