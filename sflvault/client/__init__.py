@@ -566,27 +566,27 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def search(self, query, verbose=False):
+    def search(self, query, groups_ids=None, verbose=False):
         """Search the database for query terms, specified as a list of REGEXPs.
 
         Returns a hierarchical view of the results."""
-        retval = vaultReply(self.vault.search(self.authtok, query, verbose),
+        retval = vaultReply(self.vault.search(self.authtok, query, groups_ids,
+                                              verbose),
                             "Error searching database")
 
         print "Results:"
-        # TODO: format the results in a beautiful way
+
         # TODO: call the pager `less` when too long.
-        #pprint(retval['results'])
         level = 0
         for c_id, c in retval['results'].items():
             level = 0
-            # TODO: display customer info
+            # Display customer info
             print "c#%s  %s" % (c_id, c['name'])
 
             spc1 = ' ' * (4 + len(c_id))
             for m_id, m in c['machines'].items():
                 level = 1
-                # TODO: display machine infos: 
+                # Display machine infos: 
                 add = ' ' * (4 + len(m_id))
                 print "%sm#%s  %s (%s - %s)" % (spc1, m_id,
                                                 m['name'], m['fqdn'], m['ip'])
@@ -596,11 +596,10 @@ class SFLvaultClient(object):
                                                              
 
                 spc2 = spc1 + add
-                #print "%s" % (spc2) + ' ' * 6 + '-' * (74 - len(spc2))
                 print ""
                 for s_id, s in m['services'].items():
                     level = 2
-                    # TODO: display service infos
+                    # Display service infos
                     add = ' ' * (4 + len(s_id))
                     p_id = s.get('parent_service_id')
                     print "%ss#%s  %s%s" % (spc2, s_id, s['url'],

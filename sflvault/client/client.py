@@ -820,6 +820,9 @@ class SFLvaultCommand(object):
     def search(self):
         """Search the Vault's database for those space separated keywords"""
         self.parser.set_usage('search [opts] keyword1 ["key word2" ...]')
+        self.parser.add_option('-g', '--group', dest="groups",
+                               action="append", type="string",
+                               help="Search in this (these) groups only")
         self.parser.add_option('-v', '--verbose', dest="verbose",
                                action="store_true", default=False,
                                help="Show verbose output (include notes, location)")
@@ -828,7 +831,11 @@ class SFLvaultCommand(object):
         if not len(self.args):
             raise SFLvaultParserError("Search terms required")
 
-        self.vault.search(self.args, self.opts.verbose)
+        groups = None
+        if self.opts.groups:
+            groups = [self.vault.vaultId(x, 'g') for x in self.opts.groups]
+
+        self.vault.search(self.args, groups, self.opts.verbose)
 
 
 

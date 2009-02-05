@@ -304,14 +304,17 @@ class SFLvaultAccess(object):
         return self.service_get_tree(service_id)
 
 
-    def search(self, search_query, verbose=False):
+    def search(self, search_query, groups_ids=None, verbose=False):
         """Do the search, and return the result tree."""
-        # TODO: narrow down search (instead of all(), doh!)
-        cs = query(Customer).all()
-        ms = query(Machine).all()
-        ss = query(Service).all()
 
-        search = model.search_query(search_query, verbose)
+        if groups_ids:
+            # Get groups
+            try:
+                groups, groups_ids = model.get_groups_list(groups_ids)
+            except ValueError, e:
+                return vaultMsg(False, str(e))
+
+        search = model.search_query(search_query, groups_ids, verbose)
 
 
         # Quick helper funcs, to create the hierarchical 'out' structure.

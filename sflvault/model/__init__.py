@@ -323,12 +323,21 @@ def get_groups_list(group_ids, eagerload_all_=None):
     return (groups, group_ids)
 
 
-def search_query(swords, verbose=False):
+def search_query(swords, groups_ids=None, verbose=False):
 
     # Create the join..
-    sel = sql.join(Customer, Machine).join(Service) \
-             .select(use_labels=True)
+    sel = sql.join(Customer, Machine).join(Service)
 
+    if groups_ids:
+        if not isinstance(groups_ids, list):
+            raise RuntimeError("groups_ids must be a list, or None")
+        sel = sel.join(ServiceGroup)
+
+    sel = sel.select(use_labels=True)
+
+    if groups_ids:
+        sel = sel.where(ServiceGroup.group_id.in_(groups_ids))
+        
     # Fields to search in..
     allfields = [Customer.id,
                  Customer.name,
