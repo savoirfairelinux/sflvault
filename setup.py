@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name='SFLvault',
-    version="0.6.11",
+    version="0.7.0",
     description='Networked credentials store and authentication manager',
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
@@ -23,6 +23,13 @@ setup(
                       "urwid>=0.9.8.1",
                       "ipython"
                       ],
+    # For server installation:
+    #  "ipython"
+    #  "pysqlite"
+    # For development installation:
+    #  "nosexml"
+    #  "elementtree"
+    #  "coverage"
     packages=find_packages(exclude=['ez_setup']),
     include_package_data=True,
     test_suite='nose.collector',

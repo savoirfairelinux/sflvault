@@ -12,15 +12,15 @@
 
 ### WARN: make sure you have created the new fields:
 #
-#usergroups_table:
+#usergroups_table (named 'users_groups'):
 #  Column('is_admin', types.Boolean, default=False),
 #  Column('cryptgroupkey', types.Text),
 #
-#groups_table:
+#groups_table (named 'groups'):
 #  Column('hidden', types.Boolean, default=False),
 #  Column('pubkey', types.Text),
 #
-#servicegroups_table:
+#servicegroups_table (named 'services_groups'):
 #  Column('cryptsymkey', types.Text),
 #
 
