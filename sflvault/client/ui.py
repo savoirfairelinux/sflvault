@@ -167,8 +167,8 @@ class ServiceEditDialogDisplay(DialogDisplay):
         #          urwid.CheckBox('tag 3', False, user_data=3)]
 
         inputs = {'url': urwid.Edit("", str(data['url']), wrap='clip'),
-                  'machine_id': urwid.Edit("", str(data['machine_id'])),
-                  'parent_service_id': urwid.Edit("", str(data['parent_service_id'])),
+                  'machine_id': urwid.Edit("", str(data['machine_id'] or '')),
+                  'parent_service_id': urwid.Edit("", str(data['parent_service_id'] or '')),
                   'notes': urwid.Edit("", str(data['notes'])),
                   }
                   
@@ -235,7 +235,7 @@ class MachineEditDialogDisplay(DialogDisplay):
     def __init__(self, data):
 
         # Create fields..
-        inputs = {'customer_id': urwid.Edit("", str(data['customer_id']))}
+        inputs = {'customer_id': urwid.Edit("", str(data['customer_id'] or ''))}
         for x in ['ip', 'name', 'fqdn', 'location', 'notes']:
             inputs[x] = urwid.Edit("", str(data[x])) # , wrap='clip'
                   

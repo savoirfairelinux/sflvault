@@ -525,6 +525,8 @@ class SFLvaultCommand(object):
 
         thing_id = self.vault.vaultId(self.args[0], vault_id_type)
 
+        # TODO: make the service_edit NOT decrypt stuff (it's not needed
+        #       when we're only editing)
         thing = get_function(thing_id)
 
         dialog = ui_class(thing)
@@ -636,10 +638,12 @@ class SFLvaultCommand(object):
         self.parser.add_option('-s', dest="service_id",
                                help="Service to be added")
 
-    def _group_service_required(self):
+    def _group_service_parse(self):
         if not self.opts.group_id or not self.opts.service_id:
             raise SFLvaultParserError("-g and -s options required")
 
+        self.opts.group_id = self.vault.vaultId(self.opts.group_id, 'g')
+        self.opts.service_id = self.vault.vaultId(self.opts.service_id, 's')
 
     def group_add_service(self):
         """Add a service to a group, doing necessary re-encryption"""
@@ -647,7 +651,7 @@ class SFLvaultCommand(object):
         self._group_service_options()
         self._parse()
 
-        self._group_service_required()
+        self._group_service_parse()
         
         self.vault.group_add_service(self.opts.group_id, self.opts.service_id)
 
@@ -657,7 +661,7 @@ class SFLvaultCommand(object):
         self._group_service_options()
         self._parse()
 
-        self._group_service_required()
+        self._group_service_parse()
         
         self.vault.group_del_service(self.opts.group_id, self.opts.service_id)
 
@@ -668,10 +672,11 @@ class SFLvaultCommand(object):
         self.parser.add_option('-u', dest="user",
                                help="Service to be added")
 
-    def _group_user_required(self):
+    def _group_user_parse(self):
         if not self.opts.group_id or not self.opts.user:
             raise SFLvaultParserError("-g and -u options required")
-
+        
+        self.opts.group_id = self.vault.vaultId(self.opts.group_id, 'g')
 
     def group_add_user(self):
         """Add a user to a group, doing necessary re-encryption"""
@@ -679,7 +684,7 @@ class SFLvaultCommand(object):
         self._group_user_options()
         self._parse()
 
-        self._group_user_required()
+        self._group_user_parse()
         
         self.vault.group_add_user(self.opts.group_id, self.opts.user)
 
@@ -689,7 +694,7 @@ class SFLvaultCommand(object):
         self._group_user_options()
         self._parse()
 
-        self._group_user_required()
+        self._group_user_parse()
         
         self.vault.group_del_user(self.opts.group_id, self.opts.user)
 

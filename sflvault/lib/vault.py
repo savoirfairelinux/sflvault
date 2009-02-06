@@ -267,6 +267,7 @@ class SFLvaultAccess(object):
         out = {'id': s.id,
                'url': s.url,
                'secret': s.secret,
+               'machine_id': s.machine_id,
                'cryptgroupkey': ugcgk,
                'cryptsymkey': sgcsk,
                'group_id': uggi,

@@ -32,6 +32,11 @@ pkg_resources.working_set.add_entry(conf_dir)
 pkg_resources.require('Paste')
 pkg_resources.require('PasteScript')
 
+# Remove the test database on each run.
+dbfile = os.path.join(conf_dir, 'test-database.db')
+if os.path.exists(dbfile):
+    os.unlink(dbfile)
+
 test_file = os.path.join(conf_dir, 'test.ini')
 cmd = paste.script.appinstall.SetupCommand('setup-app')
 cmd.run([test_file])

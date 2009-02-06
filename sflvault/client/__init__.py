@@ -659,8 +659,8 @@ class SFLvaultClient(object):
         aeskey = ''
         secret = ''
 
-        # Add it only if we can!
-        if serv['usercipher']:
+        # Add it only if we can! (or if we want to)
+        if 'cryptgroupkey' in serv:
             self._decrypt_service(serv)
 
         return serv
