@@ -29,6 +29,7 @@ sflvault/controllers/xmlrpc.py
 sflvault/lib/__init__.py
 sflvault/lib/app_globals.py
 sflvault/lib/base.py
+sflvault/lib/fishlib.py
 sflvault/lib/helpers.py
 sflvault/lib/vault.py
 sflvault/lib/common/__init__.py
