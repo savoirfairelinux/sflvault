@@ -24,4 +24,5 @@ env
 # Test stuff
 test-database.db
 test-config
-
+test-suite.xml
+.coverage

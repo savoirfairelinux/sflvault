@@ -17,6 +17,9 @@ import paste.fixture
 import paste.script.appinstall
 from paste.deploy import loadapp
 from routes import url_for
+from ConfigParser import ConfigParser
+from paste.httpserver import serve
+import threading
 
 from pylons import config
 from sflvault.client import SFLvaultClient
@@ -41,7 +44,44 @@ test_file = os.path.join(conf_dir, 'test.ini')
 cmd = paste.script.appinstall.SetupCommand('setup-app')
 cmd.run([test_file])
 
+
 class TestController(TestCase):
+
+
+    def setUp(self, *args, **kwargs):
+        print "\t--------------------------------------------------------------"
+        print "\t--- Setting up database test environment, please stand by. ---"
+        print "\t--------------------------------------------------------------"
+
+        self.globs = {}
+
+        infos = ConfigParser()
+        infos.read(test_file)
+        sinfos = infos._sections['server:main']
+        wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
+        server = self.globs['server'] = serve(wsgiapp,
+                                     sinfos['host'],
+                                     sinfos['port'],
+                                     socket_timeout=1,
+                                     start_loop=False,
+                                    )
+        t = threading.Thread(target=server.serve_forever)
+        t.setDaemon(True)
+        t.start()
+        #self.globs['app'] = paste.fixture.TestApp(wsgiapp)
+        
+        #def url_for_wrapper(*args, **kwargs):
+        #    lkwargs = {'protocol': 'http' ,'host':  "%s:%s" % \
+        #               (server.server_name, server.server_port)}
+        #    lkwargs.update(kwargs)
+        #    return url_for(*args, **lkwargs)
+        #self.globs['url_for'] = url_for_wrapper
+        #self.globs['url_for_orig'] = url_for
+
+    def tearDown(self):
+        self.globs['server'].server_close()
+
+
 
     def __init__(self, *args, **kwargs):
         wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
@@ -53,7 +93,6 @@ class TestController(TestCase):
         os.environ['SFLVAULT_CONFIG'] = config['sflvault.testconfig']
         
         self.vault = SFLvaultClient(shell=True)
-        self.vault.vault = SFLvaultAccess()
         self.passphrase = 'test'
         self.username = 'admin'
         

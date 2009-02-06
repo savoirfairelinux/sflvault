@@ -268,10 +268,6 @@ class SFLvaultClient(object):
         
     def _set_vault(self, url, save=False):
         """Set the vault's URL and optionally save it"""
-        # When testing, don't tweak the vault.
-        if not url:
-            return
-        
         self.vault = xmlrpclib.Server(url).sflvault
         if save:
             self.cfg.set('SFLvault', 'url', url)
