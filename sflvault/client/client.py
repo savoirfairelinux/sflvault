@@ -680,7 +680,9 @@ class SFLvaultCommand(object):
 
     def group_add_user(self):
         """Add a user to a group, doing necessary re-encryption"""
-        self.parser.set_usage("group-add-user -g <group_id> -u <user>")
+        self.parser.set_usage("group-add-user [-a] -g <group_id> -u <user>")
+        self.parser.add_option('-a', action="store_true", dest='is_admin',
+                               default=False, help="Mark as group admin")
         self._group_user_options()
         self._parse()
 
@@ -760,7 +762,17 @@ class SFLvaultCommand(object):
             raise SFLvaultParserError("Invalid number of arguments")
 
         self.vault.machine_list(self.opts.verbose, customer_id)
-        
+
+
+    def user_passwd(self):
+        """Change the passphrase protecting your locally saved private key"""
+        self.parser.set_usage("user-passwd")
+        self._parse()
+
+        if len(self.args) != 0:
+            raise SFLvaultParserError("user-passwd takes no arguments")
+
+        self.vault.user_passwd()
 
     def user_setup(self):
         """Setup a new user on the vault.
@@ -771,7 +783,7 @@ class SFLvaultCommand(object):
         vault_url - the URL (http://example.org:port/vault/rpc) to the
                     Vault"""
         
-        self.parser.set_usage("setup username vault_url")
+        self.parser.set_usage("user-setup <username> <vault_url>")
         self._parse()
         
         if len(self.args) != 2:

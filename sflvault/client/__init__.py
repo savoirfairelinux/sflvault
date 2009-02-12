@@ -365,6 +365,8 @@ class SFLvaultClient(object):
 
         print "Success: %s" % retval['message']
         print "New user ID: u#%d" % retval['user_id']
+        prms = (username, self.cfg.get('SFLvault', 'url'))
+        print "The new user should run: sflvault user-setup %s %s" % prms
 
 
     @authenticate()
@@ -498,7 +500,43 @@ class SFLvaultClient(object):
         print "Success: %s" % retval['message']
         print "Password updated for service: s#%d" % int(retval['service_id'])
                             
-    
+
+    def _new_passphrase(self):
+        """Return a new passphrase after asking arrogantly"""
+        while True:
+            passphrase = getpass.getpass("Enter passphrase (to secure "
+                                         "your private key): ")
+            passph2 = getpass.getpass("Enter passphrase again: ")
+
+            if passphrase != passph2:
+                print "Passphrase mismatch, try again."
+            elif passphrase == '':
+                print "Passphrase cannot be null."
+            else:
+                return passphrase
+
+    def user_passwd(self, new_passphrase=None):
+        """Change the password protecting the local private key."""
+        old_passphrase = getpass.getpass('Enter your old passphrase: ')
+        # Re-read configuration in case it changed since the shell is open.
+        self.config_read()
+        privkey_enc = self.cfg.get('SFLvault', 'key')
+        # Decrypt the privkey
+        try:
+            thething = decrypt_privkey(privkey_enc, old_passphrase)
+        except DecryptError, e:
+            print "[SFLvault] Invalid passphrase"
+            return
+        del(privkey_enc)
+        # Ask the new passphrase, 
+        if not new_passphrase:
+            new_passphrase = self._new_passphrase()
+        # Encrypt and set the new passphrase
+        self.cfg.set('SFLvault', 'key', encrypt_privkey(thething, new_passphrase))
+        self.config_write()
+
+        print "user-passwd successful"
+        
     def user_setup(self, username, vault_url, passphrase=None):
         """Sets up the local configuration to communicate with the Vault.
 
@@ -521,19 +559,7 @@ class SFLvaultClient(object):
         print '-' * 80
 
         if not passphrase:
-            while True:
-                passphrase = getpass.getpass("Enter passphrase (to secure "
-                                             "your private key): ")
-                passph2 = getpass.getpass("Enter passphrase again: ")
-
-                if passphrase != passph2:
-                    print "Passphrase mismatch, try again."
-                elif passphrase == '':
-                    print "Passphrase cannot be null."
-                else:
-                    del(passph2)
-                    break
-
+            passphrase = self._new_passphrase()
         
         print "Sending request to vault..."
         # Send it to the vault, with username

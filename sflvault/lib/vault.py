@@ -714,19 +714,37 @@ class SFLvaultAccess(object):
         except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
 
-        try:
-            sg = query(ServiceGroup).filter_by(group_id=group_id,
-                                               service_id=service_id).one()
-        except InvalidReq, e:
+        # TODO: DRY out this place, much copy from del_user and stuff
+        sgs = query(ServiceGroup).filter_by(group_id=group_id,
+                                            service_id=service_id).all()
+
+        if grp.id not in [sg.group_id for sg in sgs]:
             return vaultMsg(False, "Service is not in group: %s" % e.message)
 
-        # CHECK: no check ?
+        sg = [sg for sg in sgs if grp.id == sg.group_id][0]
+            
+        # Make sure we don't lose all of the service's crypted information.
+        if len(sgs) < 2:
+            return vaultMsg(False, "This is the last group this service is in. Either delete the service, or add it to another group first")
+
+        # Verify if I'm is_admin on that group
+        ug = query(UserGroup).filter_by(group_id=group_id,
+                                        user_id=self.myself_id).first()
+
+        # Make sure I'm in that group (to be able to decrypt the groupkey)
+        if not ug:
+            return vaultMsg(False, "You are not part of that group")
+
+        me = query(User).get(self.myself_id)
+        
+        if not ug.is_admin and not me.is_admin:
+            return vaultMsg(False, "You are not admin on that group (nor global admin)")
 
         # Remove the GroupService from the Group object.
         meta.Session.delete(sg)
         meta.Session.commit()
 
-        return vaultMsg(True, "Removed service from group successfully", {})
+        return vaultMsg(True, "Removed service from group successfully")
 
 
     def group_add_user(self, group_id, user, is_admin=False,
@@ -745,7 +763,7 @@ class SFLvaultAccess(object):
         except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
 
-        # Verify if I'm is_admin on that group
+        # Verify if I'm admin on that group
         ug = query(UserGroup).filter_by(group_id=group_id,
                                         user_id=self.myself_id).first()
 
@@ -808,7 +826,7 @@ class SFLvaultAccess(object):
         except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % e.message)
 
-        # Verify if I'm is_admin on that group
+        # Verify if I'm admin on that group
         ugs = query(UserGroup).filter_by(group_id=group_id).all()
 
         myug = [ug for ug in ugs if ug.user_id == self.myself_id]
@@ -833,8 +851,13 @@ class SFLvaultAccess(object):
         if not hisug:
             return vaultMsg(False, "User isn't part of the group")
 
+        # Check I'm not removing myself
+        if self.myself_id == usr.id:
+            return vaultMsg(False, "Cannot remove yourself from a group")
+
+        # This also prevents from removing myself from the group.
         if len(ugs) < 2:
-            return vaultMsg(False, "Cannot remove a group where no one is left")
+            return vaultMsg(False, "Only one user left! Cannot leave a group unattended, otherwise all service will become lost!")
 
         meta.Session.delete(hisug[0])
         meta.Session.commit()
