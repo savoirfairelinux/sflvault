@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: SFLvault
-Version: 0.7.0dev
+Version: 0.7.1dev
 Summary: Networked credentials store and authentication manager
 Home-page: http://www.sflvault.org
 Author: Alexandre Bourget
