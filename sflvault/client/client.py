@@ -805,7 +805,11 @@ class SFLvaultCommand(object):
                   ID."""
         self.parser.set_usage("show [opts] VaultID")
         self.parser.add_option('-v', '--verbose', dest="verbose",
-                               help="Show verbose output (include notes, location)")
+                               help="Show verbose output (include notes, "\
+                                    "location)")
+        self.parser.add_option('-g', '--groups', dest="with_groups",
+                               action="store_true", default=False,
+                               help="Show groups this service is member of")
         self._parse()
 
         if len(self.args) != 1:
@@ -814,7 +818,7 @@ class SFLvaultCommand(object):
         vid = self.vault.vaultId(self.args[0], 's')
         verbose = self.opts.verbose
 
-        self.vault.show(vid, verbose)
+        self.vault.show(vid, verbose, self.opts.with_groups)
 
 
 

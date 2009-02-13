@@ -689,10 +689,11 @@ class SFLvaultClient(object):
 
 
     @authenticate(True)
-    def service_get_tree(self, service_id):
+    def service_get_tree(self, service_id, with_groups=False):
         """Get information to be edited"""
         retval = vaultReply(self.vault.service_get_tree(self.authtok,
-                                                        service_id),
+                                                        service_id,
+                                                        with_groups),
                 "Error fetching data-tree for service %s" % service_id)
 
         for x in retval['services']:
@@ -740,9 +741,9 @@ class SFLvaultClient(object):
 
 
     @authenticate(True)
-    def show(self, service_id, verbose=False):
+    def show(self, service_id, verbose=False, with_groups=False):
         """Show informations to connect to a particular service"""
-        servs = self.service_get_tree(service_id)
+        servs = self.service_get_tree(service_id, with_groups)
 
         print "Results:"
 
@@ -758,6 +759,10 @@ class SFLvaultClient(object):
 
             secret = x['plaintext'] if 'plaintext' in x else '[access denied]'
             print "%ss#%d %s" % (pre, x['id'], x['url'])
+            if x['groups_list']:
+                groups = ', '.join(["g#%s %s" % (g[0], g[1])
+                                    for g in x['groups_list']])
+                print "%s%s   groups: %s" % (pre, spc, groups)
             print "%s%s   secret: %s" % (pre, spc, secret)
             
             if verbose:
