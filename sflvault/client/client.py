@@ -144,6 +144,10 @@ class SFLvaultCommand(object):
                     self.listcmds = True
                 action = 'help'
 
+            if action in ['-v', '--version']:
+                print "%s version %s" % (PROGRAM, __version__)
+                return
+
             # Fix for functions
             action = action.replace('-', '_')
         # Check the first parameter, if it's in the local object.
@@ -151,7 +155,7 @@ class SFLvaultCommand(object):
         # Call it or show the help.
         if not hasattr(self, action):
             print "[SFLvault] Invalid command: %s" % action
-            return
+            action = 'help'
 
         self.action = action
         try:
