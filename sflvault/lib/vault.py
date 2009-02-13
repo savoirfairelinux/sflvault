@@ -600,15 +600,17 @@ class SFLvaultAccess(object):
 
         meta.Session.commit()
 
-        # Add myself to the group (add an assoc_users thing)
-        nug = UserGroup()
-        nug.user_id = self.myself_id
-        nug.group_id = ng.id
-        nug.cryptgroupkey = encrypt_longmsg(myeg,
-                                            serial_elgamal_privkey(
-                                                   elgamal_bothkeys(newkeys)))
-        
-        ng.users_assoc.append(nug)
+        # Add myself to the group and all other global admins.
+        admins = set(query(User).filter_by(is_admin=True).all())
+        admins.add(me)
+
+        for usr in list(admins):
+            nug = UserGroup()
+            nug.user_id = usr.id
+            nug.cryptgroupkey = encrypt_longmsg(usr.elgamal(),
+                                                serial_elgamal_privkey(
+                                                    elgamal_bothkeys(newkeys)))
+            ng.users_assoc.append(nug)
         
         meta.Session.commit()
 
