@@ -806,6 +806,7 @@ class SFLvaultCommand(object):
                   ID."""
         self.parser.set_usage("show [opts] VaultID")
         self.parser.add_option('-v', '--verbose', dest="verbose",
+                               action="store_true", default=False,
                                help="Show verbose output (include notes, "\
                                     "location)")
         self.parser.add_option('-g', '--groups', dest="with_groups",
