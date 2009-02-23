@@ -865,9 +865,29 @@ class SFLvaultCommand(object):
         self.vault.search(self.args, groups, self.opts.verbose)
 
 
+class SFLvaultCompleter:
+    def __init__(self, namespace):
+        self.namespace = namespace
 
+    def complete(self, text, state):
+        if state == 0:
+            self.matches = self.global_matches(text)
+        try:
+            return self.matches[state]
+        except IndexError:
+            return None
 
+    def global_matches(self, text):
+        import keyword
+        matches = []
+        n = len(text)
+        for word in self.namespace:
+            if word[:n] == text and word != "__builtins__" and word[0] != '_':
+                matches.append(word)
+        return matches
 
+readline.set_completer(SFLvaultCompleter(dir(SFLvaultCommand)).complete)
+readline.parse_and_bind("tab: complete")
 
 ###
 ### Execute requested command-line command
