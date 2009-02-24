@@ -885,11 +885,10 @@ class SFLvaultCompleter:
                 matches.append(word)
         return matches
 
-import re
 func_list = []
 for onefunc in dir(SFLvaultCommand):
     if onefunc[0] != '_':
-        func_list.append(re.sub('[_]', '-', onefunc))
+        func_list.append(onefunc.replace('_', '-'))
 
 readline.set_completer_delims('_')
 readline.set_completer(SFLvaultCompleter(func_list).complete)
