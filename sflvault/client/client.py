@@ -868,6 +868,7 @@ class SFLvaultCommand(object):
 class SFLvaultCompleter:
     def __init__(self, namespace):
         self.namespace = namespace
+        self.matches = []
 
     def complete(self, text, state):
         if state == 0:
@@ -878,15 +879,20 @@ class SFLvaultCompleter:
             return None
 
     def global_matches(self, text):
-        import keyword
         matches = []
-        n = len(text)
         for word in self.namespace:
-            if word[:n] == text and word != "__builtins__" and word[0] != '_':
+            if word.find(text,0,len(text)) == 0:
                 matches.append(word)
         return matches
 
-readline.set_completer(SFLvaultCompleter(dir(SFLvaultCommand)).complete)
+import re
+func_list = []
+for onefunc in dir(SFLvaultCommand):
+    if onefunc[0] != '_':
+        func_list.append(re.sub('[_]', '-', onefunc))
+
+readline.set_completer_delims('_')
+readline.set_completer(SFLvaultCompleter(func_list).complete)
 readline.parse_and_bind("tab: complete")
 
 ###
