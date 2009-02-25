@@ -28,6 +28,8 @@ import getpass
 import sys
 import re
 import os
+import readline
+
 from subprocess import Popen, PIPE
 
 from decorator import decorator
@@ -486,7 +488,7 @@ class SFLvaultClient(object):
 
         print "Success: %s" % retval['message']
         print "New service ID: s#%d" % retval['service_id']
-
+        self._del_last_history_item()
 
     @authenticate()
     def service_passwd(self, service_id, newsecret):
@@ -499,6 +501,7 @@ class SFLvaultClient(object):
 
         print "Success: %s" % retval['message']
         print "Password updated for service: s#%d" % int(retval['service_id'])
+        self._del_last_history_item()
                             
 
     def _new_passphrase(self):
@@ -996,4 +999,8 @@ class SFLvaultClient(object):
         print "Customer list:"
         for x in retval['list']:
             print "c#%d\t%s" % (x['id'], x['name'])
+
+    def _del_last_history_item(self):
+        readline.remove_history_item(readline.get_current_history_length() - 1)
+        return
 
