@@ -863,6 +863,15 @@ class SFLvaultCommand(object):
         self.parser.add_option('-q', '--quiet', dest="verbose",
                                action="store_false", default=True,
                                help="Don't show verbose output (includes notes, location)")
+        
+        self.parser.add_option('-m', '--machine', dest="machines",
+                               action="append", type="string",
+                               help="Search this machine only")
+
+        self.parser.add_option('-c', '--customer', dest="customers",
+                               action="append", type="string",
+                               help="Search this client only")
+
         self._parse()
 
         if not len(self.args):
@@ -872,7 +881,17 @@ class SFLvaultCommand(object):
         if self.opts.groups:
             groups = [self.vault.vaultId(x, 'g') for x in self.opts.groups]
 
-        self.vault.search(self.args, groups, self.opts.verbose)
+        machines = None
+        if self.opts.machines:
+            machines = [self.vault.vaultId(x, 'm') for x in self.opts.machines]
+
+        customers = None
+        if self.opts.customers:
+            customers = [self.vault.vaultId(x, 'c') for x in self.opts.customers]
+
+        params = {"groups":groups,"machines":machines,"customers":customers}
+
+        self.vault.search(self.args, params, self.opts.verbose)
 
 
 class SFLvaultCompleter:

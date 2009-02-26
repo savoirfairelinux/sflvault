@@ -287,57 +287,87 @@ def get_user(user, eagerload_all_=None):
     return usr
 
 
-def get_groups_list(group_ids, eagerload_all_=None):
-    """Get a group_ids list, or string, or int, and make sure we
+def get_variables_list(variable_ids, data_container, eagerload_all_=None):
+    """Get a variable_ids list, or string, or int, and make sure we
     return a list of integers.
+    data_container is string of values groups, machines, customers
     """
-    # Get groups
-    if isinstance(group_ids, str):
-        group_ids = [int(group_ids)]
-    elif isinstance(group_ids, int):
-        group_ids = [group_ids]
-    elif isinstance(group_ids, list):
-        group_ids = [int(x) for x in group_ids]
+
+    # we will check if data_container is fine for us
+    if data_container not in ['groups','machines','customers']:
+        raise ValueError("Invalid data container: %s" % (data_container))
+
+    # Get variables
+    if isinstance(variable_ids, str):
+        variable_ids = [int(variable_ids)]
+    elif isinstance(variable_ids, int):
+        variable_ids = [variable_ids]
+    elif isinstance(variable_ids, list):
+        variable_ids = [int(x) for x in variable_ids]
     else:
-        raise ValueError("Invalid groups specification")
+        raise ValueError("Invalid %s specification" % (data_container))
 
 
-    # Pull the groups from the DB
-    groups_q = query(Group).filter(Group.id.in_(group_ids))
+    # Pull the variables from the DB
+    if data_container == 'groups':
+        variables_q = query(Group).filter(Group.id.in_(variable_ids))
+    elif data_container == 'machines':
+        variables_q = query(Machine).filter(Machine.id.in_(variable_ids))
+    elif data_container == 'customers':
+        variables_q = query(Customer).filter(Customer.id.in_(variable_ids))
 
     if eagerload_all_:
-        groups_q = groups_q.options(eagerload_all(eagerload_all_))
+        variables_q = variables_q.options(eagerload_all(eagerload_all_))
 
-    groups = groups_q.all()
+    variables = variables_q.all()
 
-    if len(groups) != len(group_ids):
+    if len(variables) != len(variable_ids):
         # Woah, you specified groups that didn't exist ?
 
-        gcopy = group_ids
-        for x in groups:
-            if x.id in gcopy:
-                gcopy.remove(x.id)
+        vcopy = variable_ids
+        for x in variables:
+            if x.id in vcopy:
+                vcopy.remove(x.id)
 
-        raise ValueError("Invalid group(s): %s" % gcopy)
+        raise ValueError("Invalid %s(s): %s" % (data_container[:-1],vcopy))
 
-    return (groups, group_ids)
+    return (variables, variable_ids)
 
-
-def search_query(swords, groups_ids=None, verbose=False):
+def search_query(swords, params=None, verbose=False):
 
     # Create the join..
     sel = sql.join(Customer, Machine).join(Service)
 
-    if groups_ids:
-        if not isinstance(groups_ids, list):
-            raise RuntimeError("groups_ids must be a list, or None")
-        sel = sel.join(ServiceGroup)
+    if params and isinstance(params,dict):
+        try:
+            if params['groups']:
+                if not isinstance(params['groups'], list):
+                    raise RuntimeError("groups_ids must be a list, or None")
+                sel = sel.join(ServiceGroup)
+        except KeyError:
+            pass
 
     sel = sel.select(use_labels=True)
 
-    if groups_ids:
-        sel = sel.where(ServiceGroup.group_id.in_(groups_ids))
-        
+    if params and isinstance(params,dict):
+        try:
+            if params['groups']:
+                sel = sel.where(ServiceGroup.group_id.in_(params['groups']))
+        except KeyError:
+            pass
+
+        try:
+            if params['machines']:
+                sel = sel.where(Machine.id.in_(params['machines']))
+        except KeyError:
+            pass
+
+        try:
+            if params['customers']:
+                sel = sel.where(Customer.id.in_(params['customers']))
+        except KeyError:
+            pass
+
     # Fields to search in..
     allfields = [Customer.id,
                  Customer.name,

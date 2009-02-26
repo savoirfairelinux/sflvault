@@ -325,17 +325,40 @@ class SFLvaultAccess(object):
         return self.service_get_tree(service_id, with_groups)
 
 
-    def search(self, search_query, groups_ids=None, verbose=False):
+    def search(self, search_query, params=None, verbose=False):
         """Do the search, and return the result tree."""
 
-        if groups_ids:
-            # Get groups
+        if params and isinstance(params,dict):
             try:
-                groups, groups_ids = model.get_groups_list(groups_ids)
-            except ValueError, e:
-                return vaultMsg(False, str(e))
+                if params['groups']:
+                    try:
+                        groups, params['groups'] = model.get_variables_list(params['groups'], 'groups')
+                    except ValueError, e:
+                        return vaultMsg(False, str(e))
+            except KeyError:
+                pass
 
-        search = model.search_query(search_query, groups_ids, verbose)
+            try:
+                if params['machines']:
+                    try:
+                        machines, params['machines'] = model.get_variables_list(params['machines'],'machines')
+                    except ValueError, e:
+                        return vaultMsg(False, str(e))
+            except KeyError:
+                pass
+
+            try:
+                if params['customers']:
+                    try:
+                        customers, params['customers'] = model.get_variables_list(params['customers'],'customers')
+                    except ValueError, e:
+                        return vaultMsg(False, str(e))
+            except KeyError:
+                pass
+        else:
+            params = None
+
+        search = model.search_query(search_query, params, verbose)
 
 
         # Quick helper funcs, to create the hierarchical 'out' structure.
@@ -494,7 +517,7 @@ class SFLvaultAccess(object):
                     group_ids, secret, notes):
         # Get groups
         try:
-            groups, group_ids = model.get_groups_list(group_ids)
+            groups, group_ids = model.get_variables_list(group_ids,'groups')
         except ValueError, e:
             return vaultMsg(False, str(e))
         
