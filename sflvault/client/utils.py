@@ -32,7 +32,7 @@ __all__ = ['shred', 'urlparse', 'AuthenticationError',
 #
 # TODO: add protocols dynamically!!
 urlparse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
-                             'bzr+ssh', 'vnc', 'mysql', 'sudo', 'su'])
+                             'bzr+ssh', 'vnc', 'mysql', 'sudo', 'su', 'psql'])
 
 
 # Issue: Ctrl+Alt+;

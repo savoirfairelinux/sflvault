@@ -32,6 +32,7 @@ import os
 PROV_PORT_FORWARD  = 'port-forward'
 PROV_SHELL_ACCESS  = 'shell-access'
 PROV_MYSQL_CONSOLE = 'mysql-console'
+PROV_PSQL_CONSOLE = 'psql-console'
 
 # Operational modes
 OP_DIRECT = 'direct-access'            # - When, let's say 'ssh' is going to
@@ -492,6 +493,86 @@ class mysql(ShellService):
 
     # interact() and postwork() inherited
     
+
+class psql(ShellService):
+    """psql app. service handler"""
+
+    provides_modes = [PROV_PSQL_CONSOLE]
+       
+    def required(self, provide=None):
+        """Verify if this service handler can provide `provide` type of connection.
+
+        Child can ask for SHELL_ACCESS or PORT_FORWARD to be provided. It can also
+        ask for nothing. It is the case of the last child, which has required()
+        invoked with mode=None, since there's no other child that requires something.
+
+        When mode=None, plugin is most probably the last child, and the end to
+        which we want to connect."""
+
+        if self.provides(provide):
+            self.provide_mode = provide
+        else:
+            # Sorry, we don't know what you're talking about :)
+            raise ServiceRequireError("psql module can't provide '%s'" % provide)
+        
+        if not self.parent:
+            raise ServiceRequireError("psql service can't be executed locally, it has to be behind a SHELL_ACCESS-providing module.")
+
+        self.operation_mode = OP_THRGH_SHELL
+        return self.parent.required(PROV_SHELL_ACCESS)
+
+
+    def prework(self):
+
+        class expect_psql_shell(ExpectClass):
+            def shell(self):
+                '\w*=#'
+                pass # We're in :)
+
+            def error(self):
+                'psql: FATAL:  password authentication failed \w* "\w*"'
+                raise ServiceExpectError('Failed to authenticate with psql')
+
+        class expect_psql(ExpectClass):
+            def login(self):
+                'assword for user \w*:'
+                sys.stdout.write(" [sending password...] ")
+                self.cnx.sendline(self.service.data['plaintext'])
+
+                expect_psql_shell(self.service)
+
+            def error(self):
+                'psql: FATAL:  password authentication failed \w* "\w*"'
+                raise ServiceExpectError("Failed authentication for psql "\
+                                         "at program launch")
+            
+            def notfound(self):
+                'command not found.*$'
+                raise ServiceExpectError('psql client not installed on server')
+
+
+        # Bring over here the parent's shell handle.
+        cnx = self.parent.shell_handle
+        self.shell_handle = cnx
+
+        cmd = "psql -U %s -W -h %s" % (self.url.username, self.url.hostname)
+
+        # Select a port  directly ?
+        if int(self.url.port):
+            cmd += " -p %s" % self.url.port
+
+        # Select a database directly ?
+        db = ''
+        if self.url.path:
+                if self.url.path != '/':
+                    db = self.url.path.lstrip('/')
+                    cmd += " -d %s" % db
+
+        cnx.sendline(cmd)
+
+        expect_psql(self)
+
+    # interact() and postwork() inherited
 
 class vnc(Service):
     """vnc protocol service handler"""
