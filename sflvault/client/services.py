@@ -21,6 +21,7 @@
 
 from sflvault.client.remoting import *
 from sflvault.client.utils import *
+from sflvault.client.fallback import SFLvaultFallback
 import struct, fcntl, termios, signal # for term size signaling..
 import pexpect
 import pxssh
@@ -128,7 +129,18 @@ class ShellService(Service):
 
         try:
             # Go ahead, you're free to go !
-            self.shell_handle.interact(escape_character=sflvault_escape_chr)
+            while True:
+                self.shell_handle.interact(escape_character=sflvault_escape_chr)
+
+                # TODO:
+                # check if the shell_handle is still open, or if it was closed
+                # if it's still open, then call the SFLvaultFallback shell
+                # on shell_handle.
+                #   run _run() on that shell, and take input and send commands
+                #   once we quit this, make sure we get back to the
+                # otherwise:
+                break
+            
 
             # Reset signal
             signal.signal(signal.SIGWINCH, signal.SIG_DFL)
