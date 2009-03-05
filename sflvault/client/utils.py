@@ -52,7 +52,7 @@ def shred(var):
 
 ### Authentication Exceptions
 
-class AuthenticationError(StandardError):
+class AuthenticationError(Exception):
     def __init__(self, message):
         """Sets an error message"""
         self.message = message

@@ -650,7 +650,7 @@ class SFLvaultClient(object):
             # TODO: implement a groupkey cache system, since it's the longest
             #       thing to decrypt (over a second on a 3GHz machine)
             grouppacked = decrypt_longmsg(self.privkey, serv['cryptgroupkey'])
-        except StandardException, e:
+        except Exception, e:
             raise DecryptError("Unable to decrypt groupkey (%s)" % e.message)
 
         eg = ElGamal.ElGamalobj()
