@@ -859,39 +859,37 @@ class SFLvaultCommand(object):
         self.parser.set_usage('search [opts] keyword1 ["key word2" ...]')
         self.parser.add_option('-g', '--group', dest="groups",
                                action="append", type="string",
-                               help="Search in this (these) groups only")
+                               help="Search in these groups only")
         self.parser.add_option('-q', '--quiet', dest="verbose",
                                action="store_false", default=True,
                                help="Don't show verbose output (includes notes, location)")
         
         self.parser.add_option('-m', '--machine', dest="machines",
                                action="append", type="string",
-                               help="Search this machine only")
+                               help="Filter results on these machines only")
 
         self.parser.add_option('-c', '--customer', dest="customers",
                                action="append", type="string",
-                               help="Search this client only")
+                               help="Filter results on these customers only")
 
         self._parse()
 
         if not len(self.args):
             raise SFLvaultParserError("Search terms required")
 
-        groups = None
-        if self.opts.groups:
-            groups = [self.vault.vaultId(x, 'g') for x in self.opts.groups]
+        # Get the values for each filter spec..
+        fields = {'groups': 'g',
+                  'machines': 'm',
+                  'customers': 'c'}
+        filters = {}
+        for f in fields.keys():
+            criteria = None
+            if hasattr(self.opts, f):
+                criteria = [self.vault.vaultId(x, fields[f])
+                            for x in getattr(self.opts, f)]
+            filters[f] = criteria
 
-        machines = None
-        if self.opts.machines:
-            machines = [self.vault.vaultId(x, 'm') for x in self.opts.machines]
-
-        customers = None
-        if self.opts.customers:
-            customers = [self.vault.vaultId(x, 'c') for x in self.opts.customers]
-
-        params = {"groups":groups,"machines":machines,"customers":customers}
-
-        self.vault.search(self.args, params, self.opts.verbose)
+        self.vault.search(self.args, filters or None, self.opts.verbose)
 
 
 class SFLvaultCompleter:

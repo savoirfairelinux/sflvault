@@ -588,11 +588,16 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def search(self, query, params=None, verbose=True):
+    def search(self, query, filters=None, verbose=True):
         """Search the database for query terms, specified as a list of REGEXPs.
 
+        filters - is a dict with keys in ['groups', 'machines', 'customers']
+                  that limits the records returned to those matching those
+                  constraints. The values can be either int or str
+                  (representing an int)
+
         Returns a hierarchical view of the results."""
-        retval = vaultReply(self.vault.search(self.authtok, query, params,
+        retval = vaultReply(self.vault.search(self.authtok, query, filters,
                                               verbose),
                             "Error searching database")
 

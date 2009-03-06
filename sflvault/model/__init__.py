@@ -287,86 +287,89 @@ def get_user(user, eagerload_all_=None):
     return usr
 
 
-def get_variables_list(variable_ids, data_container, eagerload_all_=None):
-    """Get a variable_ids list, or string, or int, and make sure we
-    return a list of integers.
-    data_container is string of values groups, machines, customers
+def get_objects_ids(objects_ids, object_type):
+    """Return a list of valid IDs for certain object types.
+
+    objects_ids - Must be a list of str or ints
+    object_type - One of 'groups', 'machines', 'customers
+    """
+    return get_objects_list(objects_ids, object_type, return_objects=False)[1]
+
+
+def get_objects_list(objects_ids, object_type, eagerload_all_=None,
+                     return_objects=True):
+    """Get a list of objects by their IDs, either as int or str. Make
+    sure we return a list of integers as IDs.
+
+    object_type - the type of object to be returned. It must be one of
+                ['groups', 'machines', 'customers']
+    return_objects - whether to return the actual objects or not.
     """
 
-    # we will check if data_container is fine for us
-    if data_container not in ['groups','machines','customers']:
-        raise ValueError("Invalid data container: %s" % (data_container))
+    objects_types_assoc = {'groups': Group,
+                           'machines': Machine,
+                           'customers': Customer}
+
+    # Check if object_type is valid
+    if object_type not in objects_types_assoc:
+        raise ValueError("Invalid object type: %s" % (object_type))
 
     # Get variables
-    if isinstance(variable_ids, str):
-        variable_ids = [int(variable_ids)]
-    elif isinstance(variable_ids, int):
-        variable_ids = [variable_ids]
-    elif isinstance(variable_ids, list):
-        variable_ids = [int(x) for x in variable_ids]
+    if isinstance(objects_ids, str):
+        objects_ids = [int(objects_ids)]
+    elif isinstance(objects_ids, int):
+        objects_ids = [objects_ids]
+    elif isinstance(objects_ids, list):
+        objects_ids = [int(x) for x in objects_ids]
     else:
-        raise ValueError("Invalid %s specification" % (data_container))
+        raise ValueError("Invalid %s specification" % (object_type))
+
+    # Pull the objects/IDs from the DB
+    obj = objects_types_assoc[object_type]
+    if return_objects:
+        objects_q = query(obj).filter(obj.id.in_(objects_ids))
+
+        if eagerload_all_:
+            objects_q = objects_q.options(eagerload_all(eagerload_all_))
+
+        objects = objects_q.all()
+    else:
+        objects_q = sql.select([obj.id]).where(obj.id.in_(objects_ids))
+        objects = meta.Session.execute(objects_q)
+        
+    if len(objects) != len(objects_ids):
+        # Woah, you specified objects that didn't exist ?
+        valid_objects = [x.id for x in objects]
+        invalid_objects = [x for x in objects_ids if x not in valid_objects]
+        raise ValueError("Invalid %s: %s" % (object_type, invalid_objects))
+
+    return (objects if return_objects else None, objects_ids)
 
 
-    # Pull the variables from the DB
-    if data_container == 'groups':
-        variables_q = query(Group).filter(Group.id.in_(variable_ids))
-    elif data_container == 'machines':
-        variables_q = query(Machine).filter(Machine.id.in_(variable_ids))
-    elif data_container == 'customers':
-        variables_q = query(Customer).filter(Customer.id.in_(variable_ids))
-
-    if eagerload_all_:
-        variables_q = variables_q.options(eagerload_all(eagerload_all_))
-
-    variables = variables_q.all()
-
-    if len(variables) != len(variable_ids):
-        # Woah, you specified groups that didn't exist ?
-
-        vcopy = variable_ids
-        for x in variables:
-            if x.id in vcopy:
-                vcopy.remove(x.id)
-
-        raise ValueError("Invalid %s(s): %s" % (data_container[:-1],vcopy))
-
-    return (variables, variable_ids)
-
-def search_query(swords, params=None, verbose=False):
+def search_query(swords, filters=None, verbose=False):
 
     # Create the join..
     sel = sql.join(Customer, Machine).join(Service)
 
-    if params and isinstance(params,dict):
-        try:
-            if params['groups']:
-                if not isinstance(params['groups'], list):
-                    raise RuntimeError("groups_ids must be a list, or None")
-                sel = sel.join(ServiceGroup)
-        except KeyError:
-            pass
+    if filters:
+        if not instance(filters, dict):
+            raise RuntimeError("filters param must be a dict, or None")
+
+        if [True for x in filters if not isinstance(filters[x], list)]:
+            raise RuntimeError("filters themselves must be a list of ints")
+        
+        if 'groups' in filters:
+            sel = sel.join(ServiceGroup)
 
     sel = sel.select(use_labels=True)
 
-    if params and isinstance(params,dict):
-        try:
-            if params['groups']:
-                sel = sel.where(ServiceGroup.group_id.in_(params['groups']))
-        except KeyError:
-            pass
-
-        try:
-            if params['machines']:
-                sel = sel.where(Machine.id.in_(params['machines']))
-        except KeyError:
-            pass
-
-        try:
-            if params['customers']:
-                sel = sel.where(Customer.id.in_(params['customers']))
-        except KeyError:
-            pass
+    if filters:
+        if 'groups' in filters:
+            sel = sel.where(ServiceGroup.group_id.in_(filters['groups']))
+        if 'machines' in filters:
+            sel = sel.where(Machine.id.in_(filters['machines']))
+        if 'customers' in filters:
+            sel = sel.where(Customer.id.in_(filters['customers']))
 
     # Fields to search in..
     allfields = [Customer.id,

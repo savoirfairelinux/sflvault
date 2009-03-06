@@ -325,40 +325,27 @@ class SFLvaultAccess(object):
         return self.service_get_tree(service_id, with_groups)
 
 
-    def search(self, search_query, params=None, verbose=False):
-        """Do the search, and return the result tree."""
+    def search(self, search_query, filters=None, verbose=False):
+        """Do the search, and return the result tree.
 
-        if params and isinstance(params,dict):
-            try:
-                if params['groups']:
-                    try:
-                        groups, params['groups'] = model.get_variables_list(params['groups'], 'groups')
-                    except ValueError, e:
-                        return vaultMsg(False, str(e))
-            except KeyError:
-                pass
+        filters - must be a dictionary with options on which to constraint
+                  results.
 
-            try:
-                if params['machines']:
-                    try:
-                        machines, params['machines'] = model.get_variables_list(params['machines'],'machines')
-                    except ValueError, e:
-                        return vaultMsg(False, str(e))
-            except KeyError:
-                pass
+        """
 
-            try:
-                if params['customers']:
-                    try:
-                        customers, params['customers'] = model.get_variables_list(params['customers'],'customers')
-                    except ValueError, e:
-                        return vaultMsg(False, str(e))
-            except KeyError:
-                pass
-        else:
-            params = None
+        filter_types = ['groups', 'machines', 'customers']
+        # Load objects on which to restrict the query:
+        if filters:
+            if not isinstance(filters, dict):
+                return vaultMsg(False, "filters must be a dictionary")
+            for flt in filter_types:
+                # Skip filters that aren't specified
+                if flt not in filters:
+                    continue
 
-        search = model.search_query(search_query, params, verbose)
+                filters[flt] = model.get_objects_ids(filters[flt], flt)
+                    
+        search = model.search_query(search_query, filters, verbose)
 
 
         # Quick helper funcs, to create the hierarchical 'out' structure.
@@ -517,7 +504,8 @@ class SFLvaultAccess(object):
                     group_ids, secret, notes):
         # Get groups
         try:
-            groups, group_ids = model.get_variables_list(group_ids,'groups')
+            groups, group_ids = model.get_objects_list(group_ids, 'groups',
+                                                       return_objects=True)
         except ValueError, e:
             return vaultMsg(False, str(e))
         
