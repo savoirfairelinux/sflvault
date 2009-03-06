@@ -50,7 +50,7 @@ class SFLvaultParserError(Exception):
     pass
 
 
-class ExitParser(Exception):
+class ExitParserException(Exception):
     """Tells when the parser showed the help for a command."""
     pass
 
@@ -63,7 +63,7 @@ class NoExitParser(optparse.OptionParser):
     def exit(self, status=0, msg=None):
         if msg:
             sys.stderr.write(msg)
-        raise ExitParser()
+        raise ExitParserException()
 
     def error(self, msg):
         """error(msg : string)
@@ -98,10 +98,11 @@ class SFLvaultShell(object):
                 getattr(self, args[0])()
             else:
                 parser = NoExitParser(usage=optparse.SUPPRESS_USAGE)
+                import pdb; pdb.set_trace()
                 runcmd = SFLvaultCommand(self.vault, parser)
                 try:
                     runcmd._run(args)
-                except ExitParser, e:
+                except ExitParserException, e:
                     pass
 
     def quit(self):
