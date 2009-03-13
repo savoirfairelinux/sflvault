@@ -108,7 +108,6 @@ class FishClient(object):
         olddelay = self.proc.delaybeforesend
 
         # Taken from lftp's fish.c implementation
-                                     remote_filename, filelen, filelen)
               
         cmd = "#STOR %lu %s\n" % (filelen, remote_filename)
         cmd += "stty -echo; rest=%lu;file=%s;:>$file;echo '### 001';" % (filelen,remote_filename)

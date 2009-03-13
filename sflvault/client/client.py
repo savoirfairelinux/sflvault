@@ -98,7 +98,6 @@ class SFLvaultShell(object):
                 getattr(self, args[0])()
             else:
                 parser = NoExitParser(usage=optparse.SUPPRESS_USAGE)
-                import pdb; pdb.set_trace()
                 runcmd = SFLvaultCommand(self.vault, parser)
                 try:
                     runcmd._run(args)
