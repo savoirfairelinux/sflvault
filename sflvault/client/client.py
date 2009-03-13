@@ -251,7 +251,11 @@ class SFLvaultCommand(object):
                 print "No documentation available for `%s`." % readcmd
 
             print ""
-            self.parser.parse_args(args=['--help'])
+
+            try:
+                self.parser.parse_args(args=['--help'])
+            except ExitParserException, e:
+                pass
         else:
             print "No such command"
 
@@ -915,20 +919,20 @@ class SFLvaultCompleter:
                 matches.append(word)
         return matches
 
-func_list = []
-for onefunc in dir(SFLvaultCommand):
-    if onefunc[0] != '_':
-        func_list.append(onefunc.replace('_', '-'))
-
-readline.set_completer_delims('_')
-readline.set_completer(SFLvaultCompleter(func_list).complete)
-readline.parse_and_bind("tab: complete")
-
 ###
 ### Execute requested command-line command
 ###    
 def main():
     # Call the appropriate function of the 'f' object, according to 'action'
+    func_list = []
+    for onefunc in dir(SFLvaultCommand):
+        if onefunc[0] != '_':
+            func_list.append(onefunc.replace('_', '-'))
+
+    readline.set_completer_delims('_')
+    readline.set_completer(SFLvaultCompleter(func_list).complete)
+    readline.parse_and_bind("tab: complete")
+
 
     if len(sys.argv) == 1 or sys.argv[1] == 'shell':
         s = SFLvaultShell()

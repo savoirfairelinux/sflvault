@@ -140,8 +140,14 @@ class ShellService(Service):
                 #   run _run() on that shell, and take input and send commands
                 #   once we quit this, make sure we get back to the
                 # otherwise:
-                break
-            
+                s = SFLvaultFallback(self.shell_handle)
+                try:
+                    s._run()
+                except (KeyboardInterrupt, EOFError), e:
+                    s._return_completer()
+                continue
+
+                # TODO we need to check if shell is still alive
 
             # Reset signal
             signal.signal(signal.SIGWINCH, signal.SIG_DFL)
