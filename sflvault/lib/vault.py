@@ -343,6 +343,10 @@ class SFLvaultAccess(object):
                 if flt not in filters:
                     continue
 
+                # Skip filters that are empty or None
+                if not filters[flt]:
+                    continue
+
                 filters[flt] = model.get_objects_ids(filters[flt], flt)
                     
         search = model.search_query(search_query, filters, verbose)

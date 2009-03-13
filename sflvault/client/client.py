@@ -171,6 +171,9 @@ class SFLvaultCommand(object):
         except xmlrpclib.Fault, e:
             # On is_admin check failed, on user authentication failed.
             print "[SFLvault] XML-RPC Fault: %s" % e.faultString
+        except xmlrpclib.ProtocolError, e:
+            # Server crashed
+            print "[SFLvault] XML-RPC communication failed: %s" % e
         except VaultConfigurationError, e:
             print "[SFLvault] Configuration error: %s" % e
         except RemotingError, e:
@@ -884,7 +887,7 @@ class SFLvaultCommand(object):
         filters = {}
         for f in fields.keys():
             criteria = None
-            if hasattr(self.opts, f):
+            if getattr(self.opts, f):
                 criteria = [self.vault.vaultId(x, fields[f])
                             for x in getattr(self.opts, f)]
             filters[f] = criteria

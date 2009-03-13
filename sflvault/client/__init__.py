@@ -597,6 +597,10 @@ class SFLvaultClient(object):
                   (representing an int)
 
         Returns a hierarchical view of the results."""
+
+        # Remove empty filters:
+        filters = dict([(x, filters[x]) for x in filters if filters[x]])
+                
         retval = vaultReply(self.vault.search(self.authtok, query, filters,
                                               verbose),
                             "Error searching database")

@@ -331,11 +331,10 @@ def get_objects_list(objects_ids, object_type, eagerload_all_=None,
 
         if eagerload_all_:
             objects_q = objects_q.options(eagerload_all(eagerload_all_))
-
-        objects = objects_q.all()
     else:
         objects_q = sql.select([obj.id]).where(obj.id.in_(objects_ids))
-        objects = meta.Session.execute(objects_q)
+
+    objects = meta.Session.execute(objects_q).fetchall()
         
     if len(objects) != len(objects_ids):
         # Woah, you specified objects that didn't exist ?
@@ -351,8 +350,11 @@ def search_query(swords, filters=None, verbose=False):
     # Create the join..
     sel = sql.join(Customer, Machine).join(Service)
 
+    # Remove filters that are just None
+    filters = dict([(x, filters[x]) for x in filters if filters[x]])
+    
     if filters:
-        if not instance(filters, dict):
+        if not isinstance(filters, dict):
             raise RuntimeError("filters param must be a dict, or None")
 
         if [True for x in filters if not isinstance(filters[x], list)]:
