@@ -494,7 +494,8 @@ class mysql(ShellService):
             if self.url.path != '/':
                 db = self.url.path.lstrip('/')
                 
-        cmd = "mysql -u %s -p %s" % (self.url.username, db)
+        cmd = "mysql -h %s -u %s -p %s" % (self.url.hostname, self.url.username,
+                                           db)
 
         cnx.sendline(cmd)
 
