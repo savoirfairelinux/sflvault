@@ -26,7 +26,8 @@ Other commands will be implemented in the future, giving ability to
 script on the client side things that will be sent to through the shell."""
 
 from sflvault.lib.fishlib import FishClient, showstatus
-from sflvault.client.client import SFLvaultCompleter, NoExitParser, ExitParserException, SFLvaultParserError
+from sflvault.client.client import SFLvaultCompleter, NoExitParser
+from sflvault.client.client import ExitParserException, SFLvaultParserError
 import shlex
 import sys
 import readline
@@ -38,7 +39,8 @@ class SFLvaultFallback(object):
     def __init__(self, shell_obj):
         # we're to replace completer with new one
         self.parent_completer = readline.get_completer()
-        self.parent_completer_last_item = readline.get_current_history_length() - 1
+        self.parent_completer_last_item = readline.get_current_history_length()\
+                                          - 1
         self.func_list = []
 
         for onefunc in dir(SFLvaultFallback):
@@ -59,24 +61,22 @@ class SFLvaultFallback(object):
         (self.opts, self.args) = self.parser.parse_args(args=self.argv)
 
     def _return_completer(self):
-        last_item = readline.get_current_history_length()-1
+        last_item = readline.get_current_history_length() - 1
         if last_item > self.parent_completer_last_item:
             for tmpid in range(self.parent_completer_last_item, last_item):
                 try:
-                    readline.remove_history_item(readline.get_current_history_length()-1)
+                    readline.remove_history_item(readline.get_current_history_length() - 1)
                 except ValueError, e:
                     pass
         readline.set_completer(self.parent_completer)
         print "\nExiting SFLvaultFallback."
-        pass
 
     def _run(self):
         """Run the shell, and dispatch commands"""
 
         while True:
-
             print "\nWelcome to SFLvaultFallback. Type 'help' for help."
-            prompt = "SFLvaultFallback>>> "
+            prompt = "SFLvaultFallback> "
 
             while True:
                 cmd = raw_input(prompt)
@@ -105,6 +105,8 @@ class SFLvaultFallback(object):
                     except ExitParserException, e:
                         pass
                     except UnboundLocalError, e:
+                        # TODO: verify if this error can be worked out
+                        # differently
                         self.help(cmd=args[0])
 
                 else:
@@ -139,7 +141,7 @@ class SFLvaultFallback(object):
             
         if (error):
             print "ERROR calling %s: %s" % (cmd, error)
-        pass
+
 
     def quit(self):
         # Added only for auto completition
@@ -156,7 +158,7 @@ class SFLvaultFallback(object):
 
         self._parse()
         
-        if (len(self.args) != 1):
+        if len(self.args) != 1:
             raise SFLvaultParserError("Invalid number of arguments")
 
         if not self.opts.source:
@@ -167,16 +169,18 @@ class SFLvaultFallback(object):
             tmp = self.opts.source.split('/')
             self.opts.dest = '/tmp/' + tmp[-1]
             print "Source file will be stored as: %s" % self.opts.dest
-#            raise SFLvaultParserError("Required parameter 'dest' omitted")
+            #raise SFLvaultParserError("Required parameter 'dest' omitted")
         
         try:
-            local_file = open(self.opts.dest,'w')
+            local_file = open(self.opts.dest, 'w')
         except IOError, e:
-            raise SFLvaultParserError("I can't create file: %s" % self.opts.dest)
+            raise SFLvaultParserError("I can't create file: %s" % \
+                                      self.opts.dest)
         try:
-            self.fish_obj.retr(self.opts.source,local_file,showstatus)
+            self.fish_obj.retr(self.opts.source, local_file, showstatus)
         except ValueError, e:
-            raise SFLvaultParserError("I can't find file: %s" % self.opts.source)
+            raise SFLvaultParserError("I can't find file: %s" % \
+                                      self.opts.source)
 
         local_file.close()
 
@@ -191,7 +195,7 @@ class SFLvaultFallback(object):
 
         self._parse()
         
-        if (len(self.args) != 1):
+        if len(self.args) != 1:
             raise SFLvaultParserError("Invalid number of arguments")
 
         if not self.opts.source:
@@ -202,15 +206,14 @@ class SFLvaultFallback(object):
             tmp = self.opts.source.split('/')
             self.opts.dest = '/tmp/' + tmp[-1]
             print "Source file will be stored as: %s" % self.opts.dest
-#            raise SFLvaultParserError("Required parameter 'dest' omitted")
+            #raise SFLvaultParserError("Required parameter 'dest' omitted")
         
         try:
             filesize = os.path.getsize(self.opts.source)
         except OSError, e:
             raise SFLvaultParserError("I can't read file: %s" % self.opts.source)
 
-        local_file = open(self.opts.source,'rb')
+        local_file = open(self.opts.source, 'rb')
         self.fish_obj.stor(self.opts.dest, local_file, filesize, showstatus)
-
         local_file.close()
 
