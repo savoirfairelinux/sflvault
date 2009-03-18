@@ -692,7 +692,8 @@ class SFLvaultCommand(object):
 
         self._group_user_parse()
         
-        self.vault.group_add_user(self.opts.group_id, self.opts.user)
+        self.vault.group_add_user(self.opts.group_id, self.opts.user,
+                                  self.opts.is_admin)
 
     def group_del_user(self):
         """Remove a user from a group"""

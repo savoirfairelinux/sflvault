@@ -853,7 +853,7 @@ class SFLvaultClient(object):
 
 
     @authenticate(True)
-    def group_add_service(self, group_id, service_id, retval=None):
+    def group_add_service(self, group_id, service_id):
         print "Fetching service info..."
         retval = vaultReply(self.vault.service_get(self.authtok, service_id),
                             "Error loading service infos")
@@ -884,7 +884,7 @@ class SFLvaultClient(object):
         print "Success: %s" % retval['message']
 
     @authenticate(True)
-    def group_add_user(self, group_id, user, is_admin=False, retval=None):
+    def group_add_user(self, group_id, user, is_admin=False):
         retval = vaultReply(self.vault.group_add_user(self.authtok, group_id,
                                                       user),
                             "Error adding user to group")
