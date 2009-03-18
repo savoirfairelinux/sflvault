@@ -951,7 +951,10 @@ class SFLvaultClient(object):
 
         print "Groups:"
 
-        for grp in retval['list']:
+        lst = retval['list']
+        lst.sort(key=lambda x: x['name'])
+
+        for grp in lst:
             add = []
             if grp.get('hidden', False):
                 add.append('[hidden]')

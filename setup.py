@@ -21,7 +21,7 @@ setup(
                       "pysqlite",
                       "pexpect>=2.3",
                       "urwid>=0.9.8.1",
-                      "ipython"
+                      "ipython",
                       ],
     # For server installation:
     #  "ipython"
