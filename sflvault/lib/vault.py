@@ -617,6 +617,9 @@ class SFLvaultAccess(object):
 
         for usr in list(admins):
             nug = UserGroup()
+            # Make sure I'm admin of my newly created group
+            if usr == me:
+                nug.is_admin = True
             nug.user_id = usr.id
             nug.cryptgroupkey = encrypt_longmsg(usr.elgamal(),
                                                 serial_elgamal_privkey(
@@ -1004,6 +1007,10 @@ class SFLvaultAccess(object):
                 
             return vaultMsg(False, 'Services still child of this service',
                             {'childs': retval})
+
+        # TODO: verify permissions:
+        #  if either user is global admin, or is admin of all groups in which this
+        #  service is in, otherwise, disallow.
         
         # Delete all related user-ciphers
         d = sql.delete(model.servicegroups_table) \
