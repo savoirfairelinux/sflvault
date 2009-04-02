@@ -670,10 +670,6 @@ class SFLvaultAccess(object):
             res = {'id': grp.id, 'name': grp.name,
                    'member': False, 'hidden': False, 'admin': False}
 
-            if not myug and not me.is_admin:
-                # Don't add if you're not a member and you're not global admin.
-                continue
-
             res['member'] = bool(myug)
 
             if grp.hidden:
