@@ -169,7 +169,7 @@ class ServiceEditDialogDisplay(DialogDisplay):
         inputs = {'url': urwid.Edit("", str(data['url']), wrap='clip'),
                   'machine_id': urwid.Edit("", str(data['machine_id'] or '')),
                   'parent_service_id': urwid.Edit("", str(data['parent_service_id'] or '')),
-                  'notes': urwid.Edit("", str(data['notes'])),
+                  'notes': urwid.Edit("", unicode(data['notes'])),
                   }
                   
                 
