@@ -6,7 +6,7 @@ Steps to perform when releasing SFLvault
 * Commit the release commit INCLUDING the Release Notes inside that commit.
 * Run `python setup.py bdist_egg` to compile the new egg.
   NOTE: make sure you have permissions to write in ALL of the build/ directory!
-* Run `python setup.py upload` if everything went well.
+* Run `python setup.py bdist_egg upload` if everything went well.
 * Modify the UpgradePath page with everything required to upgrade.
 * Modify the wiki's front-page to announce it
 * Tag the commit with the version number
