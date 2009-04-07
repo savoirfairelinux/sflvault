@@ -50,23 +50,34 @@ class DecryptError(Exception):
 #
 # Checksum padding management
 #
+def non_zero_crc(txt):
+    """Calculate the CRC checksum, ensuring it never ends with \x00,
+    thus conflicting with the \x00 padding of encrypted secrets and keys"""
+    crc = crc32(txt) & 0xffffffff # Make unsigned hack
+    if not crc % 256:
+        crc += 1
+    return crc
+
 def wrapsum(plainval):
-    crc = crc32(plainval) & 0xffffffff # Make unsigned hack
+    crc = non_zero_crc(plainval)
     # Add 4 bytes checksum and return
-    return plainval + long_to_bytes(crc,4)
+    return plainval + long_to_bytes(crc, 4)
 
 def chksum(sumval):
     # Strip the checksum, and validate:
-
     crc = sumval[-4:]
     plainval = sumval[:-4]
-    cmpcrc = crc32(plainval) & 0xffffffff # Make unsigned hack
+    cmpcrc = non_zero_crc(plainval)
     
     if (bytes_to_long(crc) != cmpcrc):
         raise DecryptError("Error decrypting: inconsistent cipher")
 
     return plainval
 
+def pad(text, length):
+    """Add \x00 characters to pad for multiple of `length`"""
+    newtext = (((length - (len(text) % length)) % length) * "\x00")
+    return newtext
 
 
 #
@@ -173,8 +184,8 @@ def encrypt_privkey(something, pw):
     it shouldn't pose a problem."""
     b = Blowfish.new(pw)
     nsomething = wrapsum(something)
-    add = (((8 - (len(nsomething) % 8)) % 8) * "\x00")
-    return b64encode(b.encrypt(nsomething + add))
+    nsomething = pad(nsomething, 8)
+    return b64encode(b.encrypt(nsomething))
 
 def decrypt_privkey(something, pw):
     """Decrypt using Blowfish and a password
@@ -197,7 +208,7 @@ def encrypt_secret(secret):
     secret = wrapsum(secret)
     
     # Add padding to have a multiple of 16 bytes
-    padded_secret = secret + (((16 - len(secret) % 16) % 16) * "\x00")
+    padded_secret = pad(secret, 16)
     ciphertext = a.encrypt(padded_secret)
     del(padded_secret)
     ciphertext = b64encode(ciphertext)
