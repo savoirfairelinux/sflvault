@@ -77,7 +77,7 @@ def chksum(sumval):
 def pad(text, length):
     """Add \x00 characters to pad for multiple of `length`"""
     newtext = (((length - (len(text) % length)) % length) * "\x00")
-    return newtext
+    return text + newtext
 
 
 #
