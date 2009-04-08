@@ -671,7 +671,7 @@ class SFLvaultClient(object):
 
 
     @authenticate(True)
-    def service_get(self, service_id):
+    def service_get(self, service_id, decrypt=True):
         """Get information to be edited"""
         retval = vaultReply(self.vault.service_get(self.authtok, service_id),
                             "Error fetching data for service %s" % service_id)
@@ -681,9 +681,10 @@ class SFLvaultClient(object):
         aeskey = ''
         secret = ''
 
-        # Add it only if we can! (or if we want to)
-        if 'cryptgroupkey' in serv:
-            self._decrypt_service(serv)
+        if decrypt:
+            # Add it only if we can! (or if we want to)
+            if 'cryptgroupkey' in serv:
+                self._decrypt_service(serv)
 
         return serv
 
