@@ -849,9 +849,9 @@ class SFLvaultCommand(object):
         self.parser.add_option('-g', '--group', dest="groups",
                                action="append", type="string",
                                help="Search in this (these) groups only")
-        self.parser.add_option('-v', '--verbose', dest="verbose",
-                               action="store_true", default=False,
-                               help="Show verbose output (include notes, location)")
+        self.parser.add_option('-q', '--quiet', dest="verbose",
+                               action="store_false", default=True,
+                               help="Don't show verbose output (includes notes, location)")
         self._parse()
 
         if not len(self.args):

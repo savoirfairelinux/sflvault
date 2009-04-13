@@ -345,7 +345,7 @@ class SFLvaultClient(object):
             nid = self.alias_get(vid)
 
             if not nid:
-                raise VaultIDSpecError("No such alias '%s'. Use `alias %s s#[ID]` to set." % (vid, vid))
+                raise VaultIDSpecError("No such alias '%s'. Use `alias %s %s#[ID]` to set." % (vid, vid, prefix))
 
             return self.vaultId(nid, prefix, False)
 
@@ -588,7 +588,7 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def search(self, query, groups_ids=None, verbose=False):
+    def search(self, query, groups_ids=None, verbose=True):
         """Search the database for query terms, specified as a list of REGEXPs.
 
         Returns a hierarchical view of the results."""
@@ -613,8 +613,10 @@ class SFLvaultClient(object):
                 print "%sm#%s  %s (%s - %s)" % (spc1, m_id,
                                                 m['name'], m['fqdn'], m['ip'])
                 if verbose:
-                    print "%s%slocation: %s" % (spc1, add, m['location'])
-                    print "%s%snotes: %s" % (spc1, add, m['notes'])
+                    if m['location']:
+                        print "%s%slocation: %s" % (spc1, add, m['location'])
+                    if m['notes']:
+                        print "%s%snotes: %s" % (spc1, add, m['notes'])
                                                              
 
                 spc2 = spc1 + add
@@ -628,7 +630,8 @@ class SFLvaultClient(object):
                                             ("   (depends: s#%s)" % \
                                              p_id if p_id else ''))
                     if verbose:
-                        print "%s%snotes: %s" % (spc2, add, s['notes'])
+                        if s['notes']:
+                            print "%s%snotes: %s" % (spc2, add, s['notes'])
 
                 if level == 2:
                     print "%s" % (spc2) + '-' * (80 - len(spc2))
@@ -660,7 +663,7 @@ class SFLvaultClient(object):
         # Then decrypt symkey
         try:
             aeskey = decrypt_longmsg(groupkey, serv['cryptsymkey'])
-        except StandardException, e:
+        except Exception, e:
             raise DecryptError("Unable to decrypt symkey (%s)" % e.message)
 
         if onlysymkey:
@@ -831,7 +834,7 @@ class SFLvaultClient(object):
         if len(to_clean):
             print "There are expired users. To remove them, run:"
             for usr in to_clean:
-                print "   sflvault del-user %s" % usr
+                print "   sflvault user-del %s" % usr
         
 
     @authenticate(True)
