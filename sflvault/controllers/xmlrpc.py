@@ -263,7 +263,7 @@ class XmlrpcController(XMLRPCController):
     def sflvault_group_put(self, authtok, group_id, data):
         return self.vault.group_put(group_id, data)
 
-    @authenticated_admin
+    @authenticated_user
     def sflvault_group_add(self, authtok, group_name):
         return self.vault.group_add(group_name)
 
