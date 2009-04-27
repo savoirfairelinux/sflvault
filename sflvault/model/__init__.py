@@ -221,7 +221,7 @@ class Customer(object):
 # Map each class to its corresponding table.
 mapper(User, users_table, {
     # Quick access to services...
-    'services': relation(Service, viewonly=True,
+    'services': relation(Service,
                          secondary=usergroups_table.join(servicegroups_table, usergroups_table.c.group_id==servicegroups_table.c.group_id),
                          backref='users',
                          viewonly=True,
