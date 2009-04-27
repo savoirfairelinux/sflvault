@@ -70,7 +70,7 @@ def chksum(sumval):
     cmpcrc = non_zero_crc(plainval)
     
     if (bytes_to_long(crc) != cmpcrc):
-        raise DecryptError("Error decrypting: inconsistent cipher")
+        raise DecryptError("Error decrypting: inconsistent cipher: %s" % sumval)
 
     return plainval
 
