@@ -110,7 +110,7 @@ def authenticate(keep_privkey=False):
 
         # TODO: check also is the privkey (ElGamal obj) has been cached
         #       in self.privkey (when invoked with keep_privkey)
-        retval = self.vault.login(username)
+        retval = self.vault.login(username, __version__)
         self.authret = retval
         if not retval['error']:
             # decrypt token.

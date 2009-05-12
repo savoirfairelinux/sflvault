@@ -38,6 +38,7 @@ from sflvault.lib.vault import SFLvaultAccess
 from sflvault.model import *
 
 from sqlalchemy import sql, exceptions
+import distutils.version
 
 log = logging.getLogger(__name__)
 
@@ -118,7 +119,15 @@ class XmlrpcController(XMLRPCController):
         finally:
             model.meta.Session.remove()
     
-    def sflvault_login(self, username):
+    def sflvault_login(self, username, version=None):
+        # Establish a minimal client version.
+        minimum_version = distutils.version.LooseVersion("0.7.3")
+        user_version = distutils.version.LooseVersion(version)
+        if not version or user_version < minimum_version:
+            return vaultMsg(False, "Minimal client version required: '%s'. "\
+                            "You announced yourself as version '%s'" % \
+                                (minimum_version.vstring, version))
+
         # Return 'cryptok', encrypted with pubkey.
         # Save decoded version to user's db field.
         try:
