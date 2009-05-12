@@ -395,11 +395,11 @@ class SFLvaultCommand(object):
         self.parser.add_option('-p', '--parent', dest="parent_id",
                                help="Make this Service child of Parent "\
                                     "Service #")
-        # TODO: support multiple groups (add service in multiple groups)
-        self.parser.add_option('-g', '--group', dest="group_id", default='',
+        self.parser.add_option('-g', '--group', dest="group_ids",
+                               action="append", type="string",
                                help="Access group_id for this service, as "\
                                "'g#123' or '123'. Use group-list to view "\
-                               "complete list.")
+                               "complete list. You can specify multiple groups")
         self.parser.add_option('--notes', dest="notes",
                                help="Notes about the service, references, "\
                                     "URLs.")
@@ -450,8 +450,8 @@ class SFLvaultCommand(object):
         if not self.opts.machine_id:
             raise SFLvaultParserError("Machine ID required. Please specify -m|--machine [VaultID]")
 
-        if not self.opts.group_id:
-            raise SFLvaultParserError("Group required")
+        if not self.opts.group_ids:
+            raise SFLvaultParserError("At least one group required")
         
         
         o = self.opts
@@ -469,15 +469,15 @@ class SFLvaultCommand(object):
 
         machine_id = 0
         parent_id = 0
-        group_id = 0
+        group_ids = []
         if o.machine_id:
             machine_id = self.vault.vaultId(o.machine_id, 'm')
         if o.parent_id:
             parent_id = self.vault.vaultId(o.parent_id, 's')
-        if o.group_id:
-            group_id = self.vault.vaultId(o.group_id, 'g')
+        if o.group_ids:
+            group_ids = [self.vault.vaultId(g, 'g') for g in o.group_ids]
             
-        self.vault.service_add(machine_id, parent_id, o.url, group_id, secret,
+        self.vault.service_add(machine_id, parent_id, o.url, group_ids, secret,
                                o.notes)
         
 
