@@ -44,7 +44,9 @@ randfunc = pool.get_bytes # We'll use this func for most of the random stuff
 class DecryptError(Exception):
     """This is raised when we're unable to decrypt a ciphertext or when there
     is an error, such as checksum inconsistencies."""
-    pass
+    def __init__(self, message, attempted=None):
+        Exception.__init__(self, message)
+        self.attempted = attempted
 
 
 #
@@ -199,10 +201,14 @@ def decrypt_privkey(something, pw):
 # Encrypt / decrypt service's secrets.
 #
 
-def encrypt_secret(secret):
+def encrypt_secret(secret, seckey=None):
     """Gen. a random key, AES256 encrypts the secret, return the random key"""
-    seckey = randfunc(32)
-    a = AES.new(seckey)
+    a = None
+    if not seckey:
+        seckey = randfunc(32)
+        a = AES.new(seckey)
+    else:
+        a = AES.new(b64decode(seckey))
 
     # Pad with CRC32 checksum
     secret = wrapsum(secret)
@@ -220,18 +226,11 @@ def decrypt_secret(seckey, ciphertext):
     """Decrypt using the provided seckey"""
     a = AES.new(b64decode(seckey))
     ciphertext = b64decode(ciphertext)
-    secret = a.decrypt(ciphertext).rstrip("\x00")
-    
-    # Validate checksum
-    try:
-        sec2 = chksum(secret)
-        secret = sec2
-    except DecryptError, e:
-        print "NOTE: Using old decryption algorithm. Please update password in database."
-    
+    secret = a.decrypt(ciphertext).rstrip("\x00")    
     del(a)
     del(ciphertext)
-    return secret
+    # Validate checksum
+    return chksum(secret)
 
 
 #
