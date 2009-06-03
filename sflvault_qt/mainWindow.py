@@ -144,7 +144,8 @@ class MainWindow(QtGui.QMainWindow):
         """
         # Get Id colunm
         indexId = self.favorite_list.selectedIndexes()[0]
-        idserv,bool = indexId.data(QtCore.Qt.DisplayRole).toInt()
+        idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+        idserv = int(idserv.split("#")[1])
         # Check if seleted item is a service
         self.connection(idserv)
 

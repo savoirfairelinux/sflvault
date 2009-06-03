@@ -55,6 +55,7 @@ class FavoriteModel(QtGui.QStandardItemModel):
         self.tree = self.parent.parent.parent.tree
         self.settings = self.parent.parent.parent.settings
         self.readConfig()
+        global token
 
     def setHeaders(self):
         self.setColumnCount(2)
@@ -63,39 +64,38 @@ class FavoriteModel(QtGui.QStandardItemModel):
         self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Url"))
 
     def readConfig(self):
-        for favorite_id in self.settings.readConfig("favorites"):
-            url = self.settings.value("favorites/" + favorite_id).toString()
-            self.addFavorite(favorite_id, url)
+        for alias, id in token.alias_list():
+            self.addFavorite(id, alias)
 
-    def saveFavorite(self, id=None, url=None):
-        self.settings.setValue("favorites/" + id, QtCore.QVariant(url))
+    def saveFavorite(self, id=None, alias=None):
+        token.alias_add(alias,id)
+#        self.settings.setValue("favorites/" + id, QtCore.QVariant(url))
         # Save config
-        self.settings.saveConfig()
+#        self.settings.saveConfig()
     
-    def addFavorite(self, id=None, url=None):
+    def addFavorite(self, id=None, alias=None):
         # Added by context menu
-        if not id and not url:
+        if not id and not alias:
+            alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("New Alias"),
+                                                    self.tr("Alias name:"),
+                                                    QtGui.QLineEdit.Normal)
             id_index = self.tree.selectedIndexes()[1]
             id  = self.tree.model().data(id_index).toString()
-            url_index = self.tree.selectedIndexes()[0]
-            url = self.tree.model().data(url_index).toString()
+            id = "s#" + id
 
         self.insertRow(0)
-        self.setData(self.index(0, 1), QtCore.QVariant(url))
+        self.setData(self.index(0, 1), QtCore.QVariant(alias))
         self.setData(self.index(0, 0), QtCore.QVariant(id))
-        self.saveFavorite(id, url)
+        self.saveFavorite(unicode(id), unicode(alias))
 
     def delFavorite(self):
         """
             Delete selected row
         """
-        # Delete current row
-        selected_row = self.parent.favorite_list.selectedIndexes()[0]
-        id = self.data(selected_row).toString()
-        self.removeRows(selected_row.row(), 1)
-        self.settings.remove("favorites/" + id)
-        # Save config
-        self.settings.saveConfig()
+        
+        selected_row = self.parent.favorite_list.selectedIndexes()[1]
+        alias = unicode(self.data(selected_row).toString())
+        token.alias_del(alias)
  
 
 class FavoriteView(QtGui.QTreeView):
@@ -126,5 +126,3 @@ class FavoriteView(QtGui.QTreeView):
         #self.delAct.setShortcut(self.tr("Ctrl+X"))
         self.delAct.setStatusTip(self.tr("Delete bookmark"))
         self.connect(self.delAct, QtCore.SIGNAL("triggered()"), self.parentView.model.delFavorite)
-
-
