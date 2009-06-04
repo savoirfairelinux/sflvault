@@ -42,8 +42,16 @@ class GroupsWidget(QtGui.QDialog):
         self.user_add = QtGui.QPushButton(self.tr("Add users"))
         self.user_remove = QtGui.QPushButton(self.tr("Remove users"))
         self.user_list = QtGui.QTreeView(self)
+        self.user_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.user_list.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        self.user_list.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.user_list.setRootIsDecorated(False)
         self.user_list_filter = QtGui.QLineEdit(self)
         self.user_group_list = QtGui.QTreeView(self)
+        self.user_group_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.user_group_list.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        self.user_group_list.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.user_group_list.setRootIsDecorated(False)
         self.user_group_list_filter = QtGui.QLineEdit(self)
         
         okButton = QtGui.QPushButton(self.tr("OK"))
@@ -56,9 +64,13 @@ class GroupsWidget(QtGui.QDialog):
         self.group_list.setModel(self.proxy_group)
 
         self.model_user = UsersModel(self)
-        self.proxy_user = QtGui.QSortFilterProxyModel()
-        self.proxy_user.setSourceModel(self.model_user) 
-        self.user_list.setModel(self.proxy_user)
+        self.user_proxy = UsersProxy()
+        self.user_proxy.setSourceModel(self.model_user) 
+        self.user_list.setModel(self.user_proxy)
+        self.model_user_group = UsersModel(self)
+        self.user_group_proxy = UsersProxy()
+        self.user_group_proxy.setSourceModel(self.model_user_group) 
+        self.user_group_list.setModel(self.user_group_proxy)
 #        self.protocol_list = QtGui.QTableView(self)
 #        self.protocol_list.setModel(self.model)
 #        self.protocol_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
@@ -118,14 +130,82 @@ class GroupsWidget(QtGui.QDialog):
         self.setWindowTitle(self.tr("Groups management"))
 
         # SIGNALS
+        self.connect(self.user_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.user_proxy.setFilterFixedString)
+        self.connect(self.group_list, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.fillTables)
 #        self.connect(self.addprotocol, QtCore.SIGNAL("clicked()"), self.model.addProtocol)
 #        self.connect(self.removeprotocol, QtCore.SIGNAL("clicked()"), self.model.delProtocol)
 #        self.connect(okButton, QtCore.SIGNAL("clicked()"), self.saveConfig)
         self.connect(cancelButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
 
     def exec_(self):
+        # Get users list
+        self.users = token.vault.user_list(token.authtok, True)["list"]
         # Show dialog
         self.show()
+
+
+    def fillTables(self):
+        # Get selected ID
+        groupindex = self.group_list.selectedIndexes()[1]
+        groupid, bool = groupindex.data(QtCore.Qt.DisplayRole).toInt()
+        # Delete old model
+        if self.model_user_group:
+            del self.model_user_group 
+        if self.model_user:
+            del self.model_user
+        # Create new model and associate with proxymodel
+        self.model_user_group = UsersModel()
+        self.user_group_proxy.setSourceModel(self.model_user_group)
+        self.model_user = UsersModel()
+        self.user_proxy.setSourceModel(self.model_user)
+        # Send users in the good table
+        for user in self.users:
+            ids = []
+            for group in user["groups"]:
+                ids.append(group["id"])
+            if groupid in ids:
+                self.model_user_group.addUser(user["username"], user["id"])
+            else:
+                self.model_user.addUser(user["username"], user["id"])
+
+
+class UsersProxy(QtGui.QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        QtGui.QSortFilterProxyModel.__init__(self, parent)
+        self.parent = parent
+        self.setDynamicSortFilter(1)
+        self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
+
+    def filter(self, pattern):
+        self.setFilterFixedString(pattern)
+
+
+class UsersModel(QtGui.QStandardItemModel):
+    def __init__(self, parent=None):
+        QtGui.QStandardItemModel.__init__(self, 0, 2, parent)
+        self.parent = parent
+        global token
+        self.setHeaders()
+
+    def setHeaders(self):
+        self.setColumnCount(2)
+        self.setRowCount(0)
+        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
+        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
+
+    def addUser(self, name=None, id=None):
+        self.insertRow(0)
+        self.setData(self.index(0, 0), QtCore.QVariant(name))
+        self.setData(self.index(0, 1), QtCore.QVariant(id))
+
+    def delUser(self):
+        """
+            Delete selected row
+        """
+        # Delete current row
+        selected_row = self.parent.group_list.selectedIndexes()[0]
+        self.removeRows(selected_row.row(), 1)
+
 
 class GroupsModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
@@ -164,40 +244,3 @@ class GroupsModel(QtGui.QStandardItemModel):
 
 
 
-
-
-
-class UsersModel(QtGui.QStandardItemModel):
-    def __init__(self, parent=None):
-        QtGui.QStandardItemModel.__init__(self, 0, 2, parent)
-        self.parent = parent
-        global token
-        self.setHeaders()
-        self.getAllUsers()
-
-    def setHeaders(self):
-        self.setColumnCount(2)
-        self.setRowCount(0)
-        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
-        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
-
-    def getAllUsers(self):
-        """
-            Get all groups
-        """
-        users = token.vault.user_list(token.authtok, True)["list"]
-        for user in users:
-            self.addUser(user["username"], user["id"])
-
-    def addUser(self, name=None, id=None):
-        self.insertRow(0)
-        self.setData(self.index(0, 0), QtCore.QVariant(name))
-        self.setData(self.index(0, 1), QtCore.QVariant(id))
-
-    def delUser(self):
-        """
-            Delete selected row
-        """
-        # Delete current row
-        selected_row = self.parent.group_list.selectedIndexes()[0]
-        self.removeRows(selected_row.row(), 1)
