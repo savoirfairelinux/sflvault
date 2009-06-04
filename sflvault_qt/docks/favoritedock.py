@@ -79,6 +79,8 @@ class FavoriteModel(QtGui.QStandardItemModel):
             alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("New Alias"),
                                                     self.tr("Alias name:"),
                                                     QtGui.QLineEdit.Normal)
+            if not ok or not alias:
+                return False
             id_index = self.tree.selectedIndexes()[1]
             id  = self.tree.model().data(id_index).toString()
             id = "s#" + id
@@ -95,6 +97,7 @@ class FavoriteModel(QtGui.QStandardItemModel):
         
         selected_row = self.parent.favorite_list.selectedIndexes()[1]
         alias = unicode(self.data(selected_row).toString())
+        self.removeRows(selected_row.row(), 1)
         token.alias_del(alias)
  
 
