@@ -64,13 +64,22 @@ class MainWindow(QtGui.QMainWindow):
         self.groups = GroupsWidget(parent=self)
 
         # Signals
+        ## Tree connection
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
+        ## Tree item informations
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.showInformations)
+        ## Tree Search
         QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("textEdited (const QString&)"), self.search)
+        QtCore.QObject.connect(self.searchdock.search.type, QtCore.SIGNAL("textEdited (const QString&)"), self.tree.proxyModel.setFilterRegExp)
+        ## Tree filter by groups
         QtCore.QObject.connect(self.searchdock.search.groups, QtCore.SIGNAL("currentIndexChanged (const QString&)"), self.search)
+        ## Protocols
         QtCore.QObject.connect(self.menubar.protocols, QtCore.SIGNAL("triggered()"), self.protocols.exec_)
+        ## Groups
         QtCore.QObject.connect(self.menubar.groups, QtCore.SIGNAL("triggered()"), self.groups.exec_)
+        ## Alias
         QtCore.QObject.connect(self.tree.bookmarkAct, QtCore.SIGNAL("triggered()"), self.favoritedock.favorite.model.addFavorite)
+        ## Alias connection
         QtCore.QObject.connect(self.favoritedock.favorite.favorite_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark)
 
 

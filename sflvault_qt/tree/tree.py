@@ -79,8 +79,6 @@ class TreeModel(QtCore.QAbstractItemModel):
             parents.pop()
 
 
-
-
     def columnCount(self, parent):
         if parent.isValid():
             return parent.internalPointer().columnCount()
@@ -151,86 +149,71 @@ class TreeModel(QtCore.QAbstractItemModel):
 
         return parentItem.childCount()
 
+    def children(self, parent):
+        if parent.column() > 0:
+            return 0
+
+        if not parent.isValid():
+            parentItem = self.rootItem
+        else:
+            parentItem = parent.internalPointer()
+
+        return parentItem.childItems
 
 class proxyVault(QtGui.QSortFilterProxyModel):
     def __init__(self, parent=None):
         QtGui.QSortFilterProxyModel.__init__(self, parent)
         self.setDynamicSortFilter(1)
         self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.source_model = self.sourceModel()
+        self.shown = set()
 
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        """
+            Permit to filter on 2 first columns
+        """
+        self.source_model = self.sourceModel()
+        # By name
+        index_name = self.source_model.index(sourceRow,0,sourceParent)
+        # By id
+        index_id = self.source_model.index(sourceRow,1,sourceParent)
+        # Get pattern
+        pattern = self.filterRegExp().pattern()
 
-    def afilterAcceptsRow(self, sourceRow, sourceParent):
-        print "=============================="
-#        print sourceParent.child(0,0)
-#        print sourceParent
-        index = self.sourceModel().index(sourceRow,0,sourceParent)
-        print unicode(sourceParent.data(0).toString())
-        print unicode(index.data(0).toString())
-        if unicode(index.data(0).toString()).find("ns13") != -1 :
-            print "GOOOG"
+        if 
+        # Machine
+        # Check if parent is shown and show only if 
+        # at least one of its children is going to be shown
+        if self.source_model.parent(index_name) in self.shown:
+            for child in self.source_model.children(index_name):
+                if unicode(child.data(0)).find(pattern) != -1 or unicode(child.data(1)).find(pattern) != -1:
+                    self.shown.add(index_name)
+                    return True
+            # If there is no child, then it s a service
+            # so we show it !
+            if len(self.source_model.children(index_name)) == 0:
+                self.shown.add(index_name)
+                return True
+        # Client !
+        if unicode(index_id.data(0).toString()).find(pattern) != -1 or \
+                unicode(index_name.data(1).toString()).find(pattern) != -1:
+            self.shown.add(index_name)
             return True
+        for child in self.source_model.children(index_name):
+            #if child.data(0).find(pattern) != -1 or unicode(child.data(1)).find(pattern) != 1:
+            if unicode(child.data(0)).find(pattern) != -1 or unicode(child.data(1)).find(pattern) != -1:
+                self.shown.add(index_name)
+                return True
+            for subchild in child.childItems:
+                print subchild.data(1)
+                if unicode(subchild.data(0)).find(pattern) != -1 or unicode(subchild.data(1)).find(pattern) != -1 :
+                    self.shown.add(index_name)
+                    return True
+        # Delete index_name if it s in shown list
+        if index_name in self.shown:
+            self.shown.remove(index_name)
         return False
 
-
-    def bfilterAcceptsRow(self, sourceRow, sourceParent):
-        if sourceParent.isValid() and self.sourceModel().data(sourceParent,QtCore.Qt.DisplayRole).toString().contains("ns13"):
-            return true
-
-        data = self.sourceModel().data(self.sourceModel().index(sourceRow, 0, sourceParent),QtCore.Qt.DisplayRole).toString()
-        ret = data.contains("ns13")
-
-        subIndex = self.sourceModel().index(sourceRow, 0, sourceParent);
-        if subIndex.isValid():
-            for i in range(self.sourceModel().rowCount(subIndex)):
-                ret = ret or QtGui.QSortFilterProxyModel.filterAcceptsRow(self, i, subIndex);
-        return ret;
-
-
-    def ifilterAcceptsRow(self, sourceRow, sourceParent):
-        print "=============================="
-#        print sourceParent.child(0,0)
-#        print sourceParent
-        index = self.sourceModel().index(sourceRow,0,sourceParent)
-        print unicode(sourceParent.data(0).toString())
-        print unicode(index.data(0).toString())
-        #if unicode(index.data(0).toString()).find("ns13") == -1:
-        #    return False
-        #else:
-        #    return True
-        # get text from uderlying source model
-        item_text = unicode(self.sourceModel().data(index,QtCore.Qt.DisplayRole).toString())
-        # get what user is typed in comboBox
-#        typed_text = str(self.gui.autoCombo.lineEdit().text())
-        typed_text = unicode("ns13")
-        # if typed text in item_text - then this item is Ok to show in
-        # resulting filtering model
-        if self.sourceModel().hasChildren(index):
-#            print sourceParent.data(0).toString()
-           # return self.filterAcceptsRow( sourceRow, sourceParent.child(0,0))
-        #    print "===============" + item_text + "==================="
-        #    print index.child(0,0).data(0).toString()
-            plop = QtGui.QSortFilterProxyModel.filterAcceptsRow(self, sourceRow, index.child(0,0))
-       #     print plop
-            return plop
-        elif item_text.find(typed_text) == -1:
-      #      print "False : "+ item_text
-            return False
-        else:
-       #     print "True : " + item_text
-            return True
-
-    def dfilterAcceptsRow(self,row, _parent):
-        baseClass = QtGui.QSortFilterProxyModel
-        baseAccepts = baseClass.filterAcceptsRow(self, row, parent)
-        acceptTypes = self.acceptTypes
-        if acceptTypes is None:
-            return baseAccepts
-        message = self.messages[row]
-        return message.typeName in acceptTypes and baseAccepts
-#        index = self.parent.sourcemodel.index(source_row, 0, source_parent)
-#        if (self.parent.sourcemodel.hasChildren(index)):
-#            return True 
-#        return QtGui.QSortFilterProxyModel.filterAcceptsRow(self,source_row, source_parent)
 
 class TreeVault(QtGui.QTreeView):
     def __init__(self, parent=None):
@@ -244,7 +227,6 @@ class TreeVault(QtGui.QTreeView):
         # Set view properties
         self.setSortingEnabled(1)
         self.setModel(self.proxyModel)
-        self.setWindowTitle("Simple Tree Model")
         self.sortByColumn(0,QtCore.Qt.AscendingOrder)
         self.setAnimated(1)
 #        self.resizeColumnToContents(0)
@@ -257,6 +239,7 @@ class TreeVault(QtGui.QTreeView):
         h.resizeSection(1,70)
         # Load context actions
         self.createActions()
+
 
     def search(self, research, groups_ids):
         self.sourcemodel = TreeModel(research, groups_ids, self)
