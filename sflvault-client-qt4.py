@@ -14,6 +14,8 @@ if __name__ == "__main__":
     translator = QtCore.QTranslator()
     translator.load("frdfhvgjgg", "./dlb_translations")
     app.installTranslator(translator)
+    icon = QtGui.QIcon("images/sflvault.png")
+    app.setWindowIcon(icon)
  
     mainwindow = mainWindow.MainWindow()
     mainwindow.show()
