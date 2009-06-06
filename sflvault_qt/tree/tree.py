@@ -167,6 +167,7 @@ class proxyVault(QtGui.QSortFilterProxyModel):
         self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.source_model = self.sourceModel()
         self.shown = set()
+        self.match = set()
 
     def filterAcceptsRow(self, sourceRow, sourceParent):
         """
@@ -178,40 +179,67 @@ class proxyVault(QtGui.QSortFilterProxyModel):
         # By id
         index_id = self.source_model.index(sourceRow,1,sourceParent)
         # Get pattern
-        pattern = self.filterRegExp().pattern()
+        pattern = unicode(self.filterRegExp().pattern())
+    
+        if unicode(index_id.data(0).toString()).find(pattern) != -1: 
+            # Add it in shown list
+            self.shown.add(index_name)
+            # Add it in match list
+            self.match.add(index_name)
+            return True
+        if unicode(index_name.data(0).toString()).find(pattern) != -1:
+            # Add it in shown list
+            self.shown.add(index_name)
+            # Add it in match list
+            self.match.add(index_name)
+            return True
 
-        if 
-        # Machine
         # Check if parent is shown and show only if 
         # at least one of its children is going to be shown
-        if self.source_model.parent(index_name) in self.shown:
-            for child in self.source_model.children(index_name):
-                if unicode(child.data(0)).find(pattern) != -1 or unicode(child.data(1)).find(pattern) != -1:
-                    self.shown.add(index_name)
-                    return True
-            # If there is no child, then it s a service
-            # so we show it !
-            if len(self.source_model.children(index_name)) == 0:
+        parent_index = self.source_model.parent(index_name)
+        if parent_index in self.shown:
+            # Show it if its parent match
+            if parent_index in self.match:
+                # Add it in shown list
                 self.shown.add(index_name)
+                # remove it in match list if exist in
+                if index_name in self.match:
+                    self.match.remove(index_name)               
                 return True
-        # Client !
-        if unicode(index_id.data(0).toString()).find(pattern) != -1 or \
-                unicode(index_name.data(1).toString()).find(pattern) != -1:
-            self.shown.add(index_name)
-            return True
+            # Show it if its granpa match
+            if self.source_model.parent(parent_index) in self.match:
+                # Add it in shown list
+                self.shown.add(index_name)
+                # remove it in match list if exist in
+                if index_name in self.match:
+                    self.match.remove(index_name)
+                return True
+
+        # Show it if one a its child match
         for child in self.source_model.children(index_name):
-            #if child.data(0).find(pattern) != -1 or unicode(child.data(1)).find(pattern) != 1:
             if unicode(child.data(0)).find(pattern) != -1 or unicode(child.data(1)).find(pattern) != -1:
+                # Add it in shown list
                 self.shown.add(index_name)
+                # remove it in match list if exist in
+                if index_name in self.match:
+                    self.match.remove(index_name)
                 return True
+            # Show it if one a its little child match
             for subchild in child.childItems:
-                print subchild.data(1)
                 if unicode(subchild.data(0)).find(pattern) != -1 or unicode(subchild.data(1)).find(pattern) != -1 :
+                    # Add it in shown list
                     self.shown.add(index_name)
+                    # remove it in match list if exist in
+                    if index_name in self.match:
+                        self.match.remove(index_name)
                     return True
-        # Delete index_name if it s in shown list
+
+        # remove index_name if it s in shown list
         if index_name in self.shown:
             self.shown.remove(index_name)
+        # remove it in match list if exist in
+        if index_name in self.match:
+            self.match.remove(index_name)
         return False
 
 
@@ -239,7 +267,6 @@ class TreeVault(QtGui.QTreeView):
         h.resizeSection(1,70)
         # Load context actions
         self.createActions()
-
 
     def search(self, research, groups_ids):
         self.sourcemodel = TreeModel(research, groups_ids, self)

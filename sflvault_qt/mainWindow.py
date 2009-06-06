@@ -82,7 +82,6 @@ class MainWindow(QtGui.QMainWindow):
         ## Alias connection
         QtCore.QObject.connect(self.favoritedock.favorite.favorite_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark)
 
-
     def search(self, research):
         """
             Search item in sflvault
