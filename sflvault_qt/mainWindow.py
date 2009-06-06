@@ -6,7 +6,7 @@ from PyQt4 import QtCore, QtGui
 import re
 from PyQt4.QtCore import Qt
 import sflvault
-from tree.tree import TreeVault
+from tree.tree import TreeVault, TreeView
 from docks.servicedock import ServiceInfoDock
 from docks.machinedock import MachineInfoDock
 from docks.customerdock import CustomerInfoDock
@@ -36,7 +36,8 @@ class MainWindow(QtGui.QMainWindow):
         self.settings = Config(parent=self)
 
         # Load GUI item
-        self.tree = TreeVault(parent=self)
+        self.treewidget = TreeVault(parent=self)
+        self.tree = self.treewidget.tree
         self.serviceinfodock = ServiceInfoDock(parent=self)
         self.machineinfodock = MachineInfoDock(parent=self)
         self.customerinfodock = CustomerInfoDock(parent=self)
@@ -51,7 +52,7 @@ class MainWindow(QtGui.QMainWindow):
         self.favorite_list = self.favoritedock.favorite.favorite_list
 
         # Attach items to mainwindow
-        self.setCentralWidget(self.tree)
+        self.setCentralWidget(self.treewidget)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.customerinfodock)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.machineinfodock)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.serviceinfodock)
@@ -70,7 +71,6 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.showInformations)
         ## Tree Search
         QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("textEdited (const QString&)"), self.search)
-        QtCore.QObject.connect(self.searchdock.search.type, QtCore.SIGNAL("textEdited (const QString&)"), self.tree.proxyModel.setFilterRegExp)
         ## Tree filter by groups
         QtCore.QObject.connect(self.searchdock.search.groups, QtCore.SIGNAL("currentIndexChanged (const QString&)"), self.search)
         ## Protocols
