@@ -130,7 +130,8 @@ class GroupsWidget(QtGui.QDialog):
         self.setWindowTitle(self.tr("Groups management"))
 
         # SIGNALS
-        self.connect(self.user_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.user_proxy.setFilterFixedString)
+        self.connect(self.user_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.user_proxy.setFilterRegExp)
+        self.connect(self.user_group_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.user_group_proxy.setFilterRegExp)
         self.connect(self.group_list, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.fillTables)
 #        self.connect(self.addprotocol, QtCore.SIGNAL("clicked()"), self.model.addProtocol)
 #        self.connect(self.removeprotocol, QtCore.SIGNAL("clicked()"), self.model.delProtocol)
@@ -140,19 +141,24 @@ class GroupsWidget(QtGui.QDialog):
     def exec_(self):
         # Get users list
         self.users = token.vault.user_list(token.authtok, True)["list"]
+        # Get services list
+        self.services = token.vault.user_list(token.authtok, True)["list"]
         # Show dialog
         self.show()
 
 
     def fillTables(self):
-        # Get selected ID
-        groupindex = self.group_list.selectedIndexes()[1]
-        groupid, bool = groupindex.data(QtCore.Qt.DisplayRole).toInt()
         # Delete old model
         if self.model_user_group:
             del self.model_user_group 
         if self.model_user:
             del self.model_user
+        # Test if an item is seleted
+        if not len(self.group_list.selectedIndexes()):
+            return False
+        # Get selected ID
+        groupindex = self.group_list.selectedIndexes()[1]
+        groupid, bool = groupindex.data(QtCore.Qt.DisplayRole).toInt()
         # Create new model and associate with proxymodel
         self.model_user_group = UsersModel()
         self.user_group_proxy.setSourceModel(self.model_user_group)
@@ -176,11 +182,59 @@ class UsersProxy(QtGui.QSortFilterProxyModel):
         self.setDynamicSortFilter(1)
         self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
 
-    def filter(self, pattern):
-        self.setFilterFixedString(pattern)
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        """
+            Permit to filter on 2 first columns
+        """
+        # By name
+        index_name = self.sourceModel().index(sourceRow,0,sourceParent)
+        # By id
+        index_id = self.sourceModel().index(sourceRow,1,sourceParent)
+        # Get pattern
+        pattern = self.filterRegExp().pattern()
+        # If pattern is in id or name, show it !
+        if unicode(index_id.data(0).toString()).find(pattern) != -1 or \
+            unicode(index_name.data(0).toString()).find(pattern) != -1:
+            return True
+        return False
 
 
 class UsersModel(QtGui.QStandardItemModel):
+    def __init__(self, parent=None):
+        QtGui.QStandardItemModel.__init__(self, 0, 2, parent)
+        self.parent = parent
+        global token
+        self.setHeaders()
+
+    def setHeaders(self):
+        self.setColumnCount(2)
+        self.setRowCount(0)
+        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
+        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
+
+    def addUser(self, name=None, id=None):
+        self.insertRow(0)
+        self.setData(self.index(0, 0), QtCore.QVariant(name))
+        self.setData(self.index(0, 1), QtCore.QVariant(id))
+
+    def delUser(self):
+        """
+            Delete selected row
+        """
+        # Delete current row
+        selected_row = self.parent.group_list.selectedIndexes()[0]
+        self.removeRows(selected_row.row(), 1)
+
+
+class ServicesProxy(QtGui.QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        QtGui.QSortFilterProxyModel.__init__(self, parent)
+        self.parent = parent
+        self.setDynamicSortFilter(1)
+        self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
+
+
+class ServicesModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, 0, 2, parent)
         self.parent = parent
