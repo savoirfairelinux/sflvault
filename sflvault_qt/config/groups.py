@@ -28,6 +28,10 @@ class GroupsWidget(QtGui.QDialog):
         self.group_edit = QtGui.QPushButton(self.tr("Edit group"))
         self.group_delete = QtGui.QPushButton(self.tr("Delete group"))
         self.group_list = QtGui.QTreeView(self)
+        self.group_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.group_list.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        self.group_list.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.group_list.setRootIsDecorated(False)
         self.group_list_filter = QtGui.QLineEdit(self)
 
         servicebox = QtGui.QGroupBox(self.tr("Services"))
@@ -59,9 +63,9 @@ class GroupsWidget(QtGui.QDialog):
 
         # Load model
         self.model_group = GroupsModel(self)
-        self.proxy_group = QtGui.QSortFilterProxyModel()
-        self.proxy_group.setSourceModel(self.model_group) 
-        self.group_list.setModel(self.proxy_group)
+        self.group_proxy = GroupsProxy()
+        self.group_proxy.setSourceModel(self.model_group) 
+        self.group_list.setModel(self.group_proxy)
 
         self.model_user = UsersModel(self)
         self.user_proxy = UsersProxy()
@@ -133,6 +137,7 @@ class GroupsWidget(QtGui.QDialog):
         self.connect(self.user_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.user_proxy.setFilterRegExp)
         self.connect(self.user_group_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.user_group_proxy.setFilterRegExp)
         self.connect(self.group_list, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.fillTables)
+        self.connect(self.group_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.group_proxy.setFilterRegExp)
 #        self.connect(self.addprotocol, QtCore.SIGNAL("clicked()"), self.model.addProtocol)
 #        self.connect(self.removeprotocol, QtCore.SIGNAL("clicked()"), self.model.delProtocol)
 #        self.connect(okButton, QtCore.SIGNAL("clicked()"), self.saveConfig)
@@ -259,6 +264,30 @@ class ServicesModel(QtGui.QStandardItemModel):
         # Delete current row
         selected_row = self.parent.group_list.selectedIndexes()[0]
         self.removeRows(selected_row.row(), 1)
+
+
+class GroupsProxy(QtGui.QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        QtGui.QSortFilterProxyModel.__init__(self, parent)
+        self.parent = parent
+        self.setDynamicSortFilter(1)
+        self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
+
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        """
+            Permit to filter on 2 first columns
+        """
+        # By name
+        index_name = self.sourceModel().index(sourceRow,0,sourceParent)
+        # By id
+        index_id = self.sourceModel().index(sourceRow,1,sourceParent)
+        # Get pattern
+        pattern = self.filterRegExp().pattern()
+        # If pattern is in id or name, show it !
+        if unicode(index_id.data(0).toString()).find(pattern) != -1 or \
+            unicode(index_name.data(0).toString()).find(pattern) != -1:
+            return True
+        return False
 
 
 class GroupsModel(QtGui.QStandardItemModel):
