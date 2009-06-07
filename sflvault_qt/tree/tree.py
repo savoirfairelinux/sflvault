@@ -5,17 +5,19 @@ from PyQt4 import QtCore, QtGui
 
 from sflvault.client import SFLvaultClient
 from sflvault_qt.bar.filterbar import FilterBar
+from images.qicons import *
 
 from auth import auth
 token = auth.getAuth()
 
 
 
-class TreeItem:
-    def __init__(self, data, parent=None):
+class TreeItem(QtCore.QObject):
+    def __init__(self, data, icon=None, parent=None):
         self.parentItem = parent
         self.itemData = data
         self.childItems = []
+        self.icon = icon
 
     def appendChild(self, item):
         self.childItems.append(item)
@@ -65,15 +67,15 @@ class TreeModel(QtCore.QAbstractItemModel):
 
 
         for custoid, custo in all["results"].items():
-            parents[-1].appendChild(TreeItem([custo["name"],int(custoid)], parents[-1]))
+            parents[-1].appendChild(TreeItem([custo["name"],int(custoid)], Qicons("customer"), parents[-1]))
             parents.append(parents[-1].child(parents[-1].childCount() - 1))
 
             for machineid, machine in custo["machines"].items():
-                parents[-1].appendChild(TreeItem([machine["name"],int(machineid)], parents[-1]))
+                parents[-1].appendChild(TreeItem([machine["name"],int(machineid)], Qicons("machine"), parents[-1]))
                 parents.append(parents[-1].child(parents[-1].childCount() - 1))
 
                 for serviceid, service in machine["services"].items():
-                    parents[-1].appendChild(TreeItem([service["url"],int(serviceid)], parents[-1]))
+                    parents[-1].appendChild(TreeItem([service["url"],int(serviceid)], Qicons("service"), parents[-1]))
 
                 parents.pop()
 
@@ -90,10 +92,13 @@ class TreeModel(QtCore.QAbstractItemModel):
         if not index.isValid():
             return QtCore.QVariant()
 
+        item = index.internalPointer()
+
+        if role == QtCore.Qt.DecorationRole and index.column() == 0:
+            return  QtCore.QVariant(item.icon)
+
         if role != QtCore.Qt.DisplayRole:
             return QtCore.QVariant()
-
-        item = index.internalPointer()
 
         return QtCore.QVariant(item.data(index.column()))
 

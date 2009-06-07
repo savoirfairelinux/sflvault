@@ -12,6 +12,9 @@ import os
 icons = {}
 icons["sflvault_icon"] = "images/sflvault.png"
 icons["close_filter_icon"] = "images/dialog-close.png"
+icons["customer"] = "images/customer.png"
+icons["machine"] = "images/machine.png"
+icons["service"] = "images/service.png"
 
 
 def Qicons(icon_name):
