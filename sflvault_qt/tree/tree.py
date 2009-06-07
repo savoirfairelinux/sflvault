@@ -277,7 +277,7 @@ class TreeView(QtGui.QTreeView):
     def search(self, research, groups_ids):
         self.sourcemodel = TreeModel(research, groups_ids, self)
         self.proxyModel.setSourceModel(self.sourcemodel)
-        self.expandAll()
+#        self.expandAll()
 
     def contextMenuEvent(self, event):
         """
@@ -305,6 +305,17 @@ class TreeView(QtGui.QTreeView):
 #        self.connect(self.reomveFileAct, QtCore.SIGNAL("triggered()"), self.remove)
 
 
+    def filter(self, pattern):
+        """
+            Filter and expand
+        """
+        self.proxyModel.setFilterRegExp(pattern)
+        if pattern:
+            self.expandAll()
+        else:
+            self.collapseAll()
+        
+
 class TreeVault(QtGui.QWidget):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
@@ -312,7 +323,7 @@ class TreeVault(QtGui.QWidget):
 
         self.tree = TreeView(parent)
         self.filter = FilterBar(self) 
-        self.filter.connect(self.filter.filter_input, QtCore.SIGNAL("textChanged(const QString&)"), self.tree.proxyModel.setFilterRegExp)
+        self.filter.connect(self.filter.filter_input, QtCore.SIGNAL("textChanged(const QString&)"), self.tree.filter)
 
         layout = QtGui.QVBoxLayout(self);
         layout.setSpacing(0)
