@@ -4,6 +4,7 @@ import sys
 from PyQt4 import QtCore, QtGui
 
 from sflvault.client import SFLvaultClient
+from sflvault_qt.bar.filterbar import FilterBar
 
 from auth import auth
 token = auth.getAuth()
@@ -299,32 +300,6 @@ class TreeView(QtGui.QTreeView):
 #        self.connect(self.reomveFileAct, QtCore.SIGNAL("triggered()"), self.remove)
 
 
-class FilterBar(QtGui.QWidget):
-    def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-        self.parent = parent
-        
-        layout = QtGui.QHBoxLayout(self)
-        layout.setMargin(0)
-
-        close = QtGui.QToolButton(self);
-        close.setAutoRaise(True);
-#        close.setIcon(KIcon("dialog-close"))
-        close.setToolTip(self.tr("Hide Filter Bar"))
-        layout.addWidget(close);
-
-        filter_label = QtGui.QLabel(self.tr("Filter :"));
-        layout.addWidget(filter_label);
-
-        filter_input = QtGui.QLineEdit(self)
-        filter_input.setLayoutDirection(QtCore.Qt.LeftToRight)
-        filter_label.setBuddy(filter_input);
-        layout.addWidget(filter_input);
-
-        QtCore.QObject.connect(filter_input, QtCore.SIGNAL("textChanged(const QString&)"), self.parent.tree.proxyModel.setFilterRegExp)
-
-
-
 class TreeVault(QtGui.QWidget):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
@@ -332,6 +307,7 @@ class TreeVault(QtGui.QWidget):
 
         self.tree = TreeView(parent)
         self.filter = FilterBar(self) 
+        self.filter.connect(self.filter.filter_input, QtCore.SIGNAL("textChanged(const QString&)"), self.tree.proxyModel.setFilterRegExp)
 
         layout = QtGui.QVBoxLayout(self);
         layout.setSpacing(0)
@@ -341,7 +317,3 @@ class TreeVault(QtGui.QWidget):
         layout.addWidget(self.filter)
 
 
-
-
-
-        

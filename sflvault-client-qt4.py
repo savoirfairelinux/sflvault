@@ -4,7 +4,7 @@
 from PyQt4 import QtCore, QtGui
 from sflvault_qt import mainWindow
 import sys
- 
+from images.qicons import *
 from auth import auth
 
 
@@ -14,8 +14,8 @@ if __name__ == "__main__":
     translator = QtCore.QTranslator()
     translator.load("frdfhvgjgg", "./dlb_translations")
     app.installTranslator(translator)
-    icon = QtGui.QIcon("images/sflvault.png")
-    app.setWindowIcon(icon)
+
+    app.setWindowIcon(Qicons("sflvault_icon"))
  
     mainwindow = mainWindow.MainWindow()
     mainwindow.show()
