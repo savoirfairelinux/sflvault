@@ -76,7 +76,7 @@ class TreeModel(QtCore.QAbstractItemModel):
 
                 for serviceid, service in machine["services"].items():
                     protocol = service["url"].split(":")[0] 
-                    parents[-1].appendChild(TreeItem([service["url"],int(serviceid)], Qicons(protocol), parents[-1]))
+                    parents[-1].appendChild(TreeItem([service["url"],int(serviceid)], Qicons(protocol, "service"), parents[-1]))
 
                 parents.pop()
 

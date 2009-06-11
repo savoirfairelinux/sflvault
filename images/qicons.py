@@ -8,28 +8,38 @@ from PyQt4.QtCore import Qt
 import shutil
 import os
 
+# Set folders
+image_folder = "images/"
+image_service_folder = image_folder + "services/"
 
+# load standard icons
 icons = {}
 icons["sflvault_icon"] = "images/sflvault.png"
 icons["close_filter_icon"] = "images/dialog-close.png"
 icons["customer"] = "images/customer.png"
 icons["machine"] = "images/machine.png"
-icons["service"] = "images/service.png"
-icons["mysql"] = "images/mysql.png"
-icons["pgsql"] = "images/pgsql.png"
-icons["smb"] = "images/smb.png"
-icons["wifi"] = "images/wifi.png"
-icons["http"] = "images/http.png"
-icons["smtp"] = "images/smtp.png"
-icons["pop3"] = "images/pop3.png"
-icons["imap"] = "images/imap.png"
+
+# Auto load all service icons in images/services/ folder
+service_icons = {}
+service_icons["service"] = "images/service.png"
+for file in os.listdir("images/services"):
+    service, ext = os.path.splitext(file)
+    if ext in [".jpg", ".jpeg", ".png"]:
+        service_icons[service] = image_service_folder + service + ".png"
 
 
-def Qicons(icon_name):
+def Qicons(icon_name, type=None):
     """
         Return selected icon
     """
     global icons
-    if not icon_name in icons.keys():
-        icon_name = "service"
-    return QtGui.QIcon(icons[icon_name])
+    global service_icons
+
+    # Get service icons
+    if type == "service":
+        if not icon_name in service_icons.keys():
+            icon_name = "service"
+        return QtGui.QIcon(service_icons[icon_name])
+    # Return standard icons
+    else:
+        return QtGui.QIcon(icons[icon_name])
