@@ -8,6 +8,7 @@ from PyQt4.QtCore import Qt
 import sflvault
 from tree.tree import TreeVault, TreeView
 from docks.servicedock import ServiceInfoDock
+from docks.infodock import InfoDock
 from docks.machinedock import MachineInfoDock
 from docks.customerdock import CustomerInfoDock
 from docks.searchdock import SearchDock
@@ -42,6 +43,7 @@ class MainWindow(QtGui.QMainWindow):
         self.machineinfodock = MachineInfoDock(parent=self)
         self.customerinfodock = CustomerInfoDock(parent=self)
         self.searchdock = SearchDock(parent=self)
+        self.infodock = InfoDock(parent=self)
         self.favoritedock = FavoriteDock(parent=self)
         self.menubar = MenuBar(parent=self)
 
@@ -56,6 +58,7 @@ class MainWindow(QtGui.QMainWindow):
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.customerinfodock)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.machineinfodock)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.serviceinfodock)
+        self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.infodock)
         self.addDockWidget(QtCore.Qt.TopDockWidgetArea,self.searchdock)
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea,self.favoritedock)
         self.setMenuBar(self.menubar)
