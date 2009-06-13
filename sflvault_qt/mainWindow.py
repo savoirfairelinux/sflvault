@@ -7,10 +7,7 @@ import re
 from PyQt4.QtCore import Qt
 import sflvault
 from tree.tree import TreeVault, TreeView
-from docks.servicedock import ServiceInfoDock
 from docks.infodock import InfoDock
-from docks.machinedock import MachineInfoDock
-from docks.customerdock import CustomerInfoDock
 from docks.searchdock import SearchDock
 from docks.favoritedock import FavoriteDock
 from config.protocols import ProtocolsWidget
@@ -22,7 +19,6 @@ import shutil
 import os
 
 from lib.auth import *
-#token = getAuth()
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -198,7 +194,6 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
         ## Tree item informations
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.showInformations)
-
 
         # "Connect" menus
         self.menubar.enableItems()
