@@ -18,6 +18,9 @@ icons["sflvault_icon"] = "images/sflvault.png"
 icons["close_filter_icon"] = "images/dialog-close.png"
 icons["customer"] = "images/customer.png"
 icons["machine"] = "images/machine.png"
+icons["critical"] = "images/critical.png"
+icons["warning"] = "images/warning.png"
+icons["information"] = "images/information.png"
 
 # Auto load all service icons in images/services/ folder
 service_icons = {}
