@@ -11,8 +11,8 @@ import shutil
 import os
 
 
-from auth import auth
-token = auth.getAuth()
+from lib.auth import *
+#token = getAuth()
 
 
 class InfoDock(QtGui.QDockWidget):
@@ -23,24 +23,29 @@ class InfoDock(QtGui.QDockWidget):
         self.setWidget(self.info)
         global token
 
-    def showInformations(self, id):
+    def showInformations(self, customerid, machineid=None, serviceid=None):
         """
             Show services informations
         """
+        # Set New object
+        customer = None
+        machine = None
+        service = None
+        # Set a new model
+        self.info.model.clear()
+        self.info.model.setHeaders()
 
-        if id:
-            service = token.vault.service.get(token.authtok,id)
-            self.serviceInfo.url.setText(service["service"]["url"])
-            self.serviceInfo.notes.setText(service["service"]["notes"])
-            self.serviceInfo.servparent.setText(str(service["service"]["parent_service_id"]))
-            self.serviceInfo.metadata.setText(str(service["service"]["metadata"]))
-        else:
-            self.serviceInfo.url.clear()
-            self.serviceInfo.notes.clear()
-            self.serviceInfo.servparent.clear()
-            self.serviceInfo.metadata.clear()
-
-    
+        customer = getCustomer(customerid)
+#        customer = token.vault.customer.get(token.authtok, customerid)
+        if machineid:
+            machine = getMachine(machineid)
+#            machine = token.vault.machine.get(token.authtok, machineid)
+            if serviceid:
+                service = getService(serviceid)
+#                service = token.vault.service.get(token.authtok, serviceid)
+        self.info.model.showEditableInformations(customer, machine, service)
+        self.info.showInformations(customer, machine, service)
+ 
 
 class Info(QtGui.QWidget):
     def __init__(self, parent=None ):
@@ -48,7 +53,7 @@ class Info(QtGui.QWidget):
         self.parent = parent
 
         # QlineEdits
-        self.tree = QtGui.QTreeView()
+        self.tree = InfoTree()
         self.reinit = QtGui.QPushButton(self.tr("Reinitialize"))
         self.save = QtGui.QPushButton(self.tr("Save"))
         self.info_box = QtGui.QGroupBox()
@@ -83,9 +88,25 @@ class Info(QtGui.QWidget):
         # Show window
         self.setLayout(mainLayout)
 
-    def showInformations(self, id, type):
-         
-        self.model.showEditableInformations(id, type)
+    def showInformations(self, customer, machine=None, service=None):
+        if service:
+            for key, data in service["service"].items():
+                if key in ["id"]:
+                    self.idLabel.setText(self.tr("Id : %s" % unicode(data)))
+        elif machine:
+            for key, data in machine["machine"].items():
+                if key in ["id"]:
+                    self.idLabel.setText(self.tr("Id : %s" % unicode(data)))
+        elif customer:
+            for key, data in customer["customer"].items():
+                if key in ["id"]:
+                    self.idLabel.setText(self.tr("Id : %s" % unicode(data)))
+
+class InfoTree(QtGui.QTreeView):
+    def __init__(self, parent=None):
+        QtGui.QTreeView.__init__(self, parent)
+        self.parent = parent
+
 
 class InfoModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
@@ -100,14 +121,25 @@ class InfoModel(QtGui.QStandardItemModel):
         self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
         self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Value"))
 
-    def showEditableInformations(self, id, type):
+    def showEditableInformations(self, customer, machine=None, service=None):
         """
             Show services informations
         """
-        if type =="service":
-            service = token.vault.service.get(token.authtok,id)
+        if service: 
             for key, data in service["service"].items():
                 if key in ["url", "notes", "group_id", "parent_service_id"]:
+                    self.insertRow(0)
+                    self.setData(self.index(0, 1), QtCore.QVariant(data))
+                    self.setData(self.index(0, 0), QtCore.QVariant(key))
+        elif machine:
+            for key, data in machine["machine"].items():
+                if key in ["name", "ip", "fqdn", "location", "notes"]:
+                    self.insertRow(0)
+                    self.setData(self.index(0, 1), QtCore.QVariant(data))
+                    self.setData(self.index(0, 0), QtCore.QVariant(key))
+        elif customer:
+            for key, data in customer["customer"].items():
+                if key in ["name", ]:
                     self.insertRow(0)
                     self.setData(self.index(0, 1), QtCore.QVariant(data))
                     self.setData(self.index(0, 0), QtCore.QVariant(key))

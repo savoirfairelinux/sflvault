@@ -20,19 +20,26 @@ class MenuBar(QtGui.QMenuBar):
         self.help = self.addMenu(self.tr("&Help"))
        
         # File
+
         ## New
         self.new = self.file.addMenu(self.tr("&New"))
         self.new.setStatusTip(self.tr("Create new item"))
         ### Customer
         self.newcust = self.new.addAction(self.tr("&Customer..."))
         self.newcust.setStatusTip(self.tr("Create a new customer"))
+        self.newcust.setEnabled(0)
         ## Machine
         self.newmach = self.new.addAction(self.tr("&Machine..."))
         self.newmach.setStatusTip(self.tr("Create a new machine"))
+        self.newmach.setEnabled(0)
         ## Service
         self.newserv = self.new.addAction(self.tr("&Service..."))
         self.newserv.setStatusTip(self.tr("Create a new service"))
+        self.newserv.setEnabled(0)
 
+        ## Connection
+        self.connection = self.file.addAction(self.tr("&Connection"))
+        self.connection.setStatusTip(self.tr("Connection to the vault"))
         ## Quit
         self.quit = self.file.addAction(self.tr("&Quit"))
         self.quit.setStatusTip(self.tr("Quit Sflvault-qt"))
@@ -42,16 +49,19 @@ class MenuBar(QtGui.QMenuBar):
         self.protocols = self.edit.addAction(self.tr("&Protocols..."))
         self.protocols.setShortcut(self.tr("Ctrl+Shift+P"))
         self.protocols.setStatusTip(self.tr("Manage protocols"))
+        self.protocols.setEnabled(0)
 
         ## Group management
         self.groups = self.edit.addAction(self.tr("&Groups..."))
         self.groups.setShortcut(self.tr("Ctrl+Shift+G"))
         self.groups.setStatusTip(self.tr("Manage groups"))
+        self.groups.setEnabled(0)
 
         ## Users management
         self.users = self.edit.addAction(self.tr("&Users..."))
         self.users.setShortcut(self.tr("ctrl+shift+U"))
         self.users.setStatusTip(self.tr("Manage users"))
+        self.users.setEnabled(0)
 
         ## Settings
         self.pref = self.edit.addAction(self.tr("&Settings..."))
@@ -106,3 +116,14 @@ class MenuBar(QtGui.QMenuBar):
         ## About sflvault-qt
         self.guiabout = self.help.addAction(self.tr("About Sflvault-QT"))
         self.guiabout.setStatusTip(self.tr("About Sflvault-QT"))
+
+    def enableItems(self):
+        """
+            Active some menus
+        """
+        self.newcust.setEnabled(1)
+        self.newmach.setEnabled(1)
+        self.newserv.setEnabled(1)
+        self.protocols.setEnabled(1)
+        self.groups.setEnabled(1)
+        self.users.setEnabled(1)

@@ -7,9 +7,8 @@ from sflvault.client import SFLvaultClient
 from sflvault_qt.bar.filterbar import FilterBar
 from images.qicons import *
 
-from auth import auth
-token = auth.getAuth()
-
+from lib.auth import *
+#token = getAuth()
 
 
 class TreeItem(QtCore.QObject):
@@ -40,7 +39,6 @@ class TreeItem(QtCore.QObject):
     def row(self):
         if self.parentItem:
             return self.parentItem.childItems.index(self)
-
         return 0
 
 
@@ -55,7 +53,6 @@ class TreeModel(QtCore.QAbstractItemModel):
         self.rootItem = TreeItem(rootData)
         self.research = research
         self.groups_ids = groups_ids
-        global token
 
         # Init data item tree
         parents = []
@@ -63,8 +60,7 @@ class TreeModel(QtCore.QAbstractItemModel):
 
         if not self.research:
             self.research = "."
-        all = token.vault.search(token.authtok, self.research, self.groups_ids)
-
+        all = vaultSearch(self.research, self.groups_ids)
 
         for custoid, custo in all["results"].items():
             parents[-1].appendChild(TreeItem([custo["name"],int(custoid)], Qicons("customer"), parents[-1]))
@@ -81,7 +77,6 @@ class TreeModel(QtCore.QAbstractItemModel):
                 parents.pop()
 
             parents.pop()
-
 
     def columnCount(self, parent):
         if parent.isValid():
@@ -166,6 +161,7 @@ class TreeModel(QtCore.QAbstractItemModel):
             parentItem = parent.internalPointer()
 
         return parentItem.childItems
+
 
 class proxyVault(QtGui.QSortFilterProxyModel):
     def __init__(self, parent=None):
@@ -254,11 +250,8 @@ class TreeView(QtGui.QTreeView):
     def __init__(self, parent=None):
         QtGui.QTreeView.__init__(self, parent)
         self.parent = parent
-        # Load model
-        self.sourcemodel = TreeModel(None, None, self)
         # Load proxy
         self.proxyModel = proxyVault(self)
-        self.proxyModel.setSourceModel(self.sourcemodel)
         # Set view properties
         self.setSortingEnabled(1)
         self.setModel(self.proxyModel)
@@ -275,21 +268,23 @@ class TreeView(QtGui.QTreeView):
         # Load context actions
         self.createActions()
 
-    def search(self, research, groups_ids):
+    def search(self, research, groups_ids=None):
+        # Load model
         self.sourcemodel = TreeModel(research, groups_ids, self)
+        # Load proxy
         self.proxyModel.setSourceModel(self.sourcemodel)
-#        self.expandAll()
 
     def contextMenuEvent(self, event):
         """
             Create contextMenu on right click
         """
-        menu = QtGui.QMenu(self)
-        menu.addAction(self.editAct)
-        # Add bookmark menu for services
-        if self.selectedIndexes()[0].parent().parent().isValid():
-            menu.addAction(self.bookmarkAct)
-        menu.exec_(event.globalPos())
+        if self.selectedIndexes():
+            menu = QtGui.QMenu(self)
+            menu.addAction(self.editAct)
+            # Add bookmark menu for services
+            if self.selectedIndexes()[0].parent().parent().isValid():
+                menu.addAction(self.bookmarkAct)
+            menu.exec_(event.globalPos())
 
     def createActions(self):
         """
@@ -333,4 +328,5 @@ class TreeVault(QtGui.QWidget):
         layout.addWidget(self.tree)
         layout.addWidget(self.filter)
 
-
+    def connection(self):
+        self.tree.search(["."])

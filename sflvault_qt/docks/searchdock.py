@@ -11,8 +11,8 @@ import shutil
 import os
 
 
-from auth import auth
-token = auth.getAuth()
+from lib.auth import *
+#token = getAuth()
 
 class SearchDock(QtGui.QDockWidget):
     def __init__(self, parent=None, ):
@@ -21,11 +21,15 @@ class SearchDock(QtGui.QDockWidget):
         self.search = Search()
         self.setWidget(self.search)
 
+    def connection(self):
+        self.search.updateGroup()
+
+
 class Search(QtGui.QWidget):
     def __init__(self, parent=None, ):
         QtGui.QWidget.__init__(self, parent)
         self.parent = parent
-        global token
+#        global token
 
         # QlineEdits
         self.search = QtGui.QLineEdit()
@@ -55,19 +59,21 @@ class Search(QtGui.QWidget):
         self.setLayout(mainLayout)
 
         # Update group list
-        self.updateGroup()
-
+#        self.updateGroup()
 
     def updateGroup(self):
         """
             Update Groups list
         """
+        self.groups.clear()
         # Add All
         id = QtCore.QVariant(None)
         self.groups.addItem(self.tr("All"), id)
         # Get all groups 
-        grouplist = token.vault.group_list(token.authtok)
-        for group in grouplist["list"]:
-            id = QtCore.QVariant(group["id"])
-            self.groups.addItem(group["name"], id)
-
+        grouplist = getGroupList()
+        if grouplist:
+            for group in grouplist:
+                id = QtCore.QVariant(group["id"])
+                self.groups.addItem(group["name"], id)
+        # Resize comboBox
+        self.groups.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)

@@ -11,15 +11,20 @@ import shutil
 import os
 
 
-from auth import auth
-token = auth.getAuth()
+from lib.auth import *
 
 class FavoriteDock(QtGui.QDockWidget):
-    def __init__(self, parent=None, ):
+    def __init__(self, parent=None):
         QtGui.QDockWidget.__init__(self, "Favorites", parent)
         self.parent = parent
         self.favorite = Favorite(self)
         self.setWidget(self.favorite)
+
+    def readAliases(self):
+        self.favorite.model.clear()
+        self.favorite.model.setHeaders()
+        self.favorite.model.readConfig()
+
 
 class Favorite(QtGui.QWidget):
     def __init__(self, parent=None, ):
@@ -30,7 +35,6 @@ class Favorite(QtGui.QWidget):
         self.model = FavoriteModel(self)
 
         # Load gui items
-#        self.favorite_list = QtGui.QTableView(self)
         self.favorite_list = FavoriteView(self)
 
         # Attach model
@@ -54,8 +58,7 @@ class FavoriteModel(QtGui.QStandardItemModel):
         self.setHeaders()
         self.tree = self.parent.parent.parent.tree
         self.settings = self.parent.parent.parent.settings
-        self.readConfig()
-        global token
+#        self.readConfig()
 
     def setHeaders(self):
         self.setColumnCount(2)
@@ -64,11 +67,11 @@ class FavoriteModel(QtGui.QStandardItemModel):
         self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Url"))
 
     def readConfig(self):
-        for alias, id in token.alias_list():
+        for alias, id in getAliasList():
             self.addFavorite(id, alias)
 
     def saveFavorite(self, id=None, alias=None):
-        token.alias_add(alias,id)
+        saveAlias(alias,id)
 #        self.settings.setValue("favorites/" + id, QtCore.QVariant(url))
         # Save config
 #        self.settings.saveConfig()
@@ -94,11 +97,10 @@ class FavoriteModel(QtGui.QStandardItemModel):
         """
             Delete selected row
         """
-        
         selected_row = self.parent.favorite_list.selectedIndexes()[1]
         alias = unicode(self.data(selected_row).toString())
         self.removeRows(selected_row.row(), 1)
-        token.alias_del(alias)
+        delAlias(alias)
  
 
 class FavoriteView(QtGui.QTreeView):

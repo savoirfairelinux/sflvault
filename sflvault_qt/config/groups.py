@@ -10,8 +10,8 @@ from sflvault.client import SFLvaultClient
 import shutil
 import os
 
-from auth import auth
-token = auth.getAuth()
+from lib.auth import *
+#token = getAuth()
 
 
 class GroupsWidget(QtGui.QDialog):
@@ -19,7 +19,6 @@ class GroupsWidget(QtGui.QDialog):
         QtGui.QDialog.__init__(self, parent)
         self.parent = parent
         self.settings = self.parent.settings
-        self.model = GroupsModel(self)
         self.protocols = {}
 
         # Load gui items
@@ -145,12 +144,12 @@ class GroupsWidget(QtGui.QDialog):
 
     def exec_(self):
         # Get users list
-        self.users = token.vault.user_list(token.authtok, True)["list"]
+        self.users = getUserList()
         # Get services list
-        self.services = token.vault.user_list(token.authtok, True)["list"]
+        # TODO
+#        self.services = token.vault.user_list(token.authtok, True)["list"]
         # Show dialog
         self.show()
-
 
     def fillTables(self):
         # Delete old model
@@ -178,6 +177,9 @@ class GroupsWidget(QtGui.QDialog):
                 self.model_user_group.addUser(user["username"], user["id"])
             else:
                 self.model_user.addUser(user["username"], user["id"])
+
+    def connection(self):
+        self.model_group.getAllGroups()
 
 
 class UsersProxy(QtGui.QSortFilterProxyModel):
@@ -208,7 +210,6 @@ class UsersModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, 0, 2, parent)
         self.parent = parent
-        global token
         self.setHeaders()
 
     def setHeaders(self):
@@ -243,7 +244,6 @@ class ServicesModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, 0, 2, parent)
         self.parent = parent
-        global token
         self.setHeaders()
 
     def setHeaders(self):
@@ -294,9 +294,7 @@ class GroupsModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, 0, 2, parent)
         self.parent = parent
-        global token
         self.setHeaders()
-        self.getAllGroups()
 
     def setHeaders(self):
         self.setColumnCount(2)
@@ -308,7 +306,7 @@ class GroupsModel(QtGui.QStandardItemModel):
         """
             Get all groups
         """
-        groups = token.vault.group_list(token.authtok)["list"]
+        groups = getGroupList()
         for group in groups:
             self.addGroup(group["name"], group["id"])
         
@@ -324,6 +322,5 @@ class GroupsModel(QtGui.QStandardItemModel):
         # Delete current row
         selected_row = self.parent.group_list.selectedIndexes()[0]
         self.removeRows(selected_row.row(), 1)
-
 
 

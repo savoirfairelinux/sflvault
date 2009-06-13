@@ -5,7 +5,7 @@ from PyQt4 import QtCore, QtGui
 from sflvault_qt import mainWindow
 import sys
 from images.qicons import *
-from auth import auth
+from lib.auth import *
 
 
 if __name__ == "__main__":

@@ -21,17 +21,15 @@ from sflvault.client import SFLvaultClient
 import shutil
 import os
 
-
-
-from auth import auth
-token = auth.getAuth()
-
+from lib.auth import *
+#token = getAuth()
 
 
 class MainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
         self.parent = parent
+        self.listWidget = {}
 
         # Load settings
         self.settings = Config(parent=self)
@@ -39,51 +37,38 @@ class MainWindow(QtGui.QMainWindow):
         # Load GUI item
         self.treewidget = TreeVault(parent=self)
         self.tree = self.treewidget.tree
-        self.serviceinfodock = ServiceInfoDock(parent=self)
-        self.machineinfodock = MachineInfoDock(parent=self)
-        self.customerinfodock = CustomerInfoDock(parent=self)
+        self.favoritedock = FavoriteDock(parent=self)
         self.searchdock = SearchDock(parent=self)
         self.infodock = InfoDock(parent=self)
-        self.favoritedock = FavoriteDock(parent=self)
         self.menubar = MenuBar(parent=self)
 
         # Create clipboard
         self.clipboard = QtGui.QApplication.clipboard()
 
-        # Get favorite list
+        # Load favorite list
         self.favorite_list = self.favoritedock.favorite.favorite_list
 
         # Attach items to mainwindow
         self.setCentralWidget(self.treewidget)
-        self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.customerinfodock)
-        self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.machineinfodock)
-        self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.serviceinfodock)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea,self.favoritedock)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.infodock)
         self.addDockWidget(QtCore.Qt.TopDockWidgetArea,self.searchdock)
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea,self.favoritedock)
         self.setMenuBar(self.menubar)
+
+        # Read aliases
+        self.favoritedock.readAliases()
 
         # Load windows
         self.protocols = ProtocolsWidget(parent=self)
         self.groups = GroupsWidget(parent=self)
 
         # Signals
-        ## Tree connection
-        QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
-        ## Tree item informations
-        QtCore.QObject.connect(self.tree, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.showInformations)
-        ## Tree Search
-        QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("textEdited (const QString&)"), self.search)
-        ## Tree filter by groups
-        QtCore.QObject.connect(self.searchdock.search.groups, QtCore.SIGNAL("currentIndexChanged (const QString&)"), self.search)
         ## Protocols
         QtCore.QObject.connect(self.menubar.protocols, QtCore.SIGNAL("triggered()"), self.protocols.exec_)
         ## Groups
         QtCore.QObject.connect(self.menubar.groups, QtCore.SIGNAL("triggered()"), self.groups.exec_)
-        ## Alias
-        QtCore.QObject.connect(self.tree.bookmarkAct, QtCore.SIGNAL("triggered()"), self.favoritedock.favorite.model.addFavorite)
-        ## Alias connection
-        QtCore.QObject.connect(self.favoritedock.favorite.favorite_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark)
+        ## Vault connection
+        QtCore.QObject.connect(self.menubar.connection, QtCore.SIGNAL("triggered()"), self.vaultConnection)
 
     def search(self, research):
         """
@@ -120,7 +105,6 @@ class MainWindow(QtGui.QMainWindow):
                 idcust,bool = self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole).toInt()
                 # Get service id 
                 idserv,bool = indexId.data(QtCore.Qt.DisplayRole).toInt()
-                self.serviceinfodock.showInformations(idserv)
             else:
                 # Selected item is a machine
                 # Get machine parent id (customerid)
@@ -129,14 +113,13 @@ class MainWindow(QtGui.QMainWindow):
                 idcust,bool = self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole).toInt()
                 # Get machine id 
                 idmach,bool = indexId.data(QtCore.Qt.DisplayRole).toInt()
-                self.serviceinfodock.showInformations(None)
-            self.machineinfodock.showInformations(idmach)
+                idserv = None
         else:
             # Selected item is a customer
             idcust,bool = indexId.data(QtCore.Qt.DisplayRole).toInt()
-            self.machineinfodock.showInformations(None)
-            self.serviceinfodock.showInformations(None)
-        self.customerinfodock.showInformations(idcust)
+            idmach = None
+            idserv = None
+        self.infodock.showInformations(idcust, machineid=idmach, serviceid=idserv)
 
     def GetIdByTree(self, index):
         """
@@ -164,10 +147,10 @@ class MainWindow(QtGui.QMainWindow):
         """
             Connect to a service
         """
-        global token
         # Get Options
         options = {}
-        service = token.vault.service_get(token.authtok, idserv)
+        
+        service = getService(idserv)
         url = service["service"]["url"]
         protocol, address = url.split("://")
         options["user"], options["address"] = address.split("@", 1)
@@ -188,5 +171,37 @@ class MainWindow(QtGui.QMainWindow):
         """
             Paste password to the clipboard
         """
-        global token
-        self.clipboard.setText(token.service_get(serviceid)["plaintext"])
+        self.clipboard.setText(getPassword(serviceid))
+
+    def vaultConnection(self):
+        """
+            Connect to the vault
+        """
+        token = getAuth()
+
+        ## "Connect" Alias
+        QtCore.QObject.connect(self.favoritedock.favorite.favorite_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark) 
+
+        # "Connect" search dock
+        # Update Group list in search box
+        self.searchdock.connection()
+
+        # "Connect" tree
+        ## Tree Search
+        QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("textEdited (const QString&)"), self.search)
+        ## Tree filter by groups
+        QtCore.QObject.connect(self.searchdock.search.groups, QtCore.SIGNAL("currentIndexChanged (const QString&)"), self.search)
+        self.tree.search(None, None)
+        ## Tree bookmark
+        QtCore.QObject.connect(self.tree.bookmarkAct, QtCore.SIGNAL("triggered()"), self.favoritedock.favorite.model.addFavorite)
+        ## Tree connection
+        QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
+        ## Tree item informations
+        QtCore.QObject.connect(self.tree, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.showInformations)
+
+
+        # "Connect" menus
+        self.menubar.enableItems()
+
+        # "Connect" groups
+        self.groups.connection()
