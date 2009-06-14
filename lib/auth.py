@@ -14,7 +14,11 @@ def getAuth():
     global token
     if not token:
         token = SFLvaultClient()
-        token.search("[a]")
+        try:
+            token.search("[a]")
+        except Exception, e:
+            ErrorMessage(e)
+            return None
 #        vaultSearch("[a]")
     return token
     
@@ -24,6 +28,7 @@ def getService(id):
         service = token.vault.service.get(token.authtok, id)
     except Exception, e:
         ErrorMessage(e)
+        return None
     return service
 
 def getMachine(id):
@@ -32,6 +37,7 @@ def getMachine(id):
         machine = token.vault.machine.get(token.authtok, id)
     except Exception, e:
         ErrorMessage(e)
+        return None
     return machine
 
 def getCustomer(id):
@@ -40,6 +46,7 @@ def getCustomer(id):
         customer = token.vault.customer.get(token.authtok, id)
     except Exception, e:
         ErrorMessage(e)
+        return None
     return customer
 
 def vaultSearch(pattern, groups_ids=None):
@@ -49,6 +56,7 @@ def vaultSearch(pattern, groups_ids=None):
         result = token.vault.search(token.authtok, pattern, groups_ids)
     except Exception, e:
         ErrorMessage(e)
+        return None
     return result
 
 def getPassword(id):
@@ -58,6 +66,7 @@ def getPassword(id):
         password = token.service_get(id)["plaintext"]
     except Exception, e:
         Errormessage(e)
+        return None
     return password
 
 def getUserList():
@@ -67,6 +76,7 @@ def getUserList():
         users = token.vault.user_list(token.authtok, True)["list"]
     except Exception, e:
         ErrorMessage(e)
+        return None
     return users
 
 def getGroupList():
@@ -76,6 +86,7 @@ def getGroupList():
         groups = token.vault.group_list(token.authtok)["list"]
     except Exception, e:
         ErrorMessage(e)
+        return None
     return groups
 
 

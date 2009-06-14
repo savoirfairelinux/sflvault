@@ -174,6 +174,8 @@ class MainWindow(QtGui.QMainWindow):
             Connect to the vault
         """
         token = getAuth()
+        if not token:
+            return False
 
         ## "Connect" Alias
         QtCore.QObject.connect(self.favoritedock.favorite.favorite_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark) 

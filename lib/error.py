@@ -9,11 +9,11 @@ from images.qicons import *
 class ErrorMessage(QtGui.QMessageBox):
     def __init__(self, exception, parent=None):
         QtGui.QMessageBox.__init__(self, parent)
+        print exception
         self.exception = exception
-        #if self.exception.message[0] == 111:
-        #    self.connectionError()
-        #else:
-        self.message()
+        if self.exception[0] == 111:
+            self.connectionError()
+            self.message()
         self.exec_()
         
 

@@ -35,9 +35,12 @@ class InfoDock(QtGui.QDockWidget):
         self.info.model.setHeaders()
 
         customer = getCustomer(customerid)
+        print "rrr"
         if machineid:
+            print "rrr"
             machine = getMachine(machineid)
             if serviceid:
+                print "rrr"
                 service = getService(serviceid)
         self.info.model.showEditableInformations(customer, machine, service)
         self.info.showInformations(customer, machine, service)
@@ -78,7 +81,6 @@ class Info(QtGui.QWidget):
 
         # Label Title
         ## Service
-#        self.serviceListTitle["id"] = QtGui.QText()
         self.serviceListTitle["id"] = QtGui.QLabel(self.tr("Id :"))
         self.serviceListTitle["metadata"] = QtGui.QLabel(self.tr("Metadata :"))
         ## Machine
