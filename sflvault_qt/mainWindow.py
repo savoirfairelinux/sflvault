@@ -47,8 +47,8 @@ class MainWindow(QtGui.QMainWindow):
         # Attach items to mainwindow
         self.setCentralWidget(self.treewidget)
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea,self.favoritedock)
+        self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.searchdock)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.infodock)
-        self.addDockWidget(QtCore.Qt.TopDockWidgetArea,self.searchdock)
         self.setMenuBar(self.menubar)
 
         # Read aliases
@@ -179,7 +179,7 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.favoritedock.favorite.favorite_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark) 
 
         # "Connect" search dock
-        # Update Group list in search box
+        ## Update Group list in search box
         self.searchdock.connection()
 
         # "Connect" tree

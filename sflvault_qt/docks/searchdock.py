@@ -10,9 +10,7 @@ from sflvault.client import SFLvaultClient
 import shutil
 import os
 
-
 from lib.auth import *
-#token = getAuth()
 
 class SearchDock(QtGui.QDockWidget):
     def __init__(self, parent=None, ):
@@ -29,28 +27,19 @@ class Search(QtGui.QWidget):
     def __init__(self, parent=None, ):
         QtGui.QWidget.__init__(self, parent)
         self.parent = parent
-#        global token
 
         # QlineEdits
         self.search = QtGui.QLineEdit()
         self.searchLabel = QtGui.QLabel(self.tr("Search"))
-        self.protocol = QtGui.QLineEdit("ssh")
-        self.protocolLabel = QtGui.QLabel(self.tr("Protocol"))
-        self.type = QtGui.QLineEdit("service")
-        self.typeLabel = QtGui.QLabel(self.tr("Type"))
         self.groups = QtGui.QComboBox()
         self.groupsLabel = QtGui.QLabel(self.tr("Groups"))
 
         # QGridLayout
         mainLayout = QtGui.QGridLayout()
         mainLayout.addWidget(self.searchLabel,0,0)
-        mainLayout.addWidget(self.search,1,0)
-        mainLayout.addWidget(self.protocolLabel,0,4)
-        mainLayout.addWidget(self.protocol,1,4)
-        mainLayout.addWidget(self.typeLabel,0,5)
-        mainLayout.addWidget(self.type,1,5)
-        mainLayout.addWidget(self.groupsLabel,0,6)
-        mainLayout.addWidget(self.groups,1,6)
+        mainLayout.addWidget(self.search,0,1)
+        mainLayout.addWidget(self.groupsLabel,1,0)
+        mainLayout.addWidget(self.groups,1,1)
 
         # Geometries
         self.setWindowTitle(self.tr("Search"))
@@ -58,8 +47,6 @@ class Search(QtGui.QWidget):
         # Show window
         self.setLayout(mainLayout)
 
-        # Update group list
-#        self.updateGroup()
 
     def updateGroup(self):
         """
