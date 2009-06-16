@@ -37,13 +37,13 @@ class InfoDock(QtGui.QDockWidget):
         customer = getCustomer(customerid)
         if machineid and customer:
             machine = getMachine(machineid)
-            if serviceid and customer:
+            if machine and serviceid:
                 service = getService(serviceid)
                 if not service:
                     return None
-            else:
+            elif not machine:
                 return None
-        else:
+        elif not customer:
             return None
         self.info.model.showEditableInformations(customer, machine, service)
         self.info.showInformations(customer, machine, service)
