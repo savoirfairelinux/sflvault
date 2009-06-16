@@ -147,21 +147,24 @@ class MainWindow(QtGui.QMainWindow):
         options = {}
         
         service = getService(idserv)
-        url = service["service"]["url"]
-        protocol, address = url.split("://")
-        options["user"], options["address"] = address.split("@", 1)
-        options["id"] = service["service"]["id"]
-        options["vaultconnect"] = "sflvault connect %s" % options["id"]
         # Copy password to clipboard
         self.passtoclip(idserv)
-        # Create Command
-        command = unicode(self.settings.value("protocols/" + protocol).toString())
-        print command
-        command = command % options
-        print command
-        # Launch process
-        self.procxterm = QtCore.QProcess()
-        self.procxterm.start(command)
+
+        url = service["service"]["url"]
+        protocol, address = url.split("://")
+        if self.settings.value("protocols/" + protocol):
+            options["user"], options["address"] = address.split("@", 1)
+            options["id"] = service["service"]["id"]
+            options["vaultconnect"] = "sflvault connect %s" % options["id"]
+
+            # Create Command
+            command = unicode(self.settings.value("protocols/" + protocol).toString())
+            print command
+            command = command % options
+            print command
+            # Launch process
+            self.procxterm = QtCore.QProcess()
+            self.procxterm.start(command)
 
     def passtoclip(self, serviceid):
         """

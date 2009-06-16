@@ -11,8 +11,11 @@ class ErrorMessage(QtGui.QMessageBox):
         QtGui.QMessageBox.__init__(self, parent)
         print exception
         self.exception = exception
-        if self.exception[0] == 111:
-            self.connectionError()
+        if type(self.exception) == type([]): 
+            if self.exception[0] == 111:
+                self.connectionError()
+                self.message()
+        else:
             self.message()
         self.exec_()
         
@@ -24,5 +27,5 @@ class ErrorMessage(QtGui.QMessageBox):
 
     def message(self):
         self.setWindowTitle(self.tr("Connection"))
-        self.setText(self.tr("qsfqdg"))
+        self.setText(self.exception)
         self.setIcon(QtGui.QMessageBox.Critical)
