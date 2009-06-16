@@ -60,10 +60,10 @@ class ProtocolsWidget(QtGui.QDialog):
         self.setWindowTitle(self.tr("Procotols management"))
 
         # SIGNALS
-        self.connect(self.addprotocol, QtCore.SIGNAL("clicked()"), self.model.addProtocol)
-        self.connect(self.removeprotocol, QtCore.SIGNAL("clicked()"), self.model.delProtocol)
-        self.connect(okButton, QtCore.SIGNAL("clicked()"), self.saveConfig)
-        self.connect(cancelButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        QtCore.QObject.connect(self.addprotocol, QtCore.SIGNAL("clicked()"), self.model.addProtocol)
+        QtCore.QObject.connect(self.removeprotocol, QtCore.SIGNAL("clicked()"), self.model.delProtocol)
+        QtCore.QObject.connect(okButton, QtCore.SIGNAL("clicked()"), self.saveConfig)
+        QtCore.QObject.connect(cancelButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
 
     def exec_(self):
         # load config
