@@ -35,13 +35,16 @@ class InfoDock(QtGui.QDockWidget):
         self.info.model.setHeaders()
 
         customer = getCustomer(customerid)
-        print "rrr"
-        if machineid:
-            print "rrr"
+        if machineid and customer:
             machine = getMachine(machineid)
-            if serviceid:
-                print "rrr"
+            if serviceid and customer:
                 service = getService(serviceid)
+                if not service:
+                    return None
+            else:
+                return None
+        else:
+            return None
         self.info.model.showEditableInformations(customer, machine, service)
         self.info.showInformations(customer, machine, service)
  
