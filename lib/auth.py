@@ -65,7 +65,7 @@ def getPassword(id):
     try:
         password = token.service_get(id)["plaintext"]
     except Exception, e:
-        Errormessage(e)
+        ErrorMessage(e)
         return None
     return password
 
