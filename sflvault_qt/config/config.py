@@ -12,12 +12,11 @@ import os
 
 
 class Config(QtCore.QSettings):
-    def __init__(self, config_filename="config-gui", parent=None):
+    def __init__(self, config_filename='/home/' + os.getenv( 'USER' ) + '/.sflvault/config', parent=None):
         QtCore.QSettings.__init__(self, config_filename, 0, parent)
+        sHomeUser   = '/home/' + os.getenv( 'USER' ) + '/'
         self.parent = parent
-
         self.config_filename = config_filename
-
         self.checkConfig()
 
     def readConfig(self, group=None):
@@ -42,7 +41,6 @@ class Config(QtCore.QSettings):
             self.endGroup()
 
         self.saveConfig()
-
 
     def saveConfig(self):
         self.sync()

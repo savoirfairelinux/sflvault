@@ -64,9 +64,9 @@ class MenuBar(QtGui.QMenuBar):
         self.users.setEnabled(0)
 
         ## Settings
-        self.pref = self.edit.addAction(self.tr("&Settings..."))
-        self.pref.setShortcut(self.tr("Ctrl+Shift+S"))
-        self.pref.setStatusTip(self.tr("Sflvault settings"))
+        self.preferences = self.edit.addAction(self.tr("&Settings..."))
+        self.preferences.setShortcut(self.tr("Ctrl+Shift+S"))
+        self.preferences.setStatusTip(self.tr("Sflvault settings"))
 
         # Display
         ## Search

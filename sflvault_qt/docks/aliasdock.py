@@ -13,45 +13,45 @@ import os
 
 from lib.auth import *
 
-class FavoriteDock(QtGui.QDockWidget):
+class AliasDock(QtGui.QDockWidget):
     def __init__(self, parent=None):
-        QtGui.QDockWidget.__init__(self, "Favorites", parent)
+        QtGui.QDockWidget.__init__(self, "Aliases", parent)
         self.parent = parent
-        self.favorite = Favorite(self)
-        self.setWidget(self.favorite)
+        self.alias = Alias(self)
+        self.setWidget(self.alias)
 
     def readAliases(self):
-        self.favorite.model.clear()
-        self.favorite.model.setHeaders()
-        self.favorite.model.readConfig()
+        self.alias.model.clear()
+        self.alias.model.setHeaders()
+        self.alias.model.readConfig()
 
 
-class Favorite(QtGui.QWidget):
+class Alias(QtGui.QWidget):
     def __init__(self, parent=None, ):
         QtGui.QWidget.__init__(self, parent)
         self.parent = parent
 
         # Load model
-        self.model = FavoriteModel(self)
+        self.model = AliasModel(self)
 
         # Load gui items
-        self.favorite_list = FavoriteView(self)
+        self.alias_list = AliasView(self)
 
         # Attach model
-        self.favorite_list.setModel(self.model)
+        self.alias_list.setModel(self.model)
 
         # QGridLayout
         mainLayout = QtGui.QGridLayout()
-        mainLayout.addWidget(self.favorite_list,0,0)
+        mainLayout.addWidget(self.alias_list,0,0)
 
         # Geometries
-        self.setWindowTitle(self.tr("Favorites"))
+        self.setWindowTitle(self.tr("Alias"))
 
         # Show window
         self.setLayout(mainLayout)
 
 
-class FavoriteModel(QtGui.QStandardItemModel):
+class AliasModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, 0, 2, parent)
         self.parent = parent
@@ -61,23 +61,34 @@ class FavoriteModel(QtGui.QStandardItemModel):
 #        self.readConfig()
 
     def setHeaders(self):
+        """
+            Set Headers
+        """
         self.setColumnCount(2)
         self.setRowCount(0)
-        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
-        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Url"))
+        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
+        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
 
     def readConfig(self):
+        """
+            Read config to get aliases
+        """
         for alias, id in getAliasList():
-            self.addFavorite(id, alias)
+            self.addAlias(id, alias)
 
-    def saveFavorite(self, id=None, alias=None):
+    def saveAlias(self, id=None, alias=None):
+        """
+            Save alias in config
+        """
         saveAlias(alias,id)
-#        self.settings.setValue("favorites/" + id, QtCore.QVariant(url))
+#        self.settings.setValue("alias/" + id, QtCore.QVariant(url))
         # Save config
 #        self.settings.saveConfig()
     
-    def addFavorite(self, id=None, alias=None):
-        # Added by context menu
+    def addAlias(self, id=None, alias=None):
+        """
+            Added by context menu
+        """
         if not id and not alias:
             alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("New Alias"),
                                                     self.tr("Alias name:"),
@@ -89,30 +100,33 @@ class FavoriteModel(QtGui.QStandardItemModel):
             id = "s#" + id
 
         self.insertRow(0)
-        self.setData(self.index(0, 1), QtCore.QVariant(alias))
-        self.setData(self.index(0, 0), QtCore.QVariant(id))
-        self.saveFavorite(unicode(id), unicode(alias))
+        self.setData(self.index(0, 0), QtCore.QVariant(alias))
+        self.setData(self.index(0, 1), QtCore.QVariant(id))
+        self.saveAlias(unicode(id), unicode(alias))
 
-    def delFavorite(self):
+    def delAlias(self):
         """
             Delete selected row
+            and alias in config
         """
-        selected_row = self.parent.favorite_list.selectedIndexes()[1]
+        selected_row = self.parent.alias_list.selectedIndexes()[0]
         alias = unicode(self.data(selected_row).toString())
-        self.removeRows(selected_row.row(), 1)
+        self.removeRows(selected_row.row(), 0)
         delAlias(alias)
  
 
-class FavoriteView(QtGui.QTreeView):
+class AliasView(QtGui.QTreeView):
     def __init__(self, parent=None):
         QtGui.QTreeView.__init__(self, parent)
         self.parentView = parent
 
+        # Set behavior
         self.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.setSortingEnabled(1)
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.setRootIsDecorated(False)
+        # Create menu
         self.createActions()
 
     def contextMenuEvent(self, event):
@@ -130,4 +144,4 @@ class FavoriteView(QtGui.QTreeView):
         self.delAct = QtGui.QAction(self.tr("&Delete bookmark..."), self)
         #self.delAct.setShortcut(self.tr("Ctrl+X"))
         self.delAct.setStatusTip(self.tr("Delete bookmark"))
-        self.connect(self.delAct, QtCore.SIGNAL("triggered()"), self.parentView.model.delFavorite)
+        self.connect(self.delAct, QtCore.SIGNAL("triggered()"), self.parentView.model.delAlias)

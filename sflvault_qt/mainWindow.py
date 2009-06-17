@@ -9,9 +9,10 @@ import sflvault
 from tree.tree import TreeVault, TreeView
 from docks.infodock import InfoDock
 from docks.searchdock import SearchDock
-from docks.favoritedock import FavoriteDock
+from docks.aliasdock import AliasDock
 from config.protocols import ProtocolsWidget
 from config.groups import GroupsWidget
+from config.preferences import PreferencesWidget
 from config.config import Config
 from bar.menubar import MenuBar
 from sflvault.client import SFLvaultClient
@@ -33,7 +34,7 @@ class MainWindow(QtGui.QMainWindow):
         # Load GUI item
         self.treewidget = TreeVault(parent=self)
         self.tree = self.treewidget.tree
-        self.favoritedock = FavoriteDock(parent=self)
+        self.aliasdock = AliasDock(parent=self)
         self.searchdock = SearchDock(parent=self)
         self.infodock = InfoDock(parent=self)
         self.menubar = MenuBar(parent=self)
@@ -41,22 +42,23 @@ class MainWindow(QtGui.QMainWindow):
         # Create clipboard
         self.clipboard = QtGui.QApplication.clipboard()
 
-        # Load favorite list
-        self.favorite_list = self.favoritedock.favorite.favorite_list
+        # Load alias list
+        self.alias_list = self.aliasdock.alias.alias_list
 
         # Attach items to mainwindow
         self.setCentralWidget(self.treewidget)
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea,self.favoritedock)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea,self.aliasdock)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.searchdock)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.infodock)
         self.setMenuBar(self.menubar)
 
         # Read aliases
-        self.favoritedock.readAliases()
+        self.aliasdock.readAliases()
 
         # Load windows
         self.protocols = ProtocolsWidget(parent=self)
         self.groups = GroupsWidget(parent=self)
+        self.preferences = PreferencesWidget(parent=self)
 
         # Signals
         ## Protocols
@@ -65,6 +67,8 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.menubar.groups, QtCore.SIGNAL("triggered()"), self.groups.exec_)
         ## Vault connection
         QtCore.QObject.connect(self.menubar.connection, QtCore.SIGNAL("triggered()"), self.vaultConnection)
+        ## Preferences
+        QtCore.QObject.connect(self.menubar.preferences, QtCore.SIGNAL("triggered()"), self.preferences.exec_)
 
     def search(self, research):
         """
@@ -133,7 +137,7 @@ class MainWindow(QtGui.QMainWindow):
             Get selected item id in bookmark and launch connection
         """
         # Get Id colunm
-        indexId = self.favorite_list.selectedIndexes()[0]
+        indexId = self.alias_list.selectedIndexes()[1]
         idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
         idserv = int(idserv.split("#")[1])
         # Check if seleted item is a service
@@ -181,7 +185,7 @@ class MainWindow(QtGui.QMainWindow):
             return False
 
         ## "Connect" Alias
-        QtCore.QObject.connect(self.favoritedock.favorite.favorite_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark) 
+        QtCore.QObject.connect(self.aliasdock.alias.alias_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark) 
 
         # "Connect" search dock
         ## Update Group list in search box
@@ -194,7 +198,7 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.searchdock.search.groups, QtCore.SIGNAL("currentIndexChanged (const QString&)"), self.search)
         self.tree.search(None, None)
         ## Tree bookmark
-        QtCore.QObject.connect(self.tree.bookmarkAct, QtCore.SIGNAL("triggered()"), self.favoritedock.favorite.model.addFavorite)
+        QtCore.QObject.connect(self.tree.bookmarkAct, QtCore.SIGNAL("triggered()"), self.aliasdock.alias.model.addAlias)
         ## Tree connection
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
         ## Tree item informations
@@ -205,3 +209,20 @@ class MainWindow(QtGui.QMainWindow):
 
         # "Connect" groups
         self.groups.connection()
+
+    def exec_(self):
+        """
+            Show default and load dock positions if necessary
+        """
+        if self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
+            if self.settings.value("SFLvault-qt4/binsavewindow").toByteArray():
+                self.restoreState(self.settings.value("SFLvault-qt4/binsavewindow").toByteArray())
+        self.show()
+
+    def close(self):
+        """
+            Show default and save dock positions if necessary
+        """
+        if self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
+            self.settings.setValue("SFLvault-qt4/binsavewindow", self.saveState())
+        

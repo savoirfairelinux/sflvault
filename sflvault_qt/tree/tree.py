@@ -295,9 +295,9 @@ class TreeView(QtGui.QTreeView):
         self.editAct.setStatusTip(self.tr("Edit item"))
 #        self.connect(self.editAct, QtCore.SIGNAL("triggered()"), self.mkdir)
 
-        self.bookmarkAct = QtGui.QAction(self.tr("&Bookmark..."), self)
+        self.bookmarkAct = QtGui.QAction(self.tr("&Create alias..."), self)
         #self.bookmarkAct.setShortcut(self.tr("Ctrl+V"))
-        self.bookmarkAct.setStatusTip(self.tr("Add item to bookmark"))
+        self.bookmarkAct.setStatusTip(self.tr("Create an alias from this item"))
 #        self.connect(self.reomveFileAct, QtCore.SIGNAL("triggered()"), self.remove)
 
 

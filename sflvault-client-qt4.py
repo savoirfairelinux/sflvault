@@ -18,5 +18,6 @@ if __name__ == "__main__":
     app.setWindowIcon(Qicons("sflvault_icon"))
  
     mainwindow = mainWindow.MainWindow()
-    mainwindow.show()
+#    mainwindow.show()
+    mainwindow.exec_()
     sys.exit(app.exec_())
