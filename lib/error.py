@@ -18,12 +18,18 @@ class ErrorMessage(QtGui.QMessageBox):
         elif isinstance(self.exception, socket.error):
             if self.exception[0] == 111:
                 self.connectionError()
+            elif self.exception[0] == -2:
+                self.messageError()
         elif isinstance(self.exception, xmlrpclib.ProtocolError):
             self.protocolError()
         else:
             self.message()
         self.exec_()
         
+    def messageError(self):
+        self.setWindowTitle(self.tr("Message Error"))
+        self.setText(self.exception[1].decode("utf8"))
+        self.setIcon(QtGui.QMessageBox.Critical)
 
     def connectionError(self):
         self.setWindowTitle(self.tr("Connection Error"))
@@ -37,10 +43,10 @@ class ErrorMessage(QtGui.QMessageBox):
         self.setIcon(QtGui.QMessageBox.Critical)
 
     def noPassword(self):
-        self.setWindowTitle(self.tr("Environment Problème"))
-        self.setText(self.exception.message)
+        self.setWindowTitle(self.tr("Environment Problem"))
+        print self.exception
+        self.setText(self.exception)
         self.setIcon(QtGui.QMessageBox.Critical)
-
 
     def message(self):
         self.setWindowTitle(self.tr("Connection"))
