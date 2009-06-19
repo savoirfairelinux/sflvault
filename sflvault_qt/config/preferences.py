@@ -27,6 +27,8 @@ class PreferencesWidget(QtGui.QDialog):
         self.url = QtGui.QLineEdit()
         self.saveMainWindowLabel = QtGui.QLabel(self.tr("Save dock positions :"))
         self.saveMainWindow = QtGui.QCheckBox()
+        self.autoConnectLabel = QtGui.QLabel(self.tr("Auto connect :"))
+        self.autoConnect = QtGui.QCheckBox()
 
         # Vault Group Box
         vaultbox = QtGui.QGroupBox(self.tr("SFLvault preferences"))
@@ -42,6 +44,8 @@ class PreferencesWidget(QtGui.QDialog):
         gridLayout = QtGui.QGridLayout()
         gridLayout.addWidget(self.saveMainWindowLabel,0,0)
         gridLayout.addWidget(self.saveMainWindow,0,1)
+        gridLayout.addWidget(self.autoConnectLabel,1,0)
+        gridLayout.addWidget(self.autoConnect,1,1)
         guibox.setLayout(gridLayout)
 
         # Positionning items
@@ -75,6 +79,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.username.setText(self.settings.value("SFLvault/username").toString())
         self.url.setText(self.settings.value("SFLvault/url").toString())
         self.saveMainWindow.setCheckState(self.settings.value("SFLvault-qt4/savewindow").toInt()[0])
+        self.autoConnect.setCheckState(self.settings.value("SFLvault-qt4/autoconnect").toInt()[0])
 
     def saveConfig(self):
         """
@@ -83,6 +88,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.settings.setValue("SFLvault/username", QtCore.QVariant(self.username.text()))
         self.settings.setValue("SFLvault/url", QtCore.QVariant(self.url.text()))
         self.settings.setValue("SFLvault-qt4/savewindow", QtCore.QVariant(self.saveMainWindow.checkState()))
+        self.settings.setValue("SFLvault-qt4/autoconnect", QtCore.QVariant(self.autoConnect.checkState()))
         # Close dialog
         self.accept()
 

@@ -35,8 +35,11 @@ class MainWindow(QtGui.QMainWindow):
         self.treewidget = TreeVault(parent=self)
         self.tree = self.treewidget.tree
         self.aliasdock = AliasDock(parent=self)
+        self.aliasdock.setObjectName("aliases")
         self.searchdock = SearchDock(parent=self)
+        self.searchdock.setObjectName("search")
         self.infodock = InfoDock(parent=self)
+        self.infodock.setObjectName("info")
         self.menubar = MenuBar(parent=self)
 
         # Create clipboard
@@ -61,6 +64,10 @@ class MainWindow(QtGui.QMainWindow):
         self.preferences = PreferencesWidget(parent=self)
 
         # Signals
+        ## Quit
+        QtCore.QObject.connect(self.menubar.quit, QtCore.SIGNAL("triggered()"), self.close)
+        ## Protocols
+        QtCore.QObject.connect(self.menubar.protocols, QtCore.SIGNAL("triggered()"), self.protocols.exec_)
         ## Protocols
         QtCore.QObject.connect(self.menubar.protocols, QtCore.SIGNAL("triggered()"), self.protocols.exec_)
         ## Groups
@@ -69,6 +76,20 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.menubar.connection, QtCore.SIGNAL("triggered()"), self.vaultConnection)
         ## Preferences
         QtCore.QObject.connect(self.menubar.preferences, QtCore.SIGNAL("triggered()"), self.preferences.exec_)
+
+
+    def closeEvent(self, event):
+        if self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
+            state = QtCore.QVariant(self.saveState())
+            self.settings.setValue("SFLvault-qt4/binsavewindow", state)
+
+#        if self.trayIcon.isVisible():
+#            QtGui.QMessageBox.information(self, self.tr("Systray"),
+#                    self.tr("The program will keep running in the system "
+#                        "tray. To terminate the program, choose <b>Quit</b> "
+#                        "in the context menu of the system tray entry."))
+#            self.hide()
+#            event.ignore()
 
     def search(self, research):
         """
@@ -216,13 +237,7 @@ class MainWindow(QtGui.QMainWindow):
         """
         if self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
             if self.settings.value("SFLvault-qt4/binsavewindow").toByteArray():
-                self.restoreState(self.settings.value("SFLvault-qt4/binsavewindow").toByteArray())
+                t = self.restoreState(self.settings.value("SFLvault-qt4/binsavewindow").toByteArray())
+        if self.settings.value("SFLvault-qt4/autoconnect").toInt()[0] == QtCore.Qt.Checked:
+            self.vaultConnection()
         self.show()
-
-    def close(self):
-        """
-            Show default and save dock positions if necessary
-        """
-        if self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
-            self.settings.setValue("SFLvault-qt4/binsavewindow", self.saveState())
-        
