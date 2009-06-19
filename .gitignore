@@ -1,3 +1,4 @@
 *.pyc
 config-gui
 *.swp
+.directory
