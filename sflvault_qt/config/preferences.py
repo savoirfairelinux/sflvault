@@ -29,6 +29,10 @@ class PreferencesWidget(QtGui.QDialog):
         self.saveMainWindow = QtGui.QCheckBox()
         self.autoConnectLabel = QtGui.QLabel(self.tr("Auto connect :"))
         self.autoConnect = QtGui.QCheckBox()
+        self.systrayLabel = QtGui.QLabel(self.tr("Show system tray :"))
+        self.systray = QtGui.QCheckBox()
+        self.effectsLabel = QtGui.QLabel(self.tr("Enabled effects :"))
+        self.effects = QtGui.QCheckBox()
 
         # Vault Group Box
         vaultbox = QtGui.QGroupBox(self.tr("SFLvault preferences"))
@@ -46,6 +50,10 @@ class PreferencesWidget(QtGui.QDialog):
         gridLayout.addWidget(self.saveMainWindow,0,1)
         gridLayout.addWidget(self.autoConnectLabel,1,0)
         gridLayout.addWidget(self.autoConnect,1,1)
+        gridLayout.addWidget(self.systrayLabel,2,0)
+        gridLayout.addWidget(self.systray,2,1)
+        gridLayout.addWidget(self.effectsLabel,3,0)
+        gridLayout.addWidget(self.effects,3,1)
         guibox.setLayout(gridLayout)
 
         # Positionning items
@@ -80,6 +88,8 @@ class PreferencesWidget(QtGui.QDialog):
         self.url.setText(self.settings.value("SFLvault/url").toString())
         self.saveMainWindow.setCheckState(self.settings.value("SFLvault-qt4/savewindow").toInt()[0])
         self.autoConnect.setCheckState(self.settings.value("SFLvault-qt4/autoconnect").toInt()[0])
+        self.systray.setCheckState(self.settings.value("SFLvault-qt4/systray").toInt()[0])
+        self.effects.setCheckState(self.settings.value("SFLvault-qt4/effects").toInt()[0])
 
     def saveConfig(self):
         """
@@ -89,6 +99,9 @@ class PreferencesWidget(QtGui.QDialog):
         self.settings.setValue("SFLvault/url", QtCore.QVariant(self.url.text()))
         self.settings.setValue("SFLvault-qt4/savewindow", QtCore.QVariant(self.saveMainWindow.checkState()))
         self.settings.setValue("SFLvault-qt4/autoconnect", QtCore.QVariant(self.autoConnect.checkState()))
+        self.settings.setValue("SFLvault-qt4/effects", QtCore.QVariant(self.effects.checkState()))
+        self.parent.loadUnloadSystray()
+        self.parent.disEnableEffects()
         # Close dialog
         self.accept()
 

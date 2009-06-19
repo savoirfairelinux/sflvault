@@ -43,7 +43,6 @@ class MainWindow(QtGui.QMainWindow):
         self.infodock.setObjectName("info")
         self.menubar = MenuBar(parent=self)
         self.systray = Systray(parent=self)
-        self.systray.show()
 
         # Create clipboard
         self.clipboard = QtGui.QApplication.clipboard()
@@ -85,14 +84,6 @@ class MainWindow(QtGui.QMainWindow):
         if self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
             state = QtCore.QVariant(self.saveState())
             self.settings.setValue("SFLvault-qt4/binsavewindow", state)
-
-#        if self.trayIcon.isVisible():
-#            QtGui.QMessageBox.information(self, self.tr("Systray"),
-#                    self.tr("The program will keep running in the system "
-#                        "tray. To terminate the program, choose <b>Quit</b> "
-#                        "in the context menu of the system tray entry."))
-#            self.hide()
-#            event.ignore()
 
     def search(self, research):
         """
@@ -243,4 +234,28 @@ class MainWindow(QtGui.QMainWindow):
                 t = self.restoreState(self.settings.value("SFLvault-qt4/binsavewindow").toByteArray())
         if self.settings.value("SFLvault-qt4/autoconnect").toInt()[0] == QtCore.Qt.Checked:
             self.vaultConnection()
+        self.loadUnloadSystray()
+        self.disEnableEffects()
         self.show()
+
+    def loadUnloadSystray(self):
+        """
+            Load or unload systray
+        """
+        if self.settings.value("SFLvault-qt4/systray").toInt()[0] == QtCore.Qt.Checked:
+            self.systray.show()
+        elif self.settings.value("SFLvault-qt4/systray").toInt()[0] == QtCore.Qt.Unchecked:
+            self.systray.hide()
+
+
+    def disEnableEffects(self):
+        """
+            Enable or not effects
+        """
+        if self.settings.value("SFLvault-qt4/effects").toInt()[0] == QtCore.Qt.Checked:
+            self.setAnimated(True)
+            self.tree.setAnimated(True)
+        elif self.settings.value("SFLvault-qt4/effects").toInt()[0] == QtCore.Qt.Unchecked:
+            self.setAnimated(False)
+            self.tree.setAnimated(False)
+

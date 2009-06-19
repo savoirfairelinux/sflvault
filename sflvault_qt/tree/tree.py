@@ -256,7 +256,6 @@ class TreeView(QtGui.QTreeView):
         self.setSortingEnabled(1)
         self.setModel(self.proxyModel)
         self.sortByColumn(0,QtCore.Qt.AscendingOrder)
-        self.setAnimated(1)
 #        self.resizeColumnToContents(0)
         # Set headers
         h = self.header()
