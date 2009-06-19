@@ -15,6 +15,7 @@ from config.groups import GroupsWidget
 from config.preferences import PreferencesWidget
 from config.config import Config
 from bar.menubar import MenuBar
+from bar.systray import Systray
 from sflvault.client import SFLvaultClient
 import shutil
 import os
@@ -41,6 +42,8 @@ class MainWindow(QtGui.QMainWindow):
         self.infodock = InfoDock(parent=self)
         self.infodock.setObjectName("info")
         self.menubar = MenuBar(parent=self)
+        self.systray = Systray(parent=self)
+        self.systray.show()
 
         # Create clipboard
         self.clipboard = QtGui.QApplication.clipboard()
