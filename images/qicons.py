@@ -15,7 +15,7 @@ image_service_folder = image_folder + "services/"
 # load standard icons
 icons = {}
 icons["sflvault_icon"] = "images/sflvault.png"
-icons["close_filter_icon"] = "images/dialog-close.png"
+icons["close"] = "images/close.png"
 icons["customer"] = "images/customer.png"
 icons["machine"] = "images/machine.png"
 icons["critical"] = "images/critical.png"

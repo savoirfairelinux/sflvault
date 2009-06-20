@@ -329,3 +329,4 @@ class TreeVault(QtGui.QWidget):
 
     def connection(self):
         self.tree.search(["."])
+        self.tree.resizeColumnToContents(0)

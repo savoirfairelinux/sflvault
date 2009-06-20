@@ -236,6 +236,7 @@ class MainWindow(QtGui.QMainWindow):
             self.vaultConnection()
         self.loadUnloadSystray()
         self.disEnableEffects()
+        self.showHideFilterBar()
         self.show()
 
     def loadUnloadSystray(self):
@@ -259,3 +260,9 @@ class MainWindow(QtGui.QMainWindow):
             self.setAnimated(False)
             self.tree.setAnimated(False)
 
+    def showHideFilterBar(self):
+        if self.settings.value("SFLvault-qt4/filter").toInt()[0] == QtCore.Qt.Checked:
+            self.treewidget.filter.show()
+        elif self.settings.value("SFLvault-qt4/effects").toInt()[0] == QtCore.Qt.Unchecked:
+            self.treewidget.filter.hide()
+ 

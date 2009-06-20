@@ -22,11 +22,11 @@ class FilterBar(QtGui.QWidget):
 
         self.close = QtGui.QToolButton(self);
         self.close.setAutoRaise(True);
-        self.close.setIcon(Qicons("close_filter_icon"))
+        self.close.setIcon(Qicons("close"))
         self.close.setToolTip(self.tr("Hide Filter Bar"))
         layout.addWidget(self.close);
 
-        self.filter_label = QtGui.QLabel(self.tr("Filter :"));
+        self.filter_label = QtGui.QLabel(self.tr("Filter : "));
         layout.addWidget(self.filter_label);
 
         self.filter_input = QtGui.QLineEdit(self)
@@ -34,3 +34,4 @@ class FilterBar(QtGui.QWidget):
         self.filter_label.setBuddy(self.filter_input);
         layout.addWidget(self.filter_input);
 
+        QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.hide)

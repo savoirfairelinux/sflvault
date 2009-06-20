@@ -33,6 +33,8 @@ class PreferencesWidget(QtGui.QDialog):
         self.systray = QtGui.QCheckBox()
         self.effectsLabel = QtGui.QLabel(self.tr("Enabled effects :"))
         self.effects = QtGui.QCheckBox()
+        self.filterLabel = QtGui.QLabel(self.tr("Filter bar :"))
+        self.filter = QtGui.QCheckBox()
 
         # Vault Group Box
         vaultbox = QtGui.QGroupBox(self.tr("SFLvault preferences"))
@@ -54,6 +56,8 @@ class PreferencesWidget(QtGui.QDialog):
         gridLayout.addWidget(self.systray,2,1)
         gridLayout.addWidget(self.effectsLabel,3,0)
         gridLayout.addWidget(self.effects,3,1)
+        gridLayout.addWidget(self.filterLabel,4,0)
+        gridLayout.addWidget(self.filter,4,1)
         guibox.setLayout(gridLayout)
 
         # Positionning items
@@ -90,6 +94,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.autoConnect.setCheckState(self.settings.value("SFLvault-qt4/autoconnect").toInt()[0])
         self.systray.setCheckState(self.settings.value("SFLvault-qt4/systray").toInt()[0])
         self.effects.setCheckState(self.settings.value("SFLvault-qt4/effects").toInt()[0])
+        self.filter.setCheckState(self.settings.value("SFLvault-qt4/filter").toInt()[0])
 
     def saveConfig(self):
         """
@@ -100,8 +105,10 @@ class PreferencesWidget(QtGui.QDialog):
         self.settings.setValue("SFLvault-qt4/savewindow", QtCore.QVariant(self.saveMainWindow.checkState()))
         self.settings.setValue("SFLvault-qt4/autoconnect", QtCore.QVariant(self.autoConnect.checkState()))
         self.settings.setValue("SFLvault-qt4/effects", QtCore.QVariant(self.effects.checkState()))
+        self.settings.setValue("SFLvault-qt4/filter", QtCore.QVariant(self.filter.checkState()))
         self.parent.loadUnloadSystray()
         self.parent.disEnableEffects()
+        self.parent.showHideFilterBar()
         # Close dialog
         self.accept()
 
