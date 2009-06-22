@@ -259,11 +259,13 @@ class TreeView(QtGui.QTreeView):
 #        self.resizeColumnToContents(0)
         # Set headers
         h = self.header()
-        h.setResizeMode(0, QtGui.QHeaderView.Interactive)
-        h.setResizeMode(1, QtGui.QHeaderView.Interactive)
-        h.setResizeMode(1, QtGui.QHeaderView.Stretch)
-        h.resizeSection(0,400)
-        h.resizeSection(1,70)
+        #h.setResizeMode(0, QtGui.QHeaderView.Interactive)
+        #h.setResizeMode(1, QtGui.QHeaderView.Interactive)
+        #h.setResizeMode(1, QtGui.QHeaderView.Stretch)
+        #h.resizeSection(0,400)
+        #h.resizeSection(1,70)
+#        h. h.sizeHintForColumn(1))
+
         # Load context actions
         self.createActions()
 
