@@ -20,7 +20,6 @@ class MenuBar(QtGui.QMenuBar):
         self.help = self.addMenu(self.tr("&Help"))
        
         # File
-
         ## New
         self.new = self.file.addMenu(self.tr("&New"))
         self.new.setStatusTip(self.tr("Create new item"))
@@ -71,32 +70,18 @@ class MenuBar(QtGui.QMenuBar):
         # Display
         ## Search
         self.search = self.display.addAction(self.tr("&Search"))
-        self.search.setShortcut(self.tr("Ctrl+F"))
         self.search.setStatusTip(self.tr("Show/hide search dock"))
         self.search.setCheckable(True)
 
         ## Alias
         self.alias = self.display.addAction(self.tr("&Alias"))
-        self.alias.setShortcut(self.tr("Ctrl+Alt+A"))
         self.alias.setStatusTip(self.tr("Show/hide alias dock"))
         self.alias.setCheckable(True)
 
-        ## Customers
-        self.cust = self.display.addAction(self.tr("&Customer"))
-        self.cust.setShortcut(self.tr("Ctrl+Alt+C"))
-        self.cust.setStatusTip(self.tr("Show/hide customer dock"))
-        self.cust.setCheckable(True)
-
-        ## Machine
-        self.mach = self.display.addAction(self.tr("&Machine"))
-        self.mach.setShortcut(self.tr("Ctrl+Alt+M"))
-        self.mach.setStatusTip(self.tr("Show/hide machine dock"))
-        self.mach.setCheckable(True)
-
-        ## Service
-        self.serv = self.display.addAction(self.tr("&Service"))
-        self.serv.setShortcut(self.tr("Ctrl+Alt+S"))
-        self.serv.setStatusTip(self.tr("Show/hide service dock"))
+        ## Info
+        self.serv = self.display.addAction(self.tr("&Informations"))
+        self.serv.setShortcut(self.tr("Ctrl+Alt+I"))
+        self.serv.setStatusTip(self.tr("Show/hide information dock"))
         self.serv.setCheckable(True)
 
         # Help
