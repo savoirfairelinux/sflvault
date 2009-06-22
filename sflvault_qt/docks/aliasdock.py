@@ -110,7 +110,7 @@ class AliasModel(QtGui.QStandardItemModel):
         """
         selected_row = self.parent.alias_list.selectedIndexes()[0]
         alias = unicode(self.data(selected_row).toString())
-        self.removeRows(selected_row.row(), 0)
+        self.removeRows(selected_row.row(), 1)
         delAlias(alias)
  
 
