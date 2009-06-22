@@ -63,16 +63,16 @@ class TreeModel(QtCore.QAbstractItemModel):
         all = vaultSearch(self.research, self.groups_ids)
 
         for custoid, custo in all["results"].items():
-            parents[-1].appendChild(TreeItem([custo["name"],int(custoid)], Qicons("customer"), parents[-1]))
+            parents[-1].appendChild(TreeItem([custo["name"],"c#" + custoid], Qicons("customer"), parents[-1]))
             parents.append(parents[-1].child(parents[-1].childCount() - 1))
 
             for machineid, machine in custo["machines"].items():
-                parents[-1].appendChild(TreeItem([machine["name"],int(machineid)], Qicons("machine"), parents[-1]))
+                parents[-1].appendChild(TreeItem([machine["name"],"m#" + machineid], Qicons("machine"), parents[-1]))
                 parents.append(parents[-1].child(parents[-1].childCount() - 1))
 
                 for serviceid, service in machine["services"].items():
                     protocol = service["url"].split(":")[0] 
-                    parents[-1].appendChild(TreeItem([service["url"],int(serviceid)], Qicons(protocol, "service"), parents[-1]))
+                    parents[-1].appendChild(TreeItem([service["url"],"s#" + serviceid], Qicons(protocol, "service"), parents[-1]))
 
                 parents.pop()
 

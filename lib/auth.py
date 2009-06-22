@@ -29,6 +29,9 @@ def getService(id):
     except Exception, e:
         ErrorMessage(e)
         return None
+    if service["error"]:
+        ErrorMessage("No service Found")
+        return None
     return service
 
 def getMachine(id):
@@ -101,3 +104,7 @@ def saveAlias(alias, id):
 
 def delAlias(alias):
     token_alias.alias_del(alias)
+
+def getAlias(alias):
+    id = token_alias.alias_get(alias)
+    return id

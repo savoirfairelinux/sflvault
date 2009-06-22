@@ -210,42 +210,61 @@ class Info(QtGui.QWidget):
 
     def showInformations(self, customer, machine=None, service=None):
         if service:
+            # Show service, machine and customer
+            self.showMachine()
+            self.showCustomer()
+            self.showService()
             for key, data in service["service"].items():
-                if key in ["id"]:
+                if key in ["id", ]:
                     # Show and hide label
-                    self.showMachine()
-                    self.showCustomer()
-                    self.showService()
                     self.serviceList["id"].show()
-                    self.serviceList["id"].setText(unicode(data))
+                    self.serviceList["id"].setText(unicode("s#" + str(data)))
                     self.serviceListTitle["id"].show()
             # show machine information
             for key, data in machine["machine"].items():
-                if not key in ["customer_id"]:
+                if not key in ["customer_id", "id", ]:
                     self.machineList[key].setText(unicode(data))
+                # Show "#" for id
+                elif key in ["id", ]:
+                    self.machineList[key].setText(unicode("m#" + str(data)))
             # show customer information
             for key, data in customer["customer"].items():
-                self.customerList[key].setText(unicode(data))           
+                # Show "#" for id
+                if key in ["id", ]:
+                    self.customerList[key].setText(unicode("c#" + str(data)))
+                else:
+                    self.customerList[key].setText(unicode(data))
         elif machine:
+            # Hide service and machine, show customer
+            self.showCustomer()
+            self.hideService()
+            self.hideMachine()
+            # show machine id
             for key, data in machine["machine"].items():
-                if key in ["id"]:
+                if key in ["id", ]:
                     # Show and hide label
-                    self.hideService()
-                    self.hideMachine()
                     self.machineList["id"].show()
-                    self.machineList["id"].setText(unicode(data))
+                    self.machineList["id"].setText(unicode("m#" + str(data)))
                     self.machineListTitle["id"].show()
             # show customer information
             for key, data in customer["customer"].items():
-                self.customerList[key].setText(unicode(data))
-        elif customer:
-            for key, data in customer["customer"].items():
-                if key in ["id", "name"]:
-                    # Show and hide label
-                    self.hideService()
-                    self.hideMachine()
-                    self.customerList[key].show()
+                # Show "#" for id
+                if key in ["id", ]:
+                    self.customerList[key].setText(unicode("c#" + str(data)))
+                else:
                     self.customerList[key].setText(unicode(data))
+        elif customer:
+            # Hide all
+            self.hideService()
+            self.hideMachine()
+            self.hideCustomer()
+            # Show only customer id
+            for key, data in customer["customer"].items():
+                # Show "#" for id
+                if key in ["id", ]:
+                    # Show and hide label
+                    self.customerList[key].show()
+                    self.customerList[key].setText(unicode("c#" + str(data)))
                     self.customerListTitle[key].show()
 
 
@@ -274,7 +293,7 @@ class InfoModel(QtGui.QStandardItemModel):
         """
         if service: 
             for key, data in service["service"].items():
-                if key in ["url", "notes", "group_id", "parent_service_id"]:
+                if key in ["url", "notes", "group_id", "parent_service_id", "groups_list"]:
                     self.insertRow(0)
                     self.setData(self.index(0, 1), QtCore.QVariant(data))
                     self.setData(self.index(0, 0), QtCore.QVariant(key))

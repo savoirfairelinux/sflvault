@@ -19,7 +19,7 @@ from bar.systray import Systray
 from sflvault.client import SFLvaultClient
 import shutil
 import os
-
+from lib.error import *
 from lib.auth import *
 
 
@@ -64,6 +64,8 @@ class MainWindow(QtGui.QMainWindow):
         self.protocols = ProtocolsWidget(parent=self)
         self.groups = GroupsWidget(parent=self)
         self.preferences = PreferencesWidget(parent=self)
+        # Load shortcut
+        self.setShortcut()
 
         # Signals
         ## Quit
@@ -113,27 +115,34 @@ class MainWindow(QtGui.QMainWindow):
                 parentIndex = self.tree.proxyModel.parent(index)
                 # Get column 1 (id column)
                 parentIndex1 = self.tree.proxyModel.index(parentIndex.row(), 1, parentIndex.parent())
-                idmach,bool = self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole).toInt()
+                idmach = self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole).toString()
+                idmach = int(idmach.split("#")[1])
                 # Get machine parent id (customerid)
                 parentIndex = self.tree.proxyModel.parent(parentIndex)
                 parentIndex1 = self.tree.proxyModel.index(parentIndex.row(), 1, parentIndex.parent())
-                idcust,bool = self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole).toInt()
+                idcust = self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole).toString()
+                idcust = int(idcust.split("#")[1])
                 # Get service id 
-                idserv,bool = indexId.data(QtCore.Qt.DisplayRole).toInt()
+                idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+                idserv = int(idserv.split("#")[1])
             else:
                 # Selected item is a machine
                 # Get machine parent id (customerid)
                 parentIndex = self.tree.proxyModel.parent(index)
                 parentIndex1 = self.tree.proxyModel.index(parentIndex.row(), 1, parentIndex.parent())
-                idcust,bool = self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole).toInt()
+                idcust = self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole).toString()
+                idcust = int(idcust.split("#")[1])
                 # Get machine id 
-                idmach,bool = indexId.data(QtCore.Qt.DisplayRole).toInt()
+                idmach = indexId.data(QtCore.Qt.DisplayRole).toString()
+                idmach = int(idmach.split("#")[1])
                 idserv = None
         else:
             # Selected item is a customer
-            idcust,bool = indexId.data(QtCore.Qt.DisplayRole).toInt()
+            idcust = indexId.data(QtCore.Qt.DisplayRole).toString()
+            idcust = int(idcust.split("#")[1])
             idmach = None
             idserv = None
+        
         self.infodock.showInformations(idcust, machineid=idmach, serviceid=idserv)
 
     def GetIdByTree(self, index):
@@ -142,7 +151,8 @@ class MainWindow(QtGui.QMainWindow):
         """
         # Get Id colunm
         indexId = self.tree.selectedIndexes()[1]
-        idserv,bool = indexId.data(QtCore.Qt.DisplayRole).toInt()
+        idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+        idserv = int(idserv.split("#")[1])
         # Check if seleted item is a service
         if index.parent().parent().isValid():
             self.connection(idserv)
@@ -164,8 +174,10 @@ class MainWindow(QtGui.QMainWindow):
         """
         # Get Options
         options = {}
-        
+
         service = getService(idserv)
+        if not service:
+            return False
         # Copy password to clipboard
         self.passtoclip(idserv)
 
@@ -234,12 +246,12 @@ class MainWindow(QtGui.QMainWindow):
                 t = self.restoreState(self.settings.value("SFLvault-qt4/binsavewindow").toByteArray())
         if self.settings.value("SFLvault-qt4/autoconnect").toInt()[0] == QtCore.Qt.Checked:
             self.vaultConnection()
-        self.loadUnloadSystray()
-        self.disEnableEffects()
-        self.showHideFilterBar()
+        self.loadUnloadSystrayConfig()
+        self.disEnableEffectsConfig()
+        self.showHideFilterBarConfig()
         self.show()
 
-    def loadUnloadSystray(self):
+    def loadUnloadSystrayConfig(self):
         """
             Load or unload systray
         """
@@ -249,7 +261,7 @@ class MainWindow(QtGui.QMainWindow):
             self.systray.hide()
 
 
-    def disEnableEffects(self):
+    def disEnableEffectsConfig(self):
         """
             Enable or not effects
         """
@@ -260,9 +272,53 @@ class MainWindow(QtGui.QMainWindow):
             self.setAnimated(False)
             self.tree.setAnimated(False)
 
-    def showHideFilterBar(self):
+    def showHideFilterBarConfig(self):
         if self.settings.value("SFLvault-qt4/filter").toInt()[0] == QtCore.Qt.Checked:
             self.treewidget.filter.show()
         elif self.settings.value("SFLvault-qt4/effects").toInt()[0] == QtCore.Qt.Unchecked:
             self.treewidget.filter.hide()
  
+    def setShortcut(self):
+        """
+            Set shortcuts
+        """
+        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_F),
+                        self, self.showHideFilterShort )
+        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.META + QtCore.Qt.Key_C),
+                        self, self.connectionShort )
+
+    def showHideFilterShort(self):
+        if self.treewidget.filter.isVisible():
+            self.treewidget.filter.hide()
+        else:
+            self.treewidget.filter.show()
+
+    def connectionShort(self):
+        """
+            Launch connection from shortcut
+        """
+        ret, ok = QtGui.QInputDialog.getText(self.parent, self.tr("Quick connection"),
+                                                 self.tr("Service id or service alias :"),
+                                                 QtGui.QLineEdit.Normal)
+        if not ok or not ret:
+            return False
+
+        # Try to know if id is a integer
+        id, bool = ret.toInt()
+        if not bool:
+            # if is not a integer, then it's a QString
+            # check if it's something like s#111
+            ret = unicode(ret)
+            if ret.startswith("s#"):
+                id = ret.split("#")[1]
+            if not id:
+            # Then it's an alias
+                id = getAlias(ret)
+                if id:
+                    id = id.split("#")[1]
+        # Finally launch connection
+        if id:
+            self.connection(id)
+        else:
+            ErrorMessage("No service found")
+        

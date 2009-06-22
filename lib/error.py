@@ -50,7 +50,5 @@ class ErrorMessage(QtGui.QMessageBox):
 
     def message(self):
         self.setWindowTitle(self.tr("Connection"))
-        print self.exception
-        print type(self.exception)
         self.setText(self.exception)
         self.setIcon(QtGui.QMessageBox.Critical)

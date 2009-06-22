@@ -97,7 +97,6 @@ class AliasModel(QtGui.QStandardItemModel):
                 return False
             id_index = self.tree.selectedIndexes()[1]
             id  = self.tree.model().data(id_index).toString()
-            id = "s#" + id
 
         self.insertRow(0)
         self.setData(self.index(0, 0), QtCore.QVariant(alias))
