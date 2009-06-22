@@ -73,7 +73,7 @@ class MainWindow(QtGui.QMainWindow):
         ## Protocols
         QtCore.QObject.connect(self.menubar.protocols, QtCore.SIGNAL("triggered()"), self.protocols.exec_)
         ## Protocols
-        QtCore.QObject.connect(self.menubar.protocols, QtCore.SIGNAL("triggered()"), self.protocols.exec_)
+        QtCore.QObject.connect(self.menubar.quickconnect, QtCore.SIGNAL("triggered()"), self.quickConnection)
         ## Groups
         QtCore.QObject.connect(self.menubar.groups, QtCore.SIGNAL("triggered()"), self.groups.exec_)
         ## Vault connection
@@ -282,18 +282,30 @@ class MainWindow(QtGui.QMainWindow):
         """
             Set shortcuts
         """
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_F),
+        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_I),
                         self, self.showHideFilterShort )
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.META + QtCore.Qt.Key_C),
-                        self, self.connectionShort )
+        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_F),
+                        self, self.searchShort )
+
+    def searchShort(self):
+        """
+            Show search dock and set focus
+        """
+        if not self.searchdock.isVisible():
+            self.searchdock.show()
+        self.searchdock.search.search.setFocus()
 
     def showHideFilterShort(self):
+        """
+            Hide or show filter bar
+        """
         if self.treewidget.filter.isVisible():
             self.treewidget.filter.hide()
         else:
             self.treewidget.filter.show()
+            self.treewidget.filter.filter_input.setFocus()
 
-    def connectionShort(self):
+    def quickConnection(self):
         """
             Launch connection from shortcut
         """

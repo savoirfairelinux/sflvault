@@ -104,11 +104,12 @@ class PreferencesWidget(QtGui.QDialog):
         self.settings.setValue("SFLvault/url", QtCore.QVariant(self.url.text()))
         self.settings.setValue("SFLvault-qt4/savewindow", QtCore.QVariant(self.saveMainWindow.checkState()))
         self.settings.setValue("SFLvault-qt4/autoconnect", QtCore.QVariant(self.autoConnect.checkState()))
+        self.settings.setValue("SFLvault-qt4/systray", QtCore.QVariant(self.systray.checkState()))
         self.settings.setValue("SFLvault-qt4/effects", QtCore.QVariant(self.effects.checkState()))
         self.settings.setValue("SFLvault-qt4/filter", QtCore.QVariant(self.filter.checkState()))
-        self.parent.loadUnloadSystray()
-        self.parent.disEnableEffects()
-        self.parent.showHideFilterBar()
+        self.parent.loadUnloadSystrayConfig()
+        self.parent.disEnableEffectsConfig()
+        self.parent.showHideFilterBarConfig()
         # Close dialog
         self.accept()
 

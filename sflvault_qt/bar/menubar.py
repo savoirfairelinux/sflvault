@@ -39,6 +39,11 @@ class MenuBar(QtGui.QMenuBar):
         ## Connection
         self.connection = self.file.addAction(self.tr("&Connection"))
         self.connection.setStatusTip(self.tr("Connection to the vault"))
+        ## Quick Connection
+        self.quickconnect = self.file.addAction(self.tr("&Quick Connection"))
+        self.quickconnect.setShortcut(self.tr("Meta+C"))
+        self.quickconnect.setStatusTip(self.tr("Connect to a service..."))
+        self.quickconnect.setEnabled(0)
         ## Quit
         self.quit = self.file.addAction(self.tr("&Quit"))
         self.quit.setStatusTip(self.tr("Quit Sflvault-qt"))
@@ -112,3 +117,4 @@ class MenuBar(QtGui.QMenuBar):
         self.protocols.setEnabled(1)
         self.groups.setEnabled(1)
         self.users.setEnabled(1)
+        self.quickconnect.setEnabled(1)

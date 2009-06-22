@@ -10,7 +10,6 @@ from sflvault.client import SFLvaultClient
 import shutil
 import os
 
-
 from lib.auth import *
 
 
