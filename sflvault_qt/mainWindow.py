@@ -299,8 +299,10 @@ class MainWindow(QtGui.QMainWindow):
         """
             Hide or show filter bar
         """
-        if self.treewidget.filter.isVisible():
+        if self.treewidget.filter.isVisible() and self.treewidget.filter.filter_input.hasFocus():
             self.treewidget.filter.hide()
+        elif self.treewidget.filter.isVisible() and not self.treewidget.filter.filter_input.hasFocus():
+            self.treewidget.filter.filter_input.setFocus()
         else:
             self.treewidget.filter.show()
             self.treewidget.filter.filter_input.setFocus()
