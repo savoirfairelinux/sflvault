@@ -9,9 +9,8 @@ import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
 import os
-
-
 from lib.auth import *
+
 
 class AliasDock(QtGui.QDockWidget):
     def __init__(self, parent=None):
@@ -60,7 +59,6 @@ class AliasModel(QtGui.QStandardItemModel):
         self.setHeaders()
         self.tree = self.parent.parent.parent.tree
         self.settings = self.parent.parent.parent.settings
-#        self.readConfig()
 
     def setHeaders(self):
         """
@@ -70,6 +68,7 @@ class AliasModel(QtGui.QStandardItemModel):
         self.setRowCount(0)
         self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
         self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
+       
 
     def readConfig(self):
         """
@@ -78,14 +77,11 @@ class AliasModel(QtGui.QStandardItemModel):
         for alias, id in getAliasList():
             self.addAlias(id, alias)
 
-    def saveAlias(self, id=None, alias=None):
+    def savAlias(self, id=None, alias=None):
         """
             Save alias in config
         """
         saveAlias(alias,id)
-#        self.settings.setValue("alias/" + id, QtCore.QVariant(url))
-        # Save config
-#        self.settings.saveConfig()
     
     def addAlias(self, id=None, alias=None):
         """
@@ -103,7 +99,7 @@ class AliasModel(QtGui.QStandardItemModel):
         self.insertRow(0)
         self.setData(self.index(0, 0), QtCore.QVariant(alias))
         self.setData(self.index(0, 1), QtCore.QVariant(id))
-        self.saveAlias(unicode(id), unicode(alias))
+        self.savAlias(unicode(id), unicode(alias))
 
     def delAlias(self):
         """
@@ -143,6 +139,5 @@ class AliasView(QtGui.QTreeView):
             Create actions for contextMenu
         """
         self.delAct = QtGui.QAction(self.tr("&Delete bookmark..."), self)
-        #self.delAct.setShortcut(self.tr("Ctrl+X"))
         self.delAct.setStatusTip(self.tr("Delete bookmark"))
         self.connect(self.delAct, QtCore.SIGNAL("triggered()"), self.parentView.model.delAlias)
