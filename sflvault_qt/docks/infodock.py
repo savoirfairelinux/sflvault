@@ -20,6 +20,8 @@ class InfoDock(QtGui.QDockWidget):
         self.info = Info()
         self.setWidget(self.info)
         global token
+        ## Check visibility
+        QtCore.QObject.connect(self, QtCore.SIGNAL("visibilityChanged (bool)"), self.parent.menubar.checkDockBoxes)
 
     def showInformations(self, customerid, machineid=None, serviceid=None):
         """

@@ -73,21 +73,27 @@ class MenuBar(QtGui.QMenuBar):
         self.preferences.setStatusTip(self.tr("Sflvault settings"))
 
         # Display
+        self.listDockBoxes = {}
         ## Search
         self.search = self.display.addAction(self.tr("&Search"))
         self.search.setStatusTip(self.tr("Show/hide search dock"))
         self.search.setCheckable(True)
+        self.listDockBoxes['search'] = self.search
 
         ## Alias
         self.alias = self.display.addAction(self.tr("&Alias"))
         self.alias.setStatusTip(self.tr("Show/hide alias dock"))
         self.alias.setCheckable(True)
+        self.listDockBoxes['alias'] = self.alias
 
         ## Info
-        self.serv = self.display.addAction(self.tr("&Informations"))
-        self.serv.setShortcut(self.tr("Ctrl+Alt+I"))
-        self.serv.setStatusTip(self.tr("Show/hide information dock"))
-        self.serv.setCheckable(True)
+        self.info = self.display.addAction(self.tr("&Informations"))
+        self.info.setShortcut(self.tr("Ctrl+Alt+I"))
+        self.info.setStatusTip(self.tr("Show/hide information dock"))
+        self.info.setCheckable(True)
+        self.listDockBoxes['info'] = self.info
+
+        self.checkDockBoxes()
 
         # Help
         ## Help
@@ -118,3 +124,13 @@ class MenuBar(QtGui.QMenuBar):
         self.groups.setEnabled(1)
         self.users.setEnabled(1)
         self.quickconnect.setEnabled(1)
+
+    def checkDockBoxes(self):
+        """
+            Check box if dock is visible
+        """
+        for name, widget in self.parent.listWidget.iteritems():
+            if widget.isVisible():
+                self.listDockBoxes[name].setChecked(True)
+            else:
+                self.listDockBoxes[name].setChecked(False)

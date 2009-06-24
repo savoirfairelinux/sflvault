@@ -18,6 +18,8 @@ class SearchDock(QtGui.QDockWidget):
         self.parent = parent
         self.search = Search()
         self.setWidget(self.search)
+        ## Check visibility
+        QtCore.QObject.connect(self, QtCore.SIGNAL("visibilityChanged (bool)"), self.parent.menubar.checkDockBoxes)
 
     def connection(self):
         self.search.updateGroup()

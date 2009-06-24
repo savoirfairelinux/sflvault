@@ -35,13 +35,13 @@ class MainWindow(QtGui.QMainWindow):
         # Load GUI item
         self.treewidget = TreeVault(parent=self)
         self.tree = self.treewidget.tree
+        self.menubar = MenuBar(parent=self)
         self.aliasdock = AliasDock(parent=self)
         self.aliasdock.setObjectName("aliases")
         self.searchdock = SearchDock(parent=self)
         self.searchdock.setObjectName("search")
         self.infodock = InfoDock(parent=self)
         self.infodock.setObjectName("info")
-        self.menubar = MenuBar(parent=self)
         self.systray = Systray(parent=self)
 
         # Create clipboard
@@ -53,8 +53,13 @@ class MainWindow(QtGui.QMainWindow):
         # Attach items to mainwindow
         self.setCentralWidget(self.treewidget)
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea,self.aliasdock)
+        self.listWidget['alias'] = self.aliasdock
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.searchdock)
+        self.listWidget['search'] = self.searchdock
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea,self.infodock)
+        self.listWidget['info'] = self.infodock
+
+        # Load Menu bar
         self.setMenuBar(self.menubar)
 
         # Read aliases
@@ -80,6 +85,12 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.menubar.connection, QtCore.SIGNAL("triggered()"), self.vaultConnection)
         ## Preferences
         QtCore.QObject.connect(self.menubar.preferences, QtCore.SIGNAL("triggered()"), self.preferences.exec_)
+        ## Show search dock
+        QtCore.QObject.connect(self.menubar.search, QtCore.SIGNAL("triggered(bool)"), self.searchdock.setShown)
+        ## Show info dock
+        QtCore.QObject.connect(self.menubar.info, QtCore.SIGNAL("triggered(bool)"), self.infodock.setShown)
+        ## Show alias dock
+        QtCore.QObject.connect(self.menubar.alias, QtCore.SIGNAL("triggered(bool)"), self.aliasdock.setShown)
 
 
     def closeEvent(self, event):

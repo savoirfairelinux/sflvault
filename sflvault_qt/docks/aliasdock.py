@@ -19,6 +19,8 @@ class AliasDock(QtGui.QDockWidget):
         self.parent = parent
         self.alias = Alias(self)
         self.setWidget(self.alias)
+        ## Check visibility
+        QtCore.QObject.connect(self, QtCore.SIGNAL("visibilityChanged (bool)"), self.parent.menubar.checkDockBoxes)
 
     def readAliases(self):
         self.alias.model.clear()
