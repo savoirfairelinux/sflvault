@@ -32,13 +32,7 @@ class ProtocolsWidget(QtGui.QDialog):
         self.protocol_list.setSortingEnabled(1)
         self.protocol_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.protocol_list.adjustSize()
-        ### MARCHE PAS
-#        h = self.protocol_list.horizontalHeader()
-#        h.setResizeMode(0, QtGui.QHeaderView.Fixed)
-#        h.setResizeMode(1, QtGui.QHeaderView.Interactive)
-#        h.setResizeMode(2, QtGui.QHeaderView.Stretch)
-#        h.resizeSection(0,50)
-#        h.resizeSection(1,2000)
+
 
         # Positionning items
         gridLayout = QtGui.QGridLayout()
@@ -70,6 +64,7 @@ class ProtocolsWidget(QtGui.QDialog):
         self.readConfig()
         # Show dialog
         self.show()
+        self.resize(600,400)
 
     def delRow(self):
         """
@@ -95,6 +90,8 @@ class ProtocolsWidget(QtGui.QDialog):
             self.protocol_list.resizeColumnsToContents()
             # Save protocol in protocol list
             self.protocols[str(protocol)] = str(self.settings.value("protocols/" + protocol).toString())
+        # Set Geometries
+        self.setGeometries()
 
     def saveConfig(self):
         # Clear Config
@@ -110,6 +107,15 @@ class ProtocolsWidget(QtGui.QDialog):
         # Close dialog
         self.accept()
 
+    def setGeometries(self):
+        h = self.protocol_list.horizontalHeader()
+        h.setResizeMode(0, QtGui.QHeaderView.Fixed)
+        h.setResizeMode(1, QtGui.QHeaderView.Stretch)
+        h.setStretchLastSection(0)
+        self.protocol_list.setColumnWidth(0,100)
+        self.protocol_list.setColumnWidth(2,100)
+
+
 
 class ProtocolModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
@@ -121,7 +127,7 @@ class ProtocolModel(QtGui.QStandardItemModel):
         self.setRowCount(0)
         self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Protocol"))
         self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Command"))
-        self.setHeaderData(2, QtCore.Qt.Horizontal, QtCore.QVariant("Copy password to clipboard"))
+        self.setHeaderData(2, QtCore.Qt.Horizontal, QtCore.QVariant("Pass to Clip"))
 
     def addProtocol(self, protocol=None, command=None):
         self.insertRow(0)

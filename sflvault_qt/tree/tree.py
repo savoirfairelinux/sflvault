@@ -256,18 +256,17 @@ class TreeView(QtGui.QTreeView):
         self.setSortingEnabled(1)
         self.setModel(self.proxyModel)
         self.sortByColumn(0,QtCore.Qt.AscendingOrder)
-#        self.resizeColumnToContents(0)
-        # Set headers
-        h = self.header()
-        #h.setResizeMode(0, QtGui.QHeaderView.Interactive)
-        #h.setResizeMode(1, QtGui.QHeaderView.Interactive)
-        #h.setResizeMode(1, QtGui.QHeaderView.Stretch)
-        #h.resizeSection(0,400)
-        #h.resizeSection(1,70)
-#        h. h.sizeHintForColumn(1))
-
         # Load context actions
         self.createActions()
+
+    def setGeometries(self):
+        """
+            Set headers size
+        """
+        h = self.header()
+        h.setResizeMode(0, QtGui.QHeaderView.Stretch)
+        h.setStretchLastSection(0)
+        self.setColumnWidth(1,65)
 
     def search(self, research, groups_ids=None):
         # Load model
@@ -330,5 +329,5 @@ class TreeVault(QtGui.QWidget):
         layout.addWidget(self.filter)
 
     def connection(self):
-        self.tree.search(["."])
-        self.tree.resizeColumnToContents(0)
+        self.tree.search(None, None)
+        self.tree.setGeometries()

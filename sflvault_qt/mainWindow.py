@@ -230,11 +230,11 @@ class MainWindow(QtGui.QMainWindow):
         self.searchdock.connection()
 
         # "Connect" tree
+        self.treewidget.connection()
         ## Tree Search
         QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("textEdited (const QString&)"), self.search)
         ## Tree filter by groups
         QtCore.QObject.connect(self.searchdock.search.groups, QtCore.SIGNAL("currentIndexChanged (const QString&)"), self.search)
-        self.tree.search(None, None)
         ## Tree bookmark
         QtCore.QObject.connect(self.tree.bookmarkAct, QtCore.SIGNAL("triggered()"), self.aliasdock.alias.model.addAlias)
         ## Tree connection

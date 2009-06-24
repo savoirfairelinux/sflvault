@@ -25,6 +25,16 @@ class AliasDock(QtGui.QDockWidget):
         self.alias.model.clear()
         self.alias.model.setHeaders()
         self.alias.model.readConfig()
+        self.setGeometries()
+
+    def setGeometries(self):
+        """
+            Set headers size
+        """
+        h = self.alias.alias_list.header()
+        h.setResizeMode(0, QtGui.QHeaderView.Stretch)
+        h.setStretchLastSection(0)
+        self.alias.alias_list.setColumnWidth(1,65)
 
 
 class Alias(QtGui.QWidget):
@@ -69,7 +79,6 @@ class AliasModel(QtGui.QStandardItemModel):
         self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
         self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
        
-
     def readConfig(self):
         """
             Read config to get aliases
@@ -123,6 +132,7 @@ class AliasView(QtGui.QTreeView):
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
         self.setRootIsDecorated(False)
+        self.setAlternatingRowColors(True)
         # Create menu
         self.createActions()
 
