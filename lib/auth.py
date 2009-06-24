@@ -4,28 +4,35 @@ import sys
 from PyQt4 import QtCore, QtGui
 from sflvault.client import SFLvaultClient
 
-from lib.error import *
+#from lib.error import *
+from error import *
 token = None
+
 
 def getAuth():
     """
         Get authentication
     """
     global token
-    if not token:
-        token = SFLvaultClient()
-        try:
-            token.search("[a]")
-        except Exception, e:
-            ErrorMessage(e)
-            return None
-#        vaultSearch("[a]")
+    #if not token:
+    token = SFLvaultClient()
+    try:
+        # Search nothing, just to get a valid token
+        token.search(["}{[a]"])
+    except Exception, e:
+        ErrorMessage(e)
+        return None
     return token
     
 def getService(id):
     global token
     try:
         service = token.vault.service.get(token.authtok, id)
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        service = getService(id)
     except Exception, e:
         ErrorMessage(e)
         return None
@@ -38,6 +45,11 @@ def getMachine(id):
     global token
     try:
         machine = token.vault.machine.get(token.authtok, id)
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        machine = getMachine(id)
     except Exception, e:
         ErrorMessage(e)
         return None
@@ -47,6 +59,11 @@ def getCustomer(id):
     global token
     try:
         customer = token.vault.customer.get(token.authtok, id)
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        customer = getCustomer(id)
     except Exception, e:
         ErrorMessage(e)
         return None
@@ -57,6 +74,11 @@ def vaultSearch(pattern, groups_ids=None):
     result = None
     try:
         result = token.vault.search(token.authtok, pattern, groups_ids)
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        result = vaultSearch(pattern, groups_ids)
     except Exception, e:
         ErrorMessage(e)
         return None
@@ -77,6 +99,11 @@ def getUserList():
     users = None
     try:
         users = token.vault.user_list(token.authtok, True)["list"]
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        users = getUserList()
     except Exception, e:
         ErrorMessage(e)
         return None
@@ -87,6 +114,11 @@ def getGroupList():
     groups = None
     try:
         groups = token.vault.group_list(token.authtok)["list"]
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        groups = getGroupList()
     except Exception, e:
         ErrorMessage(e)
         return None

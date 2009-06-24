@@ -21,6 +21,7 @@ class ErrorMessage(QtGui.QMessageBox):
             elif self.exception[0] == -2:
                 self.messageError()
         elif isinstance(self.exception, xmlrpclib.ProtocolError):
+            # Protocol error means the token is now invalid
             self.protocolError()
         else:
             self.message()
