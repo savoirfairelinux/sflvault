@@ -233,6 +233,7 @@ class MainWindow(QtGui.QMainWindow):
         self.treewidget.connection()
         ## Tree Search
         QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("textEdited (const QString&)"), self.search)
+        QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("returnPressed ()"), self.focusOnTree)
         ## Tree filter by groups
         QtCore.QObject.connect(self.searchdock.search.groups, QtCore.SIGNAL("currentIndexChanged (const QString&)"), self.search)
         ## Tree bookmark
@@ -241,6 +242,8 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
         ## Tree item informations
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.showInformations)
+        ## Tree Filter
+        QtCore.QObject.connect(self.treewidget.filter.filter_input, QtCore.SIGNAL("returnPressed ()"), self.focusOnTree)
 
         # "Connect" menus
         self.menubar.enableItems()
@@ -297,6 +300,8 @@ class MainWindow(QtGui.QMainWindow):
                         self, self.showHideFilterShort )
         QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_F),
                         self, self.searchShort )
+        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_T),
+                        self, self.focusOnTree)
 
     def searchShort(self):
         """
@@ -317,6 +322,11 @@ class MainWindow(QtGui.QMainWindow):
         else:
             self.treewidget.filter.show()
             self.treewidget.filter.filter_input.setFocus()
+
+    def focusOnTree(self):
+        self.tree.setFocus()
+        if not self.tree.selectedIndexes():
+            self.tree.setSelection(QtCore.QRect(0,0,1,1), QtGui.QItemSelectionModel.Select)
 
     def quickConnection(self):
         """

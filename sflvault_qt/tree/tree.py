@@ -8,7 +8,6 @@ from sflvault_qt.bar.filterbar import FilterBar
 from images.qicons import *
 
 from lib.auth import *
-#token = getAuth()
 
 
 class TreeItem(QtCore.QObject):
@@ -269,10 +268,21 @@ class TreeView(QtGui.QTreeView):
         self.setColumnWidth(1,65)
 
     def search(self, research, groups_ids=None):
+        # Get minimum number of caracters to search
+        minsearch = self.parent.settings.value("SFLvault-qt4/minsearch").toInt()[0]
+        # Test if research if not null or if it contains just empty unicode
+        if research and not research == [u'']:
+            # Join all research words
+            research_length = len("".join(research))
+            # If not null, test if the length if < minsearch
+            if research_length < minsearch:
+                # If yes, do nothing
+                return None
         # Load model
         self.sourcemodel = TreeModel(research, groups_ids, self)
         # Load proxy
         self.proxyModel.setSourceModel(self.sourcemodel)
+            
 
     def contextMenuEvent(self, event):
         """
