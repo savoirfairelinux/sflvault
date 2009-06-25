@@ -20,10 +20,33 @@ class ProtocolsWidget(QtGui.QDialog):
         self.protocols = {}
 
         # Load gui items
+        label = QtGui.QLabel("Here you can choose which command will be\
+                                launch when you want to connect to a service.<br/>\
+                                You can use several parameters from the service :\
+                                <ul>\
+                                <li> %(user)s          :</li>\
+                                <li> %(address)s       :</li>\
+                                <li> %(vaultid)s       :</li>\
+                                <li> %(vaultconnect)s  :</li>\
+                                </ul>\
+                                Exemples :\
+                                <dl>\
+                                <dd><i>konsole -e %(vaultconnect)s</i></dd>\
+                                <dt>launch : konsole -e sflvault connect s#133</dt>\
+                                <dd><i>firefox %(address)s</i></dd>\
+                                <dt>launch : firefox http://website.org</dt>\
+                                <dt>(which open firefox with the wanted page)</dt>\
+                                </dl>\
+                                ")
+        label.setAlignment(QtCore.Qt.AlignLeft)        
+        label.setTextFormat(QtCore.Qt.RichText)
+        label.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+                        
         self.addprotocol = QtGui.QPushButton(self.tr("Add"))
         self.removeprotocol = QtGui.QPushButton(self.tr("Remove"))
-        okButton = QtGui.QPushButton(self.tr("OK"))
-        cancelButton = QtGui.QPushButton(self.tr("Cancel"))
+        save = QtGui.QPushButton(self.tr("Save"))
+        reload = QtGui.QPushButton(self.tr("Reload"))
+        cancel = QtGui.QPushButton(self.tr("Cancel"))
         groupbox = QtGui.QGroupBox()
         # Configure table view
         self.protocol_list = QtGui.QTableView(self)
@@ -36,15 +59,17 @@ class ProtocolsWidget(QtGui.QDialog):
 
         # Positionning items
         gridLayout = QtGui.QGridLayout()
-        gridLayout.addWidget(self.protocol_list,0,1,3,1)
-        gridLayout.addWidget(self.addprotocol,0,0)
-        gridLayout.addWidget(self.removeprotocol,2,0)
+        gridLayout.addWidget(self.protocol_list,0,0,1,6)
+        gridLayout.addWidget(self.addprotocol,1,1)
+        gridLayout.addWidget(self.removeprotocol,1,4)
+        gridLayout.addWidget(label,2,0,1,6)
         groupbox.setLayout(gridLayout)
 
         buttonLayout = QtGui.QHBoxLayout()
         buttonLayout.addStretch(1)
-        buttonLayout.addWidget(okButton)
-        buttonLayout.addWidget(cancelButton)
+        buttonLayout.addWidget(reload)
+        buttonLayout.addWidget(save)
+        buttonLayout.addWidget(cancel)
 
         mainLayout = QtGui.QVBoxLayout()
         mainLayout.addWidget(groupbox)
@@ -56,15 +81,16 @@ class ProtocolsWidget(QtGui.QDialog):
         # SIGNALS
         QtCore.QObject.connect(self.addprotocol, QtCore.SIGNAL("clicked()"), self.model.addProtocol)
         QtCore.QObject.connect(self.removeprotocol, QtCore.SIGNAL("clicked()"), self.model.delProtocol)
-        QtCore.QObject.connect(okButton, QtCore.SIGNAL("clicked()"), self.saveConfig)
-        QtCore.QObject.connect(cancelButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        QtCore.QObject.connect(save, QtCore.SIGNAL("clicked()"), self.saveConfig)
+        QtCore.QObject.connect(reload, QtCore.SIGNAL("clicked()"), self.readConfig)
+        QtCore.QObject.connect(cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
 
     def exec_(self):
         # load config
         self.readConfig()
         # Show dialog
         self.show()
-        self.resize(600,400)
+        self.resize(600,500)
 
     def delRow(self):
         """
@@ -114,6 +140,8 @@ class ProtocolsWidget(QtGui.QDialog):
         h.setStretchLastSection(0)
         self.protocol_list.setColumnWidth(0,100)
         self.protocol_list.setColumnWidth(2,100)
+        h = self.protocol_list.verticalHeader()
+        h.hide()
 
 
 
@@ -139,6 +167,7 @@ class ProtocolModel(QtGui.QStandardItemModel):
             Delete selected row
         """
         # Delete current row
-        selected_row = self.parent.protocol_list.selectedIndexes()[0]
-        self.removeRows(selected_row.row(), 1)
+        if self.parent.protocol_list.selectedIndexes():
+            selected_row = self.parent.protocol_list.selectedIndexes()[0]
+            self.removeRows(selected_row.row(), 1)
 

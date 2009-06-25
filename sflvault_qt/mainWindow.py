@@ -196,7 +196,7 @@ class MainWindow(QtGui.QMainWindow):
         protocol, address = url.split("://")
         if self.settings.value("protocols/" + protocol):
             options["user"], options["address"] = address.split("@", 1)
-            options["id"] = service["service"]["id"]
+            options["vaultid"] = service["service"]["id"]
             options["vaultconnect"] = "sflvault connect %s" % options["id"]
 
             # Create Command
