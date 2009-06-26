@@ -50,6 +50,10 @@ class ErrorMessage(QtGui.QMessageBox):
         self.setIcon(QtGui.QMessageBox.Critical)
 
     def message(self):
-        self.setWindowTitle(self.tr("Connection"))
-        self.setText(self.exception)
+        if not self.exception:
+            self.setWindowTitle(self.tr("Connection"))
+            self.setText(self.exception)
+        else:
+            self.setWindowTitle(self.tr("Error"))
+            self.setText(self.tr("Unknown error"))
         self.setIcon(QtGui.QMessageBox.Critical)
