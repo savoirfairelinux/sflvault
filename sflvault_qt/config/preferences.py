@@ -79,6 +79,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.setLayout(mainLayout)
 
         self.setWindowTitle(self.tr("Preferences"))
+        self.resize(500,400)
 
         # SIGNALS
         QtCore.QObject.connect(self.save, QtCore.SIGNAL("clicked()"), self.saveConfig)
