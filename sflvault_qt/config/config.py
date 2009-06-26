@@ -27,7 +27,10 @@ class Config(QtCore.QSettings):
             ret = self.allKeys()
         else:
             self.beginGroup(group)
-            ret = self.childKeys()
+            if group == "protocols":
+                ret = self.childGroups()
+            else:
+                ret = self.childKeys()
             self.endGroup()
         return ret
 

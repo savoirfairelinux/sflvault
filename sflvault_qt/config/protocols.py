@@ -17,7 +17,6 @@ class ProtocolsWidget(QtGui.QDialog):
         self.parent = parent
         self.settings = self.parent.settings
         self.model = ProtocolModel(self)
-        self.protocols = {}
 
         # Load gui items
         label = QtGui.QLabel("Here you can choose which command will be\
@@ -86,20 +85,14 @@ class ProtocolsWidget(QtGui.QDialog):
         QtCore.QObject.connect(cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
 
     def exec_(self):
+        """
+            Open window
+        """
         # load config
         self.readConfig()
         # Show dialog
         self.show()
         self.resize(600,500)
-
-    def delRow(self):
-        """
-            Delete selected row
-        """
-        # Delete current row
-        selected_rows = self.protocol_list.selectedIndexes()
-        for selected_row in selected_rows:
-            self.model.removeRows(selected_row.row(), 1)
 
     def readConfig(self):
         """
@@ -107,39 +100,57 @@ class ProtocolsWidget(QtGui.QDialog):
         """
         # Clear model
         self.model.clear()
+        self.model.protocols = []
         # Create headers
         self.model.setHeaders()
-        for protocol in self.settings.readConfig("protocols"):
-            # Create new items
-            command = self.settings.value("protocols/" + protocol).toString()
-            self.model.addProtocol(protocol, command)
-            self.protocol_list.resizeColumnsToContents()
-            # Save protocol in protocol list
-            self.protocols[str(protocol)] = str(self.settings.value("protocols/" + protocol).toString())
+        for protocol_name in self.settings.readConfig("protocols"):
+            # Get values in config
+            protocol_name = unicode(protocol_name)
+            command = unicode(self.settings.value("protocols/" + protocol_name + "/command").toString())
+            clip = unicode(self.settings.value("protocols/" + protocol_name + "/clip").toString())
+            # Create new item
+            self.model.addProtocol(protocol_name, command, clip)
         # Set Geometries
         self.setGeometries()
 
     def saveConfig(self):
-        # Clear Config
-        for protocol in self.protocols.keys():
-            self.settings.remove("protocols/" + protocol)
+        """
+            Save protocols in config
+        """
+        # Clear protocols Config
+        self.settings.remove("protocols/")
         # Write new config
-        for row in range(self.model.rowCount()) :
-            protocol = self.model.data(self.model.index(row,0)).toString()
-            command = self.model.data(self.model.index(row,1)).toString()
-            self.settings.setValue("protocols/" + protocol, QtCore.QVariant(command))
+        self.settings.beginGroup("protocols")
+        for row in range(self.model.rowCount()):
+            # Get values
+            protocol_name = self.model.data(self.model.index(row,0), QtCore.Qt.DisplayRole).toString()
+            command = self.model.data(self.model.index(row,1), QtCore.Qt.DisplayRole).toString()
+            clip, bool = self.model.data(self.model.index(row,2), QtCore.Qt.CheckStateRole).toInt()
+            # Write values in config
+            self.settings.beginGroup(protocol_name)
+            self.settings.setValue("command", QtCore.QVariant(command))
+            self.settings.setValue("clip", QtCore.QVariant(clip))
+            self.settings.endGroup()
+        self.settings.endGroup()
         # Save config
         self.settings.saveConfig()
         # Close dialog
         self.accept()
 
     def setGeometries(self):
+        """
+            Set table properties
+        """
+        # Get horizontal header
         h = self.protocol_list.horizontalHeader()
+        # Set headers behaviors
         h.setResizeMode(0, QtGui.QHeaderView.Fixed)
         h.setResizeMode(1, QtGui.QHeaderView.Stretch)
         h.setStretchLastSection(0)
+        # Set size
         self.protocol_list.setColumnWidth(0,100)
         self.protocol_list.setColumnWidth(2,100)
+        # Hide vertical hearder
         h = self.protocol_list.verticalHeader()
         h.hide()
 
@@ -149,6 +160,12 @@ class ProtocolModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, 0, 3, parent)
         self.parent = parent
+        self.protocols = []
+        self.columns = [
+                        "name",
+                        "command",
+                        "clip",
+                        ]
 
     def setHeaders(self):
         self.setColumnCount(3)
@@ -157,10 +174,15 @@ class ProtocolModel(QtGui.QStandardItemModel):
         self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Command"))
         self.setHeaderData(2, QtCore.Qt.Horizontal, QtCore.QVariant("Pass to Clip"))
 
-    def addProtocol(self, protocol=None, command=None):
-        self.insertRow(0)
-        self.setData(self.index(0, 0), QtCore.QVariant(protocol))
-        self.setData(self.index(0, 1), QtCore.QVariant(command))
+    def addProtocol(self, protocol=None, command=None, clip=QtCore.Qt.Checked):
+        # Create new item
+        # Save protocol in protocol list
+        self.protocols.append(Protocol(protocol, command, clip))
+        # Add it to the view
+        self.insertRow(self.rowCount())
+        self.setData(self.index(self.rowCount(), 0), QtCore.QVariant(protocol), QtCore.Qt.DisplayRole)
+        self.setData(self.index(self.rowCount(), 1), QtCore.QVariant(command), QtCore.Qt.DisplayRole)
+        self.setData(self.index(self.rowCount(), 2), QtCore.QVariant(clip), QtCore.Qt.CheckStateRole)
 
     def delProtocol(self):
         """
@@ -170,4 +192,88 @@ class ProtocolModel(QtGui.QStandardItemModel):
         if self.parent.protocol_list.selectedIndexes():
             selected_row = self.parent.protocol_list.selectedIndexes()[0]
             self.removeRows(selected_row.row(), 1)
+            del self.protocols[selected_row.row()]
 
+    def flags(self, index):
+        f = QtCore.QAbstractTableModel.flags(self,index)
+        if index.column() == 2:
+            f |= QtCore.Qt.ItemIsUserCheckable
+        else:
+            f |= QtCore.Qt.ItemIsEditable
+        return f
+
+
+    def data(self, index, role):
+        # if index is not valid
+        if not index.isValid():
+            return QtCore.QVariant()
+        # if protocols is empty
+        if not self.protocols:
+            return QtCore.QVariant()
+
+        protocol = self.protocols[index.row()] 
+
+        # get value of the checkbox
+        if role == QtCore.Qt.CheckStateRole:
+            if index.column() == 2:
+                return QtCore.QVariant(getattr(protocol, "clip"))
+
+        # get value of protocol name and command
+        if role == QtCore.Qt.DisplayRole:
+            if index.column() != 2:
+                attrName = self.columns[index.column()]
+                value = getattr(protocol, attrName)
+                return QtCore.QVariant(value)
+
+        return QtCore.QVariant()
+
+    def setData(self, index, value, role):
+        # if index is not valid
+        if not index.isValid():
+            return False
+        # if protocols is empty
+        if not self.protocols:
+            return False
+
+        # Get protocol item
+        protocol = self.protocols[index.row()]
+
+        # Set attributes
+        attrName = self.columns[index.column()]
+        result = protocol.setData(value, attrName)
+
+#        if result:
+#            self.dataChanged.emit(index, index)
+
+        return result
+
+
+
+
+class Protocol():
+    def __init__(self, name=None, command=None, clip=QtCore.Qt.Checked):
+        """
+            Item protocol which is used to show and
+            set parameters
+        """
+        self.name = name
+        self.command = command
+        self.clip = clip
+
+    def setData(self, value, attr):
+        """
+            Set attributes
+        """
+        if attr == "clip":
+            value, bool = value.toInt()   
+            if bool:
+                self.clip = value
+                return True
+
+        elif attr == "name" or attr == "command":
+            value = unicode(value.toString())
+            if value:
+                setattr(self, attr, value)
+                return True
+
+        return False

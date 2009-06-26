@@ -189,18 +189,21 @@ class MainWindow(QtGui.QMainWindow):
         service = getService(idserv)
         if not service:
             return False
-        # Copy password to clipboard
-        self.passtoclip(idserv)
-
+        # Get service
         url = service["service"]["url"]
         protocol, address = url.split("://")
-        if self.settings.value("protocols/" + protocol):
+        # Copy password to clipboard
+        clip, bool = self.settings.value("protocols/" + protocol + "/clip").toInt()
+        if bool and clip == QtCore.Qt.Checked:
+            self.passtoclip(idserv)
+        # Prepare to launch command
+        if self.settings.value("protocols/" + protocol + "/command"):
             options["user"], options["address"] = address.split("@", 1)
             options["vaultid"] = service["service"]["id"]
-            options["vaultconnect"] = "sflvault connect %s" % options["id"]
+            options["vaultconnect"] = "sflvault connect %s" % options["vaultid"]
 
             # Create Command
-            command = unicode(self.settings.value("protocols/" + protocol).toString())
+            command = unicode(self.settings.value("protocols/" + protocol + "/command").toString())
             print command
             command = command % options
             print command
@@ -287,6 +290,9 @@ class MainWindow(QtGui.QMainWindow):
             self.tree.setAnimated(False)
 
     def showHideFilterBarConfig(self):
+        """
+            Show or hide filter bar
+        """
         if self.settings.value("SFLvault-qt4/filter").toInt()[0] == QtCore.Qt.Checked:
             self.treewidget.filter.show()
         elif self.settings.value("SFLvault-qt4/effects").toInt()[0] == QtCore.Qt.Unchecked:
@@ -324,6 +330,9 @@ class MainWindow(QtGui.QMainWindow):
             self.treewidget.filter.filter_input.setFocus()
 
     def focusOnTree(self):
+        """
+            Set Focus on vault tree and select first item
+        """
         self.tree.setFocus()
         if not self.tree.selectedIndexes():
             self.tree.setSelection(QtCore.QRect(0,0,1,1), QtGui.QItemSelectionModel.Select)
