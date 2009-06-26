@@ -15,7 +15,7 @@ from lib.auth import *
 
 class InfoDock(QtGui.QDockWidget):
     def __init__(self, parent=None ):
-        QtGui.QDockWidget.__init__(self, "Service", parent)
+        QtGui.QDockWidget.__init__(self, "Informations", parent)
         self.parent = parent
         self.info = Info()
         self.setWidget(self.info)
@@ -36,15 +36,21 @@ class InfoDock(QtGui.QDockWidget):
         self.info.model.setHeaders()
 
         customer = getCustomer(customerid)
+        self.setWindowTitle("Customer")
         if machineid and customer:
             machine = getMachine(machineid)
+            self.setWindowTitle("Machine")
             if machine and serviceid:
                 service = getService(serviceid)
+                self.setWindowTitle("Service")
                 if not service:
+                    self.setWindowTitle("Informations")
                     return None
             elif not machine:
+                self.setWindowTitle("Informations")
                 return None
         elif not customer:
+            self.setWindowTitle("Informations")
             return None
         self.info.model.showEditableInformations(customer, machine, service)
         self.info.showInformations(customer, machine, service)
