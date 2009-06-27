@@ -282,7 +282,8 @@ class TreeView(QtGui.QTreeView):
         self.sourcemodel = TreeModel(research, groups_ids, self)
         # Load proxy
         self.proxyModel.setSourceModel(self.sourcemodel)
-            
+        # Sort by name
+        self.sortByColumn(0)
 
     def contextMenuEvent(self, event):
         """
@@ -310,7 +311,6 @@ class TreeView(QtGui.QTreeView):
         self.bookmarkAct.setStatusTip(self.tr("Create an alias from this item"))
 #        self.connect(self.reomveFileAct, QtCore.SIGNAL("triggered()"), self.remove)
 
-
     def filter(self, pattern):
         """
             Filter and expand
@@ -320,7 +320,37 @@ class TreeView(QtGui.QTreeView):
             self.expandAll()
         else:
             self.collapseAll()
+        # Sort by name
+        self.sortByColumn(0)
         
+    def expandCollapse(self):
+        """
+            Expand or collapse selected item
+        """
+        indexes = self.selectedIndexes()
+        # Check if an item if selected
+        if indexes:
+            # Check if is a node
+            if indexes[0].child(0,0).isValid():
+                if self.isExpanded(indexes[0]):
+                    self.collapse(indexes[0])
+                else:
+                    self.expand(indexes[0])
+
+    def enterShortcut(self):
+        """
+            Expand-collapse if selected item is a customer/machine
+            Launch connection if service
+        """
+        indexes = self.selectedIndexes()
+        # Check if an item if selected
+        if indexes:
+            # if item is a service
+            if indexes[0].parent().parent().isValid():
+                self.parent.GetIdByTree(indexes[0])
+            # if item is a customer or machine
+            else:
+                self.expandCollapse()
 
 class TreeVault(QtGui.QWidget):
     def __init__(self, parent=None):
@@ -337,7 +367,17 @@ class TreeVault(QtGui.QWidget):
 
         layout.addWidget(self.tree)
         layout.addWidget(self.filter)
+        self.setShortcut()
 
     def connection(self):
         self.tree.search(None, None)
         self.tree.setGeometries()
+
+    def setShortcut(self):
+        """
+            Define tree shortcuts
+        """
+        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Space),
+                self.tree, self.tree.expandCollapse )
+        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Return),
+                self.tree, self.tree.enterShortcut )
