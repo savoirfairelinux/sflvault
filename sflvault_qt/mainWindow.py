@@ -207,6 +207,9 @@ class MainWindow(QtGui.QMainWindow):
             print command
             command = command % options
             print command
+            
+            # Exit if command is empty (to prevent segfault. See bug #4)
+            if command.strip() == "": return
             # Launch process
             self.procxterm = QtCore.QProcess()
             self.procxterm.start(command)
