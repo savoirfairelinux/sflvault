@@ -44,6 +44,8 @@ class AliasDock(QtGui.QDockWidget):
         """
         QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Delete),
                 self.alias.alias_list, self.alias.model.delAlias)
+        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_F2),
+                self.alias.alias_list, self.alias.model.editAlias)
 
 
 class Alias(QtGui.QWidget):
@@ -101,33 +103,53 @@ class AliasModel(QtGui.QStandardItemModel):
         """
         saveAlias(alias,id)
     
-    def addAlias(self, id=None, alias=None):
+    def addAlias(self, id=None, alias=None, rowNumber=0):
         """
             Added by context menu
         """
         if not id and not alias:
-            alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("New Alias"),
-                                                    self.tr("Alias name:"),
+            alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("Edit alias"),
+                                                    self.tr("New alias name:"),
                                                     QtGui.QLineEdit.Normal)
             if not ok or not alias:
                 return False
             id_index = self.tree.selectedIndexes()[1]
             id  = self.tree.model().data(id_index).toString()
 
-        self.insertRow(0)
-        self.setData(self.index(0, 0), QtCore.QVariant(alias))
-        self.setData(self.index(0, 1), QtCore.QVariant(id))
+        self.insertRow(rowNumber)
+        self.setData(self.index(rowNumber, 0), QtCore.QVariant(alias))
+        self.setData(self.index(rowNumber, 1), QtCore.QVariant(id))
         self.savAlias(unicode(id), unicode(alias))
 
-    def delAlias(self):
+    def delAlias(self,selected_row=None):
         """
             Delete selected row
             and alias in config
         """
-        selected_row = self.parent.alias_list.selectedIndexes()[0]
-        alias = unicode(self.data(selected_row).toString())
-        self.removeRows(selected_row.row(), 1)
+        if not selected_row:
+            selected_row = self.parent.alias_list.selectedIndexes()
+        alias = unicode(self.data(selected_row[0]).toString())
+        self.removeRows(selected_row[0].row(), 1)
+        # This function comes from the sflvault api
         delAlias(alias)
+ 
+    def editAlias(self, id=None, alias=None):
+        """
+            Edit alias from context menu
+        """
+        if not id and not alias:
+            selected_row = self.parent.alias_list.selectedIndexes()
+            alias = unicode(self.data(selected_row[0]).toString())
+            id = unicode(self.data(selected_row[1]).toString())
+            alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("Edit Alias"),
+                                                    self.tr("new name:"),
+                                                    QtGui.QLineEdit.Normal, alias)
+            if not ok or not alias:
+                return False
+
+        rowNumber = selected_row[0].row()
+        self.delAlias(selected_row)
+        self.addAlias(unicode(id),unicode(alias),rowNumber)
  
 
 class AliasView(QtGui.QTreeView):
@@ -151,6 +173,7 @@ class AliasView(QtGui.QTreeView):
         """
         menu = QtGui.QMenu(self)
         menu.addAction(self.delAct)
+        menu.addAction(self.editAct)
         menu.exec_(event.globalPos())
 
     def createActions(self):
@@ -160,3 +183,6 @@ class AliasView(QtGui.QTreeView):
         self.delAct = QtGui.QAction(self.tr("&Delete bookmark..."), self)
         self.delAct.setStatusTip(self.tr("Delete bookmark"))
         self.connect(self.delAct, QtCore.SIGNAL("triggered()"), self.parentView.model.delAlias)
+        self.editAct = QtGui.QAction(self.tr("&Edit bookmark..."), self)
+        self.editAct.setStatusTip(self.tr("Edit bookmark"))
+        self.connect(self.editAct, QtCore.SIGNAL("triggered()"), self.parentView.model.editAlias)
