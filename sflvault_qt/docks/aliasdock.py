@@ -18,6 +18,8 @@ class AliasDock(QtGui.QDockWidget):
         self.parent = parent
         self.alias = Alias(self)
         self.setWidget(self.alias)
+        self.setShortcut()
+
         ## Check visibility
         QtCore.QObject.connect(self, QtCore.SIGNAL("visibilityChanged (bool)"), self.parent.menubar.checkDockBoxes)
 
@@ -35,6 +37,13 @@ class AliasDock(QtGui.QDockWidget):
         h.setResizeMode(0, QtGui.QHeaderView.Stretch)
         h.setStretchLastSection(0)
         self.alias.alias_list.setColumnWidth(1,65)
+
+    def setShortcut(self):
+        """
+            Define tree shortcuts
+        """
+        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Delete),
+                self.alias.alias_list, self.alias.model.delAlias)
 
 
 class Alias(QtGui.QWidget):
