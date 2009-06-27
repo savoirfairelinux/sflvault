@@ -159,6 +159,8 @@ class AliasView(QtGui.QTreeView):
 
         # Set behavior
         self.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        #FIXME
+        self.sortByColumn(0,QtCore.Qt.AscendingOrder)
         self.setSortingEnabled(1)
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
