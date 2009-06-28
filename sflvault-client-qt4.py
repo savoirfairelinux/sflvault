@@ -12,12 +12,11 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
   
     translator = QtCore.QTranslator()
-    translator.load("frdfhvgjgg", "./dlb_translations")
+    translator.load("en", "./languages")
     app.installTranslator(translator)
 
     app.setWindowIcon(Qicons("sflvault_icon"))
  
     mainwindow = mainWindow.MainWindow()
-#    mainwindow.show()
     mainwindow.exec_()
     sys.exit(app.exec_())
