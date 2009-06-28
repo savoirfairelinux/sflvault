@@ -37,10 +37,10 @@ class MenuBar(QtGui.QMenuBar):
         self.newserv.setEnabled(0)
 
         ## Connection
-        self.connection = self.file.addAction(self.tr("&Connection"))
-        self.connection.setStatusTip(self.tr("Connection to the vault"))
+        self.connection = self.file.addAction(self.tr("&Connect to the vault"))
+        self.connection.setStatusTip(self.tr("Connectto the vault"))
         ## Quick Connection
-        self.quickconnect = self.file.addAction(self.tr("&Quick Connection"))
+        self.quickconnect = self.file.addAction(self.tr("&Quick Connect..."))
         self.quickconnect.setShortcut(self.tr("Meta+C"))
         self.quickconnect.setStatusTip(self.tr("Connect to a service..."))
         self.quickconnect.setEnabled(0)
