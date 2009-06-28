@@ -22,12 +22,12 @@ class ProtocolsWidget(QtGui.QDialog):
         label = QtGui.QLabel("Here you can choose which command will be\
                                 launch when you want to connect to a service.<br/>\
                                 You can use several parameters from the service :\
-                                <ul>\
-                                <li> %(user)s          :</li>\
-                                <li> %(address)s       :</li>\
-                                <li> %(vaultid)s       :</li>\
-                                <li> %(vaultconnect)s  :</li>\
-                                </ul>\
+                                <table>\
+                                <tr><td> - %(user)s         : </td><td> User name of the service </td></tr>\
+                                <tr><td> - %(address)s      : </td><td> Address of the service</td></tr>\
+                                <tr><td> - %(vaultid)s      : </td><td> Vault id of the service </td></tr>\
+                                <tr><td> - %(vaultconnect)s : </td><td> Vault connection command </td></tr>\
+                                </table>\
                                 Exemples :\
                                 <dl>\
                                 <dd><i>konsole -e %(vaultconnect)s</i></dd>\
@@ -83,6 +83,13 @@ class ProtocolsWidget(QtGui.QDialog):
         QtCore.QObject.connect(save, QtCore.SIGNAL("clicked()"), self.saveConfig)
         QtCore.QObject.connect(reload, QtCore.SIGNAL("clicked()"), self.readConfig)
         QtCore.QObject.connect(cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        
+        # FIXME set return shortcut to save config only
+        # when editor mode in table view is not enabled
+        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Return),
+                self, None)
+
+        
 
     def exec_(self):
         """
@@ -158,9 +165,11 @@ class ProtocolsWidget(QtGui.QDialog):
 
 class ProtocolModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
-        QtGui.QStandardItemModel.__init__(self, 0, 3, parent)
+        QtGui.QStandardItemModel.__init__(self, parent)
         self.parent = parent
+        # List of protocol
         self.protocols = []
+        # Header <=> protocol attribute
         self.columns = [
                         "name",
                         "command",
@@ -219,7 +228,7 @@ class ProtocolModel(QtGui.QStandardItemModel):
                 return QtCore.QVariant(getattr(protocol, "clip"))
 
         # get value of protocol name and command
-        if role == QtCore.Qt.DisplayRole:
+        if role in [QtCore.Qt.EditRole, QtCore.Qt.DisplayRole]:
             if index.column() != 2:
                 attrName = self.columns[index.column()]
                 value = getattr(protocol, attrName)
@@ -242,8 +251,8 @@ class ProtocolModel(QtGui.QStandardItemModel):
         attrName = self.columns[index.column()]
         result = protocol.setData(value, attrName)
 
-#        if result:
-#            self.dataChanged.emit(index, index)
+        if result:
+            self.dataChanged.emit(index, index)
 
         return result
 
