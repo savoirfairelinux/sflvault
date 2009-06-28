@@ -97,38 +97,53 @@ class AliasModel(QtGui.QStandardItemModel):
         for alias, id in getAliasList():
             self.addAlias(id, alias)
 
-    def savAlias(self, id=None, alias=None):
-        """
-            Save alias in config
-        """
-        saveAlias(alias,id)
-    
     def addAlias(self, id=None, alias=None, rowNumber=0):
         """
             Added by context menu
         """
+        # Show input Dialog
         if not id and not alias:
             alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("Edit alias"),
                                                     self.tr("New alias name:"),
                                                     QtGui.QLineEdit.Normal)
             if not ok or not alias:
                 return False
+            # Get id of the selected service
             id_index = self.tree.selectedIndexes()[1]
             id  = self.tree.model().data(id_index).toString()
 
+        # Insert the new row 
         self.insertRow(rowNumber)
         self.setData(self.index(rowNumber, 0), QtCore.QVariant(alias))
         self.setData(self.index(rowNumber, 1), QtCore.QVariant(id))
-        self.savAlias(unicode(id), unicode(alias))
+        saveAlias(unicode(alias), unicode(id))
+        # Clear row selection
+        self.parent.alias_list.clearSelection()
+        # Select the new row
+        ## Get rect of the new row
+        id_index_rect = self.parent.alias_list.visualRect(self.index(rowNumber, 1))
+        name_index_rect = self.parent.alias_list.visualRect(self.index(rowNumber, 0))
+        ## Select the new row
+        self.parent.alias_list.setSelection(id_index_rect, QtGui.QItemSelectionModel.Select)
+        self.parent.alias_list.setSelection(name_index_rect, QtGui.QItemSelectionModel.Select)
+        # Sort list
+        self.parent.alias_list.sortByColumn(0,QtCore.Qt.AscendingOrder)
 
-    def delAlias(self,selected_row=None):
+    def delAlias(self, selected_row=None):
         """
             Delete selected row
             and alias in config
         """
+        # test if an index is submitted
         if not selected_row:
+            # if not get secleted indexes
             selected_row = self.parent.alias_list.selectedIndexes()
+        # Test if there are selected indexes
+        if not selected_row:
+            # if not do nothing
+            return False
         alias = unicode(self.data(selected_row[0]).toString())
+        # Remove row
         self.removeRows(selected_row[0].row(), 1)
         # This function comes from the sflvault api
         delAlias(alias)
@@ -138,7 +153,12 @@ class AliasModel(QtGui.QStandardItemModel):
             Edit alias from context menu
         """
         if not id and not alias:
+             # if not get secleted indexes
             selected_row = self.parent.alias_list.selectedIndexes()
+            # Test if there are selected indexes
+            if not selected_row:
+                # if not do nothing
+                return False
             alias = unicode(self.data(selected_row[0]).toString())
             id = unicode(self.data(selected_row[1]).toString())
             alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("Edit Alias"),
@@ -146,9 +166,11 @@ class AliasModel(QtGui.QStandardItemModel):
                                                     QtGui.QLineEdit.Normal, alias)
             if not ok or not alias:
                 return False
-
+        # Get selected row
         rowNumber = selected_row[0].row()
+        # Delete row and alias
         self.delAlias(selected_row)
+        # Add row and alias
         self.addAlias(unicode(id),unicode(alias),rowNumber)
  
 
@@ -159,8 +181,6 @@ class AliasView(QtGui.QTreeView):
 
         # Set behavior
         self.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        #FIXME
-        self.sortByColumn(0,QtCore.Qt.AscendingOrder)
         self.setSortingEnabled(1)
         self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
@@ -173,6 +193,10 @@ class AliasView(QtGui.QTreeView):
         """
             Create contextMenu on right click
         """
+        # Test if there are selected indexes
+        if not self.selectedIndexes():
+            # if not do nothing
+            return False
         menu = QtGui.QMenu(self)
         menu.addAction(self.delAct)
         menu.addAction(self.editAct)
