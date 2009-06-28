@@ -17,9 +17,12 @@ class Systray(QtGui.QSystemTrayIcon):
         self.parent = parent
         self.setIcon(Qicons("sflvault_icon"))
         self.createActions()
-        self.createTrayIcon()
+        self.createTrayMenu()
 
     def createActions(self):
+        """
+            Create action for context menu
+        """
         self.minimizeAction = QtGui.QAction(self.tr("Mi&nimize"), self)
         QtCore.QObject.connect(self.minimizeAction,
                 QtCore.SIGNAL("triggered()"), self.parent, QtCore.SLOT("hide()"))
@@ -40,13 +43,19 @@ class Systray(QtGui.QSystemTrayIcon):
 
         QtCore.QObject.connect(self, QtCore.SIGNAL("activated (QSystemTrayIcon::ActivationReason)"), self.hideShow)
 
-    def hideShow(self):
-        if self.parent.isVisible():
-            self.parent.hide()
-        else:
-            self.parent.show()
+    def hideShow(self, reason):
+        """
+            Hide or show application
+        """
+        # Only if it s a left clik
+        if reason == QtGui.QSystemTrayIcon.Trigger:
+            if self.parent.isVisible():
+                self.parent.hide()
+            else:
+                self.parent.show()
 
-    def createTrayIcon(self):
+    def createTrayMenu(self):
+        # Load context menu
         self.trayIconMenu = QtGui.QMenu()
         self.trayIconMenu.addAction(self.minimizeAction)
         self.trayIconMenu.addAction(self.maximizeAction)
