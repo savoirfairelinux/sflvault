@@ -39,6 +39,8 @@ class PreferencesWidget(QtGui.QDialog):
         self.minSearch = QtGui.QSpinBox()
         self.minSearch.setMinimum(0)
         self.minSearch.setMaximum(10)
+        self.languageLabel = QtGui.QLabel(self.tr("Language :"))
+        self.language = QtGui.QComboBox()
 
         # Vault Group Box
         vaultbox = QtGui.QGroupBox(self.tr("SFLvault preferences"))
@@ -64,6 +66,8 @@ class PreferencesWidget(QtGui.QDialog):
         gridLayout.addWidget(self.filter,4,1)
         gridLayout.addWidget(self.minSearchLabel,5,0)
         gridLayout.addWidget(self.minSearch,5,1)
+        gridLayout.addWidget(self.languageLabel,6,0)
+        gridLayout.addWidget(self.language,6,1)
         guibox.setLayout(gridLayout)
 
         # Positionning items
@@ -103,6 +107,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.effects.setCheckState(self.settings.value("SFLvault-qt4/effects").toInt()[0])
         self.filter.setCheckState(self.settings.value("SFLvault-qt4/filter").toInt()[0])
         self.minSearch.setValue(self.settings.value("SFLvault-qt4/minsearch").toInt()[0])
+        self.fillLanguage(self.settings.value("SFLvault-qt4/language").toString())
 
     def saveConfig(self):
         """
@@ -116,9 +121,23 @@ class PreferencesWidget(QtGui.QDialog):
         self.settings.setValue("SFLvault-qt4/effects", QtCore.QVariant(self.effects.checkState()))
         self.settings.setValue("SFLvault-qt4/filter", QtCore.QVariant(self.filter.checkState()))
         self.settings.setValue("SFLvault-qt4/minsearch", QtCore.QVariant(self.minSearch.value()))
+        self.settings.setValue("SFLvault-qt4/language", QtCore.QVariant(self.language.currentText()))
         self.parent.loadUnloadSystrayConfig()
         self.parent.disEnableEffectsConfig()
         self.parent.showHideFilterBarConfig()
         # Close dialog
         self.accept()
+
+
+    def fillLanguage(self, value):
+        self.language.clear()
+        for file in os.listdir("i18n"):
+            filename, ext = os.path.splitext(file)
+            if ext == ".qm":
+                appname, lang = filename.split("_",1)
+                self.language.addItem(lang)
+                if lang == value:
+                    self.language.setCurrentIndex(self.language.count()-1)
+            
+
 

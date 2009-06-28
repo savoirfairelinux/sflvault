@@ -11,12 +11,8 @@ from lib.auth import *
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
   
-    translator = QtCore.QTranslator()
-    translator.load("en", "./languages")
-    app.installTranslator(translator)
-
     app.setWindowIcon(Qicons("sflvault_icon"))
  
-    mainwindow = mainWindow.MainWindow()
+    mainwindow = mainWindow.MainWindow(app)
     mainwindow.exec_()
     sys.exit(app.exec_())

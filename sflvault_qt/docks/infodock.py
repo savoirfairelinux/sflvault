@@ -15,11 +15,12 @@ from lib.auth import *
 
 class InfoDock(QtGui.QDockWidget):
     def __init__(self, parent=None ):
-        QtGui.QDockWidget.__init__(self, "Informations", parent)
+        QtGui.QDockWidget.__init__(self, parent)
         self.parent = parent
         self.info = Info()
         self.setWidget(self.info)
-        global token
+        self.setWindowTitle(self.tr("Informations"))
+
         ## Check visibility
         QtCore.QObject.connect(self, QtCore.SIGNAL("visibilityChanged (bool)"), self.parent.menubar.checkDockBoxes)
 

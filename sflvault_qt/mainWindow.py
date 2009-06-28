@@ -24,14 +24,18 @@ from lib.auth import *
 
 
 class MainWindow(QtGui.QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, app=None, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
         self.parent = parent
+        self.translator = QtCore.QTranslator() 
+        self.app = app
         self.listWidget = {}
 
         # Load settings
         self.settings = Config(parent=self)
 
+        # Load language
+        self.setLanguage()
         # Load GUI item
         self.treewidget = TreeVault(parent=self)
         self.tree = self.treewidget.tree
@@ -301,6 +305,19 @@ class MainWindow(QtGui.QMainWindow):
         elif self.settings.value("SFLvault-qt4/effects").toInt()[0] == QtCore.Qt.Unchecked:
             self.treewidget.filter.hide()
  
+    def setLanguage(self):
+        """
+            Load language
+        """
+        if self.settings.value("SFLvault-qt4/language").toString():
+            lang = self.settings.value("SFLvault-qt4/language").toString()
+            bool = self.translator.load("sflvault-qt4_" + lang, "./i18n", "_", ".qm")
+            # If not language loaded, print message
+            if not bool:
+                print self.tr("Warning : unable to load i18n/sflvault-qt4_" + lang)
+
+            self.app.installTranslator(self.translator)
+
     def setShortcut(self):
         """
             Set shortcuts

@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS><TS version="1.1">
+<!DOCTYPE TS>
+<TS version="2.0" language="en_UM">
 <context>
     <name>Alias</name>
     <message>
         <location filename="sflvault_qt/docks/aliasdock.py" line="69"/>
         <source>Alias</source>
-        <translation type="unfinished"></translation>
+        <translation>Alias</translation>
     </message>
 </context>
 <context>
@@ -13,7 +14,7 @@
     <message>
         <location filename="sflvault_qt/docks/aliasdock.py" line="105"/>
         <source>Edit alias</source>
-        <translation type="unfinished"></translation>
+        <translation>Edit alias</translation>
     </message>
     <message>
         <location filename="sflvault_qt/docks/aliasdock.py" line="106"/>

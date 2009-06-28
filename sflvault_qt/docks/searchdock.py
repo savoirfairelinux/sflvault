@@ -14,10 +14,11 @@ from lib.auth import *
 
 class SearchDock(QtGui.QDockWidget):
     def __init__(self, parent=None, ):
-        QtGui.QDockWidget.__init__(self, "Search items", parent)
+        QtGui.QDockWidget.__init__(self, parent)
         self.parent = parent
         self.search = Search()
         self.setWidget(self.search)
+        self.setWindowTitle(self.tr("Search items"))
         ## Check visibility
         QtCore.QObject.connect(self, QtCore.SIGNAL("visibilityChanged (bool)"), self.parent.menubar.checkDockBoxes)
 

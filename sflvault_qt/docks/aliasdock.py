@@ -14,11 +14,12 @@ from lib.auth import *
 
 class AliasDock(QtGui.QDockWidget):
     def __init__(self, parent=None):
-        QtGui.QDockWidget.__init__(self, "Aliases", parent)
+        QtGui.QDockWidget.__init__(self, parent)
         self.parent = parent
         self.alias = Alias(self)
         self.setWidget(self.alias)
         self.setShortcut()
+        self.setWindowTitle(self.tr("Aliases"))
 
         ## Check visibility
         QtCore.QObject.connect(self, QtCore.SIGNAL("visibilityChanged (bool)"), self.parent.menubar.checkDockBoxes)
