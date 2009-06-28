@@ -378,6 +378,7 @@ class TreeVault(QtGui.QWidget):
             Define tree shortcuts
         """
         QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Space),
-                self.tree, self.tree.expandCollapse )
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Return),
-                self.tree, self.tree.enterShortcut )
+                self.tree, self.tree.expandCollapse, None, QtCore.Qt.WidgetShortcut)
+        # FIXME Disable cause QtCore.Qt.WidgetShortcut context doesn t work
+#        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Return),
+#                self.tree, self.tree.enterShortcut, None, QtCore.Qt.WidgetShortcut)
