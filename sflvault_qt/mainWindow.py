@@ -338,7 +338,13 @@ class MainWindow(QtGui.QMainWindow):
         """
         self.tree.setFocus()
         if not self.tree.selectedIndexes():
-            self.tree.setSelection(QtCore.QRect(0,0,1,1), QtGui.QItemSelectionModel.Select)
+            # Get column widths to selected it
+            name_column_width = self.tree.columnWidth(0)
+            id_column_width = self.tree.columnWidth(1)
+            # Select first row and first column
+            self.tree.setSelection(QtCore.QRect(0, 0, name_column_width, 16), QtGui.QItemSelectionModel.Select)
+            # Select first row and second column
+            self.tree.setSelection(QtCore.QRect(name_column_width, 0, id_column_width, 16), QtGui.QItemSelectionModel.Select)
 
     def quickConnection(self):
         """
