@@ -41,7 +41,7 @@ class MenuBar(QtGui.QMenuBar):
         self.connection.setStatusTip(self.tr("Connectto the vault"))
         ## Quick Connection
         self.quickconnect = self.file.addAction(self.tr("&Quick Connect..."))
-        self.quickconnect.setShortcut(self.tr("Meta+C"))
+        self.quickconnect.setShortcut(self.tr("Ctrl+O"))
         self.quickconnect.setStatusTip(self.tr("Connect to a service..."))
         self.quickconnect.setEnabled(0)
         ## Quit
@@ -51,37 +51,37 @@ class MenuBar(QtGui.QMenuBar):
         # Edit
         ## Protocols config
         self.protocols = self.edit.addAction(self.tr("&Protocols..."))
-        self.protocols.setShortcut(self.tr("Ctrl+Shift+P"))
         self.protocols.setStatusTip(self.tr("Manage protocols"))
         self.protocols.setEnabled(0)
 
         ## Group management
         self.groups = self.edit.addAction(self.tr("&Groups..."))
-        self.groups.setShortcut(self.tr("Ctrl+Shift+G"))
+        self.groups.setShortcut(self.tr("Ctrl+G"))
         self.groups.setStatusTip(self.tr("Manage groups"))
         self.groups.setEnabled(0)
 
         ## Users management
         self.users = self.edit.addAction(self.tr("&Users..."))
-        self.users.setShortcut(self.tr("ctrl+shift+U"))
+        self.users.setShortcut(self.tr("Ctrl+U"))
         self.users.setStatusTip(self.tr("Manage users"))
         self.users.setEnabled(0)
 
         ## Settings
         self.preferences = self.edit.addAction(self.tr("&Settings..."))
-        self.preferences.setShortcut(self.tr("Ctrl+Shift+S"))
         self.preferences.setStatusTip(self.tr("Sflvault settings"))
 
         # Display
         self.listDockBoxes = {}
         ## Search
         self.search = self.display.addAction(self.tr("&Search"))
+        self.info.setShortcut(self.tr("Ctrl+Alt+S"))
         self.search.setStatusTip(self.tr("Show/hide search dock"))
         self.search.setCheckable(True)
         self.listDockBoxes['search'] = self.search
 
         ## Alias
         self.alias = self.display.addAction(self.tr("&Alias"))
+        self.info.setShortcut(self.tr("Ctrl+Alt+A"))
         self.alias.setStatusTip(self.tr("Show/hide alias dock"))
         self.alias.setCheckable(True)
         self.listDockBoxes['alias'] = self.alias
