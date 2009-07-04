@@ -302,14 +302,13 @@ class TreeView(QtGui.QTreeView):
             Create actions for contextMenu
         """
         self.editAct = QtGui.QAction(self.tr("&Edit..."), self)
-        #self.editAct.setShortcut(self.tr("Ctrl+X"))
+        self.editAct.setShortcut(self.tr("Ctrl+E"))
         self.editAct.setStatusTip(self.tr("Edit item"))
 #        self.connect(self.editAct, QtCore.SIGNAL("triggered()"), self.mkdir)
 
         self.bookmarkAct = QtGui.QAction(self.tr("&Create alias..."), self)
-        #self.bookmarkAct.setShortcut(self.tr("Ctrl+V"))
+        self.bookmarkAct.setShortcut(self.tr("Ctrl+D"))
         self.bookmarkAct.setStatusTip(self.tr("Create an alias from this item"))
-#        self.connect(self.reomveFileAct, QtCore.SIGNAL("triggered()"), self.remove)
 
     def filter(self, pattern):
         """

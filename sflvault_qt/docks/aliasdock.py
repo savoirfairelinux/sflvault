@@ -45,8 +45,8 @@ class AliasDock(QtGui.QDockWidget):
         """
         QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Delete),
                 self.alias.alias_list, self.alias.model.delAlias)
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_F2),
-                self.alias.alias_list, self.alias.model.editAlias)
+#        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_F2),
+#                self.alias.alias_list, self.alias.model.editAlias)
 
 
 class Alias(QtGui.QWidget):

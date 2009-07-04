@@ -74,14 +74,14 @@ class MenuBar(QtGui.QMenuBar):
         self.listDockBoxes = {}
         ## Search
         self.search = self.display.addAction(self.tr("&Search"))
-        self.info.setShortcut(self.tr("Ctrl+Alt+S"))
+        self.search.setShortcut(self.tr("Ctrl+Alt+S"))
         self.search.setStatusTip(self.tr("Show/hide search dock"))
         self.search.setCheckable(True)
         self.listDockBoxes['search'] = self.search
 
         ## Alias
         self.alias = self.display.addAction(self.tr("&Alias"))
-        self.info.setShortcut(self.tr("Ctrl+Alt+A"))
+        self.alias.setShortcut(self.tr("Ctrl+Alt+A"))
         self.alias.setStatusTip(self.tr("Show/hide alias dock"))
         self.alias.setCheckable(True)
         self.listDockBoxes['alias'] = self.alias
