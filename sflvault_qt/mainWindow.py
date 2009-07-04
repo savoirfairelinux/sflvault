@@ -118,6 +118,8 @@ class MainWindow(QtGui.QMainWindow):
         """
            Show informations
         """
+        if isinstance(index, QtGui.QItemSelection):
+            index = index.indexes()[0]
         # Get Id colunm
         indexId = self.tree.selectedIndexes()[1]
 
@@ -252,6 +254,7 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
         ## Tree item informations
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.showInformations)
+        QtCore.QObject.connect(self.tree.selectionModel(), QtCore.SIGNAL("selectionChanged (const QItemSelection&,const QItemSelection&)"), self.showInformations)
         ## Tree Filter
         QtCore.QObject.connect(self.treewidget.filter.filter_input, QtCore.SIGNAL("returnPressed ()"), self.focusOnTree)
 
