@@ -282,6 +282,10 @@ class TreeView(QtGui.QTreeView):
         self.sourcemodel = TreeModel(research, groups_ids, self)
         # Load proxy
         self.proxyModel.setSourceModel(self.sourcemodel)
+        if research:
+            self.expandAll()
+        else:
+            self.collapseAll()
         # Sort by name
         self.sortByColumn(0)
 
