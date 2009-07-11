@@ -214,12 +214,14 @@ class MainWindow(QtGui.QMainWindow):
         # Show Tooltip if checked in config
         tooltip, bool = self.settings.value("protocols/" + protocol + "/tooltip").toInt()
         if bool and tooltip == QtCore.Qt.Checked:
-            if not password:
+            try:
+                password
+            except NameError:
                 password = getPassword(idserv)
             self.osd = Osd(password=password, username=options["user"], address=options["address"], parent=self)
             self.osd.show()
         # Prepare to launch command
-        if self.settings.value("protocols/" + protocol + "/command"):
+        if self.settings.value("protocols/" + protocol + "/command").toString():
             # Create Command
             command = unicode(self.settings.value("protocols/" + protocol + "/command").toString())
             print command

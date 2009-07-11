@@ -67,12 +67,15 @@ class Osd(QtGui.QWidget):
         # Signals
         ## Close widhet
         QtCore.QObject.connect(self.closeButton, QtCore.SIGNAL("clicked()"), self.close)
-        ## Copy user to clipboard
-        QtCore.QObject.connect(self.userCopy, QtCore.SIGNAL("clicked()"), self.copyUser)
-        ## Copy address to clipboard
-        QtCore.QObject.connect(self.addressCopy, QtCore.SIGNAL("clicked()"), self.copyAddress)
-        ## Copy password to clipboard
-        QtCore.QObject.connect(self.passwordCopy, QtCore.SIGNAL("clicked()"), self.copyPassword)
+        if username:
+            ## Copy user to clipboard
+            QtCore.QObject.connect(self.userCopy, QtCore.SIGNAL("clicked()"), self.copyUser)
+        if address:
+            ## Copy address to clipboard
+            QtCore.QObject.connect(self.addressCopy, QtCore.SIGNAL("clicked()"), self.copyAddress)
+        if password:
+            ## Copy password to clipboard
+            QtCore.QObject.connect(self.passwordCopy, QtCore.SIGNAL("clicked()"), self.copyPassword)
 
 
     def mousePressEvent(self, event):
