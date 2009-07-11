@@ -10,6 +10,8 @@ from sflvault.client import SFLvaultClient
 import shutil
 import os
 from images.qicons import *
+from lib.auth import *
+
 
 class Systray(QtGui.QSystemTrayIcon):
     def __init__(self, parent=None, ):
@@ -55,7 +57,9 @@ class Systray(QtGui.QSystemTrayIcon):
                 self.parent.show()
 
     def createTrayMenu(self):
-        # Load context menu
+        """
+            Load context menu
+        """
         self.trayIconMenu = QtGui.QMenu()
         self.trayIconMenu.addAction(self.minimizeAction)
         self.trayIconMenu.addAction(self.maximizeAction)
@@ -63,5 +67,3 @@ class Systray(QtGui.QSystemTrayIcon):
         self.trayIconMenu.addSeparator()
         self.trayIconMenu.addAction(self.quitAction)
         self.setContextMenu(self.trayIconMenu)
-
-

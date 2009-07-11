@@ -16,6 +16,7 @@ from config.preferences import PreferencesWidget
 from config.config import Config
 from bar.menubar import MenuBar
 from bar.systray import Systray
+from bar.osd import Osd
 from sflvault.client import SFLvaultClient
 import shutil
 import os
@@ -201,16 +202,24 @@ class MainWindow(QtGui.QMainWindow):
         # Get service
         url = service["service"]["url"]
         protocol, address = url.split("://")
-        # Copy password to clipboard
+        # Copy password to clipboard if checked in config
         clip, bool = self.settings.value("protocols/" + protocol + "/clip").toInt()
         if bool and clip == QtCore.Qt.Checked:
-            self.passtoclip(idserv)
+            password = getPassword(idserv)
+            self.copyToClip(password)
+        # Prepare dictionnary
+        options["user"], options["address"] = address.split("@", 1)
+        options["vaultid"] = service["service"]["id"]
+        options["vaultconnect"] = "sflvault connect %s" % options["vaultid"]
+        # Show Tooltip if checked in config
+        tooltip, bool = self.settings.value("protocols/" + protocol + "/tooltip").toInt()
+        if bool and tooltip == QtCore.Qt.Checked:
+            if not password:
+                password = getPassword(idserv)
+            self.osd = Osd(password=password, username=options["user"], address=options["address"], parent=self)
+            self.osd.show()
         # Prepare to launch command
         if self.settings.value("protocols/" + protocol + "/command"):
-            options["user"], options["address"] = address.split("@", 1)
-            options["vaultid"] = service["service"]["id"]
-            options["vaultconnect"] = "sflvault connect %s" % options["vaultid"]
-
             # Create Command
             command = unicode(self.settings.value("protocols/" + protocol + "/command").toString())
             print command
@@ -223,11 +232,11 @@ class MainWindow(QtGui.QMainWindow):
             self.procxterm = QtCore.QProcess()
             self.procxterm.start(command)
 
-    def passtoclip(self, serviceid):
+    def copyToClip(self, password):
         """
             Paste password to the clipboard
         """
-        self.clipboard.setText(getPassword(serviceid))
+        self.clipboard.setText(password)
 
     def vaultConnection(self):
         """
