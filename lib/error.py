@@ -30,30 +30,35 @@ class ErrorMessage(QtGui.QMessageBox):
     def messageError(self):
         self.setWindowTitle(self.tr("Message Error"))
         self.setText(self.exception[1].decode("utf8"))
+        print "message error"
         self.setIcon(QtGui.QMessageBox.Critical)
 
     def connectionError(self):
         self.setWindowTitle(self.tr("Connection Error"))
         self.setText(self.exception[1].decode("utf8"))
+        print "connection error"
         self.setIcon(QtGui.QMessageBox.Critical)
 
     def protocolError(self):
         self.setWindowTitle(self.tr("Protocol Error"))
-        #self.setText(self.exception.message))
         self.setText("Protocol")
+        print "protocol error"
         self.setIcon(QtGui.QMessageBox.Critical)
 
     def noPassword(self):
         self.setWindowTitle(self.tr("Environment Problem"))
         print self.exception
+        print "no password"
         self.setText(self.exception)
         self.setIcon(QtGui.QMessageBox.Critical)
 
     def message(self):
         if not self.exception:
             self.setWindowTitle(self.tr("Connection"))
+            print "message connection"
             self.setText(self.exception)
         else:
             self.setWindowTitle(self.tr("Error"))
             self.setText(self.tr("Unknown error"))
+            print "message unknown"
         self.setIcon(QtGui.QMessageBox.Critical)
