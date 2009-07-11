@@ -119,6 +119,9 @@ class MainWindow(QtGui.QMainWindow):
            Show informations
         """
         if isinstance(index, QtGui.QItemSelection):
+            # if no items are selected do nothing...
+            if not index.indexes():
+                return None
             index = index.indexes()[0]
         # Get Id colunm
         indexId = self.tree.selectedIndexes()[1]
