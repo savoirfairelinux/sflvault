@@ -25,25 +25,26 @@ class Osd(QtGui.QWidget):
 
         # Define labels, buttons and add to grid if necessary
         if username:
-            self.userLabel = QtGui.QLabel(self.tr("User name : "))
-            self.user = QtGui.QLabel(username)
-            self.user.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
-            self.userCopy = QtGui.QPushButton(self.tr("Copy"))
-            mainLayout.addWidget(self.userLabel,0,0)
-            mainLayout.addWidget(self.user,0,1)
-            mainLayout.addWidget(self.userCopy,0,2)
+            self.usernameLabel = QtGui.QLabel(self.tr("User name : "))
+            self.username = QtGui.QLineEdit(username)
+            self.username.setReadOnly(True)
+            self.usernameCopy = QtGui.QPushButton(self.tr("Copy"))
+            mainLayout.addWidget(self.usernameLabel,0,0)
+            mainLayout.addWidget(self.username,0,1)
+            mainLayout.addWidget(self.usernameCopy,0,2)
         if address:
             self.addressLabel = QtGui.QLabel(self.tr("Address : "))
-            self.address = QtGui.QLabel(address)
-            self.address.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+            self.address = QtGui.QLineEdit(address)
+            self.address.setReadOnly(True)
             self.addressCopy = QtGui.QPushButton(self.tr("Copy"))
             mainLayout.addWidget(self.addressLabel,1,0)
             mainLayout.addWidget(self.address,1,1)
             mainLayout.addWidget(self.addressCopy,1,2)
         if password:
             self.passwordLabel = QtGui.QLabel(self.tr("Password : "))
-            self.password = QtGui.QLabel(password)
-            self.password.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+            self.password = QtGui.QLineEdit(password)
+            self.password.setReadOnly(True)
+#            self.password.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
             self.passwordCopy = QtGui.QPushButton(self.tr("Copy"))
             mainLayout.addWidget(self.passwordLabel,2,0)
             mainLayout.addWidget(self.password,2,1)
@@ -60,16 +61,32 @@ class Osd(QtGui.QWidget):
 
         # Load old position
         if self.parent.settings.value("osd/posx").isValid():
+            # get current width
+            width = self.geometry().getCoords()[3]
+            # get saved position
             posx, bool = self.parent.settings.value("osd/posx").toInt()
             posy, bool = self.parent.settings.value("osd/posy").toInt()
-            self.setGeometry(posx,posy,1,1)
+            self.setGeometry(posx, posy, width, 1) 
+
+        # FIXME
+        # Ajust Size
+        if password:
+            self.password.adjustSize()
+        if username:
+            self.username.adjustSize()
+        if address:
+            self.address.adjustSize()
+        # Set maximum size
+        self.setMaximumWidth(700)
+        self.setMinimumWidth(300)
+        ## END MEFIX
 
         # Signals
         ## Close widhet
         QtCore.QObject.connect(self.closeButton, QtCore.SIGNAL("clicked()"), self.close)
         if username:
             ## Copy user to clipboard
-            QtCore.QObject.connect(self.userCopy, QtCore.SIGNAL("clicked()"), self.copyUser)
+            QtCore.QObject.connect(self.usernameCopy, QtCore.SIGNAL("clicked()"), self.copyUsername)
         if address:
             ## Copy address to clipboard
             QtCore.QObject.connect(self.addressCopy, QtCore.SIGNAL("clicked()"), self.copyAddress)
@@ -98,7 +115,7 @@ class Osd(QtGui.QWidget):
             self.parent.settings.setValue("osd/posx", QtCore.QVariant(posx))
             self.parent.settings.setValue("osd/posy", QtCore.QVariant(posy))
 
-    def copyUser(self):
+    def copyUsername(self):
         """
             Copy user to clipboard
         """
