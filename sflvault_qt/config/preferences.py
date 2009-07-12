@@ -39,6 +39,10 @@ class PreferencesWidget(QtGui.QDialog):
         self.minSearch = QtGui.QSpinBox()
         self.minSearch.setMinimum(0)
         self.minSearch.setMaximum(10)
+        self.osdLabel = QtGui.QLabel(self.tr("Osd show time :"))
+        self.osd = QtGui.QSpinBox()
+        self.osd.setMinimum(0)
+        self.osd.setMaximum(500)
         self.languageLabel = QtGui.QLabel(self.tr("Language :"))
         self.language = QtGui.QComboBox()
 
@@ -66,8 +70,10 @@ class PreferencesWidget(QtGui.QDialog):
         gridLayout.addWidget(self.filter,4,1)
         gridLayout.addWidget(self.minSearchLabel,5,0)
         gridLayout.addWidget(self.minSearch,5,1)
-        gridLayout.addWidget(self.languageLabel,6,0)
-        gridLayout.addWidget(self.language,6,1)
+        gridLayout.addWidget(self.osdLabel,6,0)
+        gridLayout.addWidget(self.osd,6,1)
+        gridLayout.addWidget(self.languageLabel,7,0)
+        gridLayout.addWidget(self.language,7,1)
         guibox.setLayout(gridLayout)
 
         # Positionning items
@@ -107,6 +113,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.effects.setCheckState(self.settings.value("SFLvault-qt4/effects").toInt()[0])
         self.filter.setCheckState(self.settings.value("SFLvault-qt4/filter").toInt()[0])
         self.minSearch.setValue(self.settings.value("SFLvault-qt4/minsearch").toInt()[0])
+        self.osd.setValue(self.settings.value("osd/timer").toInt()[0])
         self.fillLanguage(self.settings.value("SFLvault-qt4/language").toString())
 
     def saveConfig(self):
@@ -121,6 +128,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.settings.setValue("SFLvault-qt4/effects", QtCore.QVariant(self.effects.checkState()))
         self.settings.setValue("SFLvault-qt4/filter", QtCore.QVariant(self.filter.checkState()))
         self.settings.setValue("SFLvault-qt4/minsearch", QtCore.QVariant(self.minSearch.value()))
+        self.settings.setValue("osd/timer", QtCore.QVariant(self.osd.value()))
         self.settings.setValue("SFLvault-qt4/language", QtCore.QVariant(self.language.currentText()))
         self.parent.loadUnloadSystrayConfig()
         self.parent.disEnableEffectsConfig()

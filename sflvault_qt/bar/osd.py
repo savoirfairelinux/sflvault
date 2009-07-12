@@ -94,6 +94,14 @@ class Osd(QtGui.QWidget):
             ## Copy password to clipboard
             QtCore.QObject.connect(self.passwordCopy, QtCore.SIGNAL("clicked()"), self.copyPassword)
 
+        # Check if timer is set
+        timerTimeout, bool = self.parent.settings.value("osd/timer").toInt()
+        if bool and timerTimeout > 0:
+            # If yes launch timer 
+            self.timer = QtCore.QTimer(self)
+            self.timer.start(timerTimeout * 1000)
+            # Connect timeout timer with widget close function
+            QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.close)
 
     def mousePressEvent(self, event):
         """
