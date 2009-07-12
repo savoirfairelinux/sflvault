@@ -81,7 +81,9 @@ class ServiceWidget(QtGui.QDialog):
         services = listService()
         self.parentserv.addItem(self.tr("No parent"), QtCore.QVariant(None))
         for service in services["list"]:
-            self.parentserv.addItem(service['url'] +" - s#" + unicode(service['id']), QtCore.QVariant(service['id']))
+            # Doesn t add this item in possible parent list (if it s edit mode
+            if service['id'] != self.servid:
+                self.parentserv.addItem(service['url'] +" - s#" + unicode(service['id']), QtCore.QVariant(service['id']))
         if self.servid:
             # Fill fields for edit mode
             service = getService(self.servid)
