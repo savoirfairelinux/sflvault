@@ -195,7 +195,14 @@ class MainWindow(QtGui.QMainWindow):
         """
         # Get Options
         options = {}
-
+        # Check if we can access to this service
+        password = getPassword(idserv)
+        # getPassword return None
+        # means you can't access to this service
+        if password == None:
+            # Do nothing
+            return False
+        # Check if the service exist
         service = getService(idserv)
         if not service:
             return False
@@ -205,19 +212,18 @@ class MainWindow(QtGui.QMainWindow):
         # Copy password to clipboard if checked in config
         clip, bool = self.settings.value("protocols/" + protocol + "/clip").toInt()
         if bool and clip == QtCore.Qt.Checked:
-            password = getPassword(idserv)
             self.copyToClip(password)
         # Prepare dictionnary
-        options["user"], options["address"] = address.split("@", 1)
+        if len(address.split("@")) > 1:
+            options["user"], options["address"] = address.split("@", 1)
+        else:
+            options["address"] = address
+            options["user"] = None
         options["vaultid"] = service["service"]["id"]
         options["vaultconnect"] = "sflvault connect %s" % options["vaultid"]
         # Show Tooltip if checked in config
         tooltip, bool = self.settings.value("protocols/" + protocol + "/tooltip").toInt()
         if bool and tooltip == QtCore.Qt.Checked:
-            try:
-                password
-            except NameError:
-                password = getPassword(idserv)
             self.osd = Osd(password=password, username=options["user"], address=options["address"], parent=self)
             self.osd.show()
         # Prepare to launch command
