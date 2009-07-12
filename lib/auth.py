@@ -106,6 +106,15 @@ def getPassword(id):
         return None
     return password
 
+def editPassword(id, password):
+    global token
+    try:
+        password = token.vault.service.passwd(token.authtok, id, password)
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return password
+
 def getUserList():
     global token
     users = None
@@ -342,6 +351,8 @@ def listService():
 
 def editService(servid, informations):
     global token
+    if not informations["parent_service_id"]:
+        informations["parent_service_id"] = 0
     try:
         status = token.vault.service.put(token.authtok, servid, informations)
         if status["error"]:

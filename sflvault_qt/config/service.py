@@ -126,6 +126,7 @@ class ServiceWidget(QtGui.QDialog):
         elif self.mode == "edit":
             # Edit a service
             editService(self.servid, service_info)
+            editPassword(self.servid, service_info["secret"])
         # reload tree
         self.parent.search(None)
         self.done(1)

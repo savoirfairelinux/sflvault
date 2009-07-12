@@ -26,6 +26,7 @@ class ErrorMessage(QtGui.QMessageBox):
         elif exception.message == "Unable to decrypt groupkey (Error decrypting: inconsistent message)":
             self.AccessError()
         else:
+            print exception
             self.message()
         print "qhow"
         self.exec_()
