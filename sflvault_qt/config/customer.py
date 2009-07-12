@@ -16,15 +16,15 @@ class CustomerWidget(QtGui.QDialog):
     def __init__(self, custid=None, parent=None):
         QtGui.QDialog.__init__(self, parent)
         self.parent = parent
-        self.settings = self.parent.settings
-        self.protocols = {}
+        self.custid = custid
+        self.mode = "add"
 
         # Load gui items
         groupbox = QtGui.QGroupBox()
         self.nameLabel = QtGui.QLabel(self.tr("Customer Name"))
         self.name = QtGui.QLineEdit()
 
-        self.save = QtGui.QPushButton(self.tr("Add customer"))
+        self.save = QtGui.QPushButton(self.tr("Save customer"))
         self.cancel = QtGui.QPushButton(self.tr("Cancel"))
 
         # Positionning items
@@ -47,9 +47,23 @@ class CustomerWidget(QtGui.QDialog):
         self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
 
     def exec_(self):
+        # Set field if is an edit
+        if self.custid:
+            customer = getCustomer(self.custid)
+            self.name.setText(customer["customer"]["name"])
+            # Set mode to edit
+            self.mode = "edit"
+            self.setWindowTitle(self.tr("Edit customer"))
         self.show()
 
     def accept(self):
-        addCustomer(unicode(self.name.text()))
+        customer_info = {"name" : None}
+        customer_info["name"] = unicode(self.name.text())
+        if self.mode == "add":
+            # Add new customer
+            addCustomer(customer_info["name"])
+        elif self.mode == "edit":
+            # Edit customer
+            editCustomer(self.custid, customer_info)
         self.parent.search(None)
         self.done(1)

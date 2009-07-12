@@ -203,6 +203,28 @@ def listCustomers():
         return None
     return status
 
+def editCustomer(custid, informations):
+    global token
+    try:
+        status = token.vault.customer.put(token.authtok, custid, informations)
+        if status["error"]:
+            e = Exception('editcustomer')
+            e.message = error_message.tr("Can not edit customer : %s" % informations["name"])
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = editCustomer(custid, informations)
+        if status["error"]:
+            e = Exception('editcustomer')
+            e.message = error_message.tr("Can not edit customer : %s" % informations["name"])
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
 def addMachine(name, custid, fqdn=None, address=None, location=None, notes=None):
     global token
     try:
@@ -247,6 +269,28 @@ def listMachine():
         return None
     return status
 
+def editMachine(machid, informations):
+    global token
+    try:
+        status = token.vault.machine.put(token.authtok, machid, informations)
+        if status["error"]:
+            e = Exception('editmachine')
+            e.message = error_message.tr("Can not edit machine : %s" % informations["name"])
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = editMachine(machid, informations)
+        if status["error"]:
+            e = Exception('editmachine')
+            e.message = error_message.tr("Can not edit machine : %s" % informations["name"])
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
 def addService(machid, parentid, url, groupids, password, notes):
     global token
     try:
@@ -274,7 +318,7 @@ def addService(machid, parentid, url, groupids, password, notes):
 def listService():
     global token
     try:
-        status = token.vault.service.list(token.authtok)
+        status = token.vault.service.list(token.authtok, None)
         if status["error"]:
             e = Exception('listservice')
             # FIXME
@@ -295,3 +339,26 @@ def listService():
         ErrorMessage(e)
         return None
     return status
+
+def editService(servid, informations):
+    global token
+    try:
+        status = token.vault.service.put(token.authtok, servid, informations)
+        if status["error"]:
+            e = Exception('editservice')
+            e.message = error_message.tr("Can not edit service : %s" % informations["url"])
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = editMachine(servid, informations)
+        if status["error"]:
+            e = Exception('editservice')
+            e.message = error_message.tr("Can not edit service : %s" % informations["url"])
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+

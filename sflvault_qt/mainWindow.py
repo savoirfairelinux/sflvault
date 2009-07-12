@@ -278,6 +278,7 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.searchdock.search.groups, QtCore.SIGNAL("currentIndexChanged (const QString&)"), self.search)
         ## Tree bookmark
         QtCore.QObject.connect(self.tree.bookmarkAct, QtCore.SIGNAL("triggered()"), self.aliasdock.alias.model.addAlias)
+        QtCore.QObject.connect(self.tree.editAct, QtCore.SIGNAL("triggered()"), self.editItem)
         ## Tree connection
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
         ## Tree item informations
@@ -426,14 +427,30 @@ class MainWindow(QtGui.QMainWindow):
         else:
             ErrorMessage("No service found")
 
-    def addCustomer(self):
-        self.addcustomer = CustomerWidget(parent=self)
+    def addCustomer(self, custid=None):
+        self.addcustomer = CustomerWidget(custid, parent=self)
         self.addcustomer.exec_()
 
-    def addMachine(self):
-        self.addmachine = MachineWidget(parent=self)
+    def addMachine(self, machid=None):
+        self.addmachine = MachineWidget(machid, parent=self)
         self.addmachine.exec_()
 
-    def addService(self):
-        self.addservice = ServiceWidget(parent=self)
+    def addService(self, servid=None):
+        self.addservice = ServiceWidget(servid, parent=self)
         self.addservice.exec_()
+
+    def editItem(self):
+        # Get Id colunm
+        indexId = self.tree.selectedIndexes()[1]
+        index = self.tree.selectedIndexes()[0]
+        itemid = indexId.data(QtCore.Qt.DisplayRole).toString()
+        itemid = int(itemid.split("#")[1])
+        # Check if seleted item is a service
+        if index.parent().parent().isValid():
+            self.addService(itemid)
+        elif index.parent().isValid():
+            self.addMachine(itemid)
+        elif index.isValid():
+            self.addCustomer(itemid)
+        else:
+            return False

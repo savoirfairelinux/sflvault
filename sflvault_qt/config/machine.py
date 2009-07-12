@@ -13,11 +13,12 @@ import os
 from lib.auth import *
 
 class MachineWidget(QtGui.QDialog):
-    def __init__(self, macjid=None, parent=None):
+    def __init__(self, machid=None, parent=None):
         QtGui.QDialog.__init__(self, parent)
         self.parent = parent
         self.settings = self.parent.settings
-        self.protocols = {}
+        self.machid = machid
+        self.mode = "add"
 
         # Load gui items
         groupbox = QtGui.QGroupBox()
@@ -34,7 +35,7 @@ class MachineWidget(QtGui.QDialog):
         self.notesLabel = QtGui.QLabel(self.tr("Notes"))
         self.notes = QtGui.QLineEdit()
 
-        self.save = QtGui.QPushButton(self.tr("Add machine"))
+        self.save = QtGui.QPushButton(self.tr("Save machine"))
         self.cancel = QtGui.QPushButton(self.tr("Cancel"))
 
         # Positionning items
@@ -71,15 +72,47 @@ class MachineWidget(QtGui.QDialog):
         customers = listCustomers()
         for customer in customers["list"]:
             self.customer.addItem(customer['name'] +" - c#" + unicode(customer['id']) , QtCore.QVariant(customer['id']))
+        if self.machid:
+            # Fill fields for edit mode
+            machine = getMachine(self.machid)
+            informations = machine["machine"]
+            self.name.setText(informations["name"])
+            self.customer.setCurrentIndex(self.customer.findData(
+                                QtCore.QVariant(informations["customer_id"])))
+            self.fqdn.setText(informations["fqdn"])
+            self.address.setText(informations["ip"])
+            self.location.setText(informations["location"])
+            self.notes.setText(informations["notes"])
+            # Set mode and texts
+            self.mode = "edit"
+            self.setWindowTitle(self.tr("Edit machine"))
         self.show()
 
     def accept(self):
-        name = unicode(self.name.text())
-        custid, bool = self.customer.itemData(self.customer.currentIndex()).toInt()
-        fqdn = unicode(self.fqdn.text())
-        address = unicode(self.address.text())
-        location = unicode(self.location.text())
-        notes = unicode(self.notes.text())
-        addMachine(name, custid, fqdn, address, location, notes)
+        # Buil dict to transmit to the vault
+        machine_info = {"name": None,
+                        "customer_id": None,
+                        "fqdn": None,
+                        "ip": None,
+                        "location": None,
+                        "notes": None,
+                        }
+        # Fill it
+        machine_info["name"] = unicode(self.name.text())
+        machine_info["customer_id"], bool =\
+                self.customer.itemData(self.customer.currentIndex()).toInt()
+        machine_info["fqdn"] = unicode(self.fqdn.text())
+        machine_info["ip"] = unicode(self.address.text())
+        machine_info["location"] = unicode(self.location.text())
+        machine_info["notes"] = unicode(self.notes.text())
+        if self.mode == "add":
+            # Add a new machine
+            addMachine(machine_info["name"], machine_info["customer_id"],
+                    machine_info["fqdn"], machine_info["ip"],
+                    machine_info["location"], machine_info["notes"])
+        elif self.mode == "edit":
+            # Edit a machine
+            editMachine(self.machid, machine_info)
+        # reload tree
         self.parent.search(None)
         self.done(1)
