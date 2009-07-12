@@ -40,11 +40,6 @@ def getService(id):
         getAuth()
         service = getService(id)
     except Exception, e:
-        # FIXME
-        # Error : (4, 'Appel syst\xc3\xa8me interrompu')
-        if e[0] == 4:
-            return None
-        # End FIME
         ErrorMessage(e)
         return None
     if service["error"]:
@@ -302,6 +297,8 @@ def editMachine(machid, informations):
 
 def addService(machid, parentid, url, groupids, password, notes):
     global token
+    if not parentid:
+        parentid = 0
     try:
         if parentid == 0:
             parentif = None

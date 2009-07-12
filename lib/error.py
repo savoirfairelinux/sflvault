@@ -25,6 +25,10 @@ class ErrorMessage(QtGui.QMessageBox):
             self.protocolError()
         elif exception.message == "Unable to decrypt groupkey (Error decrypting: inconsistent message)":
             self.AccessError()
+        elif exception[0] == 4:
+            # Error : (4, 'Appel syst\xc3\xa8me interrompu')
+            print e[1]
+            return None
         else:
             print exception
             self.message()
