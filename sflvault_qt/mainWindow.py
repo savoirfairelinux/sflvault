@@ -14,6 +14,9 @@ from config.protocols import ProtocolsWidget
 from config.groups import GroupsWidget
 from config.preferences import PreferencesWidget
 from config.config import Config
+from config.customer import CustomerWidget
+from config.machine import MachineWidget
+from config.service import ServiceWidget
 from bar.menubar import MenuBar
 from bar.systray import Systray
 from bar.osd import Osd
@@ -96,7 +99,12 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.menubar.info, QtCore.SIGNAL("triggered(bool)"), self.infodock.setShown)
         ## Show alias dock
         QtCore.QObject.connect(self.menubar.alias, QtCore.SIGNAL("triggered(bool)"), self.aliasdock.setShown)
-
+        ## new customer
+        QtCore.QObject.connect(self.menubar.newcust, QtCore.SIGNAL("triggered(bool)"), self.addCustomer)
+        ## new machine
+        QtCore.QObject.connect(self.menubar.newmach, QtCore.SIGNAL("triggered(bool)"), self.addMachine)
+        ## new service
+        QtCore.QObject.connect(self.menubar.newserv, QtCore.SIGNAL("triggered(bool)"), self.addService)
 
     def closeEvent(self, event):
         if self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
@@ -417,4 +425,15 @@ class MainWindow(QtGui.QMainWindow):
             self.connection(id)
         else:
             ErrorMessage("No service found")
-        
+
+    def addCustomer(self):
+        self.addcustomer = CustomerWidget(parent=self)
+        self.addcustomer.exec_()
+
+    def addMachine(self):
+        self.addmachine = MachineWidget(parent=self)
+        self.addmachine.exec_()
+
+    def addService(self):
+        self.addservice = ServiceWidget(parent=self)
+        self.addservice.exec_()

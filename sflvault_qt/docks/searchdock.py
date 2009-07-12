@@ -60,7 +60,7 @@ class Search(QtGui.QWidget):
         id = QtCore.QVariant(None)
         self.groups.addItem(self.tr("All"), id)
         # Get all groups 
-        grouplist = getGroupList()
+        grouplist = listGroup()["list"]
         if grouplist:
             for group in grouplist:
                 id = QtCore.QVariant(group["id"])

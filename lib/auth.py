@@ -121,21 +121,28 @@ def getUserList():
         return None
     return users
 
-def getGroupList():
+def listGroup():
     global token
     groups = None
     try:
-        groups = token.vault.group_list(token.authtok)["list"]
+        status = token.vault.group.list(token.authtok)
+        if status["error"]:
+            e = Exception('listgroup')
+            e.message = error_message.tr("Can not list groups")
+            raise e
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
         # So we have to get a new token
         getAuth()
-        groups = getGroupList()
+        status = listGroup()
+        if status["error"]:
+            e = Exception('listgroup')
+            e.message = error_message.tr("Can not list groups")
+            raise e
     except Exception, e:
         ErrorMessage(e)
         return None
-    return groups
-
+    return status
 
 token_alias = SFLvaultClient()
 
@@ -152,3 +159,139 @@ def delAlias(alias):
 def getAlias(alias):
     id = token_alias.alias_get(alias)
     return id
+
+def addCustomer(name):
+    global token
+    try:
+        status = token.vault.customer.add(token.authtok, name)
+        if status["error"]:
+            e = Exception('addcustomer')
+            e.message = error_message.tr("Can not add customer : %s" % name)
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = addCustomer(name)
+        if status["error"]:
+            e = Exception('addcustomer')
+            e.message = error_message.tr("Can not add customer : %s" % name)
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
+def listCustomers():
+    try:
+        status = token.vault.customer.list(token.authtok)
+        if status["error"]:
+            e = Exception('listcustomer')
+            e.message = error_message.tr("Can not list customers")
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = listCustomers()
+        if status["error"]:
+            e = Exception('listcustomer')
+            e.message = error_message.tr("Can not list customers")
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
+def addMachine(name, custid, fqdn=None, address=None, location=None, notes=None):
+    global token
+    try:
+        status = token.vault.machine.add(token.authtok, custid, name, fqdn, address, location, notes)
+        if status["error"]:
+            e = Exception('addmachine')
+            e.message = error_message.tr("Can not add machine : %s" % name)
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = addMachine(name, custid, fqdn=None, address=None, location=None, notes=None)
+        if status["error"]:
+            e = Exception('addmachine')
+            e.message = error_message.tr("Can not add machine : %s" % name)
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
+def listMachine():
+    global token
+    try:
+        status = token.vault.machine.list(token.authtok)
+        if status["error"]:
+            e = Exception('listmachine')
+            e.message = error_message.tr("Can not list machines")
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = listMachine()
+        if status["error"]:
+            e = Exception('listmachine')
+            e.message = error_message.tr("Can not list machines")
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
+def addService(machid, parentid, url, groupids, password, notes):
+    global token
+    try:
+        if parentid == 0:
+            parentif = None
+        status = token.vault.service.add(token.authtok, machid, parentid, url, groupids, password, notes)
+        if status["error"]:
+            e = Exception('addservice')
+            e.message = error_message.tr("Can not add service : %s" % url)
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = addService(machid, parentid, url, groupids, password, notes)
+        if status["error"]:
+            e = Exception('addservice')
+            e.message = error_message.tr("Can not add service : %s" % url)
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
+def listService():
+    global token
+    try:
+        status = token.vault.service.list(token.authtok)
+        if status["error"]:
+            e = Exception('listservice')
+            # FIXME
+            # Print message from vault... but can t be translate ...
+            #e.message = status["message"]
+            e.message = error_message.tr("Can not list services")
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = listService()
+        if status["error"]:
+            e = Exception('listservice')
+            e.message = error_message.tr("Can not list services")
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status

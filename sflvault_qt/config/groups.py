@@ -306,7 +306,7 @@ class GroupsModel(QtGui.QStandardItemModel):
         """
             Get all groups
         """
-        groups = getGroupList()
+        groups = listGroup()["list"]
         for group in groups:
             self.addGroup(group["name"], group["id"])
         
