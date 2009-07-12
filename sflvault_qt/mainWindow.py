@@ -284,6 +284,9 @@ class MainWindow(QtGui.QMainWindow):
         # "Connect" groups
         self.groups.connection()
 
+        # Show all services
+        self.search(None)
+
     def exec_(self):
         """
             Show default and load dock positions if necessary
