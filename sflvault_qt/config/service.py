@@ -105,7 +105,7 @@ class ServiceWidget(QtGui.QDialog):
     def accept(self):
         # Buil dict to transmit to the vault
         service_info = {"machine_id": None,
-                        "parenr_service_id": None,
+                        "parent_service_id": None,
                         "url": None,
                         "group_ids": None,
                         "secret": None,
@@ -113,14 +113,14 @@ class ServiceWidget(QtGui.QDialog):
                         }
         # Fill it
         service_info["machine_id"], bool = self.machine.itemData(self.machine.currentIndex()).toInt()
-        service_info["parentservid"], bool = self.parentserv.itemData(self.parentserv.currentIndex()).toInt()
+        service_info["parent_service_id"], bool = self.parentserv.itemData(self.parentserv.currentIndex()).toInt()
         service_info["url"] = unicode(self.url.text())
         service_info["group_ids"], bool = self.groups.itemData(self.groups.currentIndex()).toInt()
         service_info["secret"] = unicode(self.password.text())
         service_info["notes"] = unicode(self.notes.text())
         if self.mode == "add":
             # Add a new service
-            addService(service_info["machine_id"], service_info["parentservid"],
+            addService(service_info["machine_id"], service_info["parent_service_id"],
                          service_info["url"], service_info["group_ids"],
                         service_info["secret"], service_info["notes"])
         elif self.mode == "edit":

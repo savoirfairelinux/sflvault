@@ -352,7 +352,7 @@ def editService(servid, informations):
         # Protocol error means the token is now invalid
         # So we have to get a new token
         getAuth()
-        status = editMachine(servid, informations)
+        status = editService(servid, informations)
         if status["error"]:
             e = Exception('editservice')
             e.message = error_message.tr("Can not edit service : %s" % informations["url"])

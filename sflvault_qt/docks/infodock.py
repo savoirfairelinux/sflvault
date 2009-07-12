@@ -17,7 +17,7 @@ class InfoDock(QtGui.QDockWidget):
     def __init__(self, parent=None ):
         QtGui.QDockWidget.__init__(self, parent)
         self.parent = parent
-        self.info = Info()
+        self.info = Info(self)
         self.setWidget(self.info)
         self.setWindowTitle(self.tr("Informations"))
 
@@ -28,37 +28,61 @@ class InfoDock(QtGui.QDockWidget):
         """
             Show services informations
         """
+        # Save item ids
+        self.customerid = customerid
+        self.machineid = machineid
+        self.serviceid = serviceid
         # Set New object
-        customer = None
-        machine = None
-        service = None
+        self.customer = None
+        self.machine = None
+        self.service = None
         # Set a new model
         self.info.model.clear()
         self.info.model.setHeaders()
 
-        customer = getCustomer(customerid)
+        self.customer = getCustomer(customerid)
         self.setWindowTitle("Customer")
-        if machineid and customer:
-            machine = getMachine(machineid)
+        if machineid and self.customer:
+            self.machine = getMachine(machineid)
             self.setWindowTitle("Machine")
-            if machine and serviceid:
-                service = getService(serviceid)
+            if self.machine and serviceid:
+                self.service = getService(serviceid)
                 self.setWindowTitle("Service")
-                if not service:
+                if not self.service:
                     self.setWindowTitle("Informations")
                     return None
-            elif not machine:
+            elif not self.machine:
                 self.setWindowTitle("Informations")
                 return None
-        elif not customer:
+        elif not self.customer:
             self.setWindowTitle("Informations")
             return None
-        self.info.model.showEditableInformations(customer, machine, service)
-        self.info.showInformations(customer, machine, service)
- 
+        self.info.model.attributes = []
+        self.info.edit_info_bar.hide()
+        self.info.save.hide()
+        self.info.reinit.hide()
+        self.info.model.showEditableInformations(self.customer, self.machine, self.service)
+        self.info.showInformations(self.customer, self.machine, self.service)
+
+
+class ModificationStatus(QtGui.QWidget):
+    def __init__(self, parent=None):
+        QtGui.QWidget.__init__(self, parent)
+        self.parent = parent
+
+        self.status = QtGui.QLabel("Edition Mode")
+        # QGridLayout
+        mainLayout = QtGui.QGridLayout()
+        mainLayout.addWidget(self.status,0,0)
+        mainLayout.setMargin(0)
+        mainLayout.setSpacing(0)
+        
+        # Show window
+        self.setLayout(mainLayout)
+        self.hide()
 
 class Info(QtGui.QWidget):
-    def __init__(self, parent=None ):
+    def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.parent = parent
 
@@ -70,10 +94,15 @@ class Info(QtGui.QWidget):
         self.customerListTitle = {}
 
         # QlineEdits
-        self.tree = InfoTree()
+        self.tree = InfoTree(self)
         self.reinit = QtGui.QPushButton(self.tr("Reinitialize"))
+        self.reinit.hide()
         self.save = QtGui.QPushButton(self.tr("Save"))
+        self.save.hide()
         self.info_box = QtGui.QGroupBox()
+
+        # Info bar
+        self.edit_info_bar = ModificationStatus(self)
 
         self.model = InfoModel(self)
         self.tree.setModel(self.model)
@@ -150,14 +179,80 @@ class Info(QtGui.QWidget):
         # QGridLayout
         mainLayout = QtGui.QGridLayout()
         mainLayout.addWidget(self.tree,0,0)
-        mainLayout.addLayout(button_layout,1,0)
-        mainLayout.addWidget(self.info_box,2,0,1,2)
+        mainLayout.addWidget(self.edit_info_bar,1,0,1,2)
+        mainLayout.addLayout(button_layout,2,0)
+        mainLayout.addWidget(self.info_box,3,0,1,2)
 
         # Geometries
         self.setWindowTitle(self.tr("Items Informations"))
 
         # Show window
         self.setLayout(mainLayout)
+
+        # Signals
+        QtCore.QObject.connect(self.reinit, QtCore.SIGNAL("clicked()"), self.reloadInformation)
+        QtCore.QObject.connect(self.save, QtCore.SIGNAL("clicked()"), self.editItem)
+
+
+    # Back to actual informations
+    def reloadInformation(self):
+        # Set a new model
+        self.model.clear()
+        self.model.setHeaders()
+        self.model.showEditableInformations(self.parent.customer, self.parent.machine, self.parent.service)
+        self.showInformations(self.parent.customer, self.parent.machine, self.parent.service)
+        # Hide edit mode
+        self.edit_info_bar.hide()
+        self.save.hide()
+        self.reinit.hide()
+
+    def editItem(self):
+        # if item is a customer
+        if self.model.mode == "customer":
+            custid = self.parent.customerid
+            cust_info = {}
+            # Create dict
+            for attribute in self.model.attributes:
+                try:
+                    new_value = int(attribute.values()[0])
+                except:
+                    new_value = attribute.values()[0]
+                cust_info[attribute.keys()[0]] = new_value
+            # Save it
+            editCustomer(custid, cust_info)
+        # if item is a machine
+        elif self.model.mode == "machine":
+            machid = self.parent.machineid
+            mach_info = {}
+            # Create dict
+            for attribute in self.model.attributes:
+                try:
+                    new_value = int(attribute.values()[0])
+                except:
+                    new_value = attribute.values()[0]
+                mach_info[attribute.keys()[0]] = new_value
+            # Save it
+            editMachine(machid, mach_info)
+        # if item is a service
+        elif self.model.mode == "service":
+            servid = self.parent.serviceid
+            serv_info = {}
+            # Create dict
+            for attribute in self.model.attributes:
+                try:
+                    new_value = int(attribute.values()[0])
+                except:
+                    new_value = attribute.values()[0]
+                serv_info[attribute.keys()[0]] = new_value
+            # Save it
+            editService(servid, serv_info)
+        # Hide edit mode
+        self.edit_info_bar.hide()
+        self.save.hide()
+        self.reinit.hide()
+        # Reload Tree
+        self.parent.parent.search(None)
+
 
     # Show
     def showService(self):
@@ -281,13 +376,22 @@ class InfoTree(QtGui.QTreeView):
         QtGui.QTreeView.__init__(self, parent)
         self.parent = parent
         self.setRootIsDecorated(False)
+        # Get Editor
+        Editor = self.itemDelegate()
+        QtCore.QObject.connect(Editor, QtCore.SIGNAL("commitData (QWidget *)"), self.editorClosed)
 
+    def editorClosed(self, editor):
+        self.parent.edit_info_bar.show()
+        self.parent.save.show()
+        self.parent.reinit.show()
 
 class InfoModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, 0, 2, parent)
         self.parent = parent
         self.setHeaders()
+        self.mode = None
+        self.attributes = []
 
     def setHeaders(self):
         self.setColumnCount(2)
@@ -299,22 +403,76 @@ class InfoModel(QtGui.QStandardItemModel):
         """
             Show services informations
         """
-        if service: 
+        self.attributes = []
+        if service:
+            self.mode = "service"
             for key, data in service["service"].items():
                 if key in ["url", "notes", "group_id", "parent_service_id", "groups_list"]:
                     self.insertRow(0)
-                    self.setData(self.index(0, 1), QtCore.QVariant(data))
-                    self.setData(self.index(0, 0), QtCore.QVariant(key))
+                    self.attributes.append({key: data})
         elif machine:
+            self.mode = "machine"
             for key, data in machine["machine"].items():
                 if key in ["name", "ip", "fqdn", "location", "notes"]:
                     self.insertRow(0)
-                    self.setData(self.index(0, 1), QtCore.QVariant(data))
-                    self.setData(self.index(0, 0), QtCore.QVariant(key))
+                    self.attributes.append({key: data})
         elif customer:
+            self.mode = "customer"
             for key, data in customer["customer"].items():
                 if key in ["name", ]:
                     self.insertRow(0)
-                    self.setData(self.index(0, 1), QtCore.QVariant(data))
-                    self.setData(self.index(0, 0), QtCore.QVariant(key))
+                    self.attributes.append({key: data})
+
+    def flags(self, index):
+        f = QtCore.QAbstractTableModel.flags(self,index)
+        if index.column() == 1:
+            f |= QtCore.Qt.ItemIsEditable
+        return f
+
+
+    def data(self, index, role):
+        # if index is not valid
+        if not index.isValid():
+            return QtCore.QVariant()
+        # if attributes is empty
+        if not self.attributes:
+            return QtCore.QVariant()
+
+        attribute = self.attributes[index.row()]
+
+        # get value of protocol name and command
+        if role in [QtCore.Qt.EditRole, QtCore.Qt.DisplayRole]:
+            if index.column() == 0:
+                value = attribute.keys()[0]
+                return QtCore.QVariant(value)
+            if index.column() == 1:
+                value = attribute.values()[0]
+                return QtCore.QVariant(value)
+
+        return QtCore.QVariant()
+
+
+    def setData(self, index, value, role=QtCore.Qt.DisplayRole):
+        # if index is not valid
+        if not index.isValid():
+            return QtCore.QVariant()
+        # if attributes is empty
+        if not self.attributes:
+            return QtCore.QVariant()
+
+         # Get attribute
+        attribute = self.attributes[index.row()]
+        # Get attribute name
+        key = attribute.keys()[0]
+        # Get New value
+        new_value, bool = value.toInt()
+        if not bool:
+            new_value = unicode(value.toString())
+        # Set attribute with new value
+        try:
+            attribute[key] = new_value
+            self.dataChanged.emit(index, index)
+            return True
+        except:    
+            return False
 
