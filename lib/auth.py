@@ -20,8 +20,8 @@ def getAuth():
     try:
         # Search nothing, just to get a valid token
         status = token.search(["}{[a]"])
-        if not status:
-            
+        # If password is bad ...
+        if status == False:
             e = Exception("ConnectionDenied")
             e.message = error_message.tr("Connection Denied")
             raise e
@@ -40,6 +40,11 @@ def getService(id):
         getAuth()
         service = getService(id)
     except Exception, e:
+        # FIXME
+        # Error : (4, 'Appel syst\xc3\xa8me interrompu')
+        if e[0] == 4:
+            return None
+        # End FIME
         ErrorMessage(e)
         return None
     if service["error"]:
@@ -57,6 +62,7 @@ def getMachine(id):
         getAuth()
         machine = getMachine(id)
     except Exception, e:
+        print "machine" 
         ErrorMessage(e)
         return None
     return machine

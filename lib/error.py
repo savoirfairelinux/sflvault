@@ -27,6 +27,7 @@ class ErrorMessage(QtGui.QMessageBox):
             self.AccessError()
         else:
             self.message()
+        print "qhow"
         self.exec_()
         
     def messageError(self):
