@@ -8,6 +8,7 @@ from sflvault.client import SFLvaultClient
 from error import *
 token = None
 
+error_message = QtCore.QObject()
 
 def getAuth():
     """
@@ -18,10 +19,15 @@ def getAuth():
     token = SFLvaultClient()
     try:
         # Search nothing, just to get a valid token
-        token.search(["}{[a]"])
+        status = token.search(["}{[a]"])
+        if not status:
+            
+            e = Exception("ConnectionDenied")
+            e.message = error_message.tr("Connection Denied")
+            raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return token
     
 def getService(id):
