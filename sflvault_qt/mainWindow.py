@@ -227,6 +227,7 @@ class MainWindow(QtGui.QMainWindow):
         else:
             options["address"] = address
             options["user"] = None
+        options["protocol"] = protocol
         options["vaultid"] = service["service"]["id"]
         options["vaultconnect"] = "sflvault connect %s" % options["vaultid"]
         # Show Tooltip if checked in config

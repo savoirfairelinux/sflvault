@@ -24,7 +24,8 @@ class ProtocolsWidget(QtGui.QDialog):
                                 You can use several parameters from the service :\
                                 <table>\
                                 <tr><td> - %(user)s         : </td><td> User name of the service </td></tr>\
-                                <tr><td> - %(address)s      : </td><td> Address of the service</td></tr>\
+                                <tr><td> - %(address)s      : </td><td> Address of the service (without protocol)</td></tr>\
+                                <tr><td> - %(protocol)s      : </td><td> Protocol of the service</td></tr>\
                                 <tr><td> - %(vaultid)s      : </td><td> Vault id of the service </td></tr>\
                                 <tr><td> - %(vaultconnect)s : </td><td> Vault connection command </td></tr>\
                                 </table>\
@@ -33,7 +34,7 @@ class ProtocolsWidget(QtGui.QDialog):
                                 <dd><i>konsole -e %(vaultconnect)s</i></dd>\
                                 <dt>launch : konsole -e sflvault connect s#133</dt>\
                                 <dd><i>firefox %(address)s</i></dd>\
-                                <dt>launch : firefox http://website.org</dt>\
+                                <dt>launch : firefox website.org</dt>\
                                 <dt>(which open firefox with the wanted page)</dt>\
                                 </dl>\
                                 ")
