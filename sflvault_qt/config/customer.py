@@ -12,7 +12,39 @@ import os
 
 from lib.auth import *
 
-class CustomerWidget(QtGui.QDialog):
+
+class DeleteCustomerWidget(QtGui.QMessageBox):
+    def __init__(self, custid=None, parent=None):
+        QtGui.QMessageBox.__init__(self, parent)
+        self.parent = parent
+        # Check if a line is selected
+        if not custid:
+            return False
+        self.custid = custid
+        # Test if customer exist
+        customer = getCustomer(custid)
+        if not "customer" in customer:
+            return False
+        # Set windows
+        self.setIcon(QtGui.QMessageBox.Question)
+        self.ok = self.addButton(QtGui.QMessageBox.Ok)
+        self.cancel = self.addButton(QtGui.QMessageBox.Cancel)
+        self.setText(self.tr("Do you want to delete %s" % customer["customer"]["name"]))
+
+        # SIGNALS
+        self.connect(self.ok, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
+        self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+
+    def accept(self):
+        # Delete customer
+        status = delCustomer(self.custid)
+        if status:
+            # reload tree
+            self.parent.search(None)
+            self.done(1)
+        
+
+class EditCustomerWidget(QtGui.QDialog):
     def __init__(self, custid=None, parent=None):
         QtGui.QDialog.__init__(self, parent)
         self.parent = parent

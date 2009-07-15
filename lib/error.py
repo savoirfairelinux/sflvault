@@ -19,19 +19,23 @@ class ErrorMessage(QtGui.QMessageBox):
             if self.exception[0] == 111:
                 self.connectionError()
             elif self.exception[0] == -2:
-                self.messageError()
+                self.message()
+            elif self.exception[0] == 4:
+                # Error : (4, 'Appel syst\xc3\xa8me interrompu')
+                # Call xmlrpm interumpted
+                # Do nothing
+                return None
+            elif self.exception[0] == 133:
+                # Error : (113, "Aucun chemin d'acc\xc3\xa8s pour atteindre l'h\xc3\xb4te cible")
+                self.connectionError()
         elif isinstance(self.exception, xmlrpclib.ProtocolError):
             # Protocol error means the token is now invalid
             self.protocolError()
         elif exception.message == "Unable to decrypt groupkey (Error decrypting: inconsistent message)":
             self.AccessError()
-        elif exception[0] == 4:
-            # Error : (4, 'Appel syst\xc3\xa8me interrompu')
-            print e[1]
-            return None
         else:
-            print exception
             self.message()
+        print exception
         print "qhow"
         self.exec_()
         
@@ -70,7 +74,7 @@ class ErrorMessage(QtGui.QMessageBox):
         if self.exception:
             self.setWindowTitle(self.tr("Connection"))
             print "message connection"
-            self.setText(self.exception.message)
+            self.setText(self.exception[1])
         else:
             self.setWindowTitle(self.tr("Error"))
             self.setText(self.tr("Unknown error"))

@@ -295,10 +295,11 @@ class TreeView(QtGui.QTreeView):
         """
         if self.selectedIndexes():
             menu = QtGui.QMenu(self)
-            menu.addAction(self.editAct)
             # Add bookmark menu for services
             if self.selectedIndexes()[0].parent().parent().isValid():
                 menu.addAction(self.bookmarkAct)
+            menu.addAction(self.editAct)
+            menu.addAction(self.delAct)
             menu.exec_(event.globalPos())
 
     def createActions(self):
@@ -308,11 +309,13 @@ class TreeView(QtGui.QTreeView):
         self.editAct = QtGui.QAction(self.tr("&Edit..."), self)
         self.editAct.setShortcut(self.tr("Ctrl+E"))
         self.editAct.setStatusTip(self.tr("Edit item"))
-#        self.connect(self.editAct, QtCore.SIGNAL("triggered()"), self.mkdir)
 
         self.bookmarkAct = QtGui.QAction(self.tr("&Create alias..."), self)
         self.bookmarkAct.setShortcut(self.tr("Ctrl+D"))
         self.bookmarkAct.setStatusTip(self.tr("Create an alias from this item"))
+
+        self.delAct = QtGui.QAction(self.tr("&Delete..."), self)
+        self.delAct.setStatusTip(self.tr("Delete item"))
 
     def filter(self, pattern):
         """

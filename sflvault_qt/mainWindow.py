@@ -14,9 +14,9 @@ from config.protocols import ProtocolsWidget
 from config.groups import GroupsWidget
 from config.preferences import PreferencesWidget
 from config.config import Config
-from config.customer import CustomerWidget
-from config.machine import MachineWidget
-from config.service import ServiceWidget
+from config.customer import EditCustomerWidget, DeleteCustomerWidget
+from config.machine import EditMachineWidget, DeleteMachineWidget
+from config.service import EditServiceWidget, DeleteServiceWidget
 from bar.menubar import MenuBar
 from bar.systray import Systray
 from bar.osd import Osd
@@ -100,11 +100,11 @@ class MainWindow(QtGui.QMainWindow):
         ## Show alias dock
         QtCore.QObject.connect(self.menubar.alias, QtCore.SIGNAL("triggered(bool)"), self.aliasdock.setShown)
         ## new customer
-        QtCore.QObject.connect(self.menubar.newcust, QtCore.SIGNAL("triggered(bool)"), self.addCustomer)
+        QtCore.QObject.connect(self.menubar.newcust, QtCore.SIGNAL("triggered(bool)"), self.editCustomer)
         ## new machine
-        QtCore.QObject.connect(self.menubar.newmach, QtCore.SIGNAL("triggered(bool)"), self.addMachine)
+        QtCore.QObject.connect(self.menubar.newmach, QtCore.SIGNAL("triggered(bool)"), self.editMachine)
         ## new service
-        QtCore.QObject.connect(self.menubar.newserv, QtCore.SIGNAL("triggered(bool)"), self.addService)
+        QtCore.QObject.connect(self.menubar.newserv, QtCore.SIGNAL("triggered(bool)"), self.editService)
 
     def closeEvent(self, event):
         if self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
@@ -280,6 +280,7 @@ class MainWindow(QtGui.QMainWindow):
         ## Tree bookmark
         QtCore.QObject.connect(self.tree.bookmarkAct, QtCore.SIGNAL("triggered()"), self.aliasdock.alias.model.addAlias)
         QtCore.QObject.connect(self.tree.editAct, QtCore.SIGNAL("triggered()"), self.editItem)
+        QtCore.QObject.connect(self.tree.delAct, QtCore.SIGNAL("triggered()"), self.delItem)
         ## Tree connection
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
         ## Tree item informations
@@ -428,17 +429,17 @@ class MainWindow(QtGui.QMainWindow):
         else:
             ErrorMessage("No service found")
 
-    def addCustomer(self, custid=None):
-        self.addcustomer = CustomerWidget(custid, parent=self)
-        self.addcustomer.exec_()
+    def editCustomer(self, custid=None):
+        self.editcustomer = EditCustomerWidget(custid, parent=self)
+        self.editcustomer.exec_()
 
-    def addMachine(self, machid=None):
-        self.addmachine = MachineWidget(machid, parent=self)
-        self.addmachine.exec_()
+    def editMachine(self, machid=None):
+        self.editmachine = EditMachineWidget(machid, parent=self)
+        self.editmachine.exec_()
 
-    def addService(self, servid=None):
-        self.addservice = ServiceWidget(servid, parent=self)
-        self.addservice.exec_()
+    def editService(self, servid=None):
+        self.editservice = EditServiceWidget(servid, parent=self)
+        self.editservice.exec_()
 
     def editItem(self):
         # Get Id colunm
@@ -448,10 +449,52 @@ class MainWindow(QtGui.QMainWindow):
         itemid = int(itemid.split("#")[1])
         # Check if seleted item is a service
         if index.parent().parent().isValid():
-            self.addService(itemid)
+            self.editService(itemid)
+        # Check if seleted item is a machine
         elif index.parent().isValid():
-            self.addMachine(itemid)
+            self.editMachine(itemid)
+        # Check if seleted item is a customer
         elif index.isValid():
-            self.addCustomer(itemid)
+            self.editCustomer(itemid)
+        else:
+            return False
+
+
+    def delCustomer(self, custid=None):
+        """
+            # Ask Delete customer ?
+        """
+        self.delcustomer = DeleteCustomerWidget(custid, parent=self)
+        self.delcustomer.exec_()
+
+    def delMachine(self, machid=None):
+        """
+            # Ask Delete machine ?
+        """
+        self.delmachine = DeleteMachineWidget(machid, parent=self)
+        self.delmachine.exec_()
+
+    def delService(self, servid=None):
+        """
+            # Ask Delete service ?
+        """
+        self.delservice = DeleteServiceWidget(servid, parent=self)
+        self.delservice.exec_()
+
+    def delItem(self):
+        # Get Id colunm
+        indexId = self.tree.selectedIndexes()[1]
+        index = self.tree.selectedIndexes()[0]
+        itemid = indexId.data(QtCore.Qt.DisplayRole).toString()
+        itemid = int(itemid.split("#")[1])
+        # Check if seleted item is a service
+        if index.parent().parent().isValid():
+            self.delService(itemid)
+        # Check if seleted item is a machine
+        elif index.parent().isValid():
+            self.delMachine(itemid)
+        # Check if seleted item is a customer
+        elif index.isValid():
+            self.delCustomer(itemid)
         else:
             return False

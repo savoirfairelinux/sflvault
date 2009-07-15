@@ -27,7 +27,7 @@ def getAuth():
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return False
+        return None
     return token
     
 def getService(id):
@@ -229,6 +229,28 @@ def editCustomer(custid, informations):
         return None
     return status
 
+def delCustomer(custid):
+    global token
+    try:
+        status = token.vault.customer_del(token.authtok, custid)
+        if status["error"]:
+            e = Exception('delcustomer')
+            e.message = error_message.tr("Can not delete customer : %s" % custid)
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = delCustomer(custid)
+        if status["error"]:
+            e = Exception('delcustomer')
+            e.message = error_message.tr("Can not delete customer : %s" % custid)
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
 def addMachine(name, custid, fqdn=None, address=None, location=None, notes=None):
     global token
     try:
@@ -289,6 +311,28 @@ def editMachine(machid, informations):
         if status["error"]:
             e = Exception('editmachine')
             e.message = error_message.tr("Can not edit machine : %s" % informations["name"])
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
+def delMachine(machid):
+    global token
+    try:
+        status = token.vault.machine_del(token.authtok, machid)
+        if status["error"]:
+            e = Exception('delmachine')
+            e.message = error_message.tr("Can not delete machine : %s" % machid)
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = delMachine(machid)
+        if status["error"]:
+            e = Exception('delmachine')
+            e.message = error_message.tr("Can not delete machine : %s" % machid)
             raise e
     except Exception, e:
         ErrorMessage(e)
@@ -370,3 +414,24 @@ def editService(servid, informations):
         return None
     return status
 
+def delService(servid):
+    global token
+    try:
+        status = token.vault.service_del(token.authtok, servid)
+        if status["error"]:
+            e = Exception('delservice')
+            e.message = error_message.tr("Can not delete service : %s" % servid)
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = delService(servid)
+        if status["error"]:
+            e = Exception('delservice')
+            e.message = error_message.tr("Can not delete service : %s" % servid)
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status

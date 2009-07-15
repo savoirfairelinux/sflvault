@@ -12,7 +12,39 @@ import os
 
 from lib.auth import *
 
-class MachineWidget(QtGui.QDialog):
+
+class DeleteMachineWidget(QtGui.QMessageBox):
+    def __init__(self, machid=None, parent=None):
+        QtGui.QMessageBox.__init__(self, parent)
+        self.parent = parent
+        # Check if a line is selected
+        if not machid:
+            return None
+        self.machid = machid
+        # Test if machine exist
+        machine = getMachine(machid)
+        if not "machine" in machine:
+            return None
+        # Set windows
+        self.setIcon(QtGui.QMessageBox.Question)
+        self.ok = self.addButton(QtGui.QMessageBox.Ok)
+        self.cancel = self.addButton(QtGui.QMessageBox.Cancel)
+        self.setText(self.tr("Do you want to delete %s" % machine["machine"]["name"]))
+
+        # SIGNALS
+        self.connect(self.ok, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
+        self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+
+    def accept(self):
+        # Delete machine
+        status = delMachine(self.machid)
+        if status:
+            # reload tree
+            self.parent.search(None)
+            self.done(1)
+
+
+class EditMachineWidget(QtGui.QDialog):
     def __init__(self, machid=None, parent=None):
         QtGui.QDialog.__init__(self, parent)
         self.parent = parent

@@ -12,7 +12,39 @@ import os
 
 from lib.auth import *
 
-class ServiceWidget(QtGui.QDialog):
+
+class DeleteServiceWidget(QtGui.QMessageBox):
+    def __init__(self, servid=None, parent=None):
+        QtGui.QMessageBox.__init__(self, parent)
+        self.parent = parent
+        # Check if a line is selected
+        if not servid:
+            return False
+        self.servid = servid
+        # Test if service exist
+        service = getService(servid)
+        if not "service" in service:
+            return False
+        # Set windows
+        self.setIcon(QtGui.QMessageBox.Question)
+        self.ok = self.addButton(QtGui.QMessageBox.Ok)
+        self.cancel = self.addButton(QtGui.QMessageBox.Cancel)
+        self.setText(self.tr("Do you want to delete %s" % service["service"]["url"]))
+
+        # SIGNALS
+        self.connect(self.ok, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
+        self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+
+    def accept(self):
+        # Delete service
+        status = delService(self.servid)
+        if status:
+            # reload tree
+            self.parent.search(None)
+            self.done(1)
+
+
+class EditServiceWidget(QtGui.QDialog):
     def __init__(self, servid=None, parent=None):
         QtGui.QDialog.__init__(self, parent)
         self.parent = parent
