@@ -12,6 +12,7 @@ from docks.searchdock import SearchDock
 from docks.aliasdock import AliasDock
 from config.protocols import ProtocolsWidget
 from config.groups import GroupsWidget
+from config.users import UsersWidget
 from config.preferences import PreferencesWidget
 from config.config import Config
 from config.customer import EditCustomerWidget, DeleteCustomerWidget
@@ -76,6 +77,7 @@ class MainWindow(QtGui.QMainWindow):
         # Load windows
         self.protocols = ProtocolsWidget(parent=self)
         self.groups = GroupsWidget(parent=self)
+        self.users = UsersWidget(parent=self)
         self.preferences = PreferencesWidget(parent=self)
         # Load shortcut
         self.setShortcut()
@@ -89,6 +91,8 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.menubar.quickconnect, QtCore.SIGNAL("triggered()"), self.quickConnection)
         ## Groups
         QtCore.QObject.connect(self.menubar.groups, QtCore.SIGNAL("triggered()"), self.groups.exec_)
+        ## Groups
+        QtCore.QObject.connect(self.menubar.users, QtCore.SIGNAL("triggered()"), self.users.exec_)
         ## Vault connection
         QtCore.QObject.connect(self.menubar.connection, QtCore.SIGNAL("triggered()"), self.vaultConnection)
         ## Preferences

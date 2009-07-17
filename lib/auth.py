@@ -110,7 +110,7 @@ def editPassword(id, password):
         return None
     return password
 
-def getUserList():
+def listUsers():
     global token
     users = None
     try:
@@ -119,11 +119,39 @@ def getUserList():
         # Protocol error means the token is now invalid
         # So we have to get a new token
         getAuth()
-        users = getUserList()
+        users = listUser()
     except Exception, e:
         ErrorMessage(e)
         return None
     return users
+
+def addUser(username, admin):
+    global token
+    try:
+        status = token.vault.user_del(token.authtok, username, admin)
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        statusdelUser(username, admin)
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
+def delUser(username):
+    global token
+    try:
+        status = token.vault.user_del(token.authtok, username)
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        statusdelUser(username)
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
 
 def listGroup():
     global token

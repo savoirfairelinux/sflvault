@@ -266,7 +266,7 @@ class ProtocolModel(QtGui.QStandardItemModel):
 
 
 
-class Protocol():
+class Protocol(QtCore.QObject):
     def __init__(self, name=None, command=None, clip=QtCore.Qt.Unchecked, tooltip=QtCore.Qt.Unchecked):
         """
             Item protocol which is used to show and

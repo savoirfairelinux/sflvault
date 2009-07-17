@@ -104,8 +104,8 @@ class AliasModel(QtGui.QStandardItemModel):
         """
         # Show input Dialog
         if not id and not alias:
-            alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("Edit alias"),
-                                                    self.tr("New alias name:"),
+            alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("New alias"),
+                                                    self.tr("New alias name :"),
                                                     QtGui.QLineEdit.Normal)
             if not ok or not alias:
                 return False

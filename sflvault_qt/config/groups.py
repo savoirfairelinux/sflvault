@@ -11,7 +11,6 @@ import shutil
 import os
 
 from lib.auth import *
-#token = getAuth()
 
 
 class GroupsWidget(QtGui.QDialog):
@@ -19,7 +18,6 @@ class GroupsWidget(QtGui.QDialog):
         QtGui.QDialog.__init__(self, parent)
         self.parent = parent
         self.settings = self.parent.settings
-        self.protocols = {}
 
         # Load gui items
         groupbox = QtGui.QGroupBox(self.tr("Groups"))
@@ -144,7 +142,7 @@ class GroupsWidget(QtGui.QDialog):
 
     def exec_(self):
         # Get users list
-        self.users = getUserList()
+        self.users = listUsers()
         # Get services list
         # TODO
 #        self.services = token.vault.user_list(token.authtok, True)["list"]
