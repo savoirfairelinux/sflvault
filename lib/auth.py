@@ -27,7 +27,6 @@ import sys
 from PyQt4 import QtCore, QtGui
 from sflvault.client import SFLvaultClient
 
-#from lib.error import *
 from error import *
 token = None
 
@@ -151,7 +150,9 @@ def listUsers():
 def addUser(username, admin):
     global token
     try:
-        status = token.vault.user_del(token.authtok, username, admin)
+        print username
+        print admin
+        status = token.vault.user.add(token.authtok, username, admin)
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
         # So we have to get a new token

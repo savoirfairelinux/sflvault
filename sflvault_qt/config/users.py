@@ -48,7 +48,7 @@ class UsersWidget(QtGui.QDialog):
         self.id = QtGui.QLineEdit()
         self.adminLabel = QtGui.QLabel(self.tr("Admin"))
         self.admin = QtGui.QCheckBox()
-        self.setup_expiredLabel = QtGui.QLabel(self.tr("Setup Expired")
+        self.setup_expiredLabel = QtGui.QLabel(self.tr("Setup Expired"))
         self.setup_expired = QtGui.QCheckBox()
         self.waiting_setupLabel = QtGui.QLabel(self.tr("Waiting Setup"))
         self.waiting_setup = QtGui.QCheckBox()
@@ -87,10 +87,18 @@ class UsersWidget(QtGui.QDialog):
         gridLayout = QtGui.QGridLayout()
         gridLayout.addWidget(self.usernameLabel,0,0)
         gridLayout.addWidget(self.username,0,1)
-        gridLayout.addWidget(self.adminLabel,1,0)
-        gridLayout.addWidget(self.admin,1,1)
-        gridLayout.addWidget(self.group_list_filter,3,0,1,3)
-        gridLayout.addWidget(self.group_list,4,0,5,3)
+        gridLayout.addWidget(self.idLabel,1,0)
+        gridLayout.addWidget(self.id,1,1)
+        gridLayout.addWidget(self.adminLabel,2,0)
+        gridLayout.addWidget(self.admin,2,1)
+        gridLayout.addWidget(self.setup_expiredLabel,3,0)
+        gridLayout.addWidget(self.setup_expired,3,1)
+        gridLayout.addWidget(self.waiting_setupLabel,4,0)
+        gridLayout.addWidget(self.waiting_setup,4,1)
+        gridLayout.addWidget(self.created_stampLabel,5,0)
+        gridLayout.addWidget(self.created_stamp,5,1)
+        gridLayout.addWidget(self.group_list_filter,6,0,1,3)
+        gridLayout.addWidget(self.group_list,7,0,5,3)
 
         groupbox.setLayout(gridLayout)
 
@@ -147,25 +155,42 @@ class UsersWidget(QtGui.QDialog):
         if self.user_list.selectedIndexes():
             name = unicode(self.user_list.selectedIndexes()[0].data().toString())
             id = int(self.user_list.selectedIndexes()[1].data().toString().split("#")[1])
+            # Find user in user list
+            for user in self.model_user.users:
+                if user["id"] == id:
+                    self.username.setText(user["username"])
+                    self.id.setText(QtCore.QString(user["id"]))
+                    if user["is_admin"]:
+                        self.admin.setCheckState(QtCore.Qt.Checked)
+                    else:
+                        self.admin.setCheckState(QtCore.Qt.Unchecked)
+                    if user["setup_expired"]:
+                        self.setup_expired.setCheckState(QtCore.Qt.Checked)
+                    else:
+                        self.setup_expired.setCheckState(QtCore.Qt.Unchecked)
+                    if user["waiting_setup"]:
+                        self.waiting_setup.setCheckState(QtCore.Qt.Checked)
+                    else:
+                        self.waiting_setup.setCheckState(QtCore.Qt.Unchecked)
+                    from datetime import datetime
+                    print dir(user["created_stamp"])
+                    print user["created_stamp"].value
+#                    print user["created_stamp"].strftime("%Y, %m, %d, %H, %M, %s")
+                    datetime = QtCore.QDateTime()
+                    datetime.fromString(QtCore.QString(user["created_stamp"].value), "yyyyMMddTHH:mm:ss")
+                    print datetime.date()
+                    self.created_stamp.setDateTime(datetime)
+                    break
 
+            print 'eee'
 
     def newUser(self):
         """
         """
         # Show input Dialog
-        user_id = NewUserWidget(self)
-        # Get new user info
-#        getUser 
-#            addUser(username
-#            id_index = self.tree.selectedIndexes()[1]
-#            id  = self.tree.model().data(id_index).toString()
-#        sef
-#        self.loadUserList()
-#
-#        self.username.clear()
-#        self.admin.setCheckState(QtCore.Qt.Unchecked)
-#        for group in self.groups["list"]:
-#            self.model_group.addGroup(QtCore.Qt.Unchecked, group["name"], group["id"])
+        newUser = NewUserWidget(self)
+        newUser.exec_()
+
 
     def loadUserList(self):
         """
@@ -393,7 +418,7 @@ class NewUserWidget(QtGui.QDialog):
         self.nameLabel = QtGui.QLabel(self.tr("User Name : "))
         self.name = QtGui.QLineEdit()
         self.adminLabel = QtGui.QLabel(self.tr("Admin : "))
-        self.admin = QtGui.QCheckbox()
+        self.admin = QtGui.QCheckBox()
 
         self.save = QtGui.QPushButton(self.tr("Save user"))
         self.cancel = QtGui.QPushButton(self.tr("Cancel"))
@@ -420,11 +445,16 @@ class NewUserWidget(QtGui.QDialog):
         self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
 
     def accept(self):
-        username = self.name.text()
-        if self.admin.checkState() == QtCore.Qt.Checked():
+        username = unicode(self.name.text())
+        if self.admin.checkState() == QtCore.Qt.Checked:
             admin = True
         else:
             admin = False
         # Add user
         status = addUser(username, admin)
-        return(status["user_id"])
+        # Reload user list if no error
+        if not status["error"]:
+            self.parent.loadUserList()
+            self.done(status["user_id"])
+        else:
+            self.done(0)
