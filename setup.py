@@ -15,13 +15,12 @@ setup(
     author_email='alexandre.bourget@savoirfairelinux.com',
     url='http://www.sflvault.org',
     license='GPLv3',
-    install_requires=["Pylons>=0.9.7rc4",
+    install_requires=["Pylons>=0.9.7",
                       "SQLAlchemy<=0.4.9999",
                       "pycrypto",
                       "pysqlite",
                       "pexpect>=2.3",
                       "urwid>=0.9.8.1",
-                      "ipython",
                       ],
     # For server installation:
     #  "ipython"
