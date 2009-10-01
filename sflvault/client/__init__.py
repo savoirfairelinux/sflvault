@@ -543,7 +543,9 @@ class SFLvaultClient(object):
         username  - the name with which an admin prepared (with add-user)
                     your account.
         vault_url - the URL pointing to the XML-RPC interface of the vault
-                    (typically host://domain.example.org:5000/vault/rpc
+                    (typically host://domain.example.org:5000/vault/
+        passphrase - use the given passphrase instead of asking it on the
+                     command line.
         """
         self._set_vault(vault_url, False)
         
@@ -589,14 +591,18 @@ class SFLvaultClient(object):
 
     @authenticate()
     def search(self, query, filters=None, verbose=True):
-        """Search the database for query terms, specified as a list of REGEXPs.
+        """Search the database for query terms.
 
+        query - list a REGEXPs to be matched
         filters - is a dict with keys in ['groups', 'machines', 'customers']
                   that limits the records returned to those matching those
                   constraints. The values can be either int or str
-                  (representing an int)
+                  (representing an int).
+        verbose - shows the notes and location attributes for services
+                  and machines.
 
-        Returns a hierarchical view of the results."""
+        Returns a hierarchical view of the results.
+        """
 
         # Remove empty filters:
         filters = dict([(x, filters[x]) for x in filters if filters[x]])
@@ -649,7 +655,7 @@ class SFLvaultClient(object):
                 print "%s" % (spc1) + '-' * (80 - len(spc1))
             
     def _decrypt_service(self, serv, onlysymkey=False, onlygroupkey=False):
-        """Decrypt the information return from the vault.
+        """Decrypt the service object returned from the vault.
 
         onlysymkey - return the plain symkey in the result
         onlygroupkey - return the plain groupkey ElGamal obj in result
