@@ -51,6 +51,9 @@ setup(
     ssh = sflvault.client.services:ssh
     vnc = sflvault.client.services:vnc
     mysql = sflvault.client.services:mysql
+    psql = sflvault.client.services:postgres
+    postgres = sflvault.client.services:postgres
+    postgresql = sflvault.client.services:postgres
     su = sflvault.client.services:su
     sudo = sflvault.client.services:sudo
 

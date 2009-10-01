@@ -21,6 +21,7 @@
 
 from sflvault.client.remoting import *
 from sflvault.client.utils import *
+from sflvault.client.fallback import SFLvaultFallback
 import struct, fcntl, termios, signal # for term size signaling..
 import pexpect
 import pxssh
@@ -28,9 +29,10 @@ import sys
 import os
 
 # Enum used in the services' `provides`
-PROV_PORT_FORWARD  = 'port-forward'
-PROV_SHELL_ACCESS  = 'shell-access'
+PROV_PORT_FORWARD = 'port-forward'
+PROV_SHELL_ACCESS = 'shell-access'
 PROV_MYSQL_CONSOLE = 'mysql-console'
+PROV_POSTGRES_CONSOLE = 'postgres-console'
 
 # Operational modes
 OP_DIRECT = 'direct-access'            # - When, let's say 'ssh' is going to
@@ -128,7 +130,24 @@ class ShellService(Service):
 
         try:
             # Go ahead, you're free to go !
-            self.shell_handle.interact(escape_character=sflvault_escape_chr)
+            while True:
+                self.shell_handle.interact(escape_character=sflvault_escape_chr)
+
+                # TODO:
+                # check if the shell_handle is still open, or if it was closed
+                # if it's still open, then call the SFLvaultFallback shell
+                # on shell_handle.
+                #   run _run() on that shell, and take input and send commands
+                #   once we quit this, make sure we get back to the
+                # otherwise:
+                s = SFLvaultFallback(self.shell_handle)
+                try:
+                    s._run()
+                except (KeyboardInterrupt, EOFError), e:
+                    s._return_completer()
+                continue
+
+                # TODO we need to check if shell is still alive
 
             # Reset signal
             signal.signal(signal.SIGWINCH, signal.SIG_DFL)
@@ -155,14 +174,17 @@ class ssh(ShellService):
     
 
     def required(self, provide=None):
-        """Verify if this service handler can provide `provide` type of connection.
+        """Verify if this service handler can provide `provide` type of
+        connection.
 
-        Child can ask for SHELL_ACCESS or PORT_FORWARD to be provided. It can also
-        ask for nothing. It is the case of the last child, which has required()
-        invoked with mode=None, since there's no other child that requires something.
+        Child can ask for SHELL_ACCESS or PORT_FORWARD to be provided. It
+        can also ask for nothing. It is the case of the last child, which
+        has required() invoked with mode=None, since there's no other
+        child that requires something.
 
-        When mode=None, plugin is most probably the last child, and the end to
-        which we want to connect."""
+        When mode=None, plugin is most probably the last child, and the
+        end to which we want to connect.
+        """
 
         if not self.child and not self.parent:
             # We're alone in the world, we've setting up DIRECT access (spawn a
@@ -283,7 +305,10 @@ class sudo(ShellService):
     provides_modes = [PROV_SHELL_ACCESS]
 
     def required(self, provide=None):
-        """Check requirements for sudo"""
+        """Check requirements for sudo
+
+        See ssh service handle for documentation of `required`
+        """
 
         # We must be over an 'ssh' to do anything!
         if not self.parent or not self.parent.required(PROV_SHELL_ACCESS):
@@ -345,7 +370,10 @@ class su(ShellService):
     provides_modes = [PROV_SHELL_ACCESS]
 
     def required(self, provide=None):
-        """Check requirements for su"""
+        """Check requirements for su
+        
+        See ssh service handle for documentation of `required`
+        """
 
         # We must be over an 'ssh' to do anything!
         if not self.parent or not self.parent.required(PROV_SHELL_ACCESS):
@@ -409,14 +437,10 @@ class mysql(ShellService):
     provides_modes = [PROV_MYSQL_CONSOLE]
        
     def required(self, provide=None):
-        """Verify if this service handler can provide `provide` type of connection.
-
-        Child can ask for SHELL_ACCESS or PORT_FORWARD to be provided. It can also
-        ask for nothing. It is the case of the last child, which has required()
-        invoked with mode=None, since there's no other child that requires something.
-
-        When mode=None, plugin is most probably the last child, and the end to
-        which we want to connect."""
+        """Verify provided modes.
+        
+        See ssh service handle for documentation of `required`
+        """
 
         if self.provides(provide):
             self.provide_mode = provide
@@ -470,7 +494,8 @@ class mysql(ShellService):
             if self.url.path != '/':
                 db = self.url.path.lstrip('/')
                 
-        cmd = "mysql -u %s -p %s" % (self.url.username, db)
+        cmd = "mysql -h %s -u %s -p %s" % (self.url.hostname, self.url.username,
+                                           db)
 
         cnx.sendline(cmd)
 
@@ -480,6 +505,82 @@ class mysql(ShellService):
 
     # interact() and postwork() inherited
     
+
+class postgres(ShellService):
+    """PostgreSQL service handler"""
+
+    provides_modes = [PROV_POSTGRES_CONSOLE]
+       
+    def required(self, provide=None):
+        """Verify provided modes.
+        
+        See ssh service handle for documentation of `required`
+        """
+
+        if self.provides(provide):
+            self.provide_mode = provide
+        else:
+            # Sorry, we don't know what you're talking about :)
+            raise ServiceRequireError("postgres module can't provide '%s'" % provide)
+        
+        if not self.parent:
+            raise ServiceRequireError("postgres service can't be executed locally, it has to be behind a SHELL_ACCESS-providing module.")
+
+        self.operation_mode = OP_THRGH_SHELL
+        return self.parent.required(PROV_SHELL_ACCESS)
+
+
+    def prework(self):
+
+        class expect_postgres_shell(ExpectClass):
+            def shell(self):
+                '\w*=#'
+                pass # We're in :)
+
+            def error(self):
+                'postgres: FATAL:  password authentication failed \w* "\w*"'
+                raise ServiceExpectError('Failed to authenticate with postgres')
+
+        class expect_postgres(ExpectClass):
+            def login(self):
+                'assword for user \w*:'
+                sys.stdout.write(" [sending password...] ")
+                self.cnx.sendline(self.service.data['plaintext'])
+
+                expect_postgres_shell(self.service)
+
+            def error(self):
+                'postgres: FATAL:  password authentication failed \w* "\w*"'
+                raise ServiceExpectError("Failed authentication for postgres "\
+                                         "at program launch")
+            
+            def notfound(self):
+                'command not found.*$'
+                raise ServiceExpectError('postgres client not installed on server')
+
+
+        # Bring over here the parent's shell handle.
+        cnx = self.parent.shell_handle
+        self.shell_handle = cnx
+
+        cmd = "psql -U %s -W -h %s" % (self.url.username, self.url.hostname)
+
+        # Select a port  directly ?
+        if int(self.url.port):
+            cmd += " -p %s" % self.url.port
+
+        # Select a database directly ?
+        db = ''
+        if self.url.path:
+                if self.url.path != '/':
+                    db = self.url.path.lstrip('/')
+                    cmd += " -d %s" % db
+
+        cnx.sendline(cmd)
+
+        expect_postgres(self)
+
+    # interact() and postwork() inherited
 
 class vnc(Service):
     """vnc protocol service handler"""

@@ -50,7 +50,7 @@ class SFLvaultParserError(Exception):
     pass
 
 
-class ExitParser(Exception):
+class ExitParserException(Exception):
     """Tells when the parser showed the help for a command."""
     pass
 
@@ -63,7 +63,7 @@ class NoExitParser(optparse.OptionParser):
     def exit(self, status=0, msg=None):
         if msg:
             sys.stderr.write(msg)
-        raise ExitParser()
+        raise ExitParserException()
 
     def error(self, msg):
         """error(msg : string)
@@ -101,7 +101,7 @@ class SFLvaultShell(object):
                 runcmd = SFLvaultCommand(self.vault, parser)
                 try:
                     runcmd._run(args)
-                except ExitParser, e:
+                except ExitParserException, e:
                     pass
 
     def quit(self):
@@ -170,6 +170,9 @@ class SFLvaultCommand(object):
         except xmlrpclib.Fault, e:
             # On is_admin check failed, on user authentication failed.
             print "[SFLvault] XML-RPC Fault: %s" % e.faultString
+        except xmlrpclib.ProtocolError, e:
+            # Server crashed
+            print "[SFLvault] XML-RPC communication failed: %s" % e
         except VaultConfigurationError, e:
             print "[SFLvault] Configuration error: %s" % e
         except RemotingError, e:
@@ -188,6 +191,12 @@ class SFLvaultCommand(object):
     def _parse(self):
         """Parse the command line options, and fill self.opts and self.args"""
         (self.opts, self.args) = self.parser.parse_args(args=self.argv)
+
+
+    def _del_last_history_item(self):
+        """Remove the last line in history (used to erase passwords from
+        history)."""
+        readline.remove_history_item(readline.get_current_history_length() - 1)
 
 
     def help(self, cmd=None, error=None):
@@ -241,7 +250,11 @@ class SFLvaultCommand(object):
                 print "No documentation available for `%s`." % readcmd
 
             print ""
-            self.parser.parse_args(args=['--help'])
+
+            try:
+                self.parser.parse_args(args=['--help'])
+            except ExitParserException, e:
+                pass
         else:
             print "No such command"
 
@@ -466,6 +479,8 @@ class SFLvaultCommand(object):
             # a valid and the one we want (what if copy&paste didn't work, and
             # you didn't know ?)
             secret = raw_input("Enter service's password: ")
+            self._del_last_history_item()
+
 
         machine_id = 0
         parent_id = 0
@@ -556,6 +571,7 @@ class SFLvaultCommand(object):
             raise SFLvaultParserError("Required argument: service_id")
 
         newsecret = raw_input("Enter new service password: ")
+        self._del_last_history_item()
 
         self.vault.service_passwd(self.args[0], newsecret)
 
@@ -806,6 +822,7 @@ class SFLvaultCommand(object):
                   ID."""
         self.parser.set_usage("show [opts] VaultID")
         self.parser.add_option('-v', '--verbose', dest="verbose",
+                               action="store_true", default=False,
                                help="Show verbose output (include notes, "\
                                     "location)")
         self.parser.add_option('-g', '--groups', dest="with_groups",
@@ -848,31 +865,73 @@ class SFLvaultCommand(object):
         self.parser.set_usage('search [opts] keyword1 ["key word2" ...]')
         self.parser.add_option('-g', '--group', dest="groups",
                                action="append", type="string",
-                               help="Search in this (these) groups only")
+                               help="Search in these groups only")
         self.parser.add_option('-q', '--quiet', dest="verbose",
                                action="store_false", default=True,
                                help="Don't show verbose output (includes notes, location)")
+        
+        self.parser.add_option('-m', '--machine', dest="machines",
+                               action="append", type="string",
+                               help="Filter results on these machines only")
+
+        self.parser.add_option('-c', '--customer', dest="customers",
+                               action="append", type="string",
+                               help="Filter results on these customers only")
+
         self._parse()
 
         if not len(self.args):
             raise SFLvaultParserError("Search terms required")
 
-        groups = None
-        if self.opts.groups:
-            groups = [self.vault.vaultId(x, 'g') for x in self.opts.groups]
+        # Get the values for each filter spec..
+        fields = {'groups': 'g',
+                  'machines': 'm',
+                  'customers': 'c'}
+        filters = {}
+        for f in fields.keys():
+            criteria = None
+            if getattr(self.opts, f):
+                criteria = [self.vault.vaultId(x, fields[f])
+                            for x in getattr(self.opts, f)]
+            filters[f] = criteria
 
-        self.vault.search(self.args, groups, self.opts.verbose)
+        self.vault.search(self.args, filters or None, self.opts.verbose)
 
 
+class SFLvaultCompleter:
+    def __init__(self, namespace):
+        self.namespace = namespace
+        self.matches = []
 
+    def complete(self, text, state):
+        if state == 0:
+            self.matches = self.global_matches(text)
+        try:
+            return self.matches[state]
+        except IndexError:
+            return None
 
-
+    def global_matches(self, text):
+        matches = []
+        for word in self.namespace:
+            if word.find(text,0,len(text)) == 0:
+                matches.append(word)
+        return matches
 
 ###
 ### Execute requested command-line command
 ###    
 def main():
     # Call the appropriate function of the 'f' object, according to 'action'
+    func_list = []
+    for onefunc in dir(SFLvaultCommand):
+        if onefunc[0] != '_':
+            func_list.append(onefunc.replace('_', '-'))
+
+    readline.set_completer_delims('_')
+    readline.set_completer(SFLvaultCompleter(func_list).complete)
+    readline.parse_and_bind("tab: complete")
+
 
     if len(sys.argv) == 1 or sys.argv[1] == 'shell':
         s = SFLvaultShell()

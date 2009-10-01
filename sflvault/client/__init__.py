@@ -28,6 +28,7 @@ import getpass
 import sys
 import re
 import os
+
 from subprocess import Popen, PIPE
 
 from decorator import decorator
@@ -487,7 +488,6 @@ class SFLvaultClient(object):
         print "Success: %s" % retval['message']
         print "New service ID: s#%d" % retval['service_id']
 
-
     @authenticate()
     def service_passwd(self, service_id, newsecret):
         """Updates the password on the Vault for a certain service"""
@@ -588,11 +588,20 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def search(self, query, groups_ids=None, verbose=True):
+    def search(self, query, filters=None, verbose=True):
         """Search the database for query terms, specified as a list of REGEXPs.
 
+        filters - is a dict with keys in ['groups', 'machines', 'customers']
+                  that limits the records returned to those matching those
+                  constraints. The values can be either int or str
+                  (representing an int)
+
         Returns a hierarchical view of the results."""
-        retval = vaultReply(self.vault.search(self.authtok, query, groups_ids,
+
+        # Remove empty filters:
+        filters = dict([(x, filters[x]) for x in filters if filters[x]])
+                
+        retval = vaultReply(self.vault.search(self.authtok, query, filters,
                                               verbose),
                             "Error searching database")
 
@@ -996,4 +1005,5 @@ class SFLvaultClient(object):
         print "Customer list:"
         for x in retval['list']:
             print "c#%d\t%s" % (x['id'], x['name'])
+
 

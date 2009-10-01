@@ -39,17 +39,13 @@ class FishClient(object):
     def start(self):
         """Start the FISH connection, init and get the remote version if any
         """
-        print "Sending start_fish_server request"
         self.proc.sendline('#FISH')
         self.proc.sendline('echo; start_fish_server; echo "### 200"')
         lines, retval = self._wait_for('### 200')
-        #pprint((lines, retval))
 
-        print "Sending VER request"
         self.proc.sendline('#VER 0.0.2 <feature1> <feature2> <...>')
         self.proc.sendline("echo '### 000'")
         lines, retval = self._wait_for('###')
-        #pprint((lines, retval))
 
     def dele(self, filename):
         """Delete a remote file"""
@@ -66,7 +62,6 @@ class FishClient(object):
         self.proc.sendline("#RETR %s" % (filename))
         self.proc.sendline("ls -l %s | ( read a b c d x e; echo $x ); echo '### 100'; cat %s; echo '### 200'" % (filename, filename))
         lines, retval = self._wait_for('### 100')
-        pprint((lines, retval))
         filelen = int(lines.pop().strip())
         print filelen
 
@@ -107,36 +102,27 @@ class FishClient(object):
         #self.proc.read(2)
 
         lines, retval = self._wait_for('### 200')
-        pprint((lines, retval))
 
     def stor(self, remote_filename, read_from, filelen, callback=None):
         """Store a file to remote host, reading from read_form.read()"""
         olddelay = self.proc.delaybeforesend
 
         # Taken from lftp's fish.c implementation
-        cmd = """#STOR %lu %s
-              echo '### 001'
-              file=%s
-              res=`exec 3>&1
-                (
-                   head -c %lu -q - || echo DD >&3
-                ) 2>/dev/null | (
-                  cat > "$file"
-                  cat > /dev/null
-                )`;
-              [ "$res" = DD ] && {
-                     > "$file"
-                     rest=%lu
-                     while [ $rest -gt 0 ]
-                     do
-                         cnt=`expr \\( $rest + 255 \\) / 256`
-                         n=`dd bs=256 count=$cnt | tee -a "$file" | wc -c`
-                         rest=`expr $rest - $n`
-                     done
-              };
-              echo '### 200'\n""" % (filelen, remote_filename,
-                                     remote_filename, filelen, filelen)
-        cmd = """#STOR %lu %s
+              
+        cmd = "#STOR %lu %s\n" % (filelen, remote_filename)
+        cmd += "stty -echo; rest=%lu;file=%s;:>$file;echo '### 001';" % (filelen,remote_filename)
+        cmd += "stty -icanon;"
+        cmd += "if echo 1|head -c 1 -q ->/dev/null 2>&1;then "
+        cmd += "head -c $rest -q -|(cat>$file;cat>/dev/null);"
+        cmd += "else while [ $rest -gt 0 ];do "
+        cmd += "bs=4096;cnt=`expr $rest / $bs`;"
+        cmd += "[ $cnt -eq 0 ] && { cnt=1;bs=$rest; }; "
+        cmd += "n=`dd ibs=$bs count=$cnt 2>/dev/null|tee -a $file|wc -c`;"
+        cmd += "[ \"$n\" -le 0 ] && exit;"
+        cmd += "rest=`expr $rest - $n`; "
+        cmd += "done;fi;stty icanon;stty echo;echo '### 200'\n"
+
+        cmd2 = """#STOR %lu %s
               echo '### 001'
               {
                      stty -echo
@@ -149,15 +135,13 @@ class FishClient(object):
                          rest=`expr $rest - $n`
                      done
                      stty echo
-              }; echo '### 200'\n""" % (filelen, remote_filename,
+              }
+              echo '### 200'\n""" % (filelen, remote_filename,
                                         remote_filename, filelen)
 
-        print "Sending STOR request"
-        print cmd
+
         self.proc.send(cmd)
-        print "Waiting for ### 001"
         lines, retval = self._wait_for('### 001')
-        #pprint((lines, retval))
 
         # Write:
         print "Uploading..."
@@ -177,14 +161,18 @@ class FishClient(object):
             packsize = (4096 if remain > 4095 else remain % 4096)
             chunk = read_from.read(packsize)
             remain -= len(chunk)
-            self.proc.send(chunk)
+            os.write(self.proc.child_fd, chunk)
 
         self.proc.delaybeforesend = olddelay
-        print "Uploading done."
         lines, retval = self._wait_for('### 200')
-        pprint((lines, retval))
+        print "Uploading done."
 
-
+def showstatus(fishproc):
+    n = datetime.now().second
+    if fishproc.callback_chk != n:
+        fishproc.callback_chk = n
+        diff = fishproc.filelen - fishproc.remain
+        print "%d / %d" % (diff, fishproc.filelen)
 
 if __name__ == '__main__':
     # Connect to an ssh command
@@ -201,12 +189,6 @@ if __name__ == '__main__':
     fc.start()
 
     oldn = -1
-    def showstatus(fishproc):
-        n = datetime.now().second
-        if fishproc.callback_chk != n:
-            fishproc.callback_chk = n
-            diff = fishproc.filelen - fishproc.remain
-            print "%d / %d" % (diff, fishproc.filelen)
 
     fname = '/tmp/' + raw_input("Fichier dans /tmp/: ")
     filesize = os.path.getsize(fname)

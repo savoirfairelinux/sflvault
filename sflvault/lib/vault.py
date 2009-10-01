@@ -325,17 +325,31 @@ class SFLvaultAccess(object):
         return self.service_get_tree(service_id, with_groups)
 
 
-    def search(self, search_query, groups_ids=None, verbose=False):
-        """Do the search, and return the result tree."""
+    def search(self, search_query, filters=None, verbose=False):
+        """Do the search, and return the result tree.
 
-        if groups_ids:
-            # Get groups
-            try:
-                groups, groups_ids = model.get_groups_list(groups_ids)
-            except ValueError, e:
-                return vaultMsg(False, str(e))
+        filters - must be a dictionary with options on which to constraint
+                  results.
 
-        search = model.search_query(search_query, groups_ids, verbose)
+        """
+
+        filter_types = ['groups', 'machines', 'customers']
+        # Load objects on which to restrict the query:
+        if filters:
+            if not isinstance(filters, dict):
+                return vaultMsg(False, "filters must be a dictionary")
+            for flt in filter_types:
+                # Skip filters that aren't specified
+                if flt not in filters:
+                    continue
+
+                # Skip filters that are empty or None
+                if not filters[flt]:
+                    continue
+
+                filters[flt] = model.get_objects_ids(filters[flt], flt)
+                    
+        search = model.search_query(search_query, filters, verbose)
 
 
         # Quick helper funcs, to create the hierarchical 'out' structure.
@@ -494,7 +508,8 @@ class SFLvaultAccess(object):
                     group_ids, secret, notes):
         # Get groups
         try:
-            groups, group_ids = model.get_groups_list(group_ids)
+            groups, group_ids = model.get_objects_list(group_ids, 'groups',
+                                                       return_objects=True)
         except ValueError, e:
             return vaultMsg(False, str(e))
         

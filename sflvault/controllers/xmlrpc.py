@@ -217,9 +217,9 @@ class XmlrpcController(XMLRPCController):
     #    return self.vault.show(service_id, with_groups)
 
     @authenticated_user
-    def sflvault_search(self, authtok, search_query, groups_ids=None,
+    def sflvault_search(self, authtok, search_query, filters=None,
                         verbose=False):
-        return self.vault.search(search_query, groups_ids, verbose)
+        return self.vault.search(search_query, filters, verbose)
 
     @authenticated_user
     def sflvault_service_add(self, authtok, machine_id, parent_service_id, url,
