@@ -233,9 +233,9 @@ class SFLvaultCommand(object):
                     else:
                         doc = '[n/a]'
                 
-                    print "  %s%s%s" % (x.replace('_','-'),
-                                        (25 - len(x)) * ' ',
-                                        doc)
+                    print " %s%s%s" % (x.replace('_','-'),
+                                       (18 - len(x)) * ' ',
+                                       doc)
             print "---------------------------------------------"
             print "Call: sflvault [command] --help for more details on each of those commands."
         elif not cmd.startswith('_') and callable(getattr(self, cmd)):
@@ -311,6 +311,7 @@ class SFLvaultCommand(object):
 
     def customer_del(self):
         """Delete an existing customer, it's machines and all services.
+
         Make sure you have detached all services' childs before removing a
         customer with machines which has services that are parents to other
         services."""
@@ -328,9 +329,11 @@ class SFLvaultCommand(object):
 
 
     def machine_del(self):
-        """Delete an existing machine, including all services. Make sure
-        you have detached all services' childs before removing a machine
-        which has services that are parents to other services."""
+        """Delete an existing machine, including all services.
+
+        Make sure you have detached all services' childs before removing
+        a machine which has services that are parents to other services.
+        """
         
         self.parser.set_usage("machine-del machine_id")
         self._parse()
@@ -442,7 +445,7 @@ class SFLvaultCommand(object):
 
 
     def service_add(self):
-        """Add a service to a particular machine in the Vault's database.
+        """Add a service to a particular machine.
 
         The secret/password/authentication key will be asked in the
         interactive prompt.
@@ -498,7 +501,7 @@ class SFLvaultCommand(object):
 
 
     def service_edit(self):
-        """Edit Service informations"""
+        """Edit service informations."""
         self._something_edit("service-edit [service_id]",
                              'service_id', 's',
                              self.vault.service_get,
@@ -507,7 +510,7 @@ class SFLvaultCommand(object):
                              'service-edit aborted')
 
     def machine_edit(self):
-        """Edit Machine informations"""
+        """Edit machine informations."""
         self._something_edit("machine-edit [machine_id]",
                              'machine_id', 'm',
                              self.vault.machine_get,
@@ -516,7 +519,7 @@ class SFLvaultCommand(object):
                              'machine-edit aborted')
 
     def customer_edit(self):
-        """Edit Customer informations"""
+        """Edit customer informations."""
         self._something_edit("customer-edit [customer_id]",
                              'customer_id', 'c',
                              self.vault.customer_get,
@@ -559,7 +562,7 @@ class SFLvaultCommand(object):
 
 
     def service_passwd(self):
-        """Change the password for a service
+        """Change the password for a service.
 
         Do not specify password on command line, it will be asked on the
         next line.
@@ -786,7 +789,7 @@ class SFLvaultCommand(object):
 
 
     def user_passwd(self):
-        """Change the passphrase protecting your locally saved private key"""
+        """Change the passphrase protecting your local private key"""
         self.parser.set_usage("user-passwd")
         self._parse()
 
@@ -861,7 +864,7 @@ class SFLvaultCommand(object):
 
 
     def search(self):
-        """Search the Vault's database for those space separated keywords"""
+        """Search the Vault for the given keywords"""
         self.parser.set_usage('search [opts] keyword1 ["key word2" ...]')
         self.parser.add_option('-g', '--group', dest="groups",
                                action="append", type="string",
