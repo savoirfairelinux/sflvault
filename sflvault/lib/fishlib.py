@@ -59,8 +59,8 @@ class FishClient(object):
     def retr(self, filename, write_to, callback=None):
         """Retrieve a file from remote host, and write the content to the
         given file-like object"""
-        self.proc.sendline("#RETR %s" % (filename))
-        self.proc.sendline("ls -l %s | ( read a b c d x e; echo $x ); echo '### 100'; cat %s; echo '### 200'" % (filename, filename))
+        self.proc.sendline('''#RETR "%s"''' % (filename))
+        self.proc.sendline("""ls -l "%s" | ( read a b c d x e; echo $x ); echo '### 100'; cat "%s"; echo '### 200'""" % (filename, filename))
         lines, retval = self._wait_for('### 100')
         filelen = int(lines.pop().strip())
         print filelen
@@ -109,8 +109,8 @@ class FishClient(object):
 
         # Taken from lftp's fish.c implementation
               
-        cmd = "#STOR %lu %s\n" % (filelen, remote_filename)
-        cmd += "stty -echo; rest=%lu;file=%s;:>$file;echo '### 001';" % (filelen,remote_filename)
+        cmd = """#STOR %lu "%s"\n""" % (filelen, remote_filename)
+        cmd += """stty -echo; rest=%lu;file="%s";:>$file;echo '### 001';""" % (filelen,remote_filename)
         cmd += "stty -icanon;"
         cmd += "if echo 1|head -c 1 -q ->/dev/null 2>&1;then "
         cmd += "head -c $rest -q -|(cat>$file;cat>/dev/null);"
@@ -122,11 +122,11 @@ class FishClient(object):
         cmd += "rest=`expr $rest - $n`; "
         cmd += "done;fi;stty icanon;stty echo;echo '### 200'\n"
 
-        cmd2 = """#STOR %lu %s
+        cmd2 = """#STOR %lu "%s"
               echo '### 001'
               {
                      stty -echo
-                     file=%s
+                     file="%s"
                      rest=%lu
                      while [ $rest -gt 0 ]
                      do
