@@ -792,7 +792,7 @@ class SFLvaultClient(object):
 
 
     @authenticate(True)
-    def connect(self, vid):
+    def connect(self, vid, command_line=''):
         """Connect to a distant machine (using SSH for now)"""
         servs = self.service_get_tree(vid)
 
@@ -802,7 +802,7 @@ class SFLvaultClient(object):
             if not x['cryptsymkey']:
                 raise RemotingError("We don't have access to password for service %s" % x['url'])
 
-        connection = remoting.Chain(servs)
+        connection = remoting.Chain(servs, command_line=command_line)
         connection.setup()
         connection.connect()
 

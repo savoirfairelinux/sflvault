@@ -161,6 +161,8 @@ class SFLvaultCommand(object):
         try:
             getattr(self, action)()
         except SFLvaultParserError, e:
+            print "[SFLvault] Command line error: %s" % e
+            print
             self.help(cmd=action, error=e)
         except AuthenticationError:
             raise
@@ -849,17 +851,15 @@ class SFLvaultCommand(object):
 
         VaultID - service ID as 's#123', '123', or alias pointing to a service
                   ID."""
-        self.parser.set_usage("connect VaultID")
-        self.parser.add_option('-v', '--verbose', dest="verbose",
-                               help="Verbose (unused, only for compat. with 'show')")
-        self._parse()
+        # Chop in two parts
+        args = self.argv
 
-        if len(self.args) != 1:
+        if len(args) < 1:
             raise SFLvaultParserError("Invalid number of arguments")
 
-        vid = self.vault.vaultId(self.args[0], 's')
+        vid = self.vault.vaultId(args[0], 's')
 
-        self.vault.connect(vid)
+        self.vault.connect(vid, command_line=args[1:])
 
 
 

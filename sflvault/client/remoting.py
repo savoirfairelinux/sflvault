@@ -19,9 +19,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""This file contains the remoting services. Everything that is required
-for automated connection to remote hosts, even with multiple hops (e.g.: ssh to
-ssh to ssh to http)"""
+"""This module contains utilities for the remoting feature of SFLvault.
+
+The base Service class and Chain class are defined. Those are the basic
+service-chaining machinery. They are generic.
+
+For individual services, like `ssh` and `http`, see services.py.
+
+Entry-points taken into account here:
+
+  [sflvault.services]
+
+must list some instances of the `Service` class or some derived class.
+
+"""
 
 from sflvault.client.utils import *
 
@@ -39,16 +50,19 @@ class Service(object):
     objects (ssh, vnc, rdp, mysql, http, https, drac, ftp, postgresql, su,
     sudo, etc..)"""
 
-    provides_modes = [] # List what a service handler supports (gives SHELL
-                        # access or can provide PORT_FORWARD, etc. Defaults to
-                        # nothing special: plugin is always an end-point.
-
+    provides_modes = set() # List what a service handler supports (gives SHELL
+                           # access or can provide PORT_FORWARD, etc. Defaults
+                           # to nothing special: plugin is always an end-point.
+    operation_mode = None # By default, no operation mode, until we define
+                          # one in required() for each service.
+    
     parent = None  # Used for link-listing
     child = None   # Used for link-listing
 
     # These two will be set for child operating in THROUGH_FWD_PORT mode
-    forward_host = None
-    forward_port = None
+    forward_bind_port = None # which port to listen to
+    forward_host_name = None # which host to forward to
+    forward_host_port = None # which port to forward to
 
     # This will be filled for child requiring a `shell` handle
     shell_handle = None
@@ -57,10 +71,13 @@ class Service(object):
     # XML-RPC mostly..
     data = None
 
-    def __init__(self, data, timeout=30):
+    def __init__(self, data, timeout=30, command_line=''):
         self.data = data
         self.url = urlparse.urlparse(data['url'])
         self.timeout = timeout
+        self.command_line = command_line
+        # We need a copy, as the modes can change when configuring chain.
+        self.provides_modes = self.provides_modes.copy()
 
     def set_child(self, child):
         """Set the child of this service (sets the parent on the child too)"""
@@ -70,12 +87,16 @@ class Service(object):
     def unlink_child(self):
         """Unlink parent from child.
 
-        Call on the first parent to unlink all chain"""
+        Call on the first parent to unlink all elements of the chain.
+
+        WARN: This should be called to avoid circular references.
+        """
         c = self.child
         p = self.parent
 
         self.child = None
         self.parent = None
+        self.chain = None
         
         if c:
             c.unlink()
@@ -88,13 +109,14 @@ class Service(object):
         """Return True of False, whether it supports the provisioning mode"""
         if not mode:
             return True
+        elif isinstance(mode, (set, list)):
+            return set(mode).issubset(self.provides_modes)
         else:
-            return mode in self.__class__.provides_modes
+            return mode in self.provides_modes
 
 
     # Abstract functions that must exist in childs
-
-    def required(self, mode=None):
+    def required(self, req=None):
         """Called to setup the chain and make dependencies/providings checks"""
         raise NotImplementedError
 
@@ -110,7 +132,9 @@ class Service(object):
     def postwork(self):
         """Called after interact() is finished for the last child, in reverse order."""
         raise NotImplementedError
-        
+
+    # Optional methods on derived classes (see services.ssh)
+    #def optparse(self, command_line): pass
 
 
 class Chain(object):
@@ -126,13 +150,14 @@ class Chain(object):
     services_struct is the structure received from an sflvault.show() XML-RPC
     call."""
 
-    # Link-list of the Service objects, 
-    service_list = None
-    ready = False
-
-    def __init__(self, services=None):
+    def __init__(self, services=None, command_line=''):
         """Initialise the Chain object"""
         self.services = services
+        self.command_line = command_line
+        # Make sure you call setup() once.
+        self.ready = False
+        # Link-list of the Service objects, 
+        self.service_list = None
 
         
     def setup(self):
@@ -155,6 +180,7 @@ class Chain(object):
                 if ep.name == parsed_url.scheme:
                     srvobj = ep.load()
                     service = srvobj(srvdata)
+                    service.chain = self
                     break
 
             if not service:
@@ -163,16 +189,24 @@ class Chain(object):
             service_list.append(service)
             
         # Link the services as parent/child.
-        last = service_list[0]
-        for i in range(0, len(service_list) - 1):
+        for i in range(len(service_list) - 1):
             service_list[i].set_child(service_list[i+1])
-            last = service_list[i+1]
 
         self.service_list = service_list
-        self.last_service = last
+
+        # Dispatch the command_line, to the latest handler that supports it.
+        done = False
+        for serv in reversed(service_list):
+            if hasattr(serv, 'optparse'):
+                # TODO: deal with optparse errors (try), and display good errors
+                serv.optparse(self.command_line)
+                done = True
+                break
+        if not done and self.command_line:
+            raise RemotingError("No service handle to take care of your command line arguments: %s" % self.comment_line)
 
         # Call .required() on the LAST element, and setup all the chain.
-        if not last.required():
+        if not self.service_list[-1].required():
             raise RemotingError("No services route to destination")
         else:
             self.ready = True
@@ -180,11 +214,10 @@ class Chain(object):
 
 
     def unlink_all(self):
-        self.last_service = None
+        # Is this used anywhere ?
         sl = service_list
         self.service_list = None
-
-        self.service_list[0].unlink_child()
+        sl[0].unlink_child()
         
 
     def connect(self):
