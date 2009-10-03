@@ -45,7 +45,7 @@ setup(
     main = pylons.util:PylonsInstaller
 
     [console_scripts]
-    sflvault = sflvault.client.client:main
+    sflvault = sflvault.client.commands:main
 
     [sflvault.services]
     ssh = sflvault.client.services:ssh
