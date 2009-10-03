@@ -1,0 +1,19 @@
+SFLvaultCommand object
+======================
+
+.. Commented imports
+
+   >>> import sflvault.client
+
+.. autoclass:: sflvault.client.SFLvaultCommand
+   :members:
+
+
+SFLvaultShell object
+====================
+
+This shell object wraps multiple :class:`SFLvaultCommand` objects in a
+shell-like command-line prompt.
+
+.. autoclass:: sflvault.client.SFLvaultShell
+   :members:
