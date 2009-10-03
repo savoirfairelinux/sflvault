@@ -374,24 +374,27 @@ def search_query(swords, filters=None, verbose=False):
             sel = sel.where(Customer.id.in_(filters['customers']))
 
     # Fields to search in..
-    allfields = [Customer.id,
-                 Customer.name,
+    textfields = [Customer.name,
+                  Machine.name,
+                  Machine.fqdn,
+                  Machine.ip,
+                  Machine.location,
+                  Machine.notes,
+                  Service.url,
+                  Service.notes]
+    numfields = [Customer.id,
                  Machine.id,
-                 Machine.name,
-                 Machine.fqdn,
-                 Machine.ip,
-                 Machine.location,
-                 Machine.notes,
-                 Service.id,
-                 Service.url,
-                 Service.notes]
+                 Service.id]
     
     # TODO: distinguish between INTEGER fields and STRINGS and search
     # differently (check only ==, and only if word can be converted to int())
 
     andlist = []
     for word in swords:
-        orlist = [field.ilike('%%%s%%' % word) for field in allfields]
+        orlist = [field.ilike('%%%s%%' % word) for field in textfields]
+        if word.isdigit():
+            # Search numeric fields too
+            orlist += [field == int(word) for field in numfields]
         orword = sql.or_(*orlist)
         andlist.append(orword)
 
