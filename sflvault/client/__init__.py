@@ -605,7 +605,8 @@ class SFLvaultClient(object):
         """
 
         # Remove empty filters:
-        filters = dict([(x, filters[x]) for x in filters if filters[x]])
+        if filters:
+            filters = dict([(x, filters[x]) for x in filters if filters[x]])
                 
         retval = vaultReply(self.vault.search(self.authtok, query, filters,
                                               verbose),

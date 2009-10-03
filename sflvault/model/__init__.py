@@ -350,10 +350,10 @@ def search_query(swords, filters=None, verbose=False):
     # Create the join..
     sel = sql.join(Customer, Machine).join(Service)
 
-    # Remove filters that are just None
-    filters = dict([(x, filters[x]) for x in filters if filters[x]])
-    
     if filters:
+        # Remove filters that are just None
+        filters = dict([(x, filters[x]) for x in filters if filters[x]])
+
         if not isinstance(filters, dict):
             raise RuntimeError("filters param must be a dict, or None")
 
