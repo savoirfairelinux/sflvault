@@ -232,6 +232,10 @@ class XmlrpcController(XMLRPCController):
         return self.vault.service_del(service_id)
 
     @authenticated_user
+    def sflvault_service_list(self, authtok, machine_id=None, customer_id=None):
+        return self.vault.service_list(machine_id, customer_id)
+
+    @authenticated_user
     def sflvault_machine_add(self, authtok, customer_id, name, fqdn, ip,
                              location, notes):
         return self.vault.machine_add(customer_id, name, fqdn, ip,

@@ -1079,6 +1079,29 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Here is the machines list", {'list': out})
     
 
+    def service_list(self, machine_id=None, customer_id=None):
+        """Return a simple list of the services"""
+        select = query(Service).join('machine')
+
+        # Filter also..
+        if machine_id:
+            select = select.filter(Service.machine_id==machine_id)
+        if customer_id:
+            select = select.filter(Machine.customer_id==customer_id)
+
+        out = []
+        for service in select:
+            srv = {'id': service.id, 'url': service.url,
+                   'parent_service_id': service.parent_service_id,
+                   'metadata': service.metadata, 'notes': service.notes,
+                   'machine_id': service.machine_id,
+                   'secret': service.secret,
+                   'secret_last_modified': service.secret_last_modified,
+                   }
+            out.append(srv)
+        return vaultMsg(True, "Here is the machines list", {'list': out})
+
+
     def service_passwd(self, service_id, newsecret):
         """Change the passwd for a given service"""
         # number please

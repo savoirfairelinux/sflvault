@@ -181,7 +181,7 @@ class SFLvaultClient(object):
     def __init__(self, cfg=None, shell=False):
         """Set up initial configuration for function calls
 
-        When shell = True, privkey will be cached for a while.
+        When shell == True, privkey will be cached for a while.
         """
 
         # Load configuration
