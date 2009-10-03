@@ -1,0 +1,9 @@
+To build documentation, install Sphinx
+
+  easy_install Sphinx
+
+and run:
+
+  make html
+
+Documentation lies in sphinxsrc/

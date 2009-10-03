@@ -1,0 +1,65 @@
+.. SFLvault documentation master file, created by
+   sphinx-quickstart on Sat Oct  3 10:37:06 2009.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+
+
+Welcome to SFLvault's documentation!
+====================================
+
+Here you will find the documentation to script your access to the SFLvault.
+
+Before we start, here is a quick mapping of the elements::
+
+
+   SFLvault command line                            SQLite database
+       |                                                  |
+       |                                                  |
+  SFLvaultClient object ---> (direct access) ---> SFLvaultAccess object
+        \                                                /
+         \ (wraps)                                      /
+          \                                            /
+       XMLRPCClient  ---> (network) ----> XMLRPCController 
+
+
+The :class:`sflvault.client.SFLvaultClient` methods are called when you run
+``sflvault connect s#1`` or ``sflvault service-add ...``.
+Two other objects enter into composition when calling from the command line:
+:class:`sflvault.client.SFLvaultCommand` and
+:class:`sflvault.client.SFLvaultShell` (if you launched the shell
+with ``sflvault`` alone).
+
+SFLvaultCommand deals with all the options parsing, and calls methods on the
+underlying SFLvaultClient object.
+
+Communication to the Vault is done through XML-RPC via the server's XML-RPC
+controller, through the use of the client's xmlrpc library. This gives a quite
+direct access to the SFLvaultAccess object on the server-side, while wrapping
+calls when an authentication mechanism.
+
+SFLvault was designed to be able to by-pass the XML-RPC parts, and connect
+the SFLvaultClient directly to the SFLvaultAccess object, when working locally.
+
+.. NOTE::
+
+  This hasn't been tested yet, but not much work would be required to make
+  that happen.
+
+Contents
+--------
+
+.. toctree::
+   :maxdepth: 2
+
+   client
+   vaultaccess
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+

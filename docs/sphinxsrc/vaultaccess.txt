@@ -1,0 +1,11 @@
+SFLvaultAccess object
+=====================
+
+This allows for a direct access to database and it's contents.
+
+.. Commented imports
+
+   >>> import sflvault.lib.vault
+
+.. autoclass:: sflvault.lib.vault.SFLvaultAccess
+   :members:

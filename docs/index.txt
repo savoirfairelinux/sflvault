@@ -1,6 +1,0 @@
-SFLvault API documentation
-==========================
-
-Here you will find the documentation to script your access to the SFLvault.
-
-.. autoclass: sflvault.client.SFLvaultClient
