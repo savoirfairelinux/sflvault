@@ -5,10 +5,17 @@
 
 
 
-Welcome to SFLvault's documentation!
-====================================
+Welcome to SFLvault's API documentation!
+========================================
 
 Here you will find the documentation to script your access to the SFLvault.
+
+.. NOTE:: 
+
+  If you're looking for tutorials on how to use SFLvault's command-line
+  interface, or how to setup your own SFLvault server, please refer to
+  the `website's wiki <http://www.sflvault.org/#Learn-more>`_.
+
 
 Before we start, here is a quick mapping of the elements::
 

@@ -26,8 +26,8 @@ Other commands will be implemented in the future, giving ability to
 script on the client side things that will be sent to through the shell."""
 
 from sflvault.lib.fishlib import FishClient, showstatus
-from sflvault.client.client import SFLvaultCompleter, NoExitParser
-from sflvault.client.client import ExitParserException, SFLvaultParserError
+from sflvault.client.commands import SFLvaultCompleter, NoExitParser
+from sflvault.client.commands import ExitParserException, SFLvaultParserError
 import shlex
 import sys
 import readline
