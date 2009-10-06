@@ -348,7 +348,7 @@ def get_objects_list(objects_ids, object_type, eagerload_all_=None,
 def search_query(swords, filters=None, verbose=False):
 
     # Create the join..
-    sel = sql.join(Customer, Machine).join(Service)
+    sel = sql.outerjoin(Customer, Machine).outerjoin(Service)
 
     if filters:
         # Remove filters that are just None
