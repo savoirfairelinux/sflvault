@@ -22,6 +22,7 @@
 """Several utilities used in the SFLvault client"""
 
 import urlparse
+import re
 
 __all__ = ['shred', 'urlparse', 'AuthenticationError',
            'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
@@ -84,7 +85,114 @@ class ServiceRequireError(Exception):
     pass
 
 class ServiceExpectError(Exception):
-    """When an error occurs in the expected values in prework to set up a service.
+    """When an error occurs in the expected values in prework to set up a
+    service.
 
     We assume the interact() will be called for the parent at that point."""
     pass
+
+
+# Flexible URL parser (not RFC compliant, but very flexible for our purpose)
+class URLParserError(Exception):
+    pass
+
+class URLParser(object):
+    """Parses URLs and splits `scheme`, `hostname`, `username`, `port`,
+    `path`, `query`, `fragment`, etc.. apart in an string representing an URL
+
+    >>> u = URLParser('http://www.example.com/path')
+    >>> u
+    ...
+    >>> u.hostname
+    'www.example.com'
+    >>> u.path
+    '/path'
+
+    >>> u2 = URLParser('git+ssh://[user@host]@git.example.com/var/www/repos')
+    >>> u2.username
+    'user@host'
+    >>> u2.hostname
+    'git.example.com'
+    >>> u2.path
+    '/var/www/repos'
+
+    >>> u3 = URLParser('https://[user@host]:passwd123@[2009::10:ab]:123/var/my/path?q=hello#frag123')
+    >>> u3.scheme
+    'https'
+    >>> u3.username
+    'user@host'
+    >>> u3.password
+    'passwd123'
+    >>> u3.hostname
+    '2009::10:ab'
+    >>> u3.port
+    '123'
+    >>> u3.path
+    '/var/my/path'
+    >>> u3.query
+    'q=hello'
+    >>> u3.fragment
+    'frag123'
+
+    >>> u3.gen_url(with_password=False)  # Default behavior
+    'https://[user@host]@[2009::10:ab]:123/var/my/path?q=hello#frag123'
+    """
+    _regex = re.compile(r"([a-zA-Z0-1+-]+)(://)(((\[([^\]]+)\])|([^@]+))(:([^@]*))?@)?(([^\[/][^:/\?#]+)|(\[([^\]]+)\]))?(:(\d+))?(/([^\?]*))?(\?([^#]*))?(#(.*))?")
+    
+    def __init__(self, url=None):
+        """Parse an URL or create a new empty object"""
+        self.scheme = None
+        self.username = None
+        self.password = None
+        self.hostname = None
+        self.port = None
+        self.path = None
+        self.query = None
+        self.fragment = None
+        if url:
+            self._parse(url)
+
+    def _parse(self, url):
+        """Extract infos from URLs, and fill in this object"""
+        res = self._regex.match(url)
+        if not res:
+            raise URLParserError('Invalid or malformed URL')
+        self.scheme = res.group(1)
+        self.username = res.group(6) or res.group(7) or ''
+        self.password = res.group(9)
+        self.hostname = res.group(11)or res.group(13) or ''
+        self.port = res.group(15)
+        self.path = '/' + (res.group(17) or '')
+        self.query = res.group(19) or ''
+        self.fragment = res.group(21) or ''
+        self.res = res
+
+    def show(self):
+        for i in range(len(self.res.groups())):
+            print i+1, self.res.group(i+1)
+
+    def gen_url(self, with_password=False):
+        if not self.scheme:
+            raise URLParserError('No scheme specified, please set the `scheme`'
+                                 ' attribute')
+        s = ['%s://' % self.scheme]
+        if self.username:
+            u = '[%s]' if set('@:?/#') & set(self.username) else '%s'
+            if with_password and self.password:
+                u += ':%s' % self.password
+            s += ["%s@" % (u % self.username)]
+        if self.hostname:
+            h = '[%s]' if set(r':?/#') & set(self.hostname) else '%s'
+            s += [h % self.hostname]
+        if self.port:
+            s += [':%s' % self.port]
+        if self.path:
+            s += [self.path]
+        if self.query:
+            s += ['?%s' % self.query]
+        if self.fragment:
+            s += ['#%s' % self.fragment]
+        return ''.join(s)
+
+    def __repr__(self):
+        return '<URLParser: %s (passwd: %s)>' % (self.gen_url(), self.password)
