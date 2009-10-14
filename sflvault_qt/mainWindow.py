@@ -265,23 +265,15 @@ class MainWindow(QtGui.QMainWindow):
         # Prepare to launch command
         if self.settings.value("protocols/" + protocol + "/command").toString():
             # Create Command
-            complete_command = unicode(self.settings.value("protocols/" + protocol + "/command").toString())
-            complete_command = complete_command % options
-            args = complete_command.split(" ")
-            command = args[0]
-            args = args[1:]
+            command = unicode(self.settings.value("protocols/" + protocol + "/command").toString())
+            command = command % options
             print command
-            print args
              
             # Exit if command is empty (to prevent segfault. See bug #4)
             if command.strip() == "": return
             # Launch process
             self.procxterm = QtCore.QProcess()
-            print self.procxterm.environment()
-            print len(self.procxterm.environment())
-            for i in self.procxterm.environment():
-                print str(i)
-            self.procxterm.start(command, args)
+            self.procxterm.start(command)
 
     def copyToClip(self, password):
         """
