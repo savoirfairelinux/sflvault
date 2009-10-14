@@ -307,7 +307,7 @@ class TreeView(QtGui.QTreeView):
         self.sourcemodel = TreeModel(research, groups_ids, self)
         # Load proxy
         self.proxyModel.setSourceModel(self.sourcemodel)
-        if research:
+        if research and not research == [u''] :
             self.expandAll()
         else:
             self.collapseAll()
@@ -347,10 +347,7 @@ class TreeView(QtGui.QTreeView):
             Filter and expand
         """
         self.proxyModel.setFilterRegExp(pattern)
-        if pattern:
-            self.expandAll()
-        else:
-            self.collapseAll()
+        self.expandAll()
         # Sort by name
         self.sortByColumn(0)
         
