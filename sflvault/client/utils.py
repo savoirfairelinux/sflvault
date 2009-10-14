@@ -23,10 +23,12 @@
 
 import urlparse
 import re
+import readline
 
 __all__ = ['shred', 'urlparse', 'AuthenticationError',
            'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
-           'ServiceRequireError', 'ServiceExpectError', 'sflvault_escape_chr']
+           'ServiceRequireError', 'ServiceExpectError', 'sflvault_escape_chr',
+           'ask_for_service_password']
 
 #
 # Add protocols to urlparse, for correct parsing of ssh and others.
@@ -40,6 +42,8 @@ urlparse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
 sflvault_escape_chr = chr(30)
 
 
+# TO REMOVE: This shred function is useless in python, because of the way
+# it manages memory (especially strings)
 def shred(var):
     """Tries to wipe out from memory certain variables
 
@@ -48,6 +52,18 @@ def shred(var):
     l = len(var)
     var = 'x' * l
     return var
+
+
+def ask_for_service_password(prompt):
+    # Use raw_input so that we see the password. To make sure we enter
+    # a valid and the one we want (what if copy&paste didn't work, and
+    # you didn't know ?)
+    sec = raw_input(prompt)
+    readline.remove_history_item(readline.get_current_history_length() - 1)
+    # CSI n F to go back one line. CSI n K to erase the line.
+    # See http://en.wikipedia.org/wiki/ANSI_escape_code
+    print "\033[1F\033[2K ... password taken ..."
+    return sec
 
 
 
@@ -167,11 +183,17 @@ class URLParser(object):
         self.fragment = res.group(21) or ''
         self.res = res
 
-    def show(self):
+    def _show(self):
         for i in range(len(self.res.groups())):
             print i+1, self.res.group(i+1)
 
     def gen_url(self, with_password=False):
+        """Renders the URL, optionally without the password, based on
+        the internal state of it's attributes (hostname, username, etc..)
+
+        >>> u = URLParser('http://www.example.com/path')
+        >>> u.
+        """
         if not self.scheme:
             raise URLParserError('No scheme specified, please set the `scheme`'
                                  ' attribute')

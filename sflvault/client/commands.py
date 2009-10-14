@@ -195,12 +195,6 @@ class SFLvaultCommand(object):
         (self.opts, self.args) = self.parser.parse_args(args=self.argv)
 
 
-    def _del_last_history_item(self):
-        """Remove the last line in history (used to erase passwords from
-        history)."""
-        readline.remove_history_item(readline.get_current_history_length() - 1)
-
-
     def help(self, cmd=None, error=None):
         """Print this help.
 
@@ -477,15 +471,7 @@ class SFLvaultCommand(object):
         url = urlparse.urlparse(o.url)
         url = self._service_clean_url(url)
 
-        secret = None
-
-        if not secret:
-            # Use raw_input so that we see the password. To make sure we enter
-            # a valid and the one we want (what if copy&paste didn't work, and
-            # you didn't know ?)
-            secret = raw_input("Enter service's password: ")
-            self._del_last_history_item()
-
+        secret = ask_for_service_password("Enter service's password: ")
 
         machine_id = 0
         parent_id = 0
@@ -575,8 +561,7 @@ class SFLvaultCommand(object):
         if not len(self.args):
             raise SFLvaultParserError("Required argument: service_id")
 
-        newsecret = raw_input("Enter new service password: ")
-        self._del_last_history_item()
+        newsecret = ask_for_service_password("Enter new service password: ")
 
         self.vault.service_passwd(self.args[0], newsecret)
 
