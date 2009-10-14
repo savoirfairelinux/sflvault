@@ -1,0 +1,11 @@
+Other utilities
+===============
+
+URL parsing utilites
+
+.. Commented imports
+
+   >>> import sflvault.client.utils
+
+.. autoclass:: sflvault.client.utils.URLParser
+   :members:
