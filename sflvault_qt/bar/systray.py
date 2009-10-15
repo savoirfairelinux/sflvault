@@ -63,7 +63,7 @@ class Systray(QtGui.QSystemTrayIcon):
 
         self.quitAction = QtGui.QAction(self.tr("&Quit"), self)
         QtCore.QObject.connect(self.quitAction, QtCore.SIGNAL("triggered()"),
-                self.parent.close)
+                self.parent.app.quit)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL("activated (QSystemTrayIcon::ActivationReason)"), self.hideShow)
 

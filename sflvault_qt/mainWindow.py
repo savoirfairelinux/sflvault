@@ -107,7 +107,7 @@ class MainWindow(QtGui.QMainWindow):
 
         # Signals
         ## Quit
-        QtCore.QObject.connect(self.menubar.quit, QtCore.SIGNAL("triggered()"), self.close)
+        QtCore.QObject.connect(self.menubar.quit, QtCore.SIGNAL("triggered()"), self.app.quit)
         ## Protocols
         QtCore.QObject.connect(self.menubar.protocols, QtCore.SIGNAL("triggered()"), self.protocols.exec_)
         ## Protocols
@@ -133,8 +133,12 @@ class MainWindow(QtGui.QMainWindow):
         ## new service
         QtCore.QObject.connect(self.menubar.newserv, QtCore.SIGNAL("triggered(bool)"), self.editService)
 
+
     def closeEvent(self, event):
-        if self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
+        if self.settings.value("SFLvault-qt4/hide").toInt()[0] == QtCore.Qt.Checked:
+            event.ignore()
+            self.hide()
+        elif self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
             state = QtCore.QVariant(self.saveState())
             self.settings.setValue("SFLvault-qt4/binsavewindow", state)
 
