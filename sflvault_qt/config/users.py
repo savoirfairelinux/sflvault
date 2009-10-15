@@ -191,7 +191,7 @@ class UsersWidget(QtGui.QDialog):
                         group_member = False
                         # browser user groups
                         for user_group in user["groups"]:
-                            print user_group
+                            #print user_group
                             # check if user is in group
                             if user_group["id"] == group["id"]:
                                 group_member = True
@@ -335,6 +335,9 @@ class GroupsModel(QtGui.QStandardItemModel):
         if not self.groups:
             return QtCore.QVariant()
 
+        if len(self.groups) <= index.row():
+            return QtCore.QVariant()
+
         group = self.groups[index.row()]
 
         # get value of member and admin
@@ -399,9 +402,9 @@ class GroupItem(QtCore.QObject):
             value, bool = value.toInt()
             if bool:
                 if value == QtCore.Qt.Checked:
-                    print self.id
-                    print self.parent.current_username
-                    print self.admin
+                   # print self.id
+                   # print self.parent.current_username
+                   # print self.admin
                     addUserGroup(self.id, self.parent.current_username, True)
                 setattr(self, attr, value)
                 return True
