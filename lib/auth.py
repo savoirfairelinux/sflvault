@@ -21,6 +21,8 @@
 #    along with this program; if not, write to the Free Software
 #    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
+# TODO
+# Create subprocess for long processing task (add groups, services ...)
 
 
 import sys
@@ -132,16 +134,16 @@ def editPassword(id, password):
         return None
     return password
 
-def listUsers():
+def listUsers(groups=True):
     global token
     users = None
     try:
-        users = token.vault.user_list(token.authtok, True)["list"]
+        users = token.vault.user_list(token.authtok, groups)["list"]
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
         # So we have to get a new token
         getAuth()
-        users = listUser()
+        users = listUsers()
     except Exception, e:
         ErrorMessage(e)
         return None
@@ -482,6 +484,50 @@ def delService(servid):
         if status["error"]:
             e = Exception('delservice')
             e.message = error_message.tr("Can not delete service : %s" % servid)
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
+def addUserGroup(group_id, user, is_admin):
+    global token
+    try:
+        status = token.vault.group.add.user(token.authtok, group_id, user, is_admin)
+        if status["error"]:
+            e = Exception('groupadduser')
+            e.message = error_message.tr("Can not add %s user to group %s : %s" % (user,group_id))
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = addUserGroup(group_id, user, is_admin)
+        if status["error"]:
+            e = Exception('groupadduser')
+            e.message = error_message.tr("Can not add %s user to group %s : %s" % (user,group_id))
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return None
+    return status
+
+def addGroup(group_name):
+    global token
+    try:
+        status = token.vault.group_add(token.authtok, group_name)
+        if status["error"]:
+            e = Exception('groupuser')
+            e.message = error_message.tr("Can not create a new group : %s" % (user,group_id))
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = addGroup(group_name)
+        if status["error"]:
+            e = Exception('groupuser')
+            e.message = error_message.tr("Can not create a new group : %s" % (user,group_id))
             raise e
     except Exception, e:
         ErrorMessage(e)

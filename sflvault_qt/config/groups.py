@@ -41,6 +41,7 @@ class GroupsWidget(QtGui.QDialog):
         self.settings = self.parent.settings
 
         # Load gui items
+        ## Groupbox
         groupbox = QtGui.QGroupBox(self.tr("Groups"))
         self.group_add = QtGui.QPushButton(self.tr("New group"))
         self.group_edit = QtGui.QPushButton(self.tr("Edit group"))
@@ -52,6 +53,7 @@ class GroupsWidget(QtGui.QDialog):
         self.group_list.setRootIsDecorated(False)
         self.group_list_filter = QtGui.QLineEdit(self)
 
+        ## Servicebox
         servicebox = QtGui.QGroupBox(self.tr("Services"))
         self.service_add = QtGui.QPushButton(self.tr("Add services"))
         self.service_remove = QtGui.QPushButton(self.tr("Remove services"))
@@ -60,6 +62,7 @@ class GroupsWidget(QtGui.QDialog):
         self.service_group_list = QtGui.QTableView(self)
         self.service_group_list_filter = QtGui.QLineEdit(self)
 
+        ## Userbox
         userbox = QtGui.QGroupBox(self.tr("Users"))
         self.user_add = QtGui.QPushButton(self.tr("Add users"))
         self.user_remove = QtGui.QPushButton(self.tr("Remove users"))
@@ -156,7 +159,7 @@ class GroupsWidget(QtGui.QDialog):
         self.connect(self.user_group_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.user_group_proxy.setFilterRegExp)
         self.connect(self.group_list, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.fillTables)
         self.connect(self.group_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.group_proxy.setFilterRegExp)
-#        self.connect(self.addprotocol, QtCore.SIGNAL("clicked()"), self.model.addProtocol)
+        self.connect(self.group_add, QtCore.SIGNAL("clicked()"), self.createGroup)
 #        self.connect(self.removeprotocol, QtCore.SIGNAL("clicked()"), self.model.delProtocol)
 #        self.connect(okButton, QtCore.SIGNAL("clicked()"), self.saveConfig)
         self.connect(cancelButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
@@ -199,6 +202,36 @@ class GroupsWidget(QtGui.QDialog):
 
     def connection(self):
         self.model_group.getAllGroups()
+
+    def createGroup(self):
+        """
+            Create a new group
+        """
+        # Show input Dialog
+        group_name, ok = QtGui.QInputDialog.getText(self.parent, self.tr("New group"),
+                                                self.tr("New group name :"),
+                                                QtGui.QLineEdit.Normal)
+        if not ok or not group_name:
+            return False
+
+        addGroup(unicode(group_name))
+        self.model_group.getAllGroups()
+        # Insert the new row
+#        self.insertRow(rowNumber)
+#        self.setData(self.index(rowNumber, 0), QtCore.QVariant(alias))
+#        self.setData(self.index(rowNumber, 1), QtCore.QVariant(id))
+#        saveAlias(unicode(alias), unicode(id))
+        # Clear row selection
+#        self.parent.alias_list.clearSelection()
+        # Select the new row
+        ## Get rect of the new row
+#        id_index_rect = self.parent.alias_list.visualRect(self.index(rowNumber, 1))
+#        name_index_rect = self.parent.alias_list.visualRect(self.index(rowNumber, 0))
+        ## Select the new row
+#        self.parent.alias_list.setSelection(id_index_rect, QtGui.QItemSelectionModel.Select)
+#        self.parent.alias_list.setSelection(name_index_rect, QtGui.QItemSelectionModel.Select)
+        # Sort list
+#        self.parent.alias_list.sortByColumn(0,QtCore.Qt.AscendingOrder)
 
 
 class UsersProxy(QtGui.QSortFilterProxyModel):

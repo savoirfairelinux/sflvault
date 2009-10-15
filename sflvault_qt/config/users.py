@@ -44,21 +44,27 @@ class UsersWidget(QtGui.QDialog):
         groupbox = QtGui.QGroupBox(self.tr("Groups"))
         self.usernameLabel = QtGui.QLabel(self.tr("User name"))
         self.username = QtGui.QLineEdit()
+        self.username.setReadOnly(True)
         self.idLabel = QtGui.QLabel(self.tr("Id"))
         self.id = QtGui.QLineEdit()
+        self.id.setReadOnly(True)
         self.adminLabel = QtGui.QLabel(self.tr("Admin"))
         self.admin = QtGui.QCheckBox()
+        self.admin.setEnabled(False)
         self.setup_expiredLabel = QtGui.QLabel(self.tr("Setup Expired"))
         self.setup_expired = QtGui.QCheckBox()
+        self.setup_expired.setEnabled(False)
         self.waiting_setupLabel = QtGui.QLabel(self.tr("Waiting Setup"))
         self.waiting_setup = QtGui.QCheckBox()
+        self.waiting_setup.setEnabled(False)
         self.created_stampLabel = QtGui.QLabel(self.tr("Created at : "))
         self.created_stamp = QtGui.QDateTimeEdit()
-        self.group_list = QtGui.QTreeView(self)
+        self.created_stamp.setReadOnly(True)
+        self.group_list = QtGui.QTableView(self)
         self.group_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        self.group_list.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-        self.group_list.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
-        self.group_list.setRootIsDecorated(False)
+        self.group_list.setSortingEnabled(1)
+        self.group_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        self.group_list_filter_label = QtGui.QLabel(self.tr("Filter"))
         self.group_list_filter = QtGui.QLineEdit(self)
 
         userbox = QtGui.QGroupBox(self.tr("Users"))
@@ -97,7 +103,8 @@ class UsersWidget(QtGui.QDialog):
         gridLayout.addWidget(self.waiting_setup,4,1)
         gridLayout.addWidget(self.created_stampLabel,5,0)
         gridLayout.addWidget(self.created_stamp,5,1)
-        gridLayout.addWidget(self.group_list_filter,6,0,1,3)
+        gridLayout.addWidget(self.group_list_filter_label,6,0)
+        gridLayout.addWidget(self.group_list_filter,6,1,1,2)
         gridLayout.addWidget(self.group_list,7,0,5,3)
 
         groupbox.setLayout(gridLayout)
@@ -127,7 +134,7 @@ class UsersWidget(QtGui.QDialog):
         self.connect(self.user_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.user_proxy.setFilterRegExp)
         self.connect(self.user_add, QtCore.SIGNAL("clicked()"), self.newUser)
         self.connect(self.user_delete, QtCore.SIGNAL("clicked()"), self.deleteUser)
-        self.connect(self.user_list, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.editUser)
+        self.connect(self.user_list, QtCore.SIGNAL("activated (const QModelIndex&)"), self.editUser)
         self.connect(self.group_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.group_proxy.setFilterRegExp)
         self.connect(cancelButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
 
@@ -152,14 +159,18 @@ class UsersWidget(QtGui.QDialog):
     def editUser(self):
         """
         """
+         
         if self.user_list.selectedIndexes():
-            name = unicode(self.user_list.selectedIndexes()[0].data().toString())
+            self.model_group.groups = []
+            self.model_group.setHeaders() 
+            self.current_username = unicode(self.user_list.selectedIndexes()[0].data().toString())
             id = int(self.user_list.selectedIndexes()[1].data().toString().split("#")[1])
             # Find user in user list
             for user in self.model_user.users:
                 if user["id"] == id:
+                    # Fill user form
                     self.username.setText(user["username"])
-                    self.id.setText(QtCore.QString(user["id"]))
+                    self.id.setText(unicode(user["id"]))
                     if user["is_admin"]:
                         self.admin.setCheckState(QtCore.Qt.Checked)
                     else:
@@ -172,17 +183,29 @@ class UsersWidget(QtGui.QDialog):
                         self.waiting_setup.setCheckState(QtCore.Qt.Checked)
                     else:
                         self.waiting_setup.setCheckState(QtCore.Qt.Unchecked)
-                    from datetime import datetime
-                    print dir(user["created_stamp"])
-                    print user["created_stamp"].value
-#                    print user["created_stamp"].strftime("%Y, %m, %d, %H, %M, %s")
-                    datetime = QtCore.QDateTime()
-                    datetime.fromString(QtCore.QString(user["created_stamp"].value), "yyyyMMddTHH:mm:ss")
-                    print datetime.date()
+                    datetime = QtCore.QDateTime.fromString(user["created_stamp"].value, "yyyyMMddTHH:mm:ss")
                     self.created_stamp.setDateTime(datetime)
+                    self.created_stamp.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
+                    # Load all groups
+                    for group in self.groups["list"]:
+                        group_member = False
+                        # browser user groups
+                        for user_group in user["groups"]:
+                            print user_group
+                            # check if user is in group
+                            if user_group["id"] == group["id"]:
+                                group_member = True
+                                # Check if is group admin
+                                if user_group["is_admin"]:
+                                    # Add it as admin
+                                    self.model_group.addGroup(QtCore.Qt.Checked, QtCore.Qt.Checked, group["name"], group["id"])
+                                else:
+                                    # Add it as member
+                                    self.model_group.addGroup(QtCore.Qt.Unchecked, QtCore.Qt.Checked, group["name"], group["id"])
+                        if not group_member:
+                            # Add group
+                            self.model_group.addGroup(QtCore.Qt.Unchecked, QtCore.Qt.Unchecked, group["name"], group["id"])
                     break
-
-            print 'eee'
 
     def newUser(self):
         """
@@ -196,39 +219,9 @@ class UsersWidget(QtGui.QDialog):
         """
             Load User model
         """
-        users = listUsers()
-        print users
+        users = listUsers(True)
         self.model_user = UsersModel(users, parent=self)
         self.user_proxy.setSourceModel(self.model_user)
-
-
-    def fillTables(self):
-        # Delete old model
-        if self.model_user_group:
-            del self.model_user_group 
-        if self.model_user:
-            del self.model_user
-        # Test if an item is seleted
-        if not len(self.group_list.selectedIndexes()):
-            return False
-        # Get selected ID
-        groupindex = self.group_list.selectedIndexes()[1]
-        groupid, bool = groupindex.data(QtCore.Qt.DisplayRole).toInt()
-        # Create new model and associate with proxymodel
-        self.model_user_group = UsersModel()
-        self.user_group_proxy.setSourceModel(self.model_user_group)
-        self.model_user = UsersModel()
-        self.user_proxy.setSourceModel(self.model_user)
-        # Send users in the good table
-        for user in self.users:
-            ids = []
-            for group in user["groups"]:
-                ids.append(group["id"])
-            if groupid in ids:
-                self.model_user_group.addUser(user["username"], user["id"])
-            else:
-                self.model_user.addUser(user["username"], user["id"])
-
 
 
 class UsersProxy(QtGui.QSortFilterProxyModel):
@@ -296,9 +289,9 @@ class GroupsProxy(QtGui.QSortFilterProxyModel):
             Permit to filter on 2 last columns
         """
         # By name
-        index_name = self.sourceModel().index(sourceRow,1,sourceParent)
+        index_name = self.sourceModel().index(sourceRow,2,sourceParent)
         # By id
-        index_id = self.sourceModel().index(sourceRow,2,sourceParent)
+        index_id = self.sourceModel().index(sourceRow,3,sourceParent)
         # Get pattern
         pattern = self.filterRegExp().pattern()
         # If pattern is in id or name, show it !
@@ -310,33 +303,27 @@ class GroupsProxy(QtGui.QSortFilterProxyModel):
 
 class GroupsModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
-        QtGui.QStandardItemModel.__init__(self, 0, 2, parent)
+        QtGui.QStandardItemModel.__init__(self, parent)
         self.parent = parent
         self.setHeaders()
         self.groups = []
-        self.columns = ['checked', 'name', 'id']
+        self.columns = ['admin', 'member', 'name', 'id']
 
     def setHeaders(self):
-        self.setColumnCount(3)
+        self.setColumnCount(4)
         self.setRowCount(0)
-        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Check"))
-        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
-        self.setHeaderData(2, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
+        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Admin"))
+        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Member"))
+        self.setHeaderData(2, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
+        self.setHeaderData(3, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
 
-    def loadGroupList(self):
-        """
-            Get all groups
-        """
-        for group in self.parent.groups:
-            self.addGroup(group["name"], group["id"])
-        
-    def addGroup(self, checked=QtCore.Qt.Unchecked, name=None, id=None,):
+    def addGroup(self, admin=QtCore.Qt.Unchecked, checked=QtCore.Qt.Unchecked, name=None, id=None,):
         self.insertRow(0)
-        self.groups.append(GroupItem(checked, name, id))
+        self.groups.append(GroupItem(admin, checked, name, id, self.parent))
 
     def flags(self, index):
         f = QtCore.QAbstractTableModel.flags(self,index)
-        if index.column() == 0:
+        if index.column() == 0 or index.column() == 1:
             f |= QtCore.Qt.ItemIsUserCheckable
         return f
 
@@ -350,16 +337,16 @@ class GroupsModel(QtGui.QStandardItemModel):
 
         group = self.groups[index.row()]
 
-        # get value of the checkbox
+        # get value of member and admin
         if role == QtCore.Qt.CheckStateRole:
-            if index.column() == 0:
+            if index.column() == 0 or index.column() == 1:
                 attrName = self.columns[index.column()]
                 value = getattr(group, attrName)
                 return QtCore.QVariant(value)
 
-        # get value of protocol name and command
-        if role in [QtCore.Qt.EditRole, QtCore.Qt.DisplayRole]:
-            if index.column() == 1 or index.column() == 2:
+        # get value of group name and id
+        if role == QtCore.Qt.DisplayRole:
+            if index.column() == 2 or index.column() == 3:
                 attrName = self.columns[index.column()]
                 value = getattr(group, attrName)
                 if attrName == "id":
@@ -391,19 +378,32 @@ class GroupsModel(QtGui.QStandardItemModel):
 
 
 class GroupItem(QtCore.QObject):
-    def __init__(self, checked, name, id):
+    def __init__(self, admin, member, name, id, parent=None):
         self.name = name
+        self.parent = parent
         self.id = id
-        self.checked = checked
+        self.admin = admin
+        self.member = member
 
     def setData(self, value, attr):
         """
             Set attributes
         """
-        if attr == "checked":
+        if attr == "admin":
             value, bool = value.toInt()
             if bool:
-                self.checked = value
+                setattr(self, attr, value)
+                return True
+
+        if attr == "member":
+            value, bool = value.toInt()
+            if bool:
+                if value == QtCore.Qt.Checked:
+                    print self.id
+                    print self.parent.current_username
+                    print self.admin
+                    addUserGroup(self.id, self.parent.current_username, True)
+                setattr(self, attr, value)
                 return True
 
         return False

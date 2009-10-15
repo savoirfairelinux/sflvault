@@ -215,10 +215,6 @@ class ProtocolModel(QtGui.QStandardItemModel):
         self.protocols.append(Protocol(protocol, command, clip, tooltip))
         # Add it to the view
         self.insertRow(self.rowCount())
-#        self.setData(self.index(self.rowCount(), 0), QtCore.QVariant(protocol), QtCore.Qt.DisplayRole)
-#        self.setData(self.index(self.rowCount(), 1), QtCore.QVariant(command), QtCore.Qt.DisplayRole)
-#        self.setData(self.index(self.rowCount(), 2), QtCore.QVariant(clip), QtCore.Qt.CheckStateRole)
-#        self.setData(self.index(self.rowCount(), 3), QtCore.QVariant(tooltip), QtCore.Qt.CheckStateRole)
 
     def delProtocol(self):
         """
@@ -303,16 +299,10 @@ class Protocol(QtCore.QObject):
         """
             Set attributes
         """
-        if attr == "tooltip":
+        if attr in ["tooltip", "clip"]:
             value, bool = value.toInt()   
             if bool:
-                self.tooltip = value
-                return True
-
-        if attr == "clip":
-            value, bool = value.toInt()   
-            if bool:
-                self.clip = value
+                setattr(self, attr, value)
                 return True
 
         elif attr == "name" or attr == "command":
