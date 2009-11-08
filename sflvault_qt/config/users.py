@@ -32,6 +32,7 @@ import shutil
 import os
 
 from lib.auth import *
+from sflvault_qt.dialog import progressdialog
 
 
 class UsersWidget(QtGui.QDialog):
@@ -41,7 +42,7 @@ class UsersWidget(QtGui.QDialog):
         self.settings = self.parent.settings
 
         # Load gui items
-        groupbox = QtGui.QGroupBox(self.tr("Groups"))
+        userpropertiesbox = QtGui.QGroupBox(self.tr("User properties"))
         self.usernameLabel = QtGui.QLabel(self.tr("User name"))
         self.username = QtGui.QLineEdit()
         self.username.setReadOnly(True)
@@ -60,6 +61,7 @@ class UsersWidget(QtGui.QDialog):
         self.created_stampLabel = QtGui.QLabel(self.tr("Created at : "))
         self.created_stamp = QtGui.QDateTimeEdit()
         self.created_stamp.setReadOnly(True)
+        groupbox = QtGui.QGroupBox(self.tr("Groups"))
         self.group_list = QtGui.QTableView(self)
         self.group_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.group_list.setSortingEnabled(1)
@@ -103,10 +105,12 @@ class UsersWidget(QtGui.QDialog):
         gridLayout.addWidget(self.waiting_setup,4,1)
         gridLayout.addWidget(self.created_stampLabel,5,0)
         gridLayout.addWidget(self.created_stamp,5,1)
-        gridLayout.addWidget(self.group_list_filter_label,6,0)
-        gridLayout.addWidget(self.group_list_filter,6,1,1,2)
-        gridLayout.addWidget(self.group_list,7,0,5,3)
+        userpropertiesbox.setLayout(gridLayout)
 
+        gridLayout = QtGui.QGridLayout()
+        gridLayout.addWidget(self.group_list_filter_label,0,0)
+        gridLayout.addWidget(self.group_list_filter,0,1,1,2)
+        gridLayout.addWidget(self.group_list,1,0,5,3)
         groupbox.setLayout(gridLayout)
 
         ## User groupbox
@@ -123,8 +127,9 @@ class UsersWidget(QtGui.QDialog):
         buttonLayout.addWidget(cancelButton)
 
         mainLayout = QtGui.QGridLayout()
-        mainLayout.addWidget(userbox,0,0)
-        mainLayout.addWidget(groupbox,0,1)
+        mainLayout.addWidget(userbox,0,0,2,1)
+        mainLayout.addWidget(userpropertiesbox,0,1)
+        mainLayout.addWidget(groupbox,1,1)
         mainLayout.addLayout(buttonLayout,2,0,1,2)
         self.setLayout(mainLayout)
 
@@ -181,8 +186,10 @@ class UsersWidget(QtGui.QDialog):
                         self.setup_expired.setCheckState(QtCore.Qt.Unchecked)
                     if user["waiting_setup"]:
                         self.waiting_setup.setCheckState(QtCore.Qt.Checked)
+                        self.group_list.setDisabled(1)
                     else:
                         self.waiting_setup.setCheckState(QtCore.Qt.Unchecked)
+                        self.group_list.setDisabled(0)
                     datetime = QtCore.QDateTime.fromString(user["created_stamp"].value, "yyyyMMddTHH:mm:ss")
                     self.created_stamp.setDateTime(datetime)
                     self.created_stamp.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
@@ -401,13 +408,30 @@ class GroupItem(QtCore.QObject):
         if attr == "member":
             value, bool = value.toInt()
             if bool:
+                if self.admin == QtCore.Qt.Checked:
+                    is_admin = True
+                else:
+                    is_admin = False
                 if value == QtCore.Qt.Checked:
-                   # print self.id
-                   # print self.parent.current_username
-                   # print self.admin
-                    addUserGroup(self.id, self.parent.current_username, True)
-                setattr(self, attr, value)
-                return True
+                    # add user in group
+                    pdialog = progressdialog.ProgressDialog("Adding user in group",
+                                "Please wait while adding user in this group",
+                                addUserGroup, self.id, self.parent.current_username, is_admin)
+                    ret = pdialog.run()
+                elif value == QtCore.Qt.Unchecked:
+                    # del user in group
+                    ret = delUserGroup(self.id, self.parent.current_username)
+                else:
+                    # Error ???
+                    return False
+
+                # Save action
+                if ret == False:
+                    setattr(self, attr, value)
+                    return False
+                else:
+                    setattr(self, attr, value)
+                    return True
 
         return False
 
