@@ -181,8 +181,10 @@ class UsersWidget(QtGui.QDialog):
                         self.setup_expired.setCheckState(QtCore.Qt.Unchecked)
                     if user["waiting_setup"]:
                         self.waiting_setup.setCheckState(QtCore.Qt.Checked)
+                        self.group_list.setDisabled(1)
                     else:
                         self.waiting_setup.setCheckState(QtCore.Qt.Unchecked)
+                        self.group_list.setDisabled(0)
                     datetime = QtCore.QDateTime.fromString(user["created_stamp"].value, "yyyyMMddTHH:mm:ss")
                     self.created_stamp.setDateTime(datetime)
                     self.created_stamp.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
@@ -401,13 +403,30 @@ class GroupItem(QtCore.QObject):
         if attr == "member":
             value, bool = value.toInt()
             if bool:
+                if self.admin == QtCore.Qt.Checked:
+                    is_admin = True
+                else:
+                    is_admin = False
                 if value == QtCore.Qt.Checked:
-                   # print self.id
-                   # print self.parent.current_username
-                   # print self.admin
-                    addUserGroup(self.id, self.parent.current_username, True)
-                setattr(self, attr, value)
-                return True
+                    # add user in group
+                    pdialog = progressdialog.ProgressDialog("Adding user in group",
+                                "Please wait while adding user in this group",
+                                addUserGroup, self.id, self.parent.current_username, is_admin)
+                    ret = pdialog.run()
+                elif value == QtCore.Qt.Unchecked:
+                    # del user in group
+                    ret = delUserGroup(self.id, self.parent.current_username)
+                else:
+                    # Error ???
+                    return False
+
+                # Save action
+                if ret == False:
+                    setattr(self, attr, value)
+                    return False
+                else:
+                    setattr(self, attr, value)
+                    return True
 
         return False
 
