@@ -463,15 +463,15 @@ class MainWindow(QtGui.QMainWindow):
         else:
             ErrorMessage("No service found")
 
-    def editCustomer(self, custid=None):
+    def editCustomer(self, custid=False):
         self.editcustomer = EditCustomerWidget(custid, parent=self)
         self.editcustomer.exec_()
 
-    def editMachine(self, machid=None):
+    def editMachine(self, machid=False):
         self.editmachine = EditMachineWidget(machid, parent=self)
         self.editmachine.exec_()
 
-    def editService(self, servid=None):
+    def editService(self, servid=False):
         self.editservice = EditServiceWidget(servid, parent=self)
         self.editservice.exec_()
 
