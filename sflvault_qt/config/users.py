@@ -41,7 +41,7 @@ class UsersWidget(QtGui.QDialog):
         self.settings = self.parent.settings
 
         # Load gui items
-        groupbox = QtGui.QGroupBox(self.tr("Groups"))
+        userinfobox = QtGui.QGroupBox(self.tr("User Information"))
         self.usernameLabel = QtGui.QLabel(self.tr("User name"))
         self.username = QtGui.QLineEdit()
         self.username.setReadOnly(True)
@@ -64,6 +64,7 @@ class UsersWidget(QtGui.QDialog):
         self.group_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.group_list.setSortingEnabled(1)
         self.group_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        groupbox = QtGui.QGroupBox(self.tr("Groups"))
         self.group_list_filter_label = QtGui.QLabel(self.tr("Filter"))
         self.group_list_filter = QtGui.QLineEdit(self)
 
@@ -89,7 +90,7 @@ class UsersWidget(QtGui.QDialog):
         self.user_list.setModel(self.user_proxy)
 
         # Positionning items
-        ## Groups groupbox
+        ## User information groupbox
         gridLayout = QtGui.QGridLayout()
         gridLayout.addWidget(self.usernameLabel,0,0)
         gridLayout.addWidget(self.username,0,1)
@@ -103,9 +104,14 @@ class UsersWidget(QtGui.QDialog):
         gridLayout.addWidget(self.waiting_setup,4,1)
         gridLayout.addWidget(self.created_stampLabel,5,0)
         gridLayout.addWidget(self.created_stamp,5,1)
-        gridLayout.addWidget(self.group_list_filter_label,6,0)
-        gridLayout.addWidget(self.group_list_filter,6,1,1,2)
-        gridLayout.addWidget(self.group_list,7,0,5,3)
+
+        userinfobox.setLayout(gridLayout)
+        
+        ## Groups groupbox
+        gridLayout = QtGui.QGridLayout()
+        gridLayout.addWidget(self.group_list_filter_label,0,0)
+        gridLayout.addWidget(self.group_list_filter,0,1,1,2)
+        gridLayout.addWidget(self.group_list,1,0,5,3)
 
         groupbox.setLayout(gridLayout)
 
@@ -123,8 +129,9 @@ class UsersWidget(QtGui.QDialog):
         buttonLayout.addWidget(cancelButton)
 
         mainLayout = QtGui.QGridLayout()
-        mainLayout.addWidget(userbox,0,0)
-        mainLayout.addWidget(groupbox,0,1)
+        mainLayout.addWidget(userbox,0,0,2,1)
+        mainLayout.addWidget(userinfobox,0,1)
+        mainLayout.addWidget(groupbox,1,1)
         mainLayout.addLayout(buttonLayout,2,0,1,2)
         self.setLayout(mainLayout)
 
