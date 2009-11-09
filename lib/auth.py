@@ -54,6 +54,32 @@ def getAuth():
         return False
     return token
     
+def getUserInfo(username):
+    """
+        Get Your informations
+    """
+    global token
+    try:
+        # get user list, to find you inside ...
+        status = token.vault.user_list(token.authtok, True)
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        getUserInfo(username)
+    except Exception, e:
+        ErrorMessage(e)
+        return False
+    if status["error"]:
+        ErrorMessage("Error while getting your informations")
+        return False
+
+    for user in status['list']:
+        if user['username'] == username:
+            return user
+    # Your are not in database ??!!
+    return False
+
 def getService(id):
     global token
     try:
@@ -81,7 +107,6 @@ def getMachine(id):
         getAuth()
         machine = getMachine(id)
     except Exception, e:
-        print "machine" 
         ErrorMessage(e)
         return False
     return machine
@@ -494,7 +519,6 @@ def addUserGroup(group_id, user, is_admin):
     global token
     from Crypto.PublicKey import ElGamal
     try:
-        print "vault.group_add_user(%s, %s, %s)" %(group_id, user, is_admin)
         # TODO: USE this following function
         # status = token.vault.group_add_user(token.authtok, group_id, user, is_admin) 
         # Not is one ...
