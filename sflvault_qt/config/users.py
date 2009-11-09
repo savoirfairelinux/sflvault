@@ -106,15 +106,9 @@ class UsersWidget(QtGui.QDialog):
         gridLayout.addWidget(self.waiting_setup,4,1)
         gridLayout.addWidget(self.created_stampLabel,5,0)
         gridLayout.addWidget(self.created_stamp,5,1)
+        userinfobox.setLayout(gridLayout)
         
         ## Groups groupbox
-        gridLayout = QtGui.QGridLayout()
-        gridLayout.addWidget(self.group_list_filter_label,0,0)
-        gridLayout.addWidget(self.group_list_filter,0,1,1,2)
-        gridLayout.addWidget(self.group_list,1,0,5,3)
-
-        userinfobox.setLayout(gridLayout)
-
         gridLayout = QtGui.QGridLayout()
         gridLayout.addWidget(self.group_list_filter_label,0,0)
         gridLayout.addWidget(self.group_list_filter,0,1,1,2)
