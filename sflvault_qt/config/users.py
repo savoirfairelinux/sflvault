@@ -144,6 +144,9 @@ class UsersWidget(QtGui.QDialog):
         self.connect(cancelButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
 
     def exec_(self):
+        if not self.parent.userinfo["is_admin"]:
+            self.user_add.setDisabled(1)
+            self.user_delete.setDisabled(1)
         # Get users list
         self.loadUserList()
         # Get services list
@@ -164,7 +167,6 @@ class UsersWidget(QtGui.QDialog):
     def editUser(self):
         """
         """
-         
         if self.user_list.selectedIndexes():
             self.model_group.groups = []
             self.model_group.setHeaders() 
@@ -195,6 +197,9 @@ class UsersWidget(QtGui.QDialog):
                     self.created_stamp.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
                     # Load all groups
                     for group in self.groups["list"]:
+                        # Do not show group which you are not member
+                        if not group["name"] in [yourgroup["name"]  for yourgroup in self.parent.userinfo["groups"] ]:
+                            continue
                         group_member = False
                         # browser user groups
                         for user_group in user["groups"]:
@@ -402,8 +407,48 @@ class GroupItem(QtCore.QObject):
         if attr == "admin":
             value, bool = value.toInt()
             if bool:
-                setattr(self, attr, value)
-                return True
+                if value == QtCore.Qt.Checked:
+                    # If user checks admin
+                    if self.member == QtCore.Qt.Checked:
+                        # if user is already in this group
+                        ret = delUserGroup(self.id, self.parent.current_username)
+                        if not ret:
+                            # If can not delete user, do nothing
+                            return False
+                        pdialog = progressdialog.ProgressDialog("Adding user in group",
+                                "Please wait while adding user as group admin",
+                                addUserGroup, self.id, self.parent.current_username, True)
+                        ret = pdialog.run()
+                        
+                    else:
+                        # if user is not already in this group
+                        pdialog = progressdialog.ProgressDialog("Adding user in group",
+                                "Please wait while adding user as group admin",
+                                addUserGroup, self.id, self.parent.current_username, True)
+                        ret = pdialog.run()
+                        # TODO ret cannot be FALSE cause lib.auth.addUsergroup can not return False ...
+                        if not ret:
+                            # If can not delete user, do nothing
+                            return False
+                        setattr(self, "member", QtCore.Qt.Checked)
+                        
+                else:
+                    # If user unchecks admin
+                    ret = delUserGroup(self.id, self.parent.current_username)
+                    if not ret:
+                        # If can not delete user, do nothing
+                        return False
+                    pdialog = progressdialog.ProgressDialog("Delete admin in group",
+                            "Please wait while deleting this user as group admin ",
+                            addUserGroup, self.id, self.parent.current_username, False)
+                    ret = pdialog.run()
+
+                if not ret:
+                    # If can not delete user, do nothing
+                    return False
+                else:
+                    setattr(self, attr, value)
+                    return True
 
         if attr == "member":
             value, bool = value.toInt()
@@ -421,6 +466,10 @@ class GroupItem(QtCore.QObject):
                 elif value == QtCore.Qt.Unchecked:
                     # del user in group
                     ret = delUserGroup(self.id, self.parent.current_username)
+                    if not ret:
+                        # If can not delete user, do nothing
+                        return False
+                    setattr(self, "admin", QtCore.Qt.Unchecked)
                 else:
                     # Error ???
                     return False
