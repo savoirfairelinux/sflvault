@@ -194,7 +194,10 @@ class MainWindow(QtGui.QMainWindow):
                 idcust = int(idcust.split("#")[1])
                 # Get machine id 
                 idmach = indexId.data(QtCore.Qt.DisplayRole).toString()
-                idmach = int(idmach.split("#")[1])
+                try:
+                    idmach = int(idmach.split("#")[1])
+                except ValueError, e:
+                    idmach = None
                 idserv = None
         else:
             # Selected item is a customer
