@@ -57,9 +57,17 @@ class GroupsWidget(QtGui.QDialog):
         servicebox = QtGui.QGroupBox(self.tr("Services"))
         self.service_add = QtGui.QPushButton(self.tr("Add services"))
         self.service_remove = QtGui.QPushButton(self.tr("Remove services"))
-        self.service_list = QtGui.QTableView(self)
+        self.service_list = QtGui.QTreeView(self)
+        self.service_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.service_list.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        self.service_list.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.service_list.setRootIsDecorated(False)
         self.service_list_filter = QtGui.QLineEdit(self)
-        self.service_group_list = QtGui.QTableView(self)
+        self.service_group_list = QtGui.QTreeView(self)
+        self.service_group_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.service_group_list.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        self.service_group_list.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.service_group_list.setRootIsDecorated(False)
         self.service_group_list_filter = QtGui.QLineEdit(self)
 
         ## Userbox
@@ -83,11 +91,13 @@ class GroupsWidget(QtGui.QDialog):
         cancelButton = QtGui.QPushButton(self.tr("Cancel"))
 
         # Load model
+        ## group
         self.model_group = GroupsModel(self)
         self.group_proxy = GroupsProxy()
         self.group_proxy.setSourceModel(self.model_group) 
         self.group_list.setModel(self.group_proxy)
 
+        ## user
         self.model_user = UsersModel(self)
         self.user_proxy = UsersProxy()
         self.user_proxy.setSourceModel(self.model_user) 
@@ -96,6 +106,16 @@ class GroupsWidget(QtGui.QDialog):
         self.user_group_proxy = UsersProxy()
         self.user_group_proxy.setSourceModel(self.model_user_group) 
         self.user_group_list.setModel(self.user_group_proxy)
+
+        ## service
+        self.model_service = ServicesModel(self)
+        self.service_proxy = ServicesProxy()
+        self.service_proxy.setSourceModel(self.model_user) 
+        self.service_list.setModel(self.service_proxy)
+        self.model_service_group = ServicesModel(self)
+        self.service_group_proxy = ServicesProxy()
+        self.service_group_proxy.setSourceModel(self.model_service_group) 
+        self.service_group_list.setModel(self.service_group_proxy)
 #        self.protocol_list = QtGui.QTableView(self)
 #        self.protocol_list.setModel(self.model)
 #        self.protocol_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
@@ -168,6 +188,7 @@ class GroupsWidget(QtGui.QDialog):
         # Get users list
         self.users = listUsers()
         # Get services list
+        self.services = listService()
         # TODO
 #        self.services = token.vault.user_list(token.authtok, True)["list"]
         # Show dialog
@@ -199,6 +220,23 @@ class GroupsWidget(QtGui.QDialog):
                 self.model_user_group.addUser(user["username"], user["id"])
             else:
                 self.model_user.addUser(user["username"], user["id"])
+        # Services
+        self.model_service_group = ServicesModel()
+        self.service_group_proxy.setSourceModel(self.model_service_group)
+        self.model_service = ServicesModel()
+        self.service_proxy.setSourceModel(self.model_service)
+        # Send users in the good table
+        print self.services['list'][0]
+        for service in self.services:
+            ids = []
+#            for group in user["groups"]:
+#                ids.append(group["id"])
+#            if groupid in ids:
+#                self.model_user_group.addUser(user["username"], user["id"])
+#            else:
+#                self.model_user.addUser(user["username"], user["id"])
+#
+
 
     def connection(self):
         self.model_group.getAllGroups()
@@ -304,12 +342,12 @@ class ServicesModel(QtGui.QStandardItemModel):
         self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
         self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
 
-    def addUser(self, name=None, id=None):
+    def addService(self, name=None, id=None):
         self.insertRow(0)
         self.setData(self.index(0, 0), QtCore.QVariant(name))
         self.setData(self.index(0, 1), QtCore.QVariant(id))
 
-    def delUser(self):
+    def delService(self):
         """
             Delete selected row
         """
