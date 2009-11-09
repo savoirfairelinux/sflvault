@@ -58,8 +58,6 @@ class ErrorMessage(QtGui.QMessageBox):
             self.AccessError()
         else:
             self.message()
-        print exception
-        print "qhow"
         self.exec_()
         
     def messageError(self):
@@ -95,9 +93,13 @@ class ErrorMessage(QtGui.QMessageBox):
 
     def message(self):
         if self.exception:
-            self.setWindowTitle(self.tr("Connection"))
-            print "message connection"
-            self.setText(self.exception[1])
+            print "message error"
+            try:
+                self.setWindowTitle(self.tr("Connection"))
+                self.setText(self.exception[1])
+            except IndexError, e:
+                self.setWindowTitle(self.tr("Message Error"))
+                self.setText(self.exception.message)
         else:
             self.setWindowTitle(self.tr("Error"))
             self.setText(self.tr("Unknown error"))

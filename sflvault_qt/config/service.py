@@ -66,12 +66,15 @@ class DeleteServiceWidget(QtGui.QMessageBox):
 
 
 class EditServiceWidget(QtGui.QDialog):
-    def __init__(self, servid=None, parent=None):
+    def __init__(self, servid=False, parent=None):
         QtGui.QDialog.__init__(self, parent)
         self.parent = parent
         self.settings = self.parent.settings
         self.servid = servid
-        self.mode = "add"
+        if not self.servid:
+            self.mode = "add"
+        else:
+            self.mode = "edit"
 
         # Load gui items
         groupbox = QtGui.QGroupBox()
@@ -85,6 +88,17 @@ class EditServiceWidget(QtGui.QDialog):
         self.groups = QtGui.QComboBox()
         self.passwordLabel = QtGui.QLabel(self.tr("Password"))
         self.password = QtGui.QLineEdit()
+        self.password.hide()
+        self.passwordProgress = QtGui.QProgressBar()
+        self.passwordProgress.setMinimum(0)
+        self.passwordProgress.setMaximum(0)
+        self.passwordProgress.hide()
+        if self.mode == "edit":
+            self.password.hide()
+            self.passwordProgress.show()
+        else:
+            self.password.show()
+            self.passwordProgress.hide()
         self.notesLabel = QtGui.QLabel(self.tr("Notes"))
         self.notes = QtGui.QLineEdit()
 
@@ -104,6 +118,7 @@ class EditServiceWidget(QtGui.QDialog):
         gridLayout.addWidget(self.groups, 4, 1)
         gridLayout.addWidget(self.passwordLabel, 5, 0)
         gridLayout.addWidget(self.password, 5, 1)
+        gridLayout.addWidget(self.passwordProgress, 5, 1)
         gridLayout.addWidget(self.notesLabel, 6, 0)
         gridLayout.addWidget(self.notes, 6, 1)
         gridLayout.addWidget(self.save, 7, 0)
@@ -116,9 +131,29 @@ class EditServiceWidget(QtGui.QDialog):
 
         self.setWindowTitle(self.tr("Add service"))
 
+        class getPasswordThread(QtCore.QThread):
+            def __init__(self, servid, parent):
+                QtCore.QThread.__init__(self, parent)
+                self.parent = parent
+                self.servid = servid
+
+            def run(self):
+                # Launch function
+                ret = getPassword(self.servid)
+                # Set password text from decoding
+                self.parent.password.setText(ret)
+                self.quit()
+        
+        # create thread
+        self.passwordThread = getPasswordThread(self.servid, self)
+
         # SIGNALS
         self.connect(self.save, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
         self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        # Show password when decode is finished 
+        QtCore.QObject.connect(self.passwordThread, QtCore.SIGNAL("finished()"), self.password.show)
+        # Hide passwordprogressbar  when decode is finished 
+        QtCore.QObject.connect(self.passwordThread, QtCore.SIGNAL("finished()"), self.passwordProgress.hide)
 
     def exec_(self):
         # get machine lists
@@ -150,8 +185,8 @@ class EditServiceWidget(QtGui.QDialog):
                 self.parentserv.setCurrentIndex(self.parentserv.findData(
                                     QtCore.QVariant(informations["parent_service_id"])))
             self.notes.setText(informations["notes"])
-            password = getPassword(self.servid)
-            self.password.setText(password)
+            # launch password decode thread
+            self.passwordThread.start()
             # Set mode and texts
             self.mode = "edit"
             self.setWindowTitle(self.tr("Edit service"))

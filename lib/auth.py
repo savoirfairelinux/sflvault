@@ -51,9 +51,35 @@ def getAuth():
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return token
     
+def getUserInfo(username):
+    """
+        Get Your informations
+    """
+    global token
+    try:
+        # get user list, to find you inside ...
+        status = token.vault.user_list(token.authtok, True)
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        getUserInfo(username)
+    except Exception, e:
+        ErrorMessage(e)
+        return False
+    if status["error"]:
+        ErrorMessage("Error while getting your informations")
+        return False
+
+    for user in status['list']:
+        if user['username'] == username:
+            return user
+    # Your are not in database ??!!
+    return False
+
 def getService(id):
     global token
     try:
@@ -65,10 +91,10 @@ def getService(id):
         service = getService(id)
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     if service["error"]:
         ErrorMessage("No service Found")
-        return None
+        return False
     return service
 
 def getMachine(id):
@@ -81,9 +107,8 @@ def getMachine(id):
         getAuth()
         machine = getMachine(id)
     except Exception, e:
-        print "machine" 
         ErrorMessage(e)
-        return None
+        return False
     return machine
 
 def getCustomer(id):
@@ -97,7 +122,7 @@ def getCustomer(id):
         customer = getCustomer(id)
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return customer
 
 def vaultSearch(pattern, groups_ids=None):
@@ -112,7 +137,7 @@ def vaultSearch(pattern, groups_ids=None):
         result = vaultSearch(pattern, groups_ids)
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return result
 
 def getPassword(id):
@@ -122,7 +147,7 @@ def getPassword(id):
         password = token.service_get(id)["plaintext"]
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return password
 
 def editPassword(id, password):
@@ -131,7 +156,7 @@ def editPassword(id, password):
         password = token.vault.service.passwd(token.authtok, id, password)
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return password
 
 def listUsers(groups=True):
@@ -146,7 +171,7 @@ def listUsers(groups=True):
         users = listUsers()
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return users
 
 def addUser(username, admin):
@@ -162,7 +187,7 @@ def addUser(username, admin):
         statusdelUser(username, admin)
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def delUser(username):
@@ -176,7 +201,7 @@ def delUser(username):
         statusdelUser(username)
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def listGroup():
@@ -199,7 +224,7 @@ def listGroup():
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 token_alias = SFLvaultClient()
@@ -237,7 +262,7 @@ def addCustomer(name):
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def listCustomers():
@@ -258,7 +283,7 @@ def listCustomers():
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def editCustomer(custid, informations):
@@ -280,7 +305,7 @@ def editCustomer(custid, informations):
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def delCustomer(custid):
@@ -302,7 +327,7 @@ def delCustomer(custid):
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def addMachine(name, custid, fqdn=None, address=None, location=None, notes=None):
@@ -324,7 +349,7 @@ def addMachine(name, custid, fqdn=None, address=None, location=None, notes=None)
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def listMachine():
@@ -346,7 +371,7 @@ def listMachine():
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def editMachine(machid, informations):
@@ -368,7 +393,7 @@ def editMachine(machid, informations):
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def delMachine(machid):
@@ -390,7 +415,7 @@ def delMachine(machid):
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def addService(machid, parentid, url, groupids, password, notes):
@@ -416,7 +441,7 @@ def addService(machid, parentid, url, groupids, password, notes):
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def listService():
@@ -441,7 +466,7 @@ def listService():
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def editService(servid, informations):
@@ -465,7 +490,7 @@ def editService(servid, informations):
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def delService(servid):
@@ -487,16 +512,23 @@ def delService(servid):
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status
 
 def addUserGroup(group_id, user, is_admin):
     global token
+    from Crypto.PublicKey import ElGamal
     try:
-        status = token.vault.group.add.user(token.authtok, group_id, user, is_admin)
+        # TODO: USE this following function
+        # status = token.vault.group_add_user(token.authtok, group_id, user, is_admin) 
+        # Not is one ...
+        token.group_add_user(group_id, user, is_admin)
+        # For now ...
+        status = {}
+        status["error"] = False
         if status["error"]:
             e = Exception('groupadduser')
-            e.message = error_message.tr("Can not add %s user to group %s : %s" % (user,group_id))
+            e.message = error_message.tr("Can not add %s user to group g#%d : %s" % (user, group_id, status["message"]))
             raise e
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
@@ -505,11 +537,33 @@ def addUserGroup(group_id, user, is_admin):
         status = addUserGroup(group_id, user, is_admin)
         if status["error"]:
             e = Exception('groupadduser')
-            e.message = error_message.tr("Can not add %s user to group %s : %s" % (user,group_id))
+            e.message = error_message.tr("Can not add %s user to group g#%d : %s" % (user, group_id, status["message"]))
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
+    return status
+
+def delUserGroup(group_id, user):
+    global token
+    try:
+        status = token.vault.group_del_user(token.authtok, group_id, user)
+        if status["error"]:
+            e = Exception('groupadduser')
+            e.message = error_message.tr("Can not delete %s user to group g#%d : %s" % (user, group_id, status["message"]))
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the token is now invalid
+        # So we have to get a new token
+        getAuth()
+        status = delUserGroup(group_id, user)
+        if status["error"]:
+            e = Exception('groupadduser')
+            e.message = error_message.tr("Can not delete %s user to group g#%d : %s" % (user, group_id, status["message"]))
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return False
     return status
 
 def addGroup(group_name):
@@ -531,5 +585,5 @@ def addGroup(group_name):
             raise e
     except Exception, e:
         ErrorMessage(e)
-        return None
+        return False
     return status

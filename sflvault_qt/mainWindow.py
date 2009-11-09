@@ -58,6 +58,7 @@ class MainWindow(QtGui.QMainWindow):
         self.translator = QtCore.QTranslator() 
         self.app = app
         self.listWidget = {}
+        self.userinfo = None
 
         # Load settings
         self.settings = Config(parent=self)
@@ -296,6 +297,9 @@ class MainWindow(QtGui.QMainWindow):
         if not token:
             return False
 
+        # Get your informations
+        self.userinfo = getUserInfo(str(self.settings.value("SFLvault/username").toString()))
+
         ## "Connect" Alias
         QtCore.QObject.connect(self.aliasdock.alias.alias_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark) 
 
@@ -462,15 +466,15 @@ class MainWindow(QtGui.QMainWindow):
         else:
             ErrorMessage("No service found")
 
-    def editCustomer(self, custid=None):
+    def editCustomer(self, custid=False):
         self.editcustomer = EditCustomerWidget(custid, parent=self)
         self.editcustomer.exec_()
 
-    def editMachine(self, machid=None):
+    def editMachine(self, machid=False):
         self.editmachine = EditMachineWidget(machid, parent=self)
         self.editmachine.exec_()
 
-    def editService(self, servid=None):
+    def editService(self, servid=False):
         self.editservice = EditServiceWidget(servid, parent=self)
         self.editservice.exec_()
 

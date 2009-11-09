@@ -42,17 +42,17 @@ class FilterBar(QtGui.QWidget):
         layout.setMargin(0)
 
         self.close = QtGui.QToolButton(self);
-        self.close.setAutoRaise(True);
+        self.close.setAutoRaise(True)
         self.close.setIcon(Qicons("close"))
         self.close.setToolTip(self.tr("Hide Filter Bar"))
-        layout.addWidget(self.close);
+        layout.addWidget(self.close)
 
-        self.filter_label = QtGui.QLabel(self.tr("Filter : "));
-        layout.addWidget(self.filter_label);
+        self.filter_label = QtGui.QLabel(self.tr("Filter : "))
+        layout.addWidget(self.filter_label)
 
         self.filter_input = QtGui.QLineEdit(self)
         self.filter_input.setLayoutDirection(QtCore.Qt.LeftToRight)
-        self.filter_label.setBuddy(self.filter_input);
-        layout.addWidget(self.filter_input);
+        self.filter_label.setBuddy(self.filter_input)
+        layout.addWidget(self.filter_input)
 
         QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.hide)
