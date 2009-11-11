@@ -76,12 +76,16 @@ class EditServiceWidget(QtGui.QDialog):
         else:
             self.mode = "edit"
 
+        self.setMinimumWidth(500)
+
         # Load gui items
         groupbox = QtGui.QGroupBox()
         self.machineLabel = QtGui.QLabel(self.tr("Machine"))
         self.machine = QtGui.QComboBox()
+        self.machine.setEditable(1)
         self.parentservLabel = QtGui.QLabel(self.tr("Parent service"))
         self.parentserv = QtGui.QComboBox()
+        self.parentserv.setEditable(1)
         self.urlLabel = QtGui.QLabel(self.tr("Url"))
         self.url = QtGui.QLineEdit()
         self.groupsLabel = QtGui.QLabel(self.tr("Group"))
@@ -144,8 +148,52 @@ class EditServiceWidget(QtGui.QDialog):
                 self.parent.password.setText(ret)
                 self.quit()
         
+        class getMachinesThread(QtCore.QThread):
+            def __init__(self, parent):
+                QtCore.QThread.__init__(self, parent)
+                self.parent = parent
+
+            def run(self):
+                # Launch function
+                machines = listMachine()
+                # Fill machine combo box
+                for machine in machines["list"]:
+                    self.parent.machine.addItem(machine['name'] +" - m#" + unicode(machine['id']), QtCore.QVariant(machine['id']))
+                # Select good row
+                index = self.parent.machine.findText(self.parent.machineline.text(), QtCore.Qt.MatchContains)
+                if index > -1:
+                    self.parent.machine.setCurrentIndex(index)
+                self.quit()
+
+        class getServicesThread(QtCore.QThread):
+            def __init__(self, parent):
+                QtCore.QThread.__init__(self, parent)
+                self.parent = parent
+
+            def run(self):
+                # Launch function
+                services = listService()
+                self.parent.parentserv.addItem(self.tr("No parent"), QtCore.QVariant(None))
+                for service in services["list"]:
+                    # Doesn t add this item in possible parent list (if it s edit mode
+                    if service['id'] != self.parent.servid:
+                        self.parent.parentserv.addItem(service['url'] +" - s#" + unicode(service['id']), QtCore.QVariant(service['id']))
+                # Select good row
+                index = self.parent.parentserv.findText(self.parent.parentservline.text(), QtCore.Qt.MatchContains)
+                if index > -1:
+                    self.parent.parentserv.setCurrentIndex(index)
+                self.quit()
+
         # create thread
         self.passwordThread = getPasswordThread(self.servid, self)
+        self.machinesThread = getMachinesThread(self)
+        self.servicesThread = getServicesThread(self)
+
+
+        self.machineline = self.machine.lineEdit()
+        QtCore.QObject.connect(self.machineline, QtCore.SIGNAL("editingFinished()"), self.completeMachine)
+        self.parentservline = self.parentserv.lineEdit()
+        QtCore.QObject.connect(self.parentservline, QtCore.SIGNAL("editingFinished()"), self.completeParentserv)
 
         # SIGNALS
         self.connect(self.save, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
@@ -155,41 +203,59 @@ class EditServiceWidget(QtGui.QDialog):
         # Hide passwordprogressbar  when decode is finished 
         QtCore.QObject.connect(self.passwordThread, QtCore.SIGNAL("finished()"), self.passwordProgress.hide)
 
+    def completeMachine(self):
+        index = self.machine.findText(self.machineline.text(), QtCore.Qt.MatchContains)
+        if index == -1:
+            msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Critical, "No machine found","No machine found")
+            msgBox.exec_();
+            self.machine.setFocus()
+        else:
+            self.machine.setCurrentIndex(index)
+        
+
+    def completeParentserv(self):
+        index = self.parentserv.findText(self.parentservline.text(), QtCore.Qt.MatchContains)
+        if index == -1:
+            index = 0
+        self.parentserv.setCurrentIndex(index)
+
     def exec_(self):
-        # get machine lists
-        machines = listMachine()
-        for machine in machines["list"]:
-            self.machine.addItem(machine['name'] +" - m#" + unicode(machine['id']), QtCore.QVariant(machine['id']))
         # get groups lists
         groups = listGroup()
         for group in groups["list"]:
             if group["member"]:
                 self.groups.addItem(group['name'] +" - g#" + unicode(group['id']), QtCore.QVariant(group['id']))
-        # get services lists
-        services = listService()
-        self.parentserv.addItem(self.tr("No parent"), QtCore.QVariant(None))
-        for service in services["list"]:
-            # Doesn t add this item in possible parent list (if it s edit mode
-            if service['id'] != self.servid:
-                self.parentserv.addItem(service['url'] +" - s#" + unicode(service['id']), QtCore.QVariant(service['id']))
         if self.servid:
             # Fill fields for edit mode
             service = getService(self.servid)
             informations = service["service"]
+            ## Show informations
             self.url.setText(informations["url"])
-            self.machine.setCurrentIndex(self.machine.findData(
-                                QtCore.QVariant(informations["machine_id"])))
+            self.machineline.setText("m#" + str(informations["machine_id"]))
+            if not informations["parent_service_id"]:
+                self.parentservline.setText(self.tr("No parent"))
+            else:
+                self.parentservline.setText("s#" + str(informations["parent_service_id"]))
             self.groups.setCurrentIndex(self.groups.findData(
                                 QtCore.QVariant(informations["group_id"])))
-            if informations["parent_service_id"]:
-                self.parentserv.setCurrentIndex(self.parentserv.findData(
-                                    QtCore.QVariant(informations["parent_service_id"])))
             self.notes.setText(informations["notes"])
+            ## launch threads
+            # get machine lists
+            self.machinesThread.start()
+            # get services lists
+            self.servicesThread.start()
             # launch password decode thread
             self.passwordThread.start()
             # Set mode and texts
             self.mode = "edit"
             self.setWindowTitle(self.tr("Edit service"))
+        else:
+            # just get lists for add service mode
+            # get machine list
+            self.machinesThread.start()
+            # get services list
+            self.servicesThread.start()
+
         self.show()
 
     def accept(self):
