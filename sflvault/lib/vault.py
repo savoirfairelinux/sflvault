@@ -808,6 +808,12 @@ class SFLvaultAccess(object):
         except LookupError, e:
             return vaultMsg(False, "User %s not found: %s" % (user, e.message))
 
+
+        # Make sure we don't double the group access.
+        if not query(UserGroup).filter_by(group_id=group_id,
+                                  user_id=usr.id).first():
+            return vaultMsg(False, "User %s is already in that group" % user)
+        
         if not cryptgroupkey:
             # Return the required information for a second call to work.
             ret = {'user_id': int(usr.id),
