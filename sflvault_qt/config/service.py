@@ -71,6 +71,8 @@ class EditServiceWidget(QtGui.QDialog):
         self.parent = parent
         self.settings = self.parent.settings
         self.servid = servid
+        self.machines = {}
+        self.services = {}
         if not self.servid:
             self.mode = "add"
         else:
@@ -155,14 +157,7 @@ class EditServiceWidget(QtGui.QDialog):
 
             def run(self):
                 # Launch function
-                machines = listMachine()
-                # Fill machine combo box
-                for machine in machines["list"]:
-                    self.parent.machine.addItem(machine['name'] +" - m#" + unicode(machine['id']), QtCore.QVariant(machine['id']))
-                # Select good row
-                index = self.parent.machine.findText(self.parent.machineline.text(), QtCore.Qt.MatchContains)
-                if index > -1:
-                    self.parent.machine.setCurrentIndex(index)
+                self.parent.machines = listMachine()
                 self.quit()
 
         class getServicesThread(QtCore.QThread):
@@ -172,23 +167,13 @@ class EditServiceWidget(QtGui.QDialog):
 
             def run(self):
                 # Launch function
-                services = listService()
-                self.parent.parentserv.addItem(self.tr("No parent"), QtCore.QVariant(None))
-                for service in services["list"]:
-                    # Doesn t add this item in possible parent list (if it s edit mode
-                    if service['id'] != self.parent.servid:
-                        self.parent.parentserv.addItem(service['url'] +" - s#" + unicode(service['id']), QtCore.QVariant(service['id']))
-                # Select good row
-                index = self.parent.parentserv.findText(self.parent.parentservline.text(), QtCore.Qt.MatchContains)
-                if index > -1:
-                    self.parent.parentserv.setCurrentIndex(index)
+                self.parent.services = listService()
                 self.quit()
 
         # create thread
         self.passwordThread = getPasswordThread(self.servid, self)
         self.machinesThread = getMachinesThread(self)
         self.servicesThread = getServicesThread(self)
-
 
         self.machineline = self.machine.lineEdit()
         QtCore.QObject.connect(self.machineline, QtCore.SIGNAL("editingFinished()"), self.completeMachine)
@@ -198,10 +183,34 @@ class EditServiceWidget(QtGui.QDialog):
         # SIGNALS
         self.connect(self.save, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
         self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
-        # Show password when decode is finished 
+        # Show password when decode is finished
         QtCore.QObject.connect(self.passwordThread, QtCore.SIGNAL("finished()"), self.password.show)
-        # Hide passwordprogressbar  when decode is finished 
+        # Hide passwordprogressbar  when decode is finished
         QtCore.QObject.connect(self.passwordThread, QtCore.SIGNAL("finished()"), self.passwordProgress.hide)
+
+        QtCore.QObject.connect(self.servicesThread, QtCore.SIGNAL("finished()"), self.fillServicesList)
+        QtCore.QObject.connect(self.machinesThread, QtCore.SIGNAL("finished()"), self.fillMachinesList)
+
+    def fillMachinesList(self):
+        # Fill machine combo box
+        for machine in self.machines["list"]:
+            self.machine.addItem(machine['name'] +" - m#" + unicode(machine['id']), QtCore.QVariant(machine['id']))
+        # Select good row
+        index = self.machine.findText(self.machineline.text(), QtCore.Qt.MatchContains)
+        if index > -1:
+            self.machine.setCurrentIndex(index)
+
+    def fillServicesList(self):
+        # Fill service combo box
+        self.parentserv.addItem(self.tr("No parent"), QtCore.QVariant(None))
+        for service in self.services["list"]:
+            # Doesn t add this item in possible parent list (if it s edit mode
+            if service['id'] != self.servid:
+                self.parentserv.addItem(service['url'] +" - s#" + unicode(service['id']), QtCore.QVariant(service['id']))
+        # Select good row
+        index = self.parentserv.findText(self.parentservline.text(), QtCore.Qt.MatchContains)
+        if index > -1:
+            self.parentserv.setCurrentIndex(index)
 
     def completeMachine(self):
         index = self.machine.findText(self.machineline.text(), QtCore.Qt.MatchContains)
