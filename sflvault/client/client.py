@@ -545,7 +545,7 @@ class SFLvaultClient(object):
         username  - the name with which an admin prepared (with add-user)
                     your account.
         vault_url - the URL pointing to the XML-RPC interface of the vault
-                    (typically host://domain.example.org:5000/vault/
+                    (typically host://domain.example.org:5000/vault/rpc
         passphrase - use the given passphrase instead of asking it on the
                      command line.
         """
