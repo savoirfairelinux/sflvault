@@ -2,7 +2,7 @@
 #
 # SFLvault - Secure networked password store and credentials manager.
 #
-# Copyright (C) 2008  Savoir-faire Linux inc.
+# Copyright (C) 2008-2009  Savoir-faire Linux inc.
 #
 # Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
 #
@@ -267,7 +267,7 @@ class ssh(ShellService):
                 sys.stdout.flush()
             
             def shell(self):
-                r'[^ ]*@.*:.*[$#]'
+                r'[^ ]*@.*:.*[$#] '
                 pass # We're in :)
             
             def denied(self):

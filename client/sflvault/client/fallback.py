@@ -25,7 +25,7 @@ escape sequence, to get a grip on the built-in FISH functionalities.
 Other commands will be implemented in the future, giving ability to
 script on the client side things that will be sent to through the shell."""
 
-from sflvault.lib.fishlib import FishClient, showstatus
+from sflvault.client.fishlib import FishClient, showstatus
 from sflvault.client.commands import SFLvaultCompleter, NoExitParser
 from sflvault.client.commands import ExitParserException, SFLvaultParserError
 import shlex
