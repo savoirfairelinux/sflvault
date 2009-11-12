@@ -178,15 +178,15 @@ class SFLvaultCommand(object):
         except VaultConfigurationError, e:
             print "[SFLvault] Configuration error: %s" % e
         except RemotingError, e:
-            print "[SFLvault] Remoting error: %s" % e.message
+            print "[SFLvault] Remoting error: %s" % e
         except ServiceRequireError, e:
-            print "[SFLvault] Service-chain setup error: %s" % e.message
+            print "[SFLvault] Service-chain setup error: %s" % e
         except DecryptError, e:
             print "[SFLvault] There has been an error in decrypting messages: %s" % e.message
         except VaultIDSpecError, e:
-            print "[SFLvault] VaultID spec. error: %s" % e.message
+            print "[SFLvault] VaultID spec. error: %s" % e
         except socket.error, e:
-            print "[SFLvault] Connection error: %s" % e.message
+            print "[SFLvault] Cannot connect to the vault: %s" % e
             
         
 
@@ -262,7 +262,7 @@ class SFLvaultCommand(object):
             
 
     def user_add(self):
-        """Add a user to the Vault."""
+        """Add a user to the vault."""
         self.parser.set_usage("user-add [options] username")
         self.parser.add_option('-a', '--admin', dest="is_admin",
                                action="store_true", default=False,
@@ -280,7 +280,7 @@ class SFLvaultCommand(object):
 
 
     def customer_add(self):
-        """Add a new customer to the Vault's database."""
+        """Add a new customer."""
         self.parser.set_usage('customer-add "customer name"')
         self._parse()
         
@@ -374,7 +374,7 @@ class SFLvaultCommand(object):
                                help="Notes about the machine, references, URLs.")
         
     def machine_add(self):
-        """Add a machine to the Vault's database."""
+        """Add a new machine."""
 
         self._machine_options()
         self._parse()
@@ -606,7 +606,7 @@ class SFLvaultCommand(object):
             try:
                 r = self.vault.alias_add(self.args[0], self.args[1])
             except ValueError, e:
-                raise SFLvaultParserError(e.message)
+                raise SFLvaultParserError(str(e))
 
             print "Alias added"
 
@@ -712,7 +712,7 @@ class SFLvaultCommand(object):
         self.vault.group_del_user(self.opts.group_id, self.opts.user)
 
     def group_del(self):
-        """Remove a group from the Vault
+        """Remove a group from the vault
 
         For this to be successful, the group must have no more services
         associated with it."""
@@ -727,7 +727,7 @@ class SFLvaultCommand(object):
         self.vault.group_del(self.opts.group_id)
 
     def group_add(self):
-        """Add a group to the Vault
+        """Add a group to the vault
 
         This command accepts a group name (as string) as first and only
         parameter.
@@ -755,7 +755,7 @@ class SFLvaultCommand(object):
     def machine_list(self):
         """List existing machines.
 
-        This command will list all machines in the Vault's database."""
+        This command will list all machines in the vault's database."""
         ## TODO: add support for listing only machines of a certain c#id
         #        (customer_id)
         self.parser.add_option('-v', '--verbose', action="store_true",
@@ -788,11 +788,11 @@ class SFLvaultCommand(object):
     def user_setup(self):
         """Setup a new user on the vault.
 
-        Call this after an admin has called `user-add` on the Vault.
+        Call this after an admin has called `user-add` on the vault.
         
         username  - the username used in the `user-add` call.
         vault_url - the URL (http://example.org:port/vault/rpc) to the
-                    Vault"""
+                    vault"""
         
         self.parser.set_usage("user-setup <username> <vault_url>")
         self._parse()
@@ -849,7 +849,7 @@ class SFLvaultCommand(object):
 
 
     def search(self):
-        """Search the Vault for the given keywords"""
+        """Search the vault for the specified keywords."""
         self.parser.set_usage('search [opts] keyword1 ["key word2" ...]')
         self.parser.add_option('-g', '--group', dest="groups",
                                action="append", type="string",

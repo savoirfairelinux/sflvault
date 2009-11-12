@@ -669,7 +669,7 @@ class SFLvaultClient(object):
             #       thing to decrypt (over a second on a 3GHz machine)
             grouppacked = decrypt_longmsg(self.privkey, serv['cryptgroupkey'])
         except Exception, e:
-            raise DecryptError("Unable to decrypt groupkey (%s)" % e.message)
+            raise DecryptError("Unable to decrypt groupkey (%s)" % e)
 
         eg = ElGamal.ElGamalobj()
         (eg.p, eg.x, eg.g, eg.y) = unserial_elgamal_privkey(grouppacked)
@@ -682,7 +682,7 @@ class SFLvaultClient(object):
         try:
             aeskey = decrypt_longmsg(groupkey, serv['cryptsymkey'])
         except Exception, e:
-            raise DecryptError("Unable to decrypt symkey (%s)" % e.message)
+            raise DecryptError("Unable to decrypt symkey (%s)" % e)
 
         if onlysymkey:
             serv['symkey'] = aeskey

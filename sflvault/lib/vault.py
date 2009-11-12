@@ -196,7 +196,7 @@ class SFLvaultAccess(object):
         try:
             out = self._service_get_data(service_id, group_id)
         except VaultError, e:
-            return vaultMsg(False, e.message)
+            return vaultMsg(False, str(e))
 
         return vaultMsg(True, "Here is the service", {'service': out})
     
@@ -207,7 +207,7 @@ class SFLvaultAccess(object):
         try:
             s = query(Service).filter_by(id=service_id).one()
         except InvalidReq, e:
-            return vaultMsg(False, "Service not found: %s" % e.message)
+            return vaultMsg(False, "Service not found: %s" % str(e))
 
         #Save:
         # machine_id
@@ -237,7 +237,7 @@ class SFLvaultAccess(object):
             s = query(Service).filter_by(id=service_id).one()
         except InvalidReq, e:
             raise VaultError("Service not found: %s (%s)" % (service_id,
-                                                             e.message))
+                                                             str(e)))
 
         me = query(User).get(self.myself_id)
 
@@ -297,7 +297,7 @@ class SFLvaultAccess(object):
                 data = self._service_get_data(service_id,
                                               with_groups=with_groups)
             except VaultError, e:
-                return vaultMsg(False, e.message)
+                return vaultMsg(False, str(e))
             
             out.append(data)
 
@@ -395,7 +395,7 @@ class SFLvaultAccess(object):
         try:
             cust = query(Customer).filter_by(id=customer_id).one()
         except InvalidReq, e:
-            return vaultMsg(False, "Customer not found: %s" % e.message)
+            return vaultMsg(False, "Customer not found: %s" % str(e))
 
         out = {'id': cust.id,
                'name': cust.name}
@@ -407,7 +407,7 @@ class SFLvaultAccess(object):
         try:
             cust = query(Customer).filter_by(id=customer_id).one()
         except InvalidReq, e:
-            return vaultMsg(False, "Customer not found: %s" % e.message)
+            return vaultMsg(False, "Customer not found: %s" % str(e))
 
         if 'name' in data:
             cust.name = data['name']
@@ -440,7 +440,7 @@ class SFLvaultAccess(object):
         try:
             m = query(Machine).filter_by(id=machine_id).one()
         except InvalidReq, e:
-            return vaultMsg(False, "Machine not found: %s" % e.message)
+            return vaultMsg(False, "Machine not found: %s" % str(e))
 
         if 'customer_id' in data:
             m.customer_id = int(data['customer_id'])
@@ -469,7 +469,7 @@ class SFLvaultAccess(object):
         try:
             m = query(Machine).filter_by(id=machine_id).one()
         except InvalidReq, e:
-            return vaultMsg(False, "Machine not found: %s" % e.message)
+            return vaultMsg(False, "Machine not found: %s" % str(e))
 
 
         out = {'id': m.id,
@@ -561,7 +561,7 @@ class SFLvaultAccess(object):
         try:
             grp = query(Group).filter_by(id=group_id).one()
         except InvalidReq, e:
-            return vaultMsg(False, "Group not found: %s" % e.message)
+            return vaultMsg(False, "Group not found: %s" % str(e))
 
         ug = query(UserGroup).filter_by(user_id=self.myself_id,
                                         group_id=group_id).first()
@@ -584,7 +584,7 @@ class SFLvaultAccess(object):
         try:
             grp = query(Group).filter_by(id=group_id).one()
         except InvalidReq, e:
-            return vaultMsg(False, "Group not found: %s" % e.message)
+            return vaultMsg(False, "Group not found: %s" % str(e))
 
         ug = query(UserGroup).filter_by(user_id=self.myself_id,
                                         group_id=group_id).first()
@@ -652,7 +652,7 @@ class SFLvaultAccess(object):
         try:
             grp = query(Group).options(eagerload('services_assoc')).get(group_id)
         except InvalidReq, e:
-            return vaultMsg(False, "Group not found: %s" % e.message)
+            return vaultMsg(False, "Group not found: %s" % str(e))
 
         if len(grp.services_assoc):
             return vaultMsg(False, "Group not empty, cannot delete")
@@ -713,7 +713,7 @@ class SFLvaultAccess(object):
         try:
             grp = query(Group).filter_by(id=group_id).one()
         except InvalidReq, e:
-            return vaultMsg(False, "Group not found: %s" % e.message)
+            return vaultMsg(False, "Group not found: %s" % str(e))
 
         grpeg = grp.elgamal()
 
@@ -739,13 +739,13 @@ class SFLvaultAccess(object):
         try:
             grp = query(Group).filter_by(id=group_id).one()
         except InvalidReq, e:
-            return vaultMsg(False, "Group not found: %s" % e.message)
+            return vaultMsg(False, "Group not found: %s" % str(e))
 
         # TODO: DRY out this place, much copy from del_user and stuff
         sgs = query(ServiceGroup).filter_by(service_id=service_id).all()
 
         if grp.id not in [sg.group_id for sg in sgs]:
-            return vaultMsg(False, "Service is not in group: %s" % e.message)
+            return vaultMsg(False, "Service is not in group: %s" % str(e))
 
         sg = [sg for sg in sgs if grp.id == sg.group_id][0]
             
@@ -787,7 +787,7 @@ class SFLvaultAccess(object):
         try:
             grp = query(Group).filter_by(id=group_id).one()
         except InvalidReq, e:
-            return vaultMsg(False, "Group not found: %s" % e.message)
+            return vaultMsg(False, "Group not found: %s" % str(e))
 
         # Verify if I'm admin on that group
         ug = query(UserGroup).filter_by(group_id=group_id,
@@ -806,7 +806,7 @@ class SFLvaultAccess(object):
         try:
             usr = get_user(user)
         except LookupError, e:
-            return vaultMsg(False, "User %s not found: %s" % (user, e.message))
+            return vaultMsg(False, "User %s not found: %s" % (user, str(e)))
 
 
         # Make sure we don't double the group access.
@@ -856,7 +856,7 @@ class SFLvaultAccess(object):
         try:
             grp = query(Group).filter_by(id=group_id).one()
         except InvalidReq, e:
-            return vaultMsg(False, "Group not found: %s" % e.message)
+            return vaultMsg(False, "Group not found: %s" % str(e))
 
         # Verify if I'm admin on that group
         ugs = query(UserGroup).filter_by(group_id=group_id).all()
@@ -876,7 +876,7 @@ class SFLvaultAccess(object):
         try:
             usr = get_user(user)
         except LookupError, e:
-            return vaultMsg(False, "User %s not found: %s" % (user, e.message))
+            return vaultMsg(False, "User %s not found: %s" % (user, str(e)))
 
         hisug = [ug for ug in ugs if ug.user_id == usr.id]
 
