@@ -40,6 +40,9 @@ master_doc = 'index'
 project = u'SFLvault'
 copyright = u'2009, Alexandre Bourget'
 
+# Custom config for SFLvault:
+autoclass_content = 'both'
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.

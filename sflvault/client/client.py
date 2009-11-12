@@ -173,17 +173,20 @@ class AskPassMethods(object):
 ### On définit les fonctions qui vont traiter chaque sorte de requête.
 ###
 class SFLvaultClient(object):
-    """Main SFLvault Client object.
+    """This is the main SFLvault Client object.
 
-    Use this object to connect to the vault and script it if necessary.
-    
-    This is the object all clients will use to communicate with a remote
-    or local Vault.
+    It is used to script some access to the vault, to retrieve data, to store
+    data, or to create a GUI interface on the top of it.
+
+    Whether you want to access a local or remote Vault server, this is the
+    object you need.
     """
     def __init__(self, cfg=None, shell=False):
         """Set up initial configuration for function calls
 
-        When shell == True, privkey will be cached for a while.
+        :param cfg: Unused for now, leave a None.
+        :param shell: if True, the private key will be cached for a while,
+            not asking your password for each query to the vault.
         """
 
         # Load configuration
@@ -293,7 +296,7 @@ class SFLvaultClient(object):
     def alias_del(self, alias):
         """Remove an alias from the config.
 
-        Return True if removed, False otherwise."""
+        :rtype: True if removed, False otherwise."""
 
         if self.cfg.has_option('Aliases', alias):
             self.cfg.remove_option('Aliases', alias)
@@ -303,7 +306,9 @@ class SFLvaultClient(object):
             return False
 
     def alias_list(self):
-        """Return a list of aliases"""
+        """Return a list of aliases
+
+        :rtype: list of (alias, value) pairs."""
         return self.cfg.items('Aliases')
 
     def alias_get(self, alias):
@@ -319,10 +324,13 @@ class SFLvaultClient(object):
         
         A VaultID can be one of the following:
         
-        123   - treated as is, and assume to be of type `prefix`.
-        m#123 - checked against `prefix`, otherwise raise an exception.
-        alias - checked against `prefix` and alias list, returns an int
-        value, or raise an exception.
+        * ``123`` - treated as is, and assumed to be of type `prefix`.
+        * ``m#123`` - checked against `prefix`, otherwise raises an exception.
+        * ``alias`` - checked against `prefix` and the aliases that are in
+          the configuration, returns an integer, or raises an exception.
+
+        :param check_alias: check for matching aliases if True, otherwise only
+          the two first cases are treated.
         """
         #prefixes = ['m', 'u', 's', 'c'] # Machine, User, Service, Customer
         #if prefix not in prefixes:

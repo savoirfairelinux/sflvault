@@ -115,12 +115,18 @@ class SFLvaultShell(object):
 
 class SFLvaultCommand(object):
     """Parse command line arguments, and call SFLvault commands
-    on them."""
-    def __init__(self, vault=None, parser=None):
-        """Setup the SFLvaultParser object.
+    on them.
 
-        argv - arguments from the command line
-        sflvault - SFLvault object (optional)"""
+    Each method of this object are SFLvault commands.  They are called when
+    you run ``sflvault connect s#1`` on the command line, or when you run
+    ``connect s#1`` from within the shell.
+    """
+    def __init__(self, vault=None, parser=None):
+        """Create a SFLvaultCommand object
+
+          :param vault: an existing SFLvaultClient object, otherwise it will be created
+          :param parser: an option parser, otherwise it will be created (recommended)
+        """
         self.parser = (parser or optparse.OptionParser(usage=optparse.SUPPRESS_USAGE))
         
         # Use the specified, or create a new one.
