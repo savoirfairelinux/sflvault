@@ -134,13 +134,10 @@ class ShellService(Service):
             # Go ahead, you're free to go !
             while True:
                 self.shell_handle.interact(escape_character=sflvault_escape_chr)
+                # Drop in the shell, only if connection is still open
+                if not self.shell_handle.isalive():
+                    break
 
-                # TODO:
-                # check if the shell_handle is still open. If so
-                # then call the SFLvaultFallback shell on shell_handle.
-                #   run _run() on that shell, and take input and send commands
-                #   once we quit this, make sure we get back to the
-                # otherwise:
                 s = SFLvaultFallback(self.shell_handle)
                 try:
                     s._run()
@@ -155,7 +152,8 @@ class ShellService(Service):
 
             print "[SFLvault] Escaped from %s, calling postwork." % self.__class__.__name__
         except OSError, e:
-            print "[SFLvault] %s disconnected" % self.__class__.__name__
+            print "[SFLvault] %s disconnected: %s" % (self.__class__.__name__,
+                                                      e)
 
 
     def postwork(self):
