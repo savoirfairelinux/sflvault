@@ -1,6 +1,10 @@
 SFLvaultCommand object
 ======================
 
+The ``SFLvaultCommand`` object is invoked by the shell manager, or when
+executing ``sflvault`` on the command line.  All methods of the object will be
+used to generate help, and will parse command-line arguments on it's own.
+
 .. Commented imports
 
    >>> import sflvault.client

@@ -12,6 +12,7 @@ SFLvault_common.egg-info
 SFLvault_server.egg-info
 build
 dist
+SFLvault.egg-info/*
 
 docs/*.html
 
