@@ -1,7 +1,7 @@
 # -=- encoding: utf-8 -=-
 
 from sflvault.tests import *
-from sflvault.lib.common.crypto import *
+from sflvault.common.crypto import *
 
 
 

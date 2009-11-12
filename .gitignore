@@ -4,20 +4,13 @@
 *.pyc
 
 # Database
-sflvault.sqlite
+server/sflvault.sqlite
 
 # Ignore eggs
-SFLvault_client.egg-info
-SFLvault_common.egg-info
-SFLvault_server.egg-info
 build
 dist
-SFLvault.egg-info/*
 
 docs/*.html
-
-# We need to track paste_deploy_config.ini_tmpl .. and why not the other files?
-#SFLvault.egg-info
 
 # virtualenv link (to be activated with . env/bin/activate)
 env

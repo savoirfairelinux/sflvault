@@ -72,12 +72,10 @@ def ask_for_service_password(prompt):
 class AuthenticationError(Exception):
     def __init__(self, message):
         """Sets an error message"""
-        self.message = message
-    def __str__(self):
-        return self.message
+        super(Exception, self).__init__(message)
 
 
-### VaultError is in lib.common
+### VaultError is in SFLvault-common
 
 
 ### Vault-communication Exceptions

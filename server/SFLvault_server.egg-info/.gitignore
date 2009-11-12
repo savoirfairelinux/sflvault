@@ -1,0 +1,8 @@
+dependency_links.txt
+#paste_deploy_config.ini_tmpl - keep this one!
+PKG-INFO
+SOURCES.txt
+entry_points.txt
+#paster_plugins.txt - keep this one!
+requires.txt
+top_level.txt

@@ -8,19 +8,17 @@ except ImportError:
 
 
 setup(
-    name='SFLvault',
+    name='SFLvault-server',
     version="0.7.4",
-    description='Networked credentials store and authentication manager',
+    description='Networked credentials store and authentication manager - Server',
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
     url='http://www.sflvault.org',
     license='GPLv3',
     install_requires=["Pylons>=0.9.7",
                       "SQLAlchemy<=0.4.9999",
-                      "pycrypto",
                       "pysqlite",
-                      "pexpect>=2.3",
-                      "urwid>=0.9.8.1",
+                      "SFLvault-common",
                       ],
     # For server installation:
     #  "ipython"
@@ -43,20 +41,6 @@ setup(
 
     [paste.app_install]
     main = pylons.util:PylonsInstaller
-
-    [console_scripts]
-    sflvault = sflvault.client.commands:main
-
-    [sflvault.services]
-    ssh = sflvault.client.services:ssh
-    vnc = sflvault.client.services:vnc
-    mysql = sflvault.client.services:mysql
-    psql = sflvault.client.services:postgres
-    postgres = sflvault.client.services:postgres
-    postgresql = sflvault.client.services:postgres
-    su = sflvault.client.services:su
-    sudo = sflvault.client.services:sudo
-
     """,
 )
 

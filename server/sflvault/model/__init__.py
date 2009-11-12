@@ -32,7 +32,7 @@ from base64 import b64decode, b64encode
 
 from sflvault.model import meta
 from sflvault.model.meta import Session, metadata
-from sflvault.lib.common.crypto import *
+from sflvault.common.crypto import *
 
 import re
 

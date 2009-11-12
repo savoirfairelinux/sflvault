@@ -33,7 +33,7 @@ from decorator import decorator
 from pylons.controllers.xmlrpc import xmlrpc_fault
 
 from sflvault.lib.base import *
-from sflvault.lib.common import VaultError
+from sflvault.common import VaultError
 from sflvault.lib.vault import SFLvaultAccess
 from sflvault.model import *
 

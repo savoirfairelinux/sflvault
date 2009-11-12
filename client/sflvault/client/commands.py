@@ -40,8 +40,8 @@ from base64 import b64decode, b64encode
 from datetime import *
 
 from sflvault.client.client import SFLvaultClient
-from sflvault.lib.common.crypto import *
-from sflvault.lib.common import VaultError
+from sflvault.common.crypto import *
+from sflvault.common import VaultError
 from sflvault.client.utils import *
 from sflvault.client import ui
 
