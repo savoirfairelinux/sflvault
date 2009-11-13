@@ -19,11 +19,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-__version__ = __import__('pkg_resources').get_distribution('SFLvault').version
-
+import pkg_resources as pkgres
 from ConfigParser import ConfigParser
-
 import xmlrpclib
 import getpass
 import sys
@@ -113,7 +110,7 @@ def authenticate(keep_privkey=False):
 
         # TODO: check also is the privkey (ElGamal obj) has been cached
         #       in self.privkey (when invoked with keep_privkey)
-        retval = self.vault.login(username, __version__)
+        retval = self.vault.login(username, pkgres.get_distribution('SFLvault_client').version)
         self.authret = retval
         if not retval['error']:
             # decrypt token.

@@ -19,11 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-PROGRAM = "SFLvault"
-__version__ = __import__('pkg_resources').get_distribution('SFLvault').version
-
-
+import pkg_resources as pkgres
 import optparse
 import os
 import re
@@ -151,7 +147,17 @@ class SFLvaultCommand(object):
                 action = 'help'
 
             if action in ['-v', '--version']:
-                print "%s version %s" % (PROGRAM, __version__)
+                try:
+                    print pkgres.get_distribution('SFLvault_common')
+                except pkgres.DistributionNotFound, e:
+                    print "SFLvault-common not installed"
+                
+                print pkgres.get_distribution('SFLvault_client')
+
+                try:
+                    print pkgres.get_distribution('SFLvault_server')
+                except pkgres.DistributionNotFound, e:
+                    print "SFLvault-server not installed"
                 return
 
             # Fix for functions
@@ -219,7 +225,7 @@ class SFLvaultCommand(object):
             sys.exit()
 
         # Normal help screen.
-        print "%s version %s" % (PROGRAM, __version__)
+        print "%s version %s" % ('SFLvault-client', pkgres.get_distribution('SFLvault_client').version)
         print "---------------------------------------------"
 
         if not cmd:
@@ -239,7 +245,7 @@ class SFLvaultCommand(object):
                                        (18 - len(x)) * ' ',
                                        doc)
             print "---------------------------------------------"
-            print "Call: sflvault [command] --help for more details on each of those commands."
+            print "Run: sflvault [command] --help for more details on each of those commands."
         elif not cmd.startswith('_') and callable(getattr(self, cmd)):
             readcmd = cmd.replace('_','-')
 

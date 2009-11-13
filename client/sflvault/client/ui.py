@@ -20,9 +20,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-__version__ = __import__('pkg_resources').get_distribution('SFLvault').version
-
-
 """ui.py includes all graphical user interfaces (mostly console based)
 to manage SFLvault elements (customers, machines, services)
 """

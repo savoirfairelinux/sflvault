@@ -19,6 +19,7 @@ setup(
                       "pycrypto",
                       "pexpect>=2.3",
                       "urwid>=0.9.8.1",
+                      "decorator",
                       ],
     packages=find_packages(exclude=['ez_setup']),
     include_package_data=True,
