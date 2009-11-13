@@ -16,7 +16,7 @@ setup(
     url='http://www.sflvault.org',
     license='GPLv3',
     install_requires=["Pylons>=0.9.7",
-                      "SQLAlchemy<=0.4.9999",
+                      "SQLAlchemy>=0.5.6",
                       "pysqlite",
                       "SFLvault-common",
                       ],
