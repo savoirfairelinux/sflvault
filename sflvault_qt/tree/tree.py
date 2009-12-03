@@ -24,7 +24,7 @@
 
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtCore, QtGui, QtWebKit
 
 from sflvault.client import SFLvaultClient
 from sflvault_qt.bar.filterbar import FilterBar
@@ -283,6 +283,19 @@ class TreeView(QtGui.QTreeView):
         self.sortByColumn(0,QtCore.Qt.AscendingOrder)
         # Load context actions
         self.createActions()
+        
+        self.setMouseTracking(1)
+        self.connect(self,QtCore.SIGNAL("entered (const QModelIndex&)"), self.webPreview)
+
+    def webPreview(self, index):
+        url = QtCore.QUrl(index.data().toString())
+        if url.scheme().startsWith("http"):
+            web = QtWebKit.QWebView()
+            web.load(url)
+            web.show()
+            print str(url.scheme())
+            print url
+
 
     def setGeometries(self):
         """
