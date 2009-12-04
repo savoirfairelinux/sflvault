@@ -73,6 +73,7 @@ class EditServiceWidget(QtGui.QDialog):
         self.servid = servid
         self.machines = {}
         self.services = {}
+        self.decodedpassword = ""
         if not self.servid:
             self.mode = "add"
         else:
@@ -145,9 +146,7 @@ class EditServiceWidget(QtGui.QDialog):
 
             def run(self):
                 # Launch function
-                ret = getPassword(self.servid)
-                # Set password text from decoding
-                self.parent.password.setText(ret)
+                self.parent.decodedpassword = getPassword(self.servid)
                 self.quit()
         
         class getMachinesThread(QtCore.QThread):
@@ -183,13 +182,15 @@ class EditServiceWidget(QtGui.QDialog):
         # SIGNALS
         self.connect(self.save, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
         self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
-        # Show password when decode is finished
-        QtCore.QObject.connect(self.passwordThread, QtCore.SIGNAL("finished()"), self.password.show)
-        # Hide passwordprogressbar  when decode is finished
-        QtCore.QObject.connect(self.passwordThread, QtCore.SIGNAL("finished()"), self.passwordProgress.hide)
 
+        QtCore.QObject.connect(self.passwordThread, QtCore.SIGNAL("finished()"), self.fillPassword)
         QtCore.QObject.connect(self.servicesThread, QtCore.SIGNAL("finished()"), self.fillServicesList)
         QtCore.QObject.connect(self.machinesThread, QtCore.SIGNAL("finished()"), self.fillMachinesList)
+
+    def fillPassword(self):
+        self.password.setText(self.decodedpassword)
+        self.password.show()
+        self.passwordProgress.hide()
 
     def fillMachinesList(self):
         # Fill machine combo box
@@ -252,9 +253,9 @@ class EditServiceWidget(QtGui.QDialog):
             # get machine lists
             self.machinesThread.start()
             # get services lists
-            self.servicesThread.start()
+        #    self.servicesThread.start()
             # launch password decode thread
-            self.passwordThread.start()
+       #     self.passwordThread.start()
             # Set mode and texts
             self.mode = "edit"
             self.setWindowTitle(self.tr("Edit service"))
