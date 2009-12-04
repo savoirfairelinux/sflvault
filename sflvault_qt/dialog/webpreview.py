@@ -33,50 +33,54 @@ import shutil
 import os
 
 
-class WebPreview(QtGui.QWidget):
-    def __init__(self, url, parent=None):
+class WebPreviewWidget(QtGui.QWidget):
+    def __init__(self, parent=None):
+        """ Widget to show a preview
+            of web site
+        """
         QtGui.QWidget.__init__(self, parent)
-#        self._boundingRect = QtCore.QRect(0, 0, 400, 300)
+    
+        # Widget options
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, False)
+        # Define widget as splash !!!
+#        self.setWindowFlags(QtCore.Qt.SplashScreen)
+        self.setWindowFlags(QtCore.Qt.ToolTip)
 
-        self.setWindowFlags(QtCore.Qt.SplashScreen)
+        # Prepare webpreview 
+        self.webpreview = WebPreview(self)
 
-        self.webpreview = QtWebKit.QWebView()
-        self.webpreview.load(url)
-        self.webpreview.resize(200,200)
-
-
-        self.resize(200,200)
+        # Layout
         layout = QtGui.QVBoxLayout(self)
-#        layout.addWidget(self.webpreview)
-
-
+        # Load proxy widget 
         self.proxyitem = QtGui.QGraphicsProxyWidget()
         self.proxyitem.setWidget(self.webpreview)
-        
-        layout.addWidget(self.proxyitem)
-#        self.setAcceptHoverEvents(False)
-        
-#        xScale = (self._boundingRect.width() - 2 * frameWidth) / self.webpreview.width()
-#        yScale = (self._boundingRect.height() - 2 * frameWidth) / self.webpreview.height()
-#        print (xScale, yScale)
-#        self.scale(xScale, yScale)
-#        self.setPos(frameWidth, frameWidth)
+        # Scence
+        scene = QtGui.QGraphicsScene()
+        scene.addItem(self.proxyitem)
+        # View
+        view = QtGui.QGraphicsView(scene)
+        ## rescale view
+        view.scale(0.4, 0.4)
+        view.setScene(scene)
 
+        # Add view to widget
+        layout.addWidget(view)
 
-#        scene = QtGui.QGraphicsScene()
-#        scene.addWidget(self.webpreview)
-#        scene.addText("Hello, world!")
-#        view = QtGui.QGraphicsView(scene)
-#        view.scale(xScale, yScale)
-#        self.setScene(scene)       
-#        view.show()
+    def mousePressEvent(self, event):
+        """
+            Enable move widget
+        """
+        self.close()
 
-#        self.setZValue(300)
+class WebPreview(QtWebKit.QWebView):
+    def __init__(self, parent=None):
+        """
+        """
+        QtWebKit.QWebView.__init__(self, None)
+        self.parent = parent
 
-#    def paint(self, painter, option, widget): 
-        #Q_UNUSED(option); Q_UNUSED(widget);
-#        painter.setClipRect(self.boundingRect)
-#        painter.setPen(QtCore.QPen(QtCore.Qt.black, 5))
-#        painter.setBrush(QtCore.Qt.black);
-#        painter.setRenderHints(QtCore.QPainter.Antialiasing);
-#        painter.drawRoundedRect(self.boundingRect, 10, 10);
+    def mousePressEvent(self, event):
+        """
+            Enable move widget
+        """
+        self.parent.close()

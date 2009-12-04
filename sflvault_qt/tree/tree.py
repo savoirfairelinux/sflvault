@@ -28,7 +28,7 @@ from PyQt4 import QtCore, QtGui, QtWebKit
 
 from sflvault.client import SFLvaultClient
 from sflvault_qt.bar.filterbar import FilterBar
-from sflvault_qt.dialog.webpreview import WebPreview
+from sflvault_qt.dialog.webpreview import WebPreviewWidget
 from images.qicons import *
 
 from lib.auth import *
@@ -276,6 +276,8 @@ class TreeView(QtGui.QTreeView):
     def __init__(self, parent=None):
         QtGui.QTreeView.__init__(self, parent)
         self.parent = parent
+        
+        self.timer = QtCore.QTimer(self)
         # Load proxy
         self.proxyModel = proxyVault(self)
         # Set view properties
@@ -284,29 +286,40 @@ class TreeView(QtGui.QTreeView):
         self.sortByColumn(0,QtCore.Qt.AscendingOrder)
         # Load context actions
         self.createActions()
-        
+        # Active mouse tracking
         self.setMouseTracking(1)
-        self.connect(self,QtCore.SIGNAL("entered (const QModelIndex&)"), self.webPreview)
+        # SIGNALS
+        self.connect(self,QtCore.SIGNAL("entered (const QModelIndex&)"), self.startTimer)
+        self.connect(self.timer, QtCore.SIGNAL("timeout ()"), self.showWebPreview)
+        self.connect(self,QtCore.SIGNAL("viewportEntered ()"), self.timerStop)
 
-    def webPreview(self, index):
-        url = QtCore.QUrl(index.data().toString())
-        if url.scheme().startsWith("http"):
-          #  self.webpreview = QtWebKit.QWebView(self)
-          #  self.webpreview.load(url)
-          #  self.webpreview.show()
-            web = WebPreview(url,self)
-#            web.load(url)
-#            scene = QtGui.QGraphicsScene()
-#            scene.addItem(web)
-#            scene.addText("Hello, world!")
-#            view = QtGui.QGraphicsView(scene)
-            web.show()
-#            web.setPos(200,200)
-#            web.scene()
+    def timerStop(self):
+        """ Stop timer if mouse go
+            out rows
+        """
+        self.timer.stop()
 
-#            view.show()
-            print str(url.scheme())
-            print url
+    def showWebPreview(self):
+        """ Show web preview
+            and stop timer
+        """
+        print QtGui.QCursor.pos()
+        self.web = WebPreviewWidget(self)
+        self.web.webpreview.load(self.url)
+        self.web.show()
+        self.web.move(QtGui.QCursor.pos())
+        self.timer.stop()
+    
+    def startTimer(self, index):
+        """ Timer management
+        """
+        self.url = QtCore.QUrl(index.data().toString())
+        if self.url.scheme().startsWith("http") and self.url.isValid():
+            if self.timer.isActive():
+                self.timer.stop()
+            self.timer.start(1500)
+        else:
+            self.timer.stop()
 
 
     def setGeometries(self):
