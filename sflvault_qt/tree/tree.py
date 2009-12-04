@@ -28,6 +28,7 @@ from PyQt4 import QtCore, QtGui, QtWebKit
 
 from sflvault.client import SFLvaultClient
 from sflvault_qt.bar.filterbar import FilterBar
+from sflvault_qt.dialog.webpreview import WebPreview
 from images.qicons import *
 
 from lib.auth import *
@@ -290,9 +291,20 @@ class TreeView(QtGui.QTreeView):
     def webPreview(self, index):
         url = QtCore.QUrl(index.data().toString())
         if url.scheme().startsWith("http"):
-            web = QtWebKit.QWebView()
-            web.load(url)
+          #  self.webpreview = QtWebKit.QWebView(self)
+          #  self.webpreview.load(url)
+          #  self.webpreview.show()
+            web = WebPreview(url,self)
+#            web.load(url)
+#            scene = QtGui.QGraphicsScene()
+#            scene.addItem(web)
+#            scene.addText("Hello, world!")
+#            view = QtGui.QGraphicsView(scene)
             web.show()
+#            web.setPos(200,200)
+#            web.scene()
+
+#            view.show()
             print str(url.scheme())
             print url
 
