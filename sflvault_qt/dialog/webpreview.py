@@ -42,8 +42,7 @@ class WebPreviewWidget(QtGui.QWidget):
     
         # Widget options
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, False)
-        # Define widget as splash !!!
-#        self.setWindowFlags(QtCore.Qt.SplashScreen)
+        # Define widget as tooltip !!!
         self.setWindowFlags(QtCore.Qt.ToolTip)
 
         # Prepare webpreview 
@@ -67,8 +66,7 @@ class WebPreviewWidget(QtGui.QWidget):
         layout.addWidget(view)
 
     def mousePressEvent(self, event):
-        """
-            Enable move widget
+        """Enable move widget
         """
         self.close()
 
@@ -80,7 +78,6 @@ class WebPreview(QtWebKit.QWebView):
         self.parent = parent
 
     def mousePressEvent(self, event):
-        """
-            Enable move widget
+        """Enable move widget
         """
         self.parent.close()

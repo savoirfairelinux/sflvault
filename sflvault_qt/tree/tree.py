@@ -289,21 +289,22 @@ class TreeView(QtGui.QTreeView):
         # Active mouse tracking
         self.setMouseTracking(1)
         # SIGNALS
-        self.connect(self,QtCore.SIGNAL("entered (const QModelIndex&)"), self.startTimer)
-        self.connect(self.timer, QtCore.SIGNAL("timeout ()"), self.showWebPreview)
-        self.connect(self,QtCore.SIGNAL("viewportEntered ()"), self.timerStop)
+#        self.connect(self,QtCore.SIGNAL("entered (const QModelIndex&)"), self.startTimer)
+#        self.connect(self.timer, QtCore.SIGNAL("timeout ()"), self.showWebPreview)
+#        self.connect(self,QtCore.SIGNAL("viewportEntered ()"), self.timerStop)
 
     def timerStop(self):
         """ Stop timer if mouse go
             out rows
         """
         self.timer.stop()
+        if hasattr(self,"web"):
+            self.web.close()
 
     def showWebPreview(self):
         """ Show web preview
             and stop timer
         """
-        print QtGui.QCursor.pos()
         self.web = WebPreviewWidget(self)
         self.web.webpreview.load(self.url)
         self.web.show()
@@ -313,6 +314,8 @@ class TreeView(QtGui.QTreeView):
     def startTimer(self, index):
         """ Timer management
         """
+        if hasattr(self,"web"):
+            self.web.close()
         self.url = QtCore.QUrl(index.data().toString())
         if self.url.scheme().startsWith("http") and self.url.isValid():
             if self.timer.isActive():

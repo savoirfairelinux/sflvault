@@ -56,6 +56,8 @@ class PreferencesWidget(QtGui.QDialog):
         self.effects = QtGui.QCheckBox()
         self.hideLabel = QtGui.QLabel(self.tr("Hide on close :"))
         self.hide = QtGui.QCheckBox()
+        self.webpreviewLabel = QtGui.QLabel(self.tr("Web preview :"))
+        self.webpreview = QtGui.QCheckBox()
         self.filterLabel = QtGui.QLabel(self.tr("Filter bar :"))
         self.filter = QtGui.QCheckBox()
         self.minSearchLabel = QtGui.QLabel(self.tr("Minimum search :"))
@@ -91,14 +93,16 @@ class PreferencesWidget(QtGui.QDialog):
         gridLayout.addWidget(self.effects,3,1)
         gridLayout.addWidget(self.hideLabel,4,0)
         gridLayout.addWidget(self.hide,4,1)
-        gridLayout.addWidget(self.filterLabel,5,0)
-        gridLayout.addWidget(self.filter,5,1)
-        gridLayout.addWidget(self.minSearchLabel,6,0)
-        gridLayout.addWidget(self.minSearch,6,1)
-        gridLayout.addWidget(self.osdLabel,7,0)
-        gridLayout.addWidget(self.osd,7,1)
-        gridLayout.addWidget(self.languageLabel,8,0)
-        gridLayout.addWidget(self.language,8,1)
+        gridLayout.addWidget(self.webpreviewLabel,5,0)
+        gridLayout.addWidget(self.webpreview,5,1)
+        gridLayout.addWidget(self.filterLabel,6,0)
+        gridLayout.addWidget(self.filter,6,1)
+        gridLayout.addWidget(self.minSearchLabel,7,0)
+        gridLayout.addWidget(self.minSearch,7,1)
+        gridLayout.addWidget(self.osdLabel,8,0)
+        gridLayout.addWidget(self.osd,8,1)
+        gridLayout.addWidget(self.languageLabel,9,0)
+        gridLayout.addWidget(self.language,9,1)
         guibox.setLayout(gridLayout)
 
         # Positionning items
@@ -127,8 +131,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.show()
 
     def readConfig(self):
-        """
-            ReadConfig
+        """ ReadConfig
         """
         self.username.setText(self.settings.value("SFLvault/username").toString())
         self.url.setText(self.settings.value("SFLvault/url").toString())
@@ -137,14 +140,14 @@ class PreferencesWidget(QtGui.QDialog):
         self.systray.setCheckState(self.settings.value("SFLvault-qt4/systray").toInt()[0])
         self.effects.setCheckState(self.settings.value("SFLvault-qt4/effects").toInt()[0])
         self.hide.setCheckState(self.settings.value("SFLvault-qt4/hide").toInt()[0])
+        self.webpreview.setCheckState(self.settings.value("SFLvault-qt4/webpreview").toInt()[0])
         self.filter.setCheckState(self.settings.value("SFLvault-qt4/filter").toInt()[0])
         self.minSearch.setValue(self.settings.value("SFLvault-qt4/minsearch").toInt()[0])
         self.osd.setValue(self.settings.value("osd/timer").toInt()[0])
         self.fillLanguage(self.settings.value("SFLvault-qt4/language").toString())
 
     def saveConfig(self):
-        """
-            Save configuration
+        """ Save configuration
         """
         self.settings.setValue("SFLvault/username", QtCore.QVariant(self.username.text()))
         self.settings.setValue("SFLvault/url", QtCore.QVariant(self.url.text()))
@@ -153,6 +156,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.settings.setValue("SFLvault-qt4/systray", QtCore.QVariant(self.systray.checkState()))
         self.settings.setValue("SFLvault-qt4/effects", QtCore.QVariant(self.effects.checkState()))
         self.settings.setValue("SFLvault-qt4/hide", QtCore.QVariant(self.hide.checkState()))
+        self.settings.setValue("SFLvault-qt4/webpreview", QtCore.QVariant(self.webpreview.checkState()))
         self.settings.setValue("SFLvault-qt4/filter", QtCore.QVariant(self.filter.checkState()))
         self.settings.setValue("SFLvault-qt4/minsearch", QtCore.QVariant(self.minSearch.value()))
         self.settings.setValue("osd/timer", QtCore.QVariant(self.osd.value()))
@@ -160,6 +164,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.parent.loadUnloadSystrayConfig()
         self.parent.disEnableEffectsConfig()
         self.parent.showHideFilterBarConfig()
+        self.parent.webpreviewConfig()
         # Close dialog
         self.accept()
 

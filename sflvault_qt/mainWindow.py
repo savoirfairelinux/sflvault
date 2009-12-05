@@ -347,6 +347,7 @@ class MainWindow(QtGui.QMainWindow):
         self.loadUnloadSystrayConfig()
         self.disEnableEffectsConfig()
         self.showHideFilterBarConfig()
+        self.webpreviewConfig()
         self.show()
 
     def loadUnloadSystrayConfig(self):
@@ -376,9 +377,19 @@ class MainWindow(QtGui.QMainWindow):
         """
         if self.settings.value("SFLvault-qt4/filter").toInt()[0] == QtCore.Qt.Checked:
             self.treewidget.filter.show()
-        elif self.settings.value("SFLvault-qt4/effects").toInt()[0] == QtCore.Qt.Unchecked:
+        elif self.settings.value("SFLvault-qt4/filter").toInt()[0] == QtCore.Qt.Unchecked:
             self.treewidget.filter.hide()
  
+    def webpreviewConfig(self):
+        if self.settings.value("SFLvault-qt4/webpreview").toInt()[0] == QtCore.Qt.Checked:
+            QtCore.QObject.connect(self.tree,QtCore.SIGNAL("entered (const QModelIndex&)"), self.tree.startTimer)
+            QtCore.QObject.connect(self.tree.timer, QtCore.SIGNAL("timeout ()"), self.tree.showWebPreview)
+            QtCore.QObject.connect(self.tree,QtCore.SIGNAL("viewportEntered ()"), self.tree.timerStop)
+        elif self.settings.value("SFLvault-qt4/webpreview").toInt()[0] == QtCore.Qt.Unchecked:
+            QtCore.QObject.disconnect(self.tree,QtCore.SIGNAL("entered (const QModelIndex&)"), self.tree.startTimer)
+            QtCore.QObject.disconnect(self.tree.timer, QtCore.SIGNAL("timeout ()"), self.tree.showWebPreview)
+            QtCore.QObject.disconnect(self.tree,QtCore.SIGNAL("viewportEntered ()"), self.tree.timerStop)
+
     def setLanguage(self):
         """
             Load language
