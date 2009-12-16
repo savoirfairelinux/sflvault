@@ -320,7 +320,7 @@ class TreeView(QtGui.QTreeView):
         if self.url.scheme().startsWith("http") and self.url.isValid():
             if self.timer.isActive():
                 self.timer.stop()
-            self.timer.start(1500)
+            self.timer.start(500)
         else:
             self.timer.stop()
 

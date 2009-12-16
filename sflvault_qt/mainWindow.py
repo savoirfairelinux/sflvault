@@ -59,6 +59,7 @@ class MainWindow(QtGui.QMainWindow):
         self.app = app
         self.listWidget = {}
         self.userinfo = None
+        self.search_timer = QtCore.QTimer()
 
         # Load settings
         self.settings = Config(parent=self)
@@ -143,10 +144,20 @@ class MainWindow(QtGui.QMainWindow):
             state = QtCore.QVariant(self.saveState())
             self.settings.setValue("SFLvault-qt4/binsavewindow", state)
 
-    def search(self, research):
+    def searchWaiting(self, research):
+        """ Waiting timer end
+        """
+        if self.search_timer.isActive():
+            self.search_timer.stop()
+        self.search_timer.start(1500)
+
+
+    def search(self, research=None):
         """
             Search item in sflvault
         """
+        if self.search_timer.isActive():
+            self.search_timer.stop()
         # Get select group
         groups,bool = self.searchdock.search.groups.itemData(self.searchdock.search.groups.currentIndex()).toInt()
         if not bool:
@@ -310,7 +321,8 @@ class MainWindow(QtGui.QMainWindow):
         # "Connect" tree
         self.treewidget.connection()
         ## Tree Search
-        QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("textEdited (const QString&)"), self.search)
+        QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("textEdited (const QString&)"), self.searchWaiting)
+        QtCore.QObject.connect(self.search_timer, QtCore.SIGNAL("timeout()"), self.search)
         QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("returnPressed ()"), self.focusOnTree)
         ## Tree filter by groups
         QtCore.QObject.connect(self.searchdock.search.groups, QtCore.SIGNAL("currentIndexChanged (const QString&)"), self.search)
