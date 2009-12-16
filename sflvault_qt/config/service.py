@@ -71,9 +71,9 @@ class EditServiceWidget(QtGui.QDialog):
         self.parent = parent
         self.settings = self.parent.settings
         self.servid = servid
-        self.machines = {}
-        self.services = {}
-        self.decodedpassword = ""
+       # self.machines = {}
+       # self.services = {}
+       # self.decodedpassword = ""
         if not self.servid:
             self.mode = "add"
         else:
@@ -138,42 +138,6 @@ class EditServiceWidget(QtGui.QDialog):
 
         self.setWindowTitle(self.tr("Add service"))
 
-        class getPasswordThread(QtCore.QThread):
-            def __init__(self, servid, parent):
-                QtCore.QThread.__init__(self, parent)
-                self.parent = parent
-                self.servid = servid
-
-            def run(self):
-                # Launch function
-                self.parent.decodedpassword = getPassword(self.servid)
-                self.quit()
-        
-        class getMachinesThread(QtCore.QThread):
-            def __init__(self, parent):
-                QtCore.QThread.__init__(self, parent)
-                self.parent = parent
-
-            def run(self):
-                # Launch function
-                self.parent.machines = listMachine()
-                self.quit()
-
-        class getServicesThread(QtCore.QThread):
-            def __init__(self, parent):
-                QtCore.QThread.__init__(self, parent)
-                self.parent = parent
-
-            def run(self):
-                # Launch function
-                self.parent.services = listService()
-                self.quit()
-
-        # create thread
-        self.passwordThread = getPasswordThread(self.servid, self)
-        self.machinesThread = getMachinesThread(self)
-        self.servicesThread = getServicesThread(self)
-
         self.machineline = self.machine.lineEdit()
         QtCore.QObject.connect(self.machineline, QtCore.SIGNAL("editingFinished()"), self.completeMachine)
         self.parentservline = self.parentserv.lineEdit()
@@ -183,18 +147,16 @@ class EditServiceWidget(QtGui.QDialog):
         self.connect(self.save, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
         self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
 
-        QtCore.QObject.connect(self.passwordThread, QtCore.SIGNAL("finished()"), self.fillPassword)
-        QtCore.QObject.connect(self.servicesThread, QtCore.SIGNAL("finished()"), self.fillServicesList)
-        QtCore.QObject.connect(self.machinesThread, QtCore.SIGNAL("finished()"), self.fillMachinesList)
-
     def fillPassword(self):
-        self.password.setText(self.decodedpassword)
+        decodedpassword = getPassword(self.servid)
+        self.password.setText(decodedpassword)
         self.password.show()
         self.passwordProgress.hide()
 
     def fillMachinesList(self):
+        machines = listMachine()
         # Fill machine combo box
-        for machine in self.machines["list"]:
+        for machine in machines["list"]:
             self.machine.addItem(machine['name'] +" - m#" + unicode(machine['id']), QtCore.QVariant(machine['id']))
         # Select good row
         index = self.machine.findText(self.machineline.text(), QtCore.Qt.MatchContains)
@@ -202,9 +164,10 @@ class EditServiceWidget(QtGui.QDialog):
             self.machine.setCurrentIndex(index)
 
     def fillServicesList(self):
+        services = listService()
         # Fill service combo box
         self.parentserv.addItem(self.tr("No parent"), QtCore.QVariant(None))
-        for service in self.services["list"]:
+        for service in services["list"]:
             # Doesn t add this item in possible parent list (if it s edit mode
             if service['id'] != self.servid:
                 self.parentserv.addItem(service['url'] +" - s#" + unicode(service['id']), QtCore.QVariant(service['id']))
@@ -249,22 +212,21 @@ class EditServiceWidget(QtGui.QDialog):
             self.groups.setCurrentIndex(self.groups.findData(
                                 QtCore.QVariant(informations["group_id"])))
             self.notes.setText(informations["notes"])
-            ## launch threads
             # get machine lists
-            self.machinesThread.start()
+            self.fillMachinesList()
             # get services lists
-        #    self.servicesThread.start()
+            self.fillServicesList()
             # launch password decode thread
-       #     self.passwordThread.start()
+            self.fillPassword()
             # Set mode and texts
             self.mode = "edit"
             self.setWindowTitle(self.tr("Edit service"))
         else:
             # just get lists for add service mode
-            # get machine list
-            self.machinesThread.start()
-            # get services list
-            self.servicesThread.start()
+            # get machine lists
+            self.fillMachinesList()
+            # get services lists
+            self.fillServicesList()
 
         self.show()
 

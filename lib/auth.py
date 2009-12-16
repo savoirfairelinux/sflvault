@@ -34,7 +34,6 @@ token = None
 
 error_message = QtCore.QObject()
 
-mutex = QtCore.QMutex()
 
 
 
@@ -45,12 +44,9 @@ def getAuth():
     global token
     #if not token:
     token = SFLvaultClient()
-    mutex.unlock()
     try:
         # Search nothing, just to get a valid token
-        mutex.lock()
         status = token.search(["}{[a]"])
-        mutex.unlock()
         # If password is bad ...
         if status == False:
             e = Exception("ConnectionDenied")
@@ -68,9 +64,7 @@ def getUserInfo(username):
     global token
     try:
         # get user list, to find you inside ...
-        mutex.lock()
         status = token.vault.user_list(token.authtok, True)
-        mutex.unlock()
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
         # So we have to get a new token
@@ -92,9 +86,7 @@ def getUserInfo(username):
 def getService(id):
     global token
     try:
-        mutex.lock()
         service = token.vault.service.get(token.authtok, id)
-        mutex.unlock()
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
         # So we have to get a new token
@@ -111,9 +103,7 @@ def getService(id):
 def getMachine(id):
     global token
     try:
-        mutex.lock()
         machine = token.vault.machine.get(token.authtok, id)
-        mutex.unlock()
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
         # So we have to get a new token
@@ -127,9 +117,7 @@ def getMachine(id):
 def getCustomer(id):
     global token
     try:
-        mutex.lock()
         customer = token.vault.customer.get(token.authtok, id)
-        mutex.unlock()
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
         # So we have to get a new token
@@ -144,9 +132,7 @@ def vaultSearch(pattern, groups_ids=None):
     global token
     result = None
     try:
-        mutex.lock()
         result = token.vault.search(token.authtok, pattern, groups_ids)
-        mutex.unlock()
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
         # So we have to get a new token
@@ -170,9 +156,7 @@ def getPassword(id):
 def editPassword(id, password):
     global token
     try:
-        mutex.lock()
         password = token.vault.service.passwd(token.authtok, id, password)
-        mutex.unlock()
     except Exception, e:
         ErrorMessage(e)
         return False
@@ -182,9 +166,7 @@ def listUsers(groups=True):
     global token
     users = None
     try:
-        mutex.lock()
         users = token.vault.user_list(token.authtok, groups)["list"]
-        mutex.unlock()
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
         # So we have to get a new token
@@ -200,9 +182,7 @@ def addUser(username, admin):
     try:
         print username
         print admin
-        mutex.lock()
         status = token.vault.user.add(token.authtok, username, admin)
-        mutex.unlock()
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
         # So we have to get a new token
@@ -216,9 +196,7 @@ def addUser(username, admin):
 def delUser(username):
     global token
     try:
-        mutex.lock()
         status = token.vault.user_del(token.authtok, username)
-        mutex.unlock()
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the token is now invalid
         # So we have to get a new token
@@ -233,9 +211,7 @@ def listGroup():
     global token
     groups = None
     try:
-        mutex.lock()
         status = token.vault.group.list(token.authtok)
-        mutex.unlock()
         if status["error"]:
             e = Exception('listgroup')
             e.message = error_message.tr("Can not list groups")
@@ -273,9 +249,7 @@ def getAlias(alias):
 def addCustomer(name):
     global token
     try:
-        mutex.lock()
         status = token.vault.customer.add(token.authtok, name)
-        mutex.unlock()
         if status["error"]:
             e = Exception('addcustomer')
             e.message = error_message.tr("Can not add customer : %s" % name)
@@ -296,9 +270,7 @@ def addCustomer(name):
 
 def listCustomers():
     try:
-        mutex.lock()
         status = token.vault.customer.list(token.authtok)
-        mutex.unlock()
         if status["error"]:
             e = Exception('listcustomer')
             e.message = error_message.tr("Can not list customers")
@@ -320,9 +292,7 @@ def listCustomers():
 def editCustomer(custid, informations):
     global token
     try:
-        mutex.lock()
         status = token.vault.customer.put(token.authtok, custid, informations)
-        mutex.unlock()
         if status["error"]:
             e = Exception('editcustomer')
             e.message = error_message.tr("Can not edit customer : %s" % informations["name"])
@@ -344,9 +314,7 @@ def editCustomer(custid, informations):
 def delCustomer(custid):
     global token
     try:
-        mutex.lock()
         status = token.vault.customer_del(token.authtok, custid)
-        mutex.unlock()
         if status["error"]:
             e = Exception('delcustomer')
             e.message = error_message.tr("Can not delete customer : %s" % custid)
@@ -368,9 +336,7 @@ def delCustomer(custid):
 def addMachine(name, custid, fqdn=None, address=None, location=None, notes=None):
     global token
     try:
-        mutex.lock()
         status = token.vault.machine.add(token.authtok, custid, name, fqdn, address, location, notes)
-        mutex.unlock()
         if status["error"]:
             e = Exception('addmachine')
             e.message = error_message.tr("Can not add machine : %s" % name)
@@ -392,9 +358,7 @@ def addMachine(name, custid, fqdn=None, address=None, location=None, notes=None)
 def listMachine():
     global token
     try:
-        mutex.lock()
         status = token.vault.machine.list(token.authtok)
-        mutex.unlock()
         if status["error"]:
             e = Exception('listmachine')
             e.message = error_message.tr("Can not list machines")
@@ -416,9 +380,7 @@ def listMachine():
 def editMachine(machid, informations):
     global token
     try:
-        mutex.lock()
         status = token.vault.machine.put(token.authtok, machid, informations)
-        mutex.unlock()
         if status["error"]:
             e = Exception('editmachine')
             e.message = error_message.tr("Can not edit machine : %s" % informations["name"])
@@ -440,9 +402,7 @@ def editMachine(machid, informations):
 def delMachine(machid):
     global token
     try:
-        mutex.lock()
         status = token.vault.machine_del(token.authtok, machid)
-        mutex.unlock()
         if status["error"]:
             e = Exception('delmachine')
             e.message = error_message.tr("Can not delete machine : %s" % machid)
@@ -468,9 +428,7 @@ def addService(machid, parentid, url, groupids, password, notes):
     try:
         if parentid == 0:
             parentif = None
-        mutex.lock()
         status = token.vault.service.add(token.authtok, machid, parentid, url, groupids, password, notes)
-        mutex.unlock()
         if status["error"]:
             e = Exception('addservice')
             e.message = error_message.tr("Can not add service : %s" % url)
@@ -492,9 +450,7 @@ def addService(machid, parentid, url, groupids, password, notes):
 def listService():
     global token
     try:
-        mutex.lock()
         status = token.vault.service.list(token.authtok, None)
-        mutex.unlock()
         if status["error"]:
             e = Exception('listservice')
             # FIXME
@@ -521,9 +477,7 @@ def editService(servid, informations):
     if not informations["parent_service_id"]:
         informations["parent_service_id"] = 0
     try:
-        mutex.lock()
         status = token.vault.service.put(token.authtok, servid, informations)
-        mutex.unlock()
         if status["error"]:
             e = Exception('editservice')
             e.message = error_message.tr("Can not edit service : %s" % informations["url"])
@@ -545,9 +499,7 @@ def editService(servid, informations):
 def delService(servid):
     global token
     try:
-        mutex.lock()
         status = token.vault.service_del(token.authtok, servid)
-        mutex.unlock()
         if status["error"]:
             e = Exception('delservice')
             e.message = error_message.tr("Can not delete service : %s" % servid)
@@ -573,9 +525,7 @@ def addUserGroup(group_id, user, is_admin):
         # TODO: USE this following function
         # status = token.vault.group_add_user(token.authtok, group_id, user, is_admin) 
         # Not is one ...
-        mutex.lock()
         token.group_add_user(group_id, user, is_admin)
-        mutex.unlock()
         # For now ...
         status = {}
         status["error"] = False
@@ -600,9 +550,7 @@ def addUserGroup(group_id, user, is_admin):
 def delUserGroup(group_id, user):
     global token
     try:
-        mutex.lock()
         status = token.vault.group_del_user(token.authtok, group_id, user)
-        mutex.unlock()
         if status["error"]:
             e = Exception('groupadduser')
             e.message = error_message.tr("Can not delete %s user to group g#%d : %s" % (user, group_id, status["message"]))
@@ -624,9 +572,7 @@ def delUserGroup(group_id, user):
 def addGroup(group_name):
     global token
     try:
-        mutex.lock()
         status = token.vault.group_add(token.authtok, group_name)
-        mutex.unlock()
         if status["error"]:
             e = Exception('groupuser')
             e.message = error_message.tr("Can not create a new group : %s" % (user,group_id))
