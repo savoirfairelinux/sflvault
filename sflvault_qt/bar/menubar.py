@@ -58,6 +58,10 @@ class MenuBar(QtGui.QMenuBar):
         self.newserv.setStatusTip(self.tr("Create a new service"))
         self.newserv.setEnabled(0)
 
+
+        ## save password in wallet
+        self.savepass = self.file.addAction(self.tr("&Save password"))
+        self.savepass.setStatusTip(self.tr("Save your password in your wallet"))
         ## First Connection
         self.firstconnection = self.file.addAction(self.tr("&First connection to the vault"))
         self.firstconnection.setStatusTip(self.tr("Initialize your vault account"))

@@ -42,6 +42,7 @@ from config.customer import EditCustomerWidget, DeleteCustomerWidget
 from config.machine import EditMachineWidget, DeleteMachineWidget
 from config.service import EditServiceWidget, DeleteServiceWidget
 from wizard.initaccount import InitAccount
+from wizard.savepassword import SavePasswordWizard
 from bar.menubar import MenuBar
 from bar.systray import Systray
 from bar.osd import Osd
@@ -119,6 +120,8 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.menubar.groups, QtCore.SIGNAL("triggered()"), self.groups.exec_)
         ## Groups
         QtCore.QObject.connect(self.menubar.users, QtCore.SIGNAL("triggered()"), self.users.exec_)
+        ## Save Vault password
+        QtCore.QObject.connect(self.menubar.savepass, QtCore.SIGNAL("triggered()"), self.savePassword)
         ## First Vault connection
         QtCore.QObject.connect(self.menubar.firstconnection, QtCore.SIGNAL("triggered()"), self.firstConnection)
         ## Vault connection
@@ -570,3 +573,6 @@ class MainWindow(QtGui.QMainWindow):
 
     def firstConnection(self):
         self.firstconnection = InitAccount(self)
+
+    def savePassword(self):
+        self.savepass = SavePasswordWizard(self)

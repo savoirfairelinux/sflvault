@@ -26,12 +26,18 @@
 
 
 import sys
+import os
 from PyQt4 import QtCore, QtGui
 from sflvault.client import SFLvaultClient
 from error import *
+try:
+    from PyKDE4.kdeui import KWallet
+except:
+    print "KWallet not supported"
 
 
-
+client = None
+error_message = QtCore.QObject()
 
 def getAuth():
     """
@@ -40,6 +46,8 @@ def getAuth():
     global client
     #if not client:
     client = SFLvaultClient()
+    if not "KDE_SESSION_VERSION" in os.environ or not os.environ["KDE_SESSION_VERSION"] == "4":
+        client.getpassfunc = KDEreadPassword
     try:
         # Search nothing, just to get a valid client
         status = client.search(["}{[a]"])
@@ -53,6 +61,53 @@ def getAuth():
         return False
     return client
     
+def KDEsavePassword(password):
+    wl = KWallet.Wallet.LocalWallet()
+    w = KWallet.Wallet.openWallet(wl, 0)
+    if not w.hasFolder("sflvault"):
+        w.createFolder("sflvault")
+    w.setFolder("sflvault")
+    read_password = QtCore.QString()
+    if not w.readPassword("sflvault", read_password):
+        if read_password != "":
+            del(read_password)
+            question = QtGui.QMessageBox(QtGui.QMessageBox.Question,
+                                    "Save password in your wallet",
+                                    "This password already exists."
+                                    "Do you want to replace it ?",
+                                    )
+            question.addButton(QtGui.QMessageBox.Save)
+            question.addButton(QtGui.QMessageBox.Cancel)
+            ret = question.exec_()
+            if ret == QtGui.QMessageBox.Save:
+                w.writePassword("sflvault", QtCore.QString(password))
+                del(password)
+                return True
+            else:
+                del(password)
+                return False
+            
+        else:
+            w.writePassword("sflvault", QtCore.QString(password))
+            del(password)
+            return True
+    else:
+        print "error ??"
+        return False
+    return True
+
+def KDEreadPassword():
+    wl = KWallet.Wallet.LocalWallet()
+    w = KWallet.Wallet.openWallet(wl, 0)
+    if not w.hasFolder("sflvault"):
+        return False
+    w.setFolder("sflvault")
+    read_password = QtCore.QString()
+    if w.readPassword("sflvault", read_password):
+        return False
+
+    return unicode(read_password)
+
 def registerAccount(username, vaultaddress, password):
     """ Init you vault account
     """
