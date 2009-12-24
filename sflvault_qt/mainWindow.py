@@ -261,18 +261,22 @@ class MainWindow(QtGui.QMainWindow):
         if not service:
             return False
         # Get service
-        url = service["service"]["url"]
-        protocol, address = url.split("://")
+        url = QUrl(service["service"]["url"])
+        protocol = unicode(url.scheme())
+        address  = unicode(url.host() + ":" + unicode(url.port()) + url.path()) if url.port() else unicode(url.host() + url.path())
+        port = unicode(url.port())
         # Copy password to clipboard if checked in config
         clip, bool = self.settings.value("protocols/" + protocol + "/clip").toInt()
         if bool and clip == QtCore.Qt.Checked:
             self.copyToClip(password)
         # Prepare dictionnary
-        if len(address.split("@")) > 1:
-            options["user"], options["address"] = address.split("@", 1)
+        if url.userName():
+            options["user"] = url.userName()
         else:
-            options["address"] = address
             options["user"] = None
+        options["address"] = address
+
+        options["port"] = port
         options["protocol"] = protocol
         options["vaultid"] = service["service"]["id"]
         options["vaultconnect"] = "sflvault connect %s" % options["vaultid"]
