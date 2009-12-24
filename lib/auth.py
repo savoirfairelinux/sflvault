@@ -28,11 +28,7 @@
 import sys
 from PyQt4 import QtCore, QtGui
 from sflvault.client import SFLvaultClient
-
 from error import *
-client = None
-
-error_message = QtCore.QObject()
 
 
 

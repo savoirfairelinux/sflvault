@@ -49,11 +49,11 @@ class MenuBar(QtGui.QMenuBar):
         self.newcust = self.new.addAction(self.tr("&Customer..."))
         self.newcust.setStatusTip(self.tr("Create a new customer"))
         self.newcust.setEnabled(0)
-        ## Machine
+        ### Machine
         self.newmach = self.new.addAction(self.tr("&Machine..."))
         self.newmach.setStatusTip(self.tr("Create a new machine"))
         self.newmach.setEnabled(0)
-        ## Service
+        ### Service
         self.newserv = self.new.addAction(self.tr("&Service..."))
         self.newserv.setStatusTip(self.tr("Create a new service"))
         self.newserv.setEnabled(0)
@@ -63,7 +63,7 @@ class MenuBar(QtGui.QMenuBar):
         self.firstconnection.setStatusTip(self.tr("Initialize your vault account"))
         ## Connection
         self.connection = self.file.addAction(self.tr("&Connect to the vault"))
-        self.connection.setStatusTip(self.tr("Connectto the vault"))
+        self.connection.setStatusTip(self.tr("Connect to the vault"))
         ## Quick Connection
         self.quickconnect = self.file.addAction(self.tr("&Quick Connect..."))
         self.quickconnect.setShortcut(self.tr("Ctrl+O"))
