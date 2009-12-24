@@ -41,6 +41,7 @@ from config.config import Config
 from config.customer import EditCustomerWidget, DeleteCustomerWidget
 from config.machine import EditMachineWidget, DeleteMachineWidget
 from config.service import EditServiceWidget, DeleteServiceWidget
+from wizard.initaccount import InitAccount
 from bar.menubar import MenuBar
 from bar.systray import Systray
 from bar.osd import Osd
@@ -118,6 +119,8 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.menubar.groups, QtCore.SIGNAL("triggered()"), self.groups.exec_)
         ## Groups
         QtCore.QObject.connect(self.menubar.users, QtCore.SIGNAL("triggered()"), self.users.exec_)
+        ## First Vault connection
+        QtCore.QObject.connect(self.menubar.firstconnection, QtCore.SIGNAL("triggered()"), self.firstConnection)
         ## Vault connection
         QtCore.QObject.connect(self.menubar.connection, QtCore.SIGNAL("triggered()"), self.vaultConnection)
         ## Preferences
@@ -564,3 +567,6 @@ class MainWindow(QtGui.QMainWindow):
             self.delCustomer(itemid)
         else:
             return False
+
+    def firstConnection(self):
+        self.firstconnection = InitAccount(self)

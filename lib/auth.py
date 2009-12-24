@@ -57,6 +57,17 @@ def getAuth():
         return False
     return client
     
+def registerAccount(username, vaultaddress, password):
+    """ Init you vault account
+    """
+    client = SFLvaultClient()
+    try:
+        client.user_setup(username, vaultaddress, password)
+    except Exception, e:
+        ErrorMessage(e)
+        return False
+    return True 
+
 def getUserInfo(username):
     """
         Get Your informations
