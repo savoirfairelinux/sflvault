@@ -395,6 +395,7 @@ class MainWindow(QtGui.QMainWindow):
             self.treewidget.filter.show()
         elif self.settings.value("SFLvault-qt4/filter").toInt()[0] == QtCore.Qt.Unchecked:
             self.treewidget.filter.hide()
+            self.treewidget.filter.filter_input.setText("")
  
     def webpreviewConfig(self):
         if self.settings.value("SFLvault-qt4/webpreview").toInt()[0] == QtCore.Qt.Checked:
@@ -444,6 +445,7 @@ class MainWindow(QtGui.QMainWindow):
         """
         if self.treewidget.filter.isVisible() and self.treewidget.filter.filter_input.hasFocus():
             self.treewidget.filter.hide()
+            self.treewidget.filter.filter_input.setText("")
         elif self.treewidget.filter.isVisible() and not self.treewidget.filter.filter_input.hasFocus():
             self.treewidget.filter.filter_input.setFocus()
         else:
