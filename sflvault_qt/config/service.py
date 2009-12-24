@@ -92,7 +92,8 @@ class EditServiceWidget(QtGui.QDialog):
         self.urlLabel = QtGui.QLabel(self.tr("Url"))
         self.url = QtGui.QLineEdit()
         self.groupsLabel = QtGui.QLabel(self.tr("Group"))
-        self.groups = QtGui.QComboBox()
+        #self.groups = QtGui.QComboBox()
+        self.groups = QtGui.QListWidget(self)
         self.passwordLabel = QtGui.QLabel(self.tr("Password"))
         self.password = QtGui.QLineEdit()
         self.password.hide()
@@ -195,9 +196,14 @@ class EditServiceWidget(QtGui.QDialog):
     def exec_(self):
         # get groups lists
         groups = listGroup()
+        if not "list" in groups:
+            return False
         for group in groups["list"]:
             if group["member"]:
-                self.groups.addItem(group['name'] +" - g#" + unicode(group['id']), QtCore.QVariant(group['id']))
+                item = QtGui.QListWidgetItem(group['name'] +" - g#" + unicode(group['id']))
+                item.setData(Qt.UserRole, QtCore.QVariant(group['id']))
+                self.groups.addItem(item)
+#                self.groups.addItem(group['name'] +" - g#" + unicode(group['id']), QtCore.QVariant(group['id']))
         if self.servid:
             # Fill fields for edit mode
             service = getService(self.servid)
@@ -224,7 +230,7 @@ class EditServiceWidget(QtGui.QDialog):
         else:
             # just get lists for add service mode
             # get machine lists
-            self.fillMachinesList()
+#            self.fillMachinesList()
             # get services lists
             self.fillServicesList()
 
@@ -243,7 +249,14 @@ class EditServiceWidget(QtGui.QDialog):
         service_info["machine_id"], bool = self.machine.itemData(self.machine.currentIndex()).toInt()
         service_info["parent_service_id"], bool = self.parentserv.itemData(self.parentserv.currentIndex()).toInt()
         service_info["url"] = unicode(self.url.text())
-        service_info["group_ids"], bool = self.groups.itemData(self.groups.currentIndex()).toInt()
+        group_ids_item_list = self.groups.selectedItems(self.groups.currentIndex()).toList()
+        group_ids = []
+        for group_id_item in group_ids_item_list:
+            group_id, bool,= group_id_item.data().toInt()
+            group_ids.append(group_id)
+        # TODO : UNIQUE
+        service_info["group_ids"] = group_ids
+        #service_info["group_ids"], bool = self.groups.itemData(self.groups.currentIndex()).toInt()
         service_info["secret"] = unicode(self.password.text())
         service_info["notes"] = unicode(self.notes.text())
         if self.mode == "add":
