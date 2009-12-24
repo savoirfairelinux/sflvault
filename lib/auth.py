@@ -30,7 +30,7 @@ from PyQt4 import QtCore, QtGui
 from sflvault.client import SFLvaultClient
 
 from error import *
-token = None
+client = None
 
 error_message = QtCore.QObject()
 
@@ -41,12 +41,12 @@ def getAuth():
     """
         Get authentication
     """
-    global token
-    #if not token:
-    token = SFLvaultClient()
+    global client
+    #if not client:
+    client = SFLvaultClient()
     try:
-        # Search nothing, just to get a valid token
-        status = token.search(["}{[a]"])
+        # Search nothing, just to get a valid client
+        status = client.search(["}{[a]"])
         # If password is bad ...
         if status == False:
             e = Exception("ConnectionDenied")
@@ -55,19 +55,19 @@ def getAuth():
     except Exception, e:
         ErrorMessage(e)
         return False
-    return token
+    return client
     
 def getUserInfo(username):
     """
         Get Your informations
     """
-    global token
+    global client
     try:
         # get user list, to find you inside ...
-        status = token.vault.user_list(token.authtok, True)
+        status = client.vault.user_list(client.authtok, True)
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         getUserInfo(username)
     except Exception, e:
@@ -84,12 +84,12 @@ def getUserInfo(username):
     return False
 
 def getService(id):
-    global token
+    global client
     try:
-        service = token.vault.service.get(token.authtok, id)
+        service = client.vault.service.get(client.authtok, id)
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         service = getService(id)
     except Exception, e:
@@ -101,12 +101,12 @@ def getService(id):
     return service
 
 def getMachine(id):
-    global token
+    global client
     try:
-        machine = token.vault.machine.get(token.authtok, id)
+        machine = client.vault.machine.get(client.authtok, id)
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         machine = getMachine(id)
     except Exception, e:
@@ -115,12 +115,12 @@ def getMachine(id):
     return machine
 
 def getCustomer(id):
-    global token
+    global client
     try:
-        customer = token.vault.customer.get(token.authtok, id)
+        customer = client.vault.customer.get(client.authtok, id)
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         customer = getCustomer(id)
     except Exception, e:
@@ -129,13 +129,13 @@ def getCustomer(id):
     return customer
 
 def vaultSearch(pattern, groups_ids=None):
-    global token
+    global client
     result = None
     try:
-        result = token.vault.search(token.authtok, pattern, groups_ids)
+        result = client.vault.search(client.authtok, pattern, groups_ids)
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         result = vaultSearch(pattern, groups_ids)
     except Exception, e:
@@ -144,32 +144,32 @@ def vaultSearch(pattern, groups_ids=None):
     return result
 
 def getPassword(id):
-    global token
+    global client
     password = None
     try:
-        password = token.service_get(id)["plaintext"]
+        password = client.service_get(id)["plaintext"]
     except Exception, e:
         ErrorMessage(e)
         return False
     return password
 
 def editPassword(id, password):
-    global token
+    global client
     try:
-        password = token.vault.service.passwd(token.authtok, id, password)
+        password = client.vault.service.passwd(client.authtok, id, password)
     except Exception, e:
         ErrorMessage(e)
         return False
     return password
 
 def listUsers(groups=True):
-    global token
+    global client
     users = None
     try:
-        users = token.vault.user_list(token.authtok, groups)["list"]
+        users = client.vault.user_list(client.authtok, groups)["list"]
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         users = listUsers()
     except Exception, e:
@@ -178,14 +178,14 @@ def listUsers(groups=True):
     return users
 
 def addUser(username, admin):
-    global token
+    global client
     try:
         print username
         print admin
-        status = token.vault.user.add(token.authtok, username, admin)
+        status = client.vault.user.add(client.authtok, username, admin)
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         statusdelUser(username, admin)
     except Exception, e:
@@ -194,12 +194,12 @@ def addUser(username, admin):
     return status
 
 def delUser(username):
-    global token
+    global client
     try:
-        status = token.vault.user_del(token.authtok, username)
+        status = client.vault.user_del(client.authtok, username)
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         statusdelUser(username)
     except Exception, e:
@@ -208,17 +208,17 @@ def delUser(username):
     return status
 
 def listGroup():
-    global token
+    global client
     groups = None
     try:
-        status = token.vault.group.list(token.authtok)
+        status = client.vault.group.list(client.authtok)
         if status["error"]:
             e = Exception('listgroup')
             e.message = error_message.tr("Can not list groups")
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = listGroup()
         if status["error"]:
@@ -230,33 +230,33 @@ def listGroup():
         return False
     return status
 
-token_alias = SFLvaultClient()
+client_alias = SFLvaultClient()
 
 def getAliasList():
-    aliases = token_alias.alias_list()
+    aliases = client_alias.alias_list()
     return aliases
 
 def saveAlias(alias, id):
-    token_alias.alias_add(alias,id)
+    client_alias.alias_add(alias,id)
 
 def delAlias(alias):
-    token_alias.alias_del(alias)
+    client_alias.alias_del(alias)
 
 def getAlias(alias):
-    id = token_alias.alias_get(alias)
+    id = client_alias.alias_get(alias)
     return id
 
 def addCustomer(name):
-    global token
+    global client
     try:
-        status = token.vault.customer.add(token.authtok, name)
+        status = client.vault.customer.add(client.authtok, name)
         if status["error"]:
             e = Exception('addcustomer')
             e.message = error_message.tr("Can not add customer : %s" % name)
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = addCustomer(name)
         if status["error"]:
@@ -270,14 +270,14 @@ def addCustomer(name):
 
 def listCustomers():
     try:
-        status = token.vault.customer.list(token.authtok)
+        status = client.vault.customer.list(client.authtok)
         if status["error"]:
             e = Exception('listcustomer')
             e.message = error_message.tr("Can not list customers")
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = listCustomers()
         if status["error"]:
@@ -290,16 +290,16 @@ def listCustomers():
     return status
 
 def editCustomer(custid, informations):
-    global token
+    global client
     try:
-        status = token.vault.customer.put(token.authtok, custid, informations)
+        status = client.vault.customer.put(client.authtok, custid, informations)
         if status["error"]:
             e = Exception('editcustomer')
             e.message = error_message.tr("Can not edit customer : %s" % informations["name"])
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = editCustomer(custid, informations)
         if status["error"]:
@@ -312,16 +312,16 @@ def editCustomer(custid, informations):
     return status
 
 def delCustomer(custid):
-    global token
+    global client
     try:
-        status = token.vault.customer_del(token.authtok, custid)
+        status = client.vault.customer_del(client.authtok, custid)
         if status["error"]:
             e = Exception('delcustomer')
             e.message = error_message.tr("Can not delete customer : %s" % custid)
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = delCustomer(custid)
         if status["error"]:
@@ -334,16 +334,16 @@ def delCustomer(custid):
     return status
 
 def addMachine(name, custid, fqdn=None, address=None, location=None, notes=None):
-    global token
+    global client
     try:
-        status = token.vault.machine.add(token.authtok, custid, name, fqdn, address, location, notes)
+        status = client.vault.machine.add(client.authtok, custid, name, fqdn, address, location, notes)
         if status["error"]:
             e = Exception('addmachine')
             e.message = error_message.tr("Can not add machine : %s" % name)
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = addMachine(name, custid, fqdn=None, address=None, location=None, notes=None)
         if status["error"]:
@@ -356,16 +356,16 @@ def addMachine(name, custid, fqdn=None, address=None, location=None, notes=None)
     return status
 
 def listMachine():
-    global token
+    global client
     try:
-        status = token.vault.machine.list(token.authtok)
+        status = client.vault.machine_list(client.authtok)
         if status["error"]:
             e = Exception('listmachine')
             e.message = error_message.tr("Can not list machines")
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = listMachine()
         if status["error"]:
@@ -378,16 +378,16 @@ def listMachine():
     return status
 
 def editMachine(machid, informations):
-    global token
+    global client
     try:
-        status = token.vault.machine.put(token.authtok, machid, informations)
+        status = client.vault.machine.put(client.authtok, machid, informations)
         if status["error"]:
             e = Exception('editmachine')
             e.message = error_message.tr("Can not edit machine : %s" % informations["name"])
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = editMachine(machid, informations)
         if status["error"]:
@@ -400,16 +400,16 @@ def editMachine(machid, informations):
     return status
 
 def delMachine(machid):
-    global token
+    global client
     try:
-        status = token.vault.machine_del(token.authtok, machid)
+        status = client.vault.machine_del(client.authtok, machid)
         if status["error"]:
             e = Exception('delmachine')
             e.message = error_message.tr("Can not delete machine : %s" % machid)
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = delMachine(machid)
         if status["error"]:
@@ -422,20 +422,20 @@ def delMachine(machid):
     return status
 
 def addService(machid, parentid, url, groupids, password, notes):
-    global token
+    global client
     if not parentid:
         parentid = 0
     try:
         if parentid == 0:
             parentif = None
-        status = token.vault.service.add(token.authtok, machid, parentid, url, groupids, password, notes)
+        status = client.vault.service.add(client.authtok, machid, parentid, url, groupids, password, notes)
         if status["error"]:
             e = Exception('addservice')
             e.message = error_message.tr("Can not add service : %s" % url)
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = addService(machid, parentid, url, groupids, password, notes)
         if status["error"]:
@@ -448,9 +448,9 @@ def addService(machid, parentid, url, groupids, password, notes):
     return status
 
 def listService():
-    global token
+    global client
     try:
-        status = token.vault.service.list(token.authtok, None)
+        status = client.vault.service.list(client.authtok, None)
         if status["error"]:
             e = Exception('listservice')
             # FIXME
@@ -459,8 +459,8 @@ def listService():
             e.message = error_message.tr("Can not list services")
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = listService()
         if status["error"]:
@@ -473,18 +473,18 @@ def listService():
     return status
 
 def editService(servid, informations):
-    global token
+    global client
     if not informations["parent_service_id"]:
         informations["parent_service_id"] = 0
     try:
-        status = token.vault.service.put(token.authtok, servid, informations)
+        status = client.vault.service.put(client.authtok, servid, informations)
         if status["error"]:
             e = Exception('editservice')
             e.message = error_message.tr("Can not edit service : %s" % informations["url"])
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = editService(servid, informations)
         if status["error"]:
@@ -497,16 +497,16 @@ def editService(servid, informations):
     return status
 
 def delService(servid):
-    global token
+    global client
     try:
-        status = token.vault.service_del(token.authtok, servid)
+        status = client.vault.service_del(client.authtok, servid)
         if status["error"]:
             e = Exception('delservice')
             e.message = error_message.tr("Can not delete service : %s" % servid)
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = delService(servid)
         if status["error"]:
@@ -519,13 +519,13 @@ def delService(servid):
     return status
 
 def addUserGroup(group_id, user, is_admin):
-    global token
+    global client
     from Crypto.PublicKey import ElGamal
     try:
         # TODO: USE this following function
-        # status = token.vault.group_add_user(token.authtok, group_id, user, is_admin) 
+        # status = client.vault.group_add_user(client.authtok, group_id, user, is_admin) 
         # Not is one ...
-        token.group_add_user(group_id, user, is_admin)
+        client.group_add_user(group_id, user, is_admin)
         # For now ...
         status = {}
         status["error"] = False
@@ -534,8 +534,8 @@ def addUserGroup(group_id, user, is_admin):
             e.message = error_message.tr("Can not add %s user to group g#%d : %s" % (user, group_id, status["message"]))
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = addUserGroup(group_id, user, is_admin)
         if status["error"]:
@@ -548,16 +548,16 @@ def addUserGroup(group_id, user, is_admin):
     return status
 
 def delUserGroup(group_id, user):
-    global token
+    global client
     try:
-        status = token.vault.group_del_user(token.authtok, group_id, user)
+        status = client.vault.group_del_user(client.authtok, group_id, user)
         if status["error"]:
             e = Exception('groupadduser')
             e.message = error_message.tr("Can not delete %s user to group g#%d : %s" % (user, group_id, status["message"]))
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = delUserGroup(group_id, user)
         if status["error"]:
@@ -570,16 +570,16 @@ def delUserGroup(group_id, user):
     return status
 
 def addGroup(group_name):
-    global token
+    global client
     try:
-        status = token.vault.group_add(token.authtok, group_name)
+        status = client.vault.group_add(client.authtok, group_name)
         if status["error"]:
             e = Exception('groupuser')
             e.message = error_message.tr("Can not create a new group : %s" % (user,group_id))
             raise e
     except xmlrpclib.ProtocolError, e:
-        # Protocol error means the token is now invalid
-        # So we have to get a new token
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
         getAuth()
         status = addGroup(group_name)
         if status["error"]:
