@@ -575,4 +575,4 @@ class MainWindow(QtGui.QMainWindow):
         self.firstconnection = InitAccount(self)
 
     def savePassword(self):
-        self.savepass = SavePasswordWizard(self)
+        self.savepass = SavePasswordWizard(parent=self)

@@ -86,9 +86,8 @@ class ErrorMessage(QtGui.QMessageBox):
 
     def noPassword(self):
         self.setWindowTitle(self.tr("Environment Problem"))
-        print self.exception
         print "no password"
-        self.setText(self.exception)
+        self.setText("No password Found")
         self.setIcon(QtGui.QMessageBox.Critical)
 
     def message(self):

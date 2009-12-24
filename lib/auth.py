@@ -33,8 +33,11 @@ from error import *
 try:
     from PyKDE4.kdeui import KWallet
 except:
-    print "KWallet not supported"
-
+    print "KWallet is not supported"
+try:
+    import gnomekeyring
+except:
+    print "SeaHorse is not supported"
 
 client = None
 error_message = QtCore.QObject()
@@ -46,8 +49,10 @@ def getAuth():
     global client
     #if not client:
     client = SFLvaultClient()
-    if not "KDE_SESSION_VERSION" in os.environ or not os.environ["KDE_SESSION_VERSION"] == "4":
+    if "KDE_SESSION_VERSION" in os.environ and os.environ["KDE_SESSION_VERSION"] == "4":
         client.getpassfunc = KDEreadPassword
+    else:
+        client.getpassfunc = GNOMEreadPassword
     try:
         # Search nothing, just to get a valid client
         status = client.search(["}{[a]"])
@@ -60,16 +65,84 @@ def getAuth():
         ErrorMessage(e)
         return False
     return client
-    
+ 
+def GNOMEsavePassword(password):
+    """ Save vault password in seahorse
+    """
+    # Keyring name
+    keyring = "sflvault"
+    # Check if keyring exists
+    if not keyring in gnomekeyring.list_keyring_names_sync():
+        # If not create it
+        gnomekeyring.create_sync(keyring,None)
+    ids = gnomekeyring.list_item_ids_sync(keyring)
+    # Check if sflvault item exists
+    if keyring in [gnomekeyring.item_get_info_sync(keyring, id).get_display_name() for id in ids]:
+        question = QtGui.QMessageBox(QtGui.QMessageBox.Question,
+                                    "Save password in your wallet",
+                                    "This password already exists."
+                                    "Do you want to replace it ?",
+                                    )
+        question.addButton(QtGui.QMessageBox.Save)
+        question.addButton(QtGui.QMessageBox.Cancel)
+        # Ask to user if he wants to replace old password
+        ret = question.exec_()
+        if ret == QtGui.QMessageBox.Save:
+            # Replace password
+            gnomekeyring.item_create_sync(keyring,
+                            gnomekeyring.ITEM_GENERIC_SECRET,
+                            keyring,
+                            {},
+                            password,
+                            True
+                            )
+        else:
+            # Do nothing
+            return False
+    else:
+        # Create password
+        gnomekeyring.item_create_sync(keyring,
+                        gnomekeyring.ITEM_GENERIC_SECRET,
+                        keyring,
+                        {},
+                        password,
+                        True
+                        )
+    return True
+
+def GNOMEreadPassword():
+    """ Read password form seahorse
+    """
+    keyring = "sflvault"
+    try:
+        # Search sflvault item in sflvault keyring
+        ids = gnomekeyring.list_item_ids_sync(keyring)
+        for id in ids:
+            item = gnomekeyring.item_get_info_sync(keyring, id)
+            # Get password
+            if item.get_display_name() == keyring:
+                return item.get_secret()
+    except:
+        return False
+        
 def KDEsavePassword(password):
-    wl = KWallet.Wallet.LocalWallet()
-    w = KWallet.Wallet.openWallet(wl, 0)
-    if not w.hasFolder("sflvault"):
-        w.createFolder("sflvault")
-    w.setFolder("sflvault")
+    """ Save password in Kwallet
+    """
+    # set vault wallet
+    wallet = "sflvault"
+    # Open or create vault wallet
+    w = KWallet.Wallet.openWallet(wallet, 0)
+    # Open or create vault folder
+    if w == None:
+        return False
+    if not w.hasFolder(wallet):
+        w.createFolder(wallet)
+    w.setFolder(wallet)
+    # 
     read_password = QtCore.QString()
-    if not w.readPassword("sflvault", read_password):
+    if not w.readPassword(wallet, read_password):
         if read_password != "":
+            # A password is already saved
             del(read_password)
             question = QtGui.QMessageBox(QtGui.QMessageBox.Question,
                                     "Save password in your wallet",
@@ -78,34 +151,48 @@ def KDEsavePassword(password):
                                     )
             question.addButton(QtGui.QMessageBox.Save)
             question.addButton(QtGui.QMessageBox.Cancel)
+            # Ask to user if he wants to replace old password
             ret = question.exec_()
             if ret == QtGui.QMessageBox.Save:
-                w.writePassword("sflvault", QtCore.QString(password))
+                # replace old password
+                w.writePassword(wallet, QtCore.QString(password))
                 del(password)
                 return True
             else:
+                # Do nothing
                 del(password)
                 return False
-            
         else:
-            w.writePassword("sflvault", QtCore.QString(password))
+            # Write new password
+            w.writePassword(wallet, QtCore.QString(password))
             del(password)
             return True
     else:
+        # ??,
         print "error ??"
         return False
     return True
 
 def KDEreadPassword():
-    wl = KWallet.Wallet.LocalWallet()
-    w = KWallet.Wallet.openWallet(wl, 0)
+    """ Read password from KWallet
+    """
+    # Set vault wallet
+    wallet = "sflvault"
+    # Check if sflvault wallet exists
+    if not KWallet.Wallet.walletList().contains("sflvault"):
+        return ""
+    w = KWallet.Wallet.openWallet(wallet, 0)
+    # Check if sflvaultl folder exists
     if not w.hasFolder("sflvault"):
-        return False
+        return ""
     w.setFolder("sflvault")
     read_password = QtCore.QString()
-    if w.readPassword("sflvault", read_password):
-        return False
-
+    # Check if password exists
+    if w.readPassword("sflvault", read_password) != 0:
+        return ""
+    if read_password == "":
+        return ""
+    # Return password
     return unicode(read_password)
 
 def registerAccount(username, vaultaddress, password):

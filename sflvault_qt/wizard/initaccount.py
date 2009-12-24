@@ -28,6 +28,7 @@ import re
 from PyQt4.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
+from savepassword import SavePasswordWizard
 from lib.auth import *
 import shutil
 import os
@@ -35,12 +36,15 @@ import os
 
 class InitAccount(QtGui.QWizard):
     def __init__(self, parent=None):
+        """ Wizard to launch user-setup
+        """
         QtGui.QWizard.__init__(self, parent)
         self.parent = parent
-
+        # Init Pages
         page1 = Page1(self)
         page2 = Page2(self)
         page3 = Page3(self)
+        # Add pages
         self.addPage(page1)
         self.addPage(page2)
         self.addPage(page3)
@@ -50,15 +54,14 @@ class InitAccount(QtGui.QWizard):
 
 class Page1(QtGui.QWizardPage):
     def __init__(self, parent=None):
+        """ Introduction page
+        """
         QtGui.QWizard.__init__(self, parent)
         self.parent = parent
-
         self.setTitle("Account Activation")
-
         label = QtGui.QLabel("This wizard will activate your account."
                 )
         label.setWordWrap(True)
-
         layout = QtGui.QVBoxLayout()
         layout.addWidget(label)
         self.setLayout(layout)
@@ -66,6 +69,8 @@ class Page1(QtGui.QWizardPage):
 
 class Page2(QtGui.QWizardPage):
     def __init__(self, parent=None):
+        """ Form page
+        """
         QtGui.QWizardPage.__init__(self, parent)
         self.parent = parent
         self.setTitle("Initialize your vault account")
@@ -102,35 +107,60 @@ class Page2(QtGui.QWizardPage):
         layout.addWidget(self.password2,3,1)
 
         self.setLayout(layout)
+        # Register fields
         self.registerField("username", self.username)
         self.registerField("address", self.address)
         self.registerField("password1*", self.password1)
         self.registerField("password2*", self.password2)
 
     def validatePage(self):
+        """ Test if passwords matching
+            and password saving
+        """
+        # password matching ?
         if self.password2.text().compare(self.password1.text()):
+            # password not matching
             error = QtGui.QMessageBox(QtGui.QMessageBox.Critical, "Password error", "Passwords don't match")
             error.exec_()
             return False
+        # Empty password
+        if not self.password2.text().compare(""):
+            error = QtGui.QMessageBox(QtGui.QMessageBox.Critical, "Empty password", "Password can't be empty")
+            error.exec_()
+            return False
+        # test to register account
         elif not registerAccount(unicode(self.username.text()), unicode(self.address.text()), unicode(self.password1.text())):
             return False
+        # Reload config
         self.parent.parent.settings.sync()
         return True
 
 
 class Page3(QtGui.QWizardPage):
+    """ Final page
+    """
     def __init__(self, parent=None):
         QtGui.QWizardPage.__init__(self, parent)
         self.parent = parent
-
         self.setTitle("Account activation successfully")
-
-        label = QtGui.QLabel("You account is now activated."
-                            "You can now connect to the vault."
+        label = QtGui.QLabel("You account is now activated. "
+                            "You can now connect to the vault.\n"
+                            "\n"
                             )
         label.setWordWrap(True)
 
-        layout = QtGui.QVBoxLayout()
-        layout.addWidget(label)
+        self.savepassword_label = QtGui.QLabel("Save your password in your wallet")
+        self.savepassword = QtGui.QCheckBox()
+        self.savepassword.setCheckState(QtCore.Qt.Checked)
+        self.savepassword_label.setBuddy(self.savepassword)
+        layout = QtGui.QGridLayout()
+        layout.addWidget(label,0,0,1,2)
+        layout.addWidget(self.savepassword_label,1,0)
+        layout.addWidget(self.savepassword,1,1)
         self.setFinalPage(True)
         self.setLayout(layout)
+
+    def validatePage(self):
+        if self.savepassword.checkState() == QtCore.Qt.Checked:
+            self.savepass = SavePasswordWizard(self.field("password1").toString(), None)
+        return True
