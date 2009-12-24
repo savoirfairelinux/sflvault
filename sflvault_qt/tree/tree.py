@@ -363,9 +363,15 @@ class TreeView(QtGui.QTreeView):
         if self.selectedIndexes():
             menu = QtGui.QMenu(self)
             # Add bookmark menu for services
+            menu.addAction(self.newAct)
+            menu.addAction(self.editAct)
             if self.selectedIndexes()[0].parent().parent().isValid():
                 menu.addAction(self.bookmarkAct)
-            menu.addAction(self.editAct)
+                menu.addAction(self.connectAct)
+                index = self.selectedIndexes()[0]
+                self.url = QtCore.QUrl(index.data().toString())
+                if self.url.scheme() == "ssh":
+                    menu.addAction(self.tunnelAct)
             menu.addAction(self.delAct)
             menu.exec_(event.globalPos())
 
@@ -373,9 +379,20 @@ class TreeView(QtGui.QTreeView):
         """
             Create actions for contextMenu
         """
+        self.newAct = QtGui.QAction(self.tr("&New..."), self)
+        self.newAct.setShortcut(self.tr("Ctrl+N"))
+        self.newAct.setStatusTip(self.tr("New item"))
+
         self.editAct = QtGui.QAction(self.tr("&Edit..."), self)
         self.editAct.setShortcut(self.tr("Ctrl+E"))
         self.editAct.setStatusTip(self.tr("Edit item"))
+
+        self.tunnelAct = QtGui.QAction(self.tr("&Create tunnel..."), self)
+        self.tunnelAct.setStatusTip(self.tr("Create a ssh connection with tunnel"))
+
+        self.connectAct = QtGui.QAction(self.tr("&Connect..."), self)
+#        self.connectAct.setShortcut(self.tr("Ctrl+D"))
+        self.connectAct.setStatusTip(self.tr("Connect to this service"))
 
         self.bookmarkAct = QtGui.QAction(self.tr("&Create alias..."), self)
         self.bookmarkAct.setShortcut(self.tr("Ctrl+D"))
