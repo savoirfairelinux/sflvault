@@ -173,7 +173,8 @@ class Page3(QtGui.QWizardPage):
 
 class Page4(QtGui.QWizardPage):
     def __init__(self, parent=None):
-        """ Unsuccess page """
+        """ Unsuccess page
+        """
         QtGui.QWizardPage.__init__(self, parent)
         self.parent = parent
 

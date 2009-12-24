@@ -137,9 +137,9 @@ class Page2(QtGui.QWizardPage):
 
 
 class Page3(QtGui.QWizardPage):
-    """ Final page
-    """
     def __init__(self, parent=None):
+        """ Final page
+        """
         QtGui.QWizardPage.__init__(self, parent)
         self.parent = parent
         self.setTitle("Account activation successfully")
@@ -162,5 +162,6 @@ class Page3(QtGui.QWizardPage):
 
     def validatePage(self):
         if self.savepassword.checkState() == QtCore.Qt.Checked:
+            # Launch savepassword wizard
             self.savepass = SavePasswordWizard(self.field("password1").toString(), None)
         return True
