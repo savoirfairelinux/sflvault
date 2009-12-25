@@ -230,7 +230,7 @@ class EditServiceWidget(QtGui.QDialog):
         else:
             # just get lists for add service mode
             # get machine lists
-#            self.fillMachinesList()
+            self.fillMachinesList()
             # get services lists
             self.fillServicesList()
 

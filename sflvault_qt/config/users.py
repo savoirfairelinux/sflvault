@@ -62,11 +62,12 @@ class UsersWidget(QtGui.QDialog):
         self.created_stamp = QtGui.QDateTimeEdit()
         self.created_stamp.setReadOnly(True)
         groupbox = QtGui.QGroupBox(self.tr("Groups"))
+        self.group_add = QtGui.QPushButton(self.tr("New group"))
+        self.group_delete = QtGui.QPushButton(self.tr("Delete group"))
         self.group_list = QtGui.QTableView(self)
         self.group_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.group_list.setSortingEnabled(1)
         self.group_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        groupbox = QtGui.QGroupBox(self.tr("Groups"))
         self.group_list_filter_label = QtGui.QLabel(self.tr("Filter"))
         self.group_list_filter = QtGui.QLineEdit(self)
 
@@ -110,9 +111,11 @@ class UsersWidget(QtGui.QDialog):
         
         ## Groups groupbox
         gridLayout = QtGui.QGridLayout()
-        gridLayout.addWidget(self.group_list_filter_label,0,0)
-        gridLayout.addWidget(self.group_list_filter,0,1,1,2)
-        gridLayout.addWidget(self.group_list,1,0,5,3)
+        gridLayout.addWidget(self.group_add,0,1)
+        gridLayout.addWidget(self.group_delete,0,2)
+        gridLayout.addWidget(self.group_list_filter_label,1,0)
+        gridLayout.addWidget(self.group_list_filter,1,1,1,2)
+        gridLayout.addWidget(self.group_list,2,0,5,3)
         groupbox.setLayout(gridLayout)
 
         ## User groupbox
@@ -140,7 +143,9 @@ class UsersWidget(QtGui.QDialog):
         # SIGNALS
         self.connect(self.user_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.user_proxy.setFilterRegExp)
         self.connect(self.user_add, QtCore.SIGNAL("clicked()"), self.newUser)
+        self.connect(self.group_add, QtCore.SIGNAL("clicked()"), self.newGroup)
         self.connect(self.user_delete, QtCore.SIGNAL("clicked()"), self.deleteUser)
+        self.connect(self.group_delete, QtCore.SIGNAL("clicked()"), self.deleteGroup)
         self.connect(self.user_list, QtCore.SIGNAL("activated (const QModelIndex&)"), self.editUser)
         self.connect(self.group_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.group_proxy.setFilterRegExp)
         self.connect(cancelButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
@@ -151,10 +156,30 @@ class UsersWidget(QtGui.QDialog):
             self.user_delete.setDisabled(1)
         # Get users list
         self.loadUserList()
-        # Get services list
-        self.groups = listGroup()
         # Show dialog
         self.show()
+
+    def deleteGroup(self):
+        """
+            Delete selected group
+        """
+        if self.group_list.selectedIndexes():
+            name = unicode(self.group_list.selectedIndexes()[0].data().toString())
+            selected_group = self.model_group.groups[self.group_list.selectedIndexes()[0].row()]
+
+            pdialog = progressdialog.ProgressDialog("Deleting a group",
+                "Please wait while deleting a group",
+                delGroup, selected_group.id)
+            ret = pdialog.run()
+
+            if ret:
+                message = QtGui.QMessageBox(QtGui.QMessageBox.Information, self.tr("Delete group"), self.tr("Group %s deleted successfully" % unicode(selected_group.id)))
+                message.exec_()
+                self.editUser() 
+                return True
+            else:
+                return False
+
 
     def deleteUser(self):
         """
@@ -165,11 +190,20 @@ class UsersWidget(QtGui.QDialog):
             delUser(name)
             self.loadUserList()
 
+    def updateInfo(self):
+        # Get your informations
+        self.parent.userinfo = getUserInfo(str(self.settings.value("SFLvault/username").toString()))
+        # Get groups list
+        self.groups = listGroup()
+        # Update users info
+        users = listUsers(True)
+        self.model_user = UsersModel(users, parent=self)
 
     def editUser(self):
         """
         """
         if self.user_list.selectedIndexes():
+            self.updateInfo()
             self.model_group.groups = []
             self.model_group.setHeaders() 
             self.current_username = unicode(self.user_list.selectedIndexes()[0].data().toString())
@@ -199,6 +233,7 @@ class UsersWidget(QtGui.QDialog):
                     self.created_stamp.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
                     # Load all groups
                     for group in self.groups["list"]:
+                        print group["name"]
                         # Do not show group which you are not member
                         if not group["name"] in [yourgroup["name"]  for yourgroup in self.parent.userinfo["groups"] ]:
                             continue
@@ -220,6 +255,30 @@ class UsersWidget(QtGui.QDialog):
                             # Add group
                             self.model_group.addGroup(QtCore.Qt.Unchecked, QtCore.Qt.Unchecked, group["name"], group["id"])
                     break
+
+    def newGroup(self):
+        """ Create a new group
+        """
+        # Show input Dialog
+        group_name, ok = QtGui.QInputDialog.getText(self.parent, self.tr("New group"),
+                                                self.tr("New group name :"),
+                                                QtGui.QLineEdit.Normal)
+        if not ok or not group_name:
+            return False
+
+        pdialog = progressdialog.ProgressDialog("Creating a new group",
+            "Please wait while creating a new group",
+            addGroup, unicode(group_name))
+        ret = pdialog.run()
+
+        if ret:
+            message = QtGui.QMessageBox(QtGui.QMessageBox.Information, self.tr("Create group"), self.tr("Group %s created successfully" % unicode(group_name)))
+            message.exec_()
+            self.editUser()
+            return True
+        else:
+            return False
+
 
     def newUser(self):
         """

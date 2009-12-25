@@ -222,13 +222,18 @@ def getUserInfo(username):
     except Exception, e:
         ErrorMessage(e)
         return False
-    if status["error"]:
-        ErrorMessage("Error while getting your informations")
-        return False
+    try:
+        if status["error"]:
+            e = Exception('userinfo')
+            e.message = error_message.tr("Error while getting your informations")
+            ErrorMessage(e)
+            return False
 
-    for user in status['list']:
-        if user['username'] == username:
-            return user
+        for user in status['list']:
+            if user['username'] == username:
+                return user
+    except UnboundLocalError:
+        getUserInfo(username)
     # Your are not in database ??!!
     return False
 
@@ -350,7 +355,7 @@ def delUser(username):
         # Protocol error means the client is now invalid
         # So we have to get a new client
         getAuth()
-        statusdelUser(username)
+        status = delUser(username)
     except Exception, e:
         ErrorMessage(e)
         return False
@@ -722,8 +727,9 @@ def addGroup(group_name):
     global client
     try:
         status = client.vault.group_add(client.authtok, group_name)
+        print status
         if status["error"]:
-            e = Exception('groupuser')
+            e = Exception('groupadd')
             e.message = error_message.tr("Can not create a new group : %s" % (user,group_id))
             raise e
     except xmlrpclib.ProtocolError, e:
@@ -732,8 +738,30 @@ def addGroup(group_name):
         getAuth()
         status = addGroup(group_name)
         if status["error"]:
-            e = Exception('groupuser')
+            e = Exception('groupadd')
             e.message = error_message.tr("Can not create a new group : %s" % (user,group_id))
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return False
+    return status
+
+def delGroup(group_id):
+    global client
+    try:
+        status = client.vault.group_del(client.authtok, group_id)
+        if status["error"]:
+            e = Exception('groupdel')
+            e.message = error_message.tr("Can not delete group : %s" % (user,group_id))
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
+        getAuth()
+        status = delGroup(group_id)
+        if status["error"]:
+            e = Exception('groupdel')
+            e.message = error_message.tr("Can not delete group : %s" % (user,group_id))
             raise e
     except Exception, e:
         ErrorMessage(e)
