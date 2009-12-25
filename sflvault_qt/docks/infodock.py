@@ -459,7 +459,10 @@ class InfoModel(QtGui.QStandardItemModel):
         if not self.attributes:
             return QtCore.QVariant()
 
-        attribute = self.attributes[index.row()]
+        try:
+            attribute = self.attributes[index.row()]
+        except IndexError, e:
+            return  QtCore.QVariant()
 
         # get value of protocol name and command
         if role in [QtCore.Qt.EditRole, QtCore.Qt.DisplayRole]:
