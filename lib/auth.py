@@ -51,7 +51,7 @@ def getAuth():
     client = SFLvaultClient()
     if "KDE_SESSION_VERSION" in os.environ and os.environ["KDE_SESSION_VERSION"] == "4":
         client.getpassfunc = KDEreadPassword
-    else:
+    elif "GDMSESSION" in os.environ and os.environ["os.environ"] == "gnome":
         client.getpassfunc = GNOMEreadPassword
     try:
         # Search nothing, just to get a valid client
