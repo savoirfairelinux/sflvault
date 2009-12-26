@@ -83,12 +83,6 @@ class MenuBar(QtGui.QMenuBar):
         self.protocols.setStatusTip(self.tr("Manage protocols"))
         self.protocols.setEnabled(0)
 
-        ## Group management
-        self.groups = self.edit.addAction(self.tr("&Groups..."))
-        self.groups.setShortcut(self.tr("Ctrl+G"))
-        self.groups.setStatusTip(self.tr("Manage groups"))
-        self.groups.setEnabled(0)
-
         ## Users management
         self.users = self.edit.addAction(self.tr("&Users..."))
         self.users.setShortcut(self.tr("Ctrl+U"))
@@ -150,7 +144,6 @@ class MenuBar(QtGui.QMenuBar):
         self.newmach.setEnabled(1)
         self.newserv.setEnabled(1)
         self.protocols.setEnabled(1)
-        self.groups.setEnabled(1)
         self.users.setEnabled(1)
         self.quickconnect.setEnabled(1)
 

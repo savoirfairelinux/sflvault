@@ -34,7 +34,6 @@ from docks.infodock import InfoDock
 from docks.searchdock import SearchDock
 from docks.aliasdock import AliasDock
 from config.protocols import ProtocolsWidget
-from config.groups import GroupsWidget
 from config.users import UsersWidget
 from config.preferences import PreferencesWidget
 from config.config import Config
@@ -103,7 +102,6 @@ class MainWindow(QtGui.QMainWindow):
 
         # Load windows
         self.protocols = ProtocolsWidget(parent=self)
-        self.groups = GroupsWidget(parent=self)
         self.users = UsersWidget(parent=self)
         self.preferences = PreferencesWidget(parent=self)
         # Load shortcut
@@ -116,9 +114,7 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.menubar.protocols, QtCore.SIGNAL("triggered()"), self.protocols.exec_)
         ## Protocols
         QtCore.QObject.connect(self.menubar.quickconnect, QtCore.SIGNAL("triggered()"), self.quickConnection)
-        ## Groups
-        QtCore.QObject.connect(self.menubar.groups, QtCore.SIGNAL("triggered()"), self.groups.exec_)
-        ## Groups
+        ## Users & Groups
         QtCore.QObject.connect(self.menubar.users, QtCore.SIGNAL("triggered()"), self.users.exec_)
         ## Save Vault password
         QtCore.QObject.connect(self.menubar.savepass, QtCore.SIGNAL("triggered()"), self.savePassword)
@@ -336,10 +332,13 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("returnPressed ()"), self.focusOnTree)
         ## Tree filter by groups
         QtCore.QObject.connect(self.searchdock.search.groups, QtCore.SIGNAL("currentIndexChanged (const QString&)"), self.search)
-        ## Tree bookmark
+        ## Tree menu
         QtCore.QObject.connect(self.tree.bookmarkAct, QtCore.SIGNAL("triggered()"), self.aliasdock.alias.model.addAlias)
         QtCore.QObject.connect(self.tree.editAct, QtCore.SIGNAL("triggered()"), self.editItem)
         QtCore.QObject.connect(self.tree.delAct, QtCore.SIGNAL("triggered()"), self.delItem)
+        QtCore.QObject.connect(self.tree.newServiceAct, QtCore.SIGNAL("triggered()"), self.addService)
+        QtCore.QObject.connect(self.tree.newMachineAct, QtCore.SIGNAL("triggered()"), self.addMachine)
+        QtCore.QObject.connect(self.tree.tunnelAct, QtCore.SIGNAL("triggered()"), self.tunnel)
         ## Tree connection
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
         ## Tree item informations
@@ -350,9 +349,6 @@ class MainWindow(QtGui.QMainWindow):
 
         # "Connect" menus
         self.menubar.enableItems()
-
-        # "Connect" groups
-        self.groups.connection()
 
         # Show all services
         self.search(None)
@@ -531,7 +527,6 @@ class MainWindow(QtGui.QMainWindow):
         else:
             return False
 
-
     def delCustomer(self, custid=None):
         """
             # Ask Delete customer ?
@@ -568,6 +563,51 @@ class MainWindow(QtGui.QMainWindow):
         # Check if seleted item is a customer
         elif index.isValid():
             self.delCustomer(itemid)
+        else:
+            return False
+
+    def addMachine(self, machid=None, custid=None):
+        """ Ask add a machine to selected customer
+        """
+        # Get Id colunm
+        indexId = self.tree.selectedIndexes()[1]
+        index = self.tree.selectedIndexes()[0]
+        servid = indexId.data(QtCore.Qt.DisplayRole).toString()
+        servid = int(servid.split("#")[1])
+        self.addmachine = EditMachineWidget(None, servid, parent=self)
+        self.addmachine.exec_()
+
+    def addService(self, machid=None, servid=None):
+        """ Add a new service
+        """
+        # Get Id colunm
+        indexId = self.tree.selectedIndexes()[1]
+        index = self.tree.selectedIndexes()[0]
+        machid = indexId.data(QtCore.Qt.DisplayRole).toString()
+        machid = int(machid.split("#")[1])
+        self.addservice = EditServiceWidget(False, machid, parent=self)
+        self.addservice.exec_()
+
+    def tunnel(self):
+        print "tunnel"
+
+    def addItem(self):
+        # Get Id colunm
+        indexId = self.tree.selectedIndexes()[1]
+        index = self.tree.selectedIndexes()[0]
+        itemid = indexId.data(QtCore.Qt.DisplayRole).toString()
+        itemid = int(itemid.split("#")[1])
+        # Check if seleted item is a service
+        if index.parent().parent().isValid():
+            print index.parent().data(QtCore.Qt.DisplayRole).toString()
+            return False
+            self.addService(itemid)
+        # Check if seleted item is a machine
+        elif index.parent().isValid():
+            self.addMachine(itemid)
+        # Check if seleted item is a customer
+        elif index.isValid():
+            self.addCustomer(itemid)
         else:
             return False
 

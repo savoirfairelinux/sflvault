@@ -66,11 +66,12 @@ class DeleteMachineWidget(QtGui.QMessageBox):
 
 
 class EditMachineWidget(QtGui.QDialog):
-    def __init__(self, machid=None, parent=None):
+    def __init__(self, machid=None, custid=None, parent=None):
         QtGui.QDialog.__init__(self, parent)
         self.parent = parent
         self.settings = self.parent.settings
         self.machid = machid
+        self.custid = custid
         self.mode = "add"
 
         # Load gui items
@@ -125,6 +126,7 @@ class EditMachineWidget(QtGui.QDialog):
         customers = listCustomers()
         for customer in customers["list"]:
             self.customer.addItem(customer['name'] +" - c#" + unicode(customer['id']) , QtCore.QVariant(customer['id']))
+
         if self.machid:
             # Fill fields for edit mode
             machine = getMachine(self.machid)
@@ -139,6 +141,10 @@ class EditMachineWidget(QtGui.QDialog):
             # Set mode and texts
             self.mode = "edit"
             self.setWindowTitle(self.tr("Edit machine"))
+
+        if self.custid:
+            self.customer.setCurrentIndex(self.customer.findData(QtCore.QVariant(self.custid)))
+
         self.show()
 
     def accept(self):

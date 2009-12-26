@@ -360,25 +360,34 @@ class TreeView(QtGui.QTreeView):
         """
             Create contextMenu on right click
         """
-        if self.selectedIndexes():
-            menu = QtGui.QMenu(self)
-            # Add bookmark menu for services
-            menu.addAction(self.newAct)
+        menu = QtGui.QMenu(self)
+        if self.selectedIndexes()[0].parent().parent().isValid():
             menu.addAction(self.editAct)
-            if self.selectedIndexes()[0].parent().parent().isValid():
-                menu.addAction(self.bookmarkAct)
-                menu.addAction(self.connectAct)
-                index = self.selectedIndexes()[0]
-                self.url = QtCore.QUrl(index.data().toString())
-                if self.url.scheme() == "ssh":
-                    menu.addAction(self.tunnelAct)
-            menu.addAction(self.delAct)
-            menu.exec_(event.globalPos())
+            menu.addAction(self.connectAct)
+            menu.addAction(self.bookmarkAct)
+            index = self.selectedIndexes()[0]
+            self.url = QtCore.QUrl(index.data().toString())
+            if self.url.scheme() == "ssh":
+                menu.addAction(self.tunnelAct)
+        elif self.selectedIndexes()[0].parent().isValid():
+            menu.addAction(self.newServiceAct)
+            menu.addAction(self.editAct)
+        elif self.selectedIndexes()[0].isValid():
+            menu.addAction(self.newMachineAct)
+            menu.addAction(self.editAct)
+        menu.addAction(self.delAct)
+        menu.exec_(event.globalPos())
 
     def createActions(self):
         """
             Create actions for contextMenu
         """
+        self.newMachineAct = QtGui.QAction(self.tr("New machine"), self)
+        self.newMachineAct.setStatusTip(self.tr("New machine"))
+
+        self.newServiceAct = QtGui.QAction(self.tr("New service"), self)
+        self.newServiceAct.setStatusTip(self.tr("New service"))
+
         self.newAct = QtGui.QAction(self.tr("&New..."), self)
         self.newAct.setShortcut(self.tr("Ctrl+N"))
         self.newAct.setStatusTip(self.tr("New item"))
