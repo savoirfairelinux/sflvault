@@ -67,7 +67,7 @@ class InfoDock(QtGui.QDockWidget):
             self.machine = getMachine(machineid)
             self.setWindowTitle("Machine")
             if self.machine and serviceid:
-                self.service = getService(serviceid)
+                self.service = getService(serviceid, True)
                 self.setWindowTitle("Service")
                 if not self.service:
                     self.setWindowTitle("Informations")
@@ -338,7 +338,7 @@ class Info(QtGui.QWidget):
             self.showMachine()
             self.showCustomer()
             self.showService()
-            for key, data in service["service"].items():
+            for key, data in service["services"][0].items():
                 if key in ["id", ]:
                     # Show and hide label
                     self.serviceList["id"].show()
@@ -427,8 +427,10 @@ class InfoModel(QtGui.QStandardItemModel):
         self.attributes = []
         if service:
             self.mode = "service"
-            for key, data in service["service"].items():
+            for key, data in service["services"][0].items():
                 if key in ["url", "notes", "group_id", "parent_service_id", "groups_list"]:
+                    if type(data) == list:
+                        data = unicode(u" | ".join([ group[1] + "(g#" + unicode(group[0]) + ")"  for group in data]))
                     self.insertRow(0)
                     self.attributes.append({key: data})
         elif machine:
