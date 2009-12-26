@@ -237,10 +237,10 @@ def getUserInfo(username):
     # Your are not in database ??!!
     return False
 
-def getService(id):
+def getService(id, groups=False):
     global client
     try:
-        service = client.vault.service.get(client.authtok, id)
+        service = client.vault.service_get_tree(client.authtok, id, groups)
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the client is now invalid
         # So we have to get a new client
@@ -706,7 +706,7 @@ def delUserGroup(group_id, user):
     try:
         status = client.vault.group_del_user(client.authtok, group_id, user)
         if status["error"]:
-            e = Exception('groupadduser')
+            e = Exception('groupdeluser')
             e.message = error_message.tr("Can not delete %s user to group g#%d : %s" % (user, group_id, status["message"]))
             raise e
     except xmlrpclib.ProtocolError, e:
@@ -715,7 +715,7 @@ def delUserGroup(group_id, user):
         getAuth()
         status = delUserGroup(group_id, user)
         if status["error"]:
-            e = Exception('groupadduser')
+            e = Exception('groupdeluser')
             e.message = error_message.tr("Can not delete %s user to group g#%d : %s" % (user, group_id, status["message"]))
             raise e
     except Exception, e:
@@ -762,6 +762,57 @@ def delGroup(group_id):
         if status["error"]:
             e = Exception('groupdel')
             e.message = error_message.tr("Can not delete group : %s" % (user,group_id))
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return False
+    return status
+
+def addServiceGroup(group_id, service_id):
+    global client
+    from Crypto.PublicKey import ElGamal
+    try:
+        # TODO: USE this following function
+        # status = client.vault.group_add_service(client.authtok, group_id, service_id)
+        # Not is one ...
+        client.group_add_service(group_id, service_id)
+        # For now ...
+        status = {}
+        status["error"] = False
+        if status["error"]:
+            e = Exception('groupaddservice')
+            e.message = error_message.tr("Can not add service s#%s to group g#%d : %s" % (service_id, group_id, status["message"]))
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
+        getAuth()
+        status = addServiceGroup(group_id, service_id)
+        if status["error"]:
+            e = Exception('groupaddservice')
+            e.message = error_message.tr("Can not add service s#%s to group g#%d : %s" % (service_id, group_id, status["message"]))
+            raise e
+    except Exception, e:
+        ErrorMessage(e)
+        return False
+    return status
+
+def delServiceGroup(group_id, service_id):
+    global client
+    try:
+        status = client.vault.group_del_service(client.authtok, group_id, service_id)
+        if status["error"]:
+            e = Exception('groupdelservice')
+            e.message = error_message.tr("Can not delete service #%s to group g#%d : %s" % (service_id, group_id, status["message"]))
+            raise e
+    except xmlrpclib.ProtocolError, e:
+        # Protocol error means the client is now invalid
+        # So we have to get a new client
+        getAuth()
+        status = delServiceGroup(group_id, service_id)
+        if status["error"]:
+            e = Exception('groupdelservice')
+            e.message = error_message.tr("Can not delete service #%s to group g#%d : %s" % (service_id, group_id, status["message"]))
             raise e
     except Exception, e:
         ErrorMessage(e)
