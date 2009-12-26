@@ -111,11 +111,11 @@ class UsersWidget(QtGui.QDialog):
         
         ## Groups groupbox
         gridLayout = QtGui.QGridLayout()
-        gridLayout.addWidget(self.group_add,0,1)
+        gridLayout.addWidget(self.group_add,0,0)
         gridLayout.addWidget(self.group_delete,0,2)
-        gridLayout.addWidget(self.group_list_filter_label,1,0)
-        gridLayout.addWidget(self.group_list_filter,1,1,1,2)
-        gridLayout.addWidget(self.group_list,2,0,5,3)
+        gridLayout.addWidget(self.group_list_filter_label,7,0)
+        gridLayout.addWidget(self.group_list_filter,7,1,1,2)
+        gridLayout.addWidget(self.group_list,1,0,5,3)
         groupbox.setLayout(gridLayout)
 
         ## User groupbox
