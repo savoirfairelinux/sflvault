@@ -29,6 +29,7 @@ import sys
 import os
 from PyQt4 import QtCore, QtGui
 from sflvault.client import SFLvaultClient
+from sflvault_qt.config.config import Config
 from error import *
 try:
     from PyKDE4.kdeui import KWallet
@@ -49,10 +50,20 @@ def getAuth():
     global client
     #if not client:
     client = SFLvaultClient()
-    if "KDE_SESSION_VERSION" in os.environ and os.environ["KDE_SESSION_VERSION"] == "4":
+    
+    settings = Config()
+    wallet_setting, bol = settings.value("SFLvault-qt4/wallet").toInt()
+
+    if wallet_setting == 1:
+        if "KDE_SESSION_VERSION" in os.environ and os.environ["KDE_SESSION_VERSION"] == "4":
+            client.getpassfunc = KDEreadPassword
+        elif "GDMSESSION" in os.environ and os.environ["os.environ"] == "gnome":
+            client.getpassfunc = GNOMEreadPassword
+    elif wallet_setting == 2:
         client.getpassfunc = KDEreadPassword
-    elif "GDMSESSION" in os.environ and os.environ["os.environ"] == "gnome":
+    elif wallet_setting == 3:
         client.getpassfunc = GNOMEreadPassword
+
     try:
         # Search nothing, just to get a valid client
         status = client.search(["}{[a]"])

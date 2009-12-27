@@ -46,6 +46,8 @@ class PreferencesWidget(QtGui.QDialog):
         self.username = QtGui.QLineEdit()
         self.urlLabel = QtGui.QLabel(self.tr("Vault server address :"))
         self.url = QtGui.QLineEdit()
+        self.wallet_label = QtGui.QLabel(self.tr("Use wallet :"))
+        self.wallet = QtGui.QComboBox()
         self.saveMainWindowLabel = QtGui.QLabel(self.tr("Save dock positions :"))
         self.saveMainWindow = QtGui.QCheckBox()
         self.autoConnectLabel = QtGui.QLabel(self.tr("Auto connect :"))
@@ -78,6 +80,8 @@ class PreferencesWidget(QtGui.QDialog):
         gridLayout.addWidget(self.username,0,1)
         gridLayout.addWidget(self.urlLabel,1,0)
         gridLayout.addWidget(self.url,1,1)
+        gridLayout.addWidget(self.wallet_label,2,0)
+        gridLayout.addWidget(self.wallet,2,1)
         vaultbox.setLayout(gridLayout)
 
         # Gui Group box
@@ -145,6 +149,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.minSearch.setValue(self.settings.value("SFLvault-qt4/minsearch").toInt()[0])
         self.osd.setValue(self.settings.value("osd/timer").toInt()[0])
         self.fillLanguage(self.settings.value("SFLvault-qt4/language").toString())
+        self.fillWallet(self.settings.value("SFLvault-qt4/wallet").toString())
 
     def saveConfig(self):
         """ Save configuration
@@ -161,6 +166,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.settings.setValue("SFLvault-qt4/minsearch", QtCore.QVariant(self.minSearch.value()))
         self.settings.setValue("osd/timer", QtCore.QVariant(self.osd.value()))
         self.settings.setValue("SFLvault-qt4/language", QtCore.QVariant(self.language.currentText()))
+        self.settings.setValue("SFLvault-qt4/wallet", QtCore.QVariant(self.wallet.itemData(self.wallet.currentIndex())))
         self.parent.loadUnloadSystrayConfig()
         self.parent.disEnableEffectsConfig()
         self.parent.showHideFilterBarConfig()
@@ -168,6 +174,13 @@ class PreferencesWidget(QtGui.QDialog):
         # Close dialog
         self.accept()
 
+    def fillWallet(self, value):
+        self.wallet.addItem("Don't use wallet", QtCore.QVariant(0))
+        self.wallet.addItem("Autodetect", QtCore.QVariant(1))
+        self.wallet.addItem("KWallet", QtCore.QVariant(2))
+        self.wallet.addItem("SeaHorse", QtCore.QVariant(3))
+        self.wallet.setCurrentIndex(self.wallet.findData(value))
+        
 
     def fillLanguage(self, value):
         self.language.clear()

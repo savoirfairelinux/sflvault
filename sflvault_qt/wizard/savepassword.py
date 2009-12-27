@@ -131,13 +131,27 @@ class Page2(QtGui.QWizardPage):
             error.exec_()
             return False
         # Check which wallet is used (kwallet or seahorse)
-        if "KDE_SESSION_VERSION" in os.environ and os.environ["KDE_SESSION_VERSION"] == "4":
+        wallet_setting, bol = self.parent.parent.settings.value("SFLvault-qt4/wallet").toInt()
+        if wallet_setting == 1:
+            if "KDE_SESSION_VERSION" in os.environ and os.environ["KDE_SESSION_VERSION"] == "4":
+                ret = KDEsavePassword(unicode(self.password1.text()))
+                if ret:
+                    self.next_page = PAGE_SUCCESS
+                else:
+                    self.next_page = PAGE_UNSUCCESS
+            elif "GDMSESSION" in os.environ and os.environ["os.environ"] == "gnome":
+               ret = GNOMEsavePassword(unicode(self.password1.text()))
+               if ret:
+                   self.next_page = PAGE_SUCCESS
+               else:
+                   self.next_page = PAGE_UNSUCCESS 
+        elif wallet_setting == 2:
             ret = KDEsavePassword(unicode(self.password1.text()))
             if ret:
                 self.next_page = PAGE_SUCCESS
             else:
                 self.next_page = PAGE_UNSUCCESS
-        elif "GDMSESSION" in os.environ and os.environ["os.environ"] == "gnome":
+        elif wallet_setting == 3:
            ret = GNOMEsavePassword(unicode(self.password1.text()))
            if ret:
                self.next_page = PAGE_SUCCESS
