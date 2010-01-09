@@ -244,7 +244,8 @@ def getUserInfo(username):
             if user['username'] == username:
                 return user
     except UnboundLocalError:
-        getUserInfo(username)
+        user = getUserInfo(username)
+        return user
     # Your are not in database ??!!
     return False
 
