@@ -7,6 +7,10 @@ TARGET =
 DEPENDPATH += . \
               images \
               lib \
+              images \
+              images/services \
+              sflvault_qt/dialog \
+              sflvault_qt/wizard \
               sflvault_qt \
               sflvault_qt/bar \
               sflvault_qt/config \
@@ -18,24 +22,34 @@ INCLUDEPATH += /home/titilambert/projets_opensource/sflvault-qt4/git/sflvault-qt
 # Input
 SOURCES   +=./images/qicons.py \
             ./images/__init__.py \
+            ./sflvault_qt/docks/__init__.py\
+            ./sflvault_qt/docks/infodock.py\
+            ./sflvault_qt/docks/aliasdock.py\
+            ./sflvault_qt/docks/searchdock.py\
+            ./sflvault_qt/bar/osd.py\
+            ./sflvault_qt/bar/systray.py\
+            ./sflvault_qt/bar/__init__.py\
+            ./sflvault_qt/bar/menubar.py\
+            ./sflvault_qt/bar/filterbar.py\
+            ./sflvault_qt/dialog/progressdialog.py\
+            ./sflvault_qt/dialog/webpreview.py\
+            ./sflvault_qt/dialog/__init__.py\
+            ./sflvault_qt/wizard/savepassword.py\
+            ./sflvault_qt/wizard/__init__.py\
+            ./sflvault_qt/wizard/initaccount.py\
+            ./sflvault_qt/__init__.py\
+            ./sflvault_qt/tree/tree.py\
+            ./sflvault_qt/tree/__init__.py\
+            ./sflvault_qt/mainWindow.py\
+            ./sflvault_qt/config/config.py\
+            ./sflvault_qt/config/service.py\
+            ./sflvault_qt/config/protocols.py\
+            ./sflvault_qt/config/preferences.py\
+            ./sflvault_qt/config/machine.py\
+            ./sflvault_qt/config/__init__.py\
+            ./sflvault_qt/config/users.py \
+            ./sflvault_qt/config/customer.py \
             ./sflvault-client-qt4.py \
-            ./sflvault_qt/docks/__init__.py \
-            ./sflvault_qt/docks/infodock.py \
-            ./sflvault_qt/docks/aliasdock.py \
-            ./sflvault_qt/docks/searchdock.py \
-            ./sflvault_qt/bar/systray.py \
-            ./sflvault_qt/bar/__init__.py \
-            ./sflvault_qt/bar/menubar.py \
-            ./sflvault_qt/bar/filterbar.py \
-            ./sflvault_qt/__init__.py \
-            ./sflvault_qt/tree/tree.py \
-            ./sflvault_qt/tree/__init__.py \
-            ./sflvault_qt/mainWindow.py \
-            ./sflvault_qt/config/config.py \
-            ./sflvault_qt/config/protocols.py \
-            ./sflvault_qt/config/preferences.py \
-            ./sflvault_qt/config/__init__.py \
-            ./sflvault_qt/config/groups.py \
             ./lib/__init__.py \
             ./lib/error.py \
             ./lib/auth.py
