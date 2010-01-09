@@ -263,7 +263,7 @@ class MainWindow(QtGui.QMainWindow):
         if not service:
             return False
         # Get service
-        url = QUrl(service["service"]["url"])
+        url = QtCore.QUrl(service["services"][0]["url"])
         protocol = unicode(url.scheme())
         address  = unicode(url.host() + ":" + unicode(url.port()) + url.path()) if url.port() else unicode(url.host() + url.path())
         port = unicode(url.port())
@@ -280,7 +280,7 @@ class MainWindow(QtGui.QMainWindow):
 
         options["port"] = port
         options["protocol"] = protocol
-        options["vaultid"] = service["service"]["id"]
+        options["vaultid"] = service["services"][0]["id"]
         options["vaultconnect"] = "sflvault connect %s" % options["vaultid"]
         # Show Tooltip if checked in config
         tooltip, bool = self.settings.value("protocols/" + protocol + "/tooltip").toInt()
