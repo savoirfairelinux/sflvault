@@ -233,7 +233,6 @@ class UsersWidget(QtGui.QDialog):
                     self.created_stamp.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
                     # Load all groups
                     for group in self.groups["list"]:
-                        print group["name"]
                         # Do not show group which you are not member
                         if not group["name"] in [yourgroup["name"]  for yourgroup in self.parent.userinfo["groups"] ]:
                             continue
