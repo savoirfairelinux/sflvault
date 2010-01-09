@@ -175,11 +175,13 @@ class PreferencesWidget(QtGui.QDialog):
         self.accept()
 
     def fillWallet(self, value):
-        self.wallet.addItem("Don't use wallet", QtCore.QVariant(0))
-        self.wallet.addItem("Autodetect", QtCore.QVariant(1))
-        self.wallet.addItem("KWallet", QtCore.QVariant(2))
-        self.wallet.addItem("SeaHorse", QtCore.QVariant(3))
-        self.wallet.setCurrentIndex(self.wallet.findData(value))
+        if self.wallet.count() != 4:
+            self.wallet.clear()
+            self.wallet.addItem("Don't use wallet", QtCore.QVariant(0))
+            self.wallet.addItem("Autodetect", QtCore.QVariant(1))
+            self.wallet.addItem("KWallet", QtCore.QVariant(2))
+            self.wallet.addItem("SeaHorse", QtCore.QVariant(3))
+            self.wallet.setCurrentIndex(self.wallet.findData(value))
         
 
     def fillLanguage(self, value):
