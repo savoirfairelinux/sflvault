@@ -222,11 +222,13 @@ class MainWindow(QtGui.QMainWindow):
         
         self.infodock.showInformations(idcust, machineid=idmach, serviceid=idserv)
 
-    def GetIdByTree(self, index):
+    def GetIdByTree(self, index=None):
         """
             Get selected item id in tree and launch connection
         """
         # Get Id colunm
+        if index == None:
+            index = self.tree.selectedIndexes()[0]
         indexId = self.tree.selectedIndexes()[1]
         idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
         idserv = int(idserv.split("#")[1])
@@ -339,6 +341,7 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.tree.newServiceAct, QtCore.SIGNAL("triggered()"), self.addService)
         QtCore.QObject.connect(self.tree.newMachineAct, QtCore.SIGNAL("triggered()"), self.addMachine)
         QtCore.QObject.connect(self.tree.tunnelAct, QtCore.SIGNAL("triggered()"), self.tunnel)
+        QtCore.QObject.connect(self.tree.connectAct, QtCore.SIGNAL("triggered()"), self.GetIdByTree)
         ## Tree connection
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
         ## Tree item informations
