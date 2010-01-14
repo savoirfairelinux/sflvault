@@ -267,8 +267,8 @@ class MainWindow(QtGui.QMainWindow):
         # Get service
         url = QtCore.QUrl(service["services"][0]["url"])
         protocol = unicode(url.scheme())
-        address  = unicode(url.host() + ":" + unicode(url.port()) + url.path()) if url.port() else unicode(url.host() + url.path())
         port = unicode(url.port())
+        address  = unicode(url.host() + ":" + unicode(port) + url.path()) if port != "-1" else unicode(url.host() + url.path())
         # Copy password to clipboard if checked in config
         clip, bool = self.settings.value("protocols/" + protocol + "/clip").toInt()
         if bool and clip == QtCore.Qt.Checked:
