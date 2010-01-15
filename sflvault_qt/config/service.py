@@ -165,6 +165,7 @@ class EditServiceWidget(QtGui.QDialog):
             self.machine.setCurrentIndex(index)
 
     def fillServicesList(self):
+        parentserv = self.parentservline.text()
         services = listService()
         # Fill service combo box
         self.parentserv.addItem(self.tr("No parent"), QtCore.QVariant(None))
@@ -173,7 +174,7 @@ class EditServiceWidget(QtGui.QDialog):
             if service['id'] != self.servid:
                 self.parentserv.addItem(service['url'] +" - s#" + unicode(service['id']), QtCore.QVariant(service['id']))
         # Select good row
-        index = self.parentserv.findText(self.parentservline.text(), QtCore.Qt.MatchContains)
+        index = self.parentserv.findText(parentserv, QtCore.Qt.MatchEndsWith)
         if index > -1:
             self.parentserv.setCurrentIndex(index)
 
@@ -208,16 +209,12 @@ class EditServiceWidget(QtGui.QDialog):
             # Fill fields for edit mode
             service = getService(self.servid, True)
             self.informations = service["services"][-1]
-#            print self.informations
-            print self.informations["parent_service_id"]
             ## Show informations
             self.url.setText(self.informations["url"])
             self.machineline.setText("m#" + str(self.informations["machine_id"]))
             if not self.informations["parent_service_id"]:
-                print "eeeeeeedsqgsdgde"
                 self.parentservline.setText(self.tr("No parent"))
             else:
-                print "eeeeeeee"
                 self.parentservline.setText("s#" + str(self.informations["parent_service_id"]))
             # groups
             if self.informations["groups_list"]:
