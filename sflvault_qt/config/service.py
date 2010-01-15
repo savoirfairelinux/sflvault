@@ -50,7 +50,7 @@ class DeleteServiceWidget(QtGui.QMessageBox):
         self.setIcon(QtGui.QMessageBox.Question)
         self.ok = self.addButton(QtGui.QMessageBox.Ok)
         self.cancel = self.addButton(QtGui.QMessageBox.Cancel)
-        self.setText(self.tr("Do you want to delete %s" % service["services"][0]["url"]))
+        self.setText(self.tr("Do you want to delete %s" % service["services"][-1]["url"]))
 
         # SIGNALS
         self.connect(self.ok, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
@@ -207,13 +207,17 @@ class EditServiceWidget(QtGui.QDialog):
         if self.servid:
             # Fill fields for edit mode
             service = getService(self.servid, True)
-            self.informations = service["services"][0]
+            self.informations = service["services"][-1]
+#            print self.informations
+            print self.informations["parent_service_id"]
             ## Show informations
             self.url.setText(self.informations["url"])
             self.machineline.setText("m#" + str(self.informations["machine_id"]))
             if not self.informations["parent_service_id"]:
+                print "eeeeeeedsqgsdgde"
                 self.parentservline.setText(self.tr("No parent"))
             else:
+                print "eeeeeeee"
                 self.parentservline.setText("s#" + str(self.informations["parent_service_id"]))
             # groups
             if self.informations["groups_list"]:

@@ -338,7 +338,7 @@ class Info(QtGui.QWidget):
             self.showMachine()
             self.showCustomer()
             self.showService()
-            for key, data in service["services"][0].items():
+            for key, data in service["services"][-1].items():
                 if key in ["id", ]:
                     # Show and hide label
                     self.serviceList["id"].show()
@@ -427,7 +427,7 @@ class InfoModel(QtGui.QStandardItemModel):
         self.attributes = []
         if service:
             self.mode = "service"
-            for key, data in service["services"][0].items():
+            for key, data in service["services"][-1].items():
                 if key in ["url", "notes", "group_id", "parent_service_id", "groups_list"]:
                     if type(data) == list:
                         data = unicode(u" | ".join([ group[1] + "(g#" + unicode(group[0]) + ")"  for group in data]))
