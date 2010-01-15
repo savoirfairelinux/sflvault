@@ -346,14 +346,12 @@ def listUsers(groups=True):
 def addUser(username, admin):
     global client
     try:
-        print username
-        print admin
         status = client.vault.user.add(client.authtok, username, admin)
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the client is now invalid
         # So we have to get a new client
         getAuth()
-        statusdelUser(username, admin)
+        addUser(username, admin)
     except Exception, e:
         ErrorMessage(e)
         return False
