@@ -73,7 +73,7 @@ class Page1(QtGui.QWizardPage):
 
         # Check if system has a supported wallet
         if ("GDMSESSION" in os.environ and os.environ["GDMSESSION"] == "gnome") or \
-            ("KDE_SESSION_VERSION" in os.environ or not os.environ["KDE_SESSION_VERSION"] == "4"):
+            ("KDE_SESSION_VERSION" in os.environ and not os.environ["KDE_SESSION_VERSION"] == "4"):
             label.setText("This wizard will save your vault password in KWallet/Seahorse."
                         )
             self.next_page = PAGE_PASSWORD
