@@ -57,7 +57,7 @@ def getAuth():
     if wallet_setting == 1:
         if "KDE_SESSION_VERSION" in os.environ and os.environ["KDE_SESSION_VERSION"] == "4":
             client.getpassfunc = KDEreadPassword
-        elif "GDMSESSION" in os.environ and os.environ["os.environ"] == "gnome":
+        elif "GDMSESSION" in os.environ and os.environ["GDMSESSION"] == "gnome":
             client.getpassfunc = GNOMEreadPassword
     elif wallet_setting == 2:
         client.getpassfunc = KDEreadPassword
