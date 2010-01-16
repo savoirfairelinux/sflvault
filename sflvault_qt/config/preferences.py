@@ -181,7 +181,10 @@ class PreferencesWidget(QtGui.QDialog):
             self.wallet.addItem("Autodetect", QtCore.QVariant(1))
             self.wallet.addItem("KWallet", QtCore.QVariant(2))
             self.wallet.addItem("SeaHorse", QtCore.QVariant(3))
-            self.wallet.setCurrentIndex(self.wallet.findData(value))
+            if value:
+                self.wallet.setCurrentIndex(self.wallet.findData(QtCore.QVariant(value)))
+            else:
+                self.wallet.setCurrentIndex(0)
         
 
     def fillLanguage(self, value):
