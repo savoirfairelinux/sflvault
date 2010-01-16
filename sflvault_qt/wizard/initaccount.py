@@ -163,5 +163,5 @@ class Page3(QtGui.QWizardPage):
     def validatePage(self):
         if self.savepassword.checkState() == QtCore.Qt.Checked:
             # Launch savepassword wizard
-            self.savepass = SavePasswordWizard(self.field("password1").toString(), None)
+            self.savepass = SavePasswordWizard(self.field("password1").toString(), parent=self.parent.parent)
         return True
