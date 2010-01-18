@@ -351,7 +351,7 @@ def addUser(username, admin):
         # Protocol error means the client is now invalid
         # So we have to get a new client
         getAuth()
-        addUser(username, admin)
+        status = addUser(username, admin)
     except Exception, e:
         ErrorMessage(e)
         return False
