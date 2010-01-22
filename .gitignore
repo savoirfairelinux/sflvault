@@ -5,15 +5,27 @@
 
 # Database
 server/sflvault.sqlite
+sflvault.sqlite
 
 # Ignore eggs
 build
 dist
+eggs
+develop-eggs
 
+# generated html files
 docs/*.html
+
+# pylons configuration
+*.ini
 
 # virtualenv link (to be activated with . env/bin/activate)
 env
+
+# buildout files and dir
+parts
+.installed.cfg
+bin
 
 # Test stuff
 test-database.db
