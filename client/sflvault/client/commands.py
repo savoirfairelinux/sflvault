@@ -590,7 +590,6 @@ class SFLvaultCommand(object):
         self._parse()
 
         if self.opts.delete:
-            
             res = self.vault.alias_del(self.opts.delete)
 
             if res:
@@ -849,14 +848,26 @@ class SFLvaultCommand(object):
         VaultID - service ID as 's#123', '123', or alias pointing to a service
                   ID."""
         # Chop in two parts
-        args = self.argv
+        self.parser.set_usage("connect [opts] VaultID")
+        self.parser.add_option('-a', '--alias', dest="alias",
+                               default=None,
+                               help="Add an alias to that service at the same "\
+                                    "time")
+        self._parse()
 
-        if len(args) < 1:
+        if len(self.args) < 1:
             raise SFLvaultParserError("Invalid number of arguments")
 
-        vid = self.vault.vaultId(args[0], 's')
+        vid = self.vault.vaultId(self.args[0], 's')
 
-        self.vault.connect(vid, command_line=args[1:])
+        if self.opts.alias:
+            try:
+                r = self.vault.alias_add(self.opts.alias, "s#%d" % vid)
+            except ValueError, e:
+                raise SFLvaultParserError(str(e))
+            print "Alias added"
+
+        self.vault.connect(vid, command_line=self.args[1:])
 
 
 
