@@ -559,7 +559,9 @@ class SFLvaultClient(object):
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             pass
         else:
-            raise VaultConfigurationError("Already a username in your configuration: Ask your admin to do a reset-user ")
+            raise VaultConfigurationError("Already a username in your configuration: "
+                                          "Ask your admin to do a reset-user (or "
+                                          "remove your current user manually)")
             
         self._set_vault(vault_url, False)
         
