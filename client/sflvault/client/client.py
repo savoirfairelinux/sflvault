@@ -554,6 +554,13 @@ class SFLvaultClient(object):
         passphrase - use the given passphrase instead of asking it on the
                      command line.
         """
+        try:
+            self.cfg.get('SFLvault', 'username')
+        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+            pass
+        else:
+            raise VaultConfigurationError("Already a username in your configuration: Ask your admin to do a reset-user ")
+            
         self._set_vault(vault_url, False)
         
         # Generate a new key:
