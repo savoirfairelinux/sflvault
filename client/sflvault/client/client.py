@@ -555,13 +555,14 @@ class SFLvaultClient(object):
                      command line.
         """
         try:
-            self.cfg.get('SFLvault', 'username')
+            found = self.cfg.get('SFLvault', 'username') != ""
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             pass
         else:
-            raise VaultConfigurationError("Already a username in your configuration: "
-                                          "Ask your admin to do a reset-user (or "
-                                          "remove your current user manually)")
+            if found:
+                raise VaultConfigurationError("Already a username in your configuration: "
+                                              "Ask your admin to do a reset-user "
+                                              "(or remove your current user manually)")
             
         self._set_vault(vault_url, False)
         
