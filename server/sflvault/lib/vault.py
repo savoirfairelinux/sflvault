@@ -243,7 +243,7 @@ class SFLvaultAccess(object):
 
         # We need no aliasing, because we'll only use `cryptgroupkey`,
         # `cryptsymkey` and `group_id` in there.
-        req = sql.join(ServiceGroup, UserGroup, ServiceGroup.group_id==UserGroup.group_id).join(User, User.id==UserGroup.user_id).select(use_labels=True).where(User.id==self.myself_id).where(ServiceGroup.service_id==s.id).order_by(ServiceGroup.group_id)
+        req = sql.join(servicegroups_table, usergroups_table, ServiceGroup.group_id==UserGroup.group_id).join(users_table, User.id==UserGroup.user_id).select(use_labels=True).where(User.id==self.myself_id).where(ServiceGroup.service_id==s.id).order_by(ServiceGroup.group_id)
 
         # Deal with group if specified..
         if group_id:
@@ -268,7 +268,7 @@ class SFLvaultAccess(object):
         # Load groups too if required
         if with_groups:
             groups_list = []
-            req2 = sql.join(Group, ServiceGroup).select(use_labels=True).where(ServiceGroup.service_id == service_id)
+            req2 = sql.join(groups_table, servicegroups_table).select(use_labels=True).where(ServiceGroup.service_id == service_id)
             res2 = meta.Session.execute(req2)
             for grp in res2:
                 groups_list.append((grp.groups_id, grp.groups_name))
@@ -1061,9 +1061,8 @@ class SFLvaultAccess(object):
 
 
     def machine_list(self, customer_id=None):
-        """Return a simple list of the machines"""
-        
-        sel = sql.join(Machine, Customer) \
+        """Return a simple list of the machines"""    
+        sel = sql.join(customers_table, machines_table) \
                  .select(use_labels=True) \
                  .order_by(Customer.id)
 
