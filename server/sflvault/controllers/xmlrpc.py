@@ -25,7 +25,7 @@ import logging
 # ALL THE FOLLOWING IMPORTS MOVED TO vault.py:
 import xmlrpclib
 #import pylons
-#from pylons import request
+from pylons import request
 from base64 import b64decode, b64encode
 from datetime import *
 import time as stdtime
