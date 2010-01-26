@@ -372,7 +372,7 @@ class SFLvaultClient(object):
                             "Error adding user")
 
         print "Success: %s" % retval['message']
-        print "New user ID: u#%d" % retval['user_id']
+#        print "New user ID: u#%d" % retval['user_id']
         prms = (username, self.cfg.get('SFLvault', 'url'))
         print "The new user should run: sflvault user-setup %s %s" % prms
 
