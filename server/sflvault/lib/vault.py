@@ -41,9 +41,10 @@ import time as stdtime
 from sqlalchemy import sql
 from sqlalchemy.exceptions import InvalidRequestError as InvalidReq
 
-# from sflvault.lib:
 from sflvault.model import *
 from sflvault.lib.base import *
+
+from pylons import app_globals
 
 import logging
 log = logging.getLogger('sflvault')
@@ -66,39 +67,44 @@ class SFLvaultAccess(object):
 
     def user_setup(self, username, pubkey):
         """Setup the user's account"""
-        cnt = query(User).count()
-        
         u = query(User).filter_by(username=username).first()
 
+        if u is None:
+            u = app_globals.getUser(username)
 
-        if cnt:
-            if not u:
-                return vaultMsg(False, 'No such user %s' % username)
+        if u is None:
+            return vaultMsg(False, 'No such temporary user %s, add it first' % username)
         
-            if u.setup_expired():
-                return vaultMsg(False, 'Setup expired for user %s' % username)
+        if u.setup_expired():
+            return vaultMsg(False, 'Setup expired for user %s' % username)
 
-            if u.pubkey:
-                return vaultMsg(False, 'User %s already have a public '\
-                                       'key stored' % username)
-
-        # TODO: verify the user doesn't already have a pubkey !
+        if u.pubkey:
+            return vaultMsg(False, 'User %s already have a public '\
+                                'key stored' % username)
 
         # Ok, let's save the things and reset waiting_setup.
         u.waiting_setup = None
         u.pubkey = pubkey
+        
+        # Remove the user from the temporary collection
+        app_globals.delUser(user)
+
+        meta.Session.save(u)
 
         meta.Session.commit()
 
         return vaultMsg(True, 'User setup complete for %s' % username)
 
 
-    def user_add(self, username, is_admin):
-
-        usr = query(User).filter_by(username=username).first()
-
+    def user_add(self, username, is_admin):        
+        if query(User).filter_by(username=username).first() is not None:
+            return vaultMsg(False, 'User %s already exists.' % username)
+        
         msg = ''
-        if usr == None:
+
+        usr = app_globals.getUser(username) 
+
+        if usr is None:
             # New user
             usr = User()
             usr.waiting_setup =  datetime.now() + timedelta(0, int(self.setup_timeout))
@@ -106,10 +112,10 @@ class SFLvaultAccess(object):
             usr.is_admin = bool(is_admin)
             usr.created_time = datetime.now()
 
-            meta.Session.save(usr)
+            app_globals.addUser(usr)
             
             msg = 'added'
-        elif usr.waiting_setup:
+        else:
             if usr.waiting_setup < datetime.now():
                 # Verify if it's a waiting_setup user that has expired.
                 usr.waiting_setup = datetime.now() + \
@@ -119,10 +125,6 @@ class SFLvaultAccess(object):
             else:
                 return vaultMsg(False, "User %s is waiting for setup" % \
                                 username)
-        else:
-            return vaultMsg(False, 'User %s already exists.' % username)
-        
-        meta.Session.commit()
 
         return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "user-setup" command' % \
                         ('Admin user' if is_admin else 'User',
@@ -136,7 +138,6 @@ class SFLvaultAccess(object):
             usr = model.get_user(user)
         except LookupError, e:
             return vaultMsg(False, str(e))
-
         # TODO: check if there's anything else to delete when deleting
         #       a user.
         t1 = model.usergroups_table
@@ -243,7 +244,7 @@ class SFLvaultAccess(object):
 
         # We need no aliasing, because we'll only use `cryptgroupkey`,
         # `cryptsymkey` and `group_id` in there.
-        req = sql.join(ServiceGroup, UserGroup, ServiceGroup.group_id==UserGroup.group_id).join(User, User.id==UserGroup.user_id).select(use_labels=True).where(User.id==self.myself_id).where(ServiceGroup.service_id==s.id).order_by(ServiceGroup.group_id)
+        req = sql.join(servicegroups_table, usergroups_table, ServiceGroup.group_id==UserGroup.group_id).join(users_table, User.id==UserGroup.user_id).select(use_labels=True).where(User.id==self.myself_id).where(ServiceGroup.service_id==s.id).order_by(ServiceGroup.group_id)
 
         # Deal with group if specified..
         if group_id:
@@ -268,7 +269,7 @@ class SFLvaultAccess(object):
         # Load groups too if required
         if with_groups:
             groups_list = []
-            req2 = sql.join(Group, ServiceGroup).select(use_labels=True).where(ServiceGroup.service_id == service_id)
+            req2 = sql.join(groups_table, servicegroups_table).select(use_labels=True).where(ServiceGroup.service_id == service_id)
             res2 = meta.Session.execute(req2)
             for grp in res2:
                 groups_list.append((grp.groups_id, grp.groups_name))
@@ -1061,9 +1062,8 @@ class SFLvaultAccess(object):
 
 
     def machine_list(self, customer_id=None):
-        """Return a simple list of the machines"""
-        
-        sel = sql.join(Machine, Customer) \
+        """Return a simple list of the machines"""    
+        sel = sql.join(customers_table, machines_table) \
                  .select(use_labels=True) \
                  .order_by(Customer.id)
 

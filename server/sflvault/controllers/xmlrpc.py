@@ -25,7 +25,7 @@ import logging
 # ALL THE FOLLOWING IMPORTS MOVED TO vault.py:
 import xmlrpclib
 #import pylons
-#from pylons import request
+from pylons import request
 from base64 import b64decode, b64encode
 from datetime import *
 import time as stdtime
@@ -38,7 +38,9 @@ from sflvault.lib.vault import SFLvaultAccess
 from sflvault.model import *
 
 from sqlalchemy import sql, exceptions
+
 import distutils.version
+import pkg_resources as pkgres
 
 log = logging.getLogger(__name__)
 
@@ -111,6 +113,14 @@ class XmlrpcController(XMLRPCController):
         self.vault.setup_timeout = config['sflvault.vault.setup_timeout']
 
         try:
+            self.vault.minimum_version = distutils.version.LooseVersion(\
+                config['sflvault.vault.minimum_version'])
+        except:
+            egg_name = "SFLvault_server"
+            self.vault.minimum_version = distutils.version.LooseVersion(\
+                pkgres.get_distribution(egg_name).version)            
+
+        try:
             return XMLRPCController.__call__(self, environ, start_response)
         # could be useful at some point:
         #except VaultError, e:
@@ -120,13 +130,12 @@ class XmlrpcController(XMLRPCController):
             model.meta.Session.remove()
     
     def sflvault_login(self, username, version=None):
-        # Establish a minimal client version.
-        minimum_version = distutils.version.LooseVersion("0.7.3")
+        # Establish a minimal client version.        
         user_version = distutils.version.LooseVersion(version)
-        if not version or user_version < minimum_version:
+        if not version or user_version < self.vault.minimum_version:
             return vaultMsg(False, "Minimal client version required: '%s'. "\
                             "You announced yourself as version '%s'" % \
-                                (minimum_version.vstring, version))
+                                (self.vault.minimum_version.vstring, version))
 
         # Return 'cryptok', encrypted with pubkey.
         # Save decoded version to user's db field.
