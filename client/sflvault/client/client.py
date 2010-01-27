@@ -227,6 +227,7 @@ class SFLvaultClient(object):
     @property
     def config_filename(self):
         """Return the configuration filename"""
+        # by default 'SFLVAULT_CONFIG'
         if CONFIG_FILE_ENV in os.environ:
             return os.environ[CONFIG_FILE_ENV]
         else:
@@ -554,12 +555,9 @@ class SFLvaultClient(object):
         passphrase - use the given passphrase instead of asking it on the
                      command line.
         """
-        try:
-            self.cfg.get('SFLvault', 'username')
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-            pass
-        else:
-            raise VaultConfigurationError("Already a username in your configuration: Ask your admin to do a reset-user ")
+        # possible-TODO: implement --force if user wants to override.
+        if self.cfg.has_option('SFLvault', 'username'):
+            raise VaultConfigurationError("WARNING: you already have a private key stored in %s.  Backup/rename this file before running this command again." % (self.config_filename))
             
         self._set_vault(vault_url, False)
         
