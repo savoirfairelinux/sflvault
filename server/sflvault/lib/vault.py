@@ -248,12 +248,12 @@ class SFLvaultAccess(object):
 
         # Deal with group if specified..
         if group_id:
-            req = req.where(ServiceGroup.group_id==group_id)
+            req = req.where(ServiceGroup.group_id == group_id)
         
         res = meta.Session.execute(req)
 
         # Take the first one
-        uciphers = [x for x in res]
+        uciphers = list(res)
         if not uciphers:
             ugcgk = ''
             sgcsk = ''
