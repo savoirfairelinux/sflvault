@@ -215,11 +215,6 @@ class XmlrpcController(XMLRPCController):
     def sflvault_service_put(self, authtok, service_id, data):
         return self.vault.service_put(service_id, data)
 
-    # DEPRECATED: show() uses service_get_tree now.
-    #@authenticated_user
-    #def sflvault_show(self, authtok, service_id, with_groups=False):
-    #    return self.vault.show(service_id, with_groups)
-
     @authenticated_user
     def sflvault_search(self, authtok, search_query, filters=None,
                         verbose=False):
@@ -244,6 +239,7 @@ class XmlrpcController(XMLRPCController):
                              location, notes):
         return self.vault.machine_add(customer_id, name, fqdn, ip,
                                       location, notes)
+
     @authenticated_admin
     def sflvault_machine_del(self, authtok, machine_id):
         return self.vault.machine_del(machine_id)

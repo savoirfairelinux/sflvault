@@ -239,8 +239,8 @@ class SFLvaultAccess(object):
         except InvalidReq, e:
             raise VaultError("Service not found: %s (%s)" % (service_id,
                                                              str(e)))
-
-        me = query(User).get(self.myself_id)
+        # unused
+        #me = query(User).get(self.myself_id)
 
         # We need no aliasing, because we'll only use `cryptgroupkey`,
         # `cryptsymkey` and `group_id` in there.
@@ -355,12 +355,14 @@ class SFLvaultAccess(object):
 
         # Quick helper funcs, to create the hierarchical 'out' structure.
         def set_customer(out, c):
+            "Subfunc of search"
             if out.has_key(str(c.customers_id)):
                 return
             out[str(c.customers_id)] = {'name': c.customers_name,
                                         'machines': {}}
             
         def set_machine(subout, m):
+            "Subfunc of search"
             if subout.has_key(str(m.machines_id)):
                 return
             subout[str(m.machines_id)] = {'name': m.machines_name,
@@ -371,6 +373,7 @@ class SFLvaultAccess(object):
                             'services': {}}
             
         def set_service(subsubout, s):
+            "Subfunc of search"
             subsubout[str(s.services_id)] = {'url': s.services_url,
                          'parent_service_id': s.services_parent_service_id \
                                               or '',
@@ -449,18 +452,6 @@ class SFLvaultAccess(object):
         for x in ['ip', 'name', 'fqdn', 'location', 'notes']:
             if x in data:
                 m.__setattr__(x, data[x])
-        
-        #         if 'ip' in data:
-        #             m.ip = data['ip']
-        #         if 'name' in data:
-        #             m.name = data['name']
-        #         if 'fqdn' in data:
-        #             m.fqdn = data['fqdn']
-        #         if 'location' in data:
-        #             m.location = data['location']
-        #         if 'notes' in data:
-        #             m.notes = data['notes']
-
         meta.Session.commit()
 
         return vaultMsg(True, "Machine m#%s saved successfully" % machine_id)
@@ -597,6 +588,7 @@ class SFLvaultAccess(object):
             
         if 'hidden' in data:
             newhidden = bool(data['hidden'])
+            # TODO: these checks must go in the XML-RPC controller.
             if not ug.is_admin and newhidden:
                 return vaultMsg(False, "You need to be admin on this group "
                                 "to hide the group")
@@ -672,7 +664,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, 'Removed group "%s" successfully' % name, retval)
 
 
-    def group_list(self):
+    def group_list(self, show_hidden=False):
         """Return a simple list of the available groups"""
         groups = query(Group).group_by(Group.name).all()
 
@@ -759,6 +751,7 @@ class SFLvaultAccess(object):
                                         user_id=self.myself_id).first()
 
         # Make sure I'm in that group (to be able to decrypt the groupkey)
+        # TODO: warning, global-admin won't pass this test!
         if not ug:
             return vaultMsg(False, "You are not part of that group")
 
@@ -777,7 +770,7 @@ class SFLvaultAccess(object):
     def group_add_user(self, group_id, user, is_admin=False,
                        cryptgroupkey=None):
         """Add a user to a group. Call once to retrieve information,
-        and a second time with retval to save cipher information.
+        and a second time with cryptgroupkey to save cipher information.
 
         The second call should give the group's privkey, encrypted by the
         remote user for the user being added.
@@ -798,10 +791,8 @@ class SFLvaultAccess(object):
         if not ug:
             return vaultMsg(False, "You are not part of that group")
 
-        me = query(User).get(self.myself_id)
-        
-        if not ug.is_admin and not me.is_admin:
-            return vaultMsg(False, "You are not admin on that group (nor global admin)")
+        # No admin checks, you NEED to be in the group to return consistantly
+        # encrypted cryptgroupkey
 
         # Find added user
         try:
@@ -892,10 +883,20 @@ class SFLvaultAccess(object):
         if len(ugs) < 2:
             return vaultMsg(False, "Only one user left! Cannot leave a group unattended, otherwise all service will become lost!")
 
+        # If we're using the library, we must make sure there is still a
+        # group admin left.  This simplifiest the rescues :)
+        id_admins = [x.id for x in ugs if x.is_admin]
+        if id_admins == [usr.id]:
+            return vaultMsg(False, "Each group must have at least one group-admin.  You cannot delete the last group-admin.")
+        
+        ohoh = ''
+        if not id_admins:
+            ohoh = "WARNING: there are no more group-admins in this group.  Ask a global-admin to elect someone group-admin for further management of this group."
+
         meta.Session.delete(hisug[0])
         meta.Session.commit()
 
-        return vaultMsg(True, "Removed user from group successfully", {})
+        return vaultMsg(True, "Removed user from group successfully" + ohoh, {})
         
 
     def customer_del(self, customer_id):
