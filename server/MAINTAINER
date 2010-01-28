@@ -2,6 +2,8 @@ Steps to perform when releasing SFLvault
 ----------------------------------------
 
 * Modify setup.py and change the version number
+* Make sure the MINIMAL_CLIENT_VERSION in controllers/xmlrpc.py is appropriate,
+  to ensure backwards compatibility.
 * Run `python setup.py develop` to regenerate the EGG-INFO stuff
 * Commit the release commit INCLUDING the Release Notes inside that commit.
 * Run `python setup.py bdist_egg` to compile the new egg.

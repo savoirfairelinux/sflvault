@@ -20,6 +20,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from distutils.version import LooseVersion
+
+
+MINIMAL_CLIENT_VERSION = LooseVersion('0.7.4')
 
 
 # ALL THE FOLLOWING IMPORTS MOVED TO vault.py:
@@ -38,9 +42,6 @@ from sflvault.lib.vault import SFLvaultAccess
 from sflvault.model import *
 
 from sqlalchemy import sql, exceptions
-
-import distutils.version
-import pkg_resources as pkgres
 
 log = logging.getLogger(__name__)
 
@@ -93,6 +94,8 @@ def authenticated_admin(func, self, *args, **kwargs):
 
 
 
+
+
 ##
 ## See: http://wiki.pylonshq.com/display/pylonsdocs/Using+the+XMLRPCController
 ##
@@ -113,14 +116,6 @@ class XmlrpcController(XMLRPCController):
         self.vault.setup_timeout = config['sflvault.vault.setup_timeout']
 
         try:
-            self.vault.minimum_version = distutils.version.LooseVersion(\
-                config['sflvault.vault.minimum_version'])
-        except:
-            egg_name = "SFLvault_server"
-            self.vault.minimum_version = distutils.version.LooseVersion(\
-                pkgres.get_distribution(egg_name).version)            
-
-        try:
             return XMLRPCController.__call__(self, environ, start_response)
         # could be useful at some point:
         #except VaultError, e:
@@ -130,12 +125,12 @@ class XmlrpcController(XMLRPCController):
             model.meta.Session.remove()
     
     def sflvault_login(self, username, version=None):
-        # Establish a minimal client version.        
-        user_version = distutils.version.LooseVersion(version)
-        if not version or user_version < self.vault.minimum_version:
+        # Require minimal client version.        
+        user_version = LooseVersion(version)
+        if not version or user_version < MINIMAL_CLIENT_VERSION:
             return vaultMsg(False, "Minimal client version required: '%s'. "\
                             "You announced yourself as version '%s'" % \
-                                (self.vault.minimum_version.vstring, version))
+                            (MINIMAL_CLIENT_VERSION.vstring, version))
 
         # Return 'cryptok', encrypted with pubkey.
         # Save decoded version to user's db field.
@@ -318,3 +313,7 @@ class XmlrpcController(XMLRPCController):
     @authenticated_user
     def sflvault_service_passwd(self, authtok, service_id, newsecret):
         return self.vault.service_passwd(service_id, newsecret)
+
+
+
+
