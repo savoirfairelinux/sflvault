@@ -5,6 +5,13 @@ The ``SFLvaultCommand`` object is invoked by the shell manager, or when
 executing ``sflvault`` on the command line.  All methods of the object will be
 used to generate help, and will parse command-line arguments on it's own.
 
+.. NOTE::
+
+  To learn more of the security impact of these functions, please check
+  :class:`sflvault.lib.vault.SFLvaultAccess` which is the piece of code
+  that does the actual work.  This class only wraps calls to that library
+  (directly by importing the Python class, or over the network via XML-RPC)
+
 .. Commented imports
 
    >>> import sflvault.client

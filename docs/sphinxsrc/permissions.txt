@@ -38,9 +38,11 @@ try to make it a table or a graph and order all of this sooner or later:
 * group_add_user requires XML-RPC auth.  Lib access allowed. CRYPTO constraint: you need to have a decrypted group key (requiring your private key, and previous access to group_add_user to retrieve the user's public key, and the group's encrypted private key).  Lib enforces being in the group, since this is the only way you can provide a validly encrypted groupkey.  Being global-admin in any case doesn't help here (because of CRYPTO constraints).  This command trusts that the remote user adding another user enters valid data as a cryptgroupkey. If junk is added in that field, the added user simply won't be able to access the group's data. Also will he need to be removed and added successfully to the group for everything to work.  TODO: implement group's symkey encryption + migration scripts.
 * group_del_user requires simple auth via XML-RPC.  Lib access allowed.  Lib constraints prevents from deleting yourself from the group.  Makes sure someone else will remain in the group.  The library will make everything possible to make sure there is at least a group admin left.  It will warn if there is no more.  It will prevent you from deleting the last admin.  XML-RPC will block if you are not either group-admin of this group, or global-admin.  TODO: Admin flags are to be verified in the XML-RPC layer.
 * machine_del requires 'global-admin' via xml-rpc.  Lib access is allowed.  Lib constraint: prevent deleting a machine that containts a service that is a parent to another service.  Otherwise, delete machine and it's services.
-* service_del requires 'global-admin' via xml-rpc.  Lib access is allowed.  Lib constraint: won't remove a service with childs.  If user is global admin, allow.  If user is admin of all groups the service is in, allow.  Otherwise, you'll have to ask each admins of each groups the service is in to detach the service first.  TODO: move admin checks to XML-RPC, require auth and more checks in body.
-TODO: COMPLÉTER À PARTIR DE service_del dans vault.py
-
+* service_del requires 'global-admin' via xml-rpc.  Lib access is allowed.  Lib constraint: won't remove a service with childs.  If user is global admin, allow.  If user is admin of all groups the service is in, allow.  Otherwise, you'll have to ask each admins of each groups the service is in to detach the service first.  TODO: move admin checks to XML-RPC, require auth and more checks in body.  DOUBLE CHECK
+* customer_list requires auth via xml-rpc.  Lib access allowed.  No constraints.
+* machine_list requires auth via xml-rpc.  Lib access allowed.  No constraints.
+* service_list requires auth via xml-rpc.  Lib access allowed.  No constraints.  NO cryptogram is sent with responses to `service_list`.
+* service_passwd requires auth via xml-rpc.  Lib access allowed.  Constraints: lib (and xml-rpc call) refuses to perform operation if you don't have access to decrypt the password first.  The call to this function will not actually decrypt anything, it will just make sure you're not overwriting some data you didn't previously have access to.
 
 
 TODO: documenter ce qui est cryptographié, et ce qui est accessible si la voute est compromise.
@@ -52,6 +54,111 @@ NOTE: first user called admin, implication, where to store it's credentials.  Us
 
 
 Dans l'armée, write higher, read lower.  Pattern ici ?  Comment est restreint la suppression ?  Pour effacer un service, faut être admin ? être du même niveau ?
+  http://en.wikipedia.org/wiki/Bell-LaPadula_Model
+
+Suivant le modèle, on ne peut pas *modifier* 
 
 Overwriter un document existant, dans ce modèle là ?? service_put par exemple ?  Vérifier avec Alexandre Miege.
 
+Hasher, utiliser la clé sans avoir la clé.  Hasher avec la date, sans pouvoir la réutiliser ?
+
+Deux clés de groupes, une pour admin, l'autre pour pas admin.
+
+
+
+
+Permissions for each function (library and via xml-rpc)
+-------------------------------------------------------
+
+All functions requires user authentication when called via XML-RPC, unless otherwise noted.
+
+All functions can be access directly via the Python library with no constraints, unless otherwise noted.
+
+Of course, a call via XML-RPC will call the library if authentications and checks pass.
+
+=================  ====================================  =====================================
+Function name      Access via library                    Access via web (xml-rpc)
+=================  ====================================  =====================================
+user_add           Fails if user exists.                 Requires 'global-admin' permission.
+                   Resets setup-time if timed out.
+-----------------  ------------------------------------  -------------------------------------
+user_setup         Must be called before 300 seconds
+                   (can be configured in the .ini file
+                   under the key:
+                   ``sflvaut.vault.setup_timeout``)
+-----------------  ------------------------------------  -------------------------------------
+user_del           Removes user *directly*.              Requires 'global-admin' permission.
+-----------------  ------------------------------------  -------------------------------------
+user_list          Returns setup statuses, admin flags,
+                   each users' groups (and admin flags)
+-----------------  ------------------------------------  -------------------------------------
+service_add
+-----------------  ------------------------------------  -------------------------------------
+service_del
+-----------------  ------------------------------------  -------------------------------------
+service_get      
+-----------------  ------------------------------------  -------------------------------------
+service_put                                            
+-----------------  ------------------------------------  -------------------------------------
+service_get_tree
+(show)
+-----------------  ------------------------------------  -------------------------------------
+service_list
+-----------------  ------------------------------------  -------------------------------------
+service_passwd
+-----------------  ------------------------------------  -------------------------------------
+search
+-----------------  ------------------------------------  -------------------------------------
+customer_get
+-----------------  ------------------------------------  -------------------------------------
+customer_put
+-----------------  ------------------------------------  -------------------------------------
+customer_add
+-----------------  ------------------------------------  -------------------------------------
+customer_del
+-----------------  ------------------------------------  -------------------------------------
+customer_list
+-----------------  ------------------------------------  -------------------------------------
+machine_put
+-----------------  ------------------------------------  -------------------------------------
+machine_get
+-----------------  ------------------------------------  -------------------------------------
+machine_add
+-----------------  ------------------------------------  -------------------------------------
+machine_del
+-----------------  ------------------------------------  -------------------------------------
+machine_list
+-----------------  ------------------------------------  -------------------------------------
+group_get
+-----------------  ------------------------------------  -------------------------------------
+group_put
+-----------------  ------------------------------------  -------------------------------------
+group_add
+-----------------  ------------------------------------  -------------------------------------
+group_del
+-----------------  ------------------------------------  -------------------------------------
+group_list
+-----------------  ------------------------------------  -------------------------------------
+group_add_service 
+-----------------  ------------------------------------  -------------------------------------
+group_del_service
+-----------------  ------------------------------------  -------------------------------------
+group_add_user
+-----------------  ------------------------------------  -------------------------------------
+group _del_user
+=================  ====================================  =====================================
+
+
+
+What happens if the vault is compromised
+----------------------------------------
+
+If only the vault is compromised on server side, it is still impossible to decrypt anything, except in the following situations:
+
+- If the attacker also has access to a user's private key (decrypted, that is).  In that case:
+  - the attacker now has access to any service the user had.  Any services in any of the groups that user was member of.
+  - he still does not have access to any of the services that aren't in the user's groups.
+- If the attacker holds control of the vault, and it continues to be used, he could discover these three elements, which all have limited damage:
+  - When *adding a new service* (service_add), the attacker will gain knowledge of the symkey used to encrypt the secret, and the plaintext secret itself.  This would allow him to decrypt the secret in the future without any other constraint.  He also could just save the plaintext secret away.  This symkey, though, doesn't give access to any other service, only to this one.
+  - When *changing a service's password*, the same thing applies.  The attacker gains knowledge of both the generated symkey and the plaintext secret.
+  - When *adding a new group*, the attacker can gain knowledge of the group's generated private key.  It does not give access to any service at that particular moment, but could be used after several services have been added to that group, to decrypt those services' secret.  Though, if the attacker still has control of the vault, all these services were already compromised by the two previous cases (adding a new service, and changing a service's password).
