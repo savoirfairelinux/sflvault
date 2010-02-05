@@ -361,7 +361,7 @@ def search_query(swords, filters=None, verbose=False):
             raise RuntimeError("filters themselves must be a list of ints")
         
         if 'groups' in filters:
-            sel = sel.join(ServiceGroup)
+            sel = sel.join(servicegroups_table)
 
     sel = sel.select(use_labels=True)
 
