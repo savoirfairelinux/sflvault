@@ -186,7 +186,9 @@ class SFLvaultCommand(object):
             print "[SFLvault] XML-RPC Fault: %s" % e.faultString
         except xmlrpclib.ProtocolError, e:
             # Server crashed
-            print "[SFLvault] XML-RPC communication failed: %s" % e
+            print "[SFLvault] XML-RPC end-point failure: %s" % e
+        except PermissionError, e:
+            print "[SFLvault] Permission denied: %s" % e
         except VaultConfigurationError, e:
             print "[SFLvault] Configuration error: %s" % e
         except RemotingError, e:
@@ -194,7 +196,7 @@ class SFLvaultCommand(object):
         except ServiceRequireError, e:
             print "[SFLvault] Service-chain setup error: %s" % e
         except DecryptError, e:
-            print "[SFLvault] There has been an error in decrypting messages: %s" % e.message
+            print "[SFLvault] Error decrypting messages: %s" % e.message
         except VaultIDSpecError, e:
             print "[SFLvault] VaultID spec. error: %s" % e
         except socket.error, e:
@@ -499,7 +501,6 @@ class SFLvaultCommand(object):
                                o.notes)
         
 
-
     def service_edit(self):
         """Edit service informations."""
         self._something_edit("service-edit [service_id]",
@@ -507,8 +508,8 @@ class SFLvaultCommand(object):
                              self.vault.service_get,
                              self.vault.service_put,
                              ui.ServiceEditDialogDisplay,
-                             'service-edit aborted')
-
+                             'service-edit aborted',
+                             decrypt=False)
     def machine_edit(self):
         """Edit machine informations."""
         self._something_edit("machine-edit [machine_id]",
@@ -517,7 +518,6 @@ class SFLvaultCommand(object):
                              self.vault.machine_put,
                              ui.MachineEditDialogDisplay,
                              'machine-edit aborted')
-
     def customer_edit(self):
         """Edit customer informations."""
         self._something_edit("customer-edit [customer_id]",
@@ -526,7 +526,6 @@ class SFLvaultCommand(object):
                              self.vault.customer_put,
                              ui.CustomerEditDialogDisplay,
                              'customer-edit aborted')
-
     def group_edit(self):
         """Edit Group informations"""
         self._something_edit("group-edit [group_id]",
@@ -535,9 +534,9 @@ class SFLvaultCommand(object):
                              self.vault.group_put,
                              ui.GroupEditDialogDisplay,
                              'group-edit aborted')
-
     def _something_edit(self, usage, required_args, vault_id_type,
-                        get_function, put_function, ui_class, abort_message):
+                        get_function, put_function, ui_class, abort_message,
+                        **kwargs):
 
         self.parser.set_usage(usage)
         self._parse()
@@ -547,9 +546,12 @@ class SFLvaultCommand(object):
 
         thing_id = self.vault.vaultId(self.args[0], vault_id_type)
 
-        # TODO: make the service_edit NOT decrypt stuff (it's not needed
-        #       when we're only editing)
-        thing = get_function(thing_id)
+        # kwargs can contain 'decrypt=False', see service_edit.
+        thing = get_function(thing_id, **kwargs)
+
+        if get_function == self.vault.service_get and \
+                not thing.get('cryptsymkey'):
+            raise PermissionError("You don't have access to that service.  You cannot modify it.")
 
         dialog = ui_class(thing)
         save, data = dialog.run()

@@ -714,7 +714,7 @@ class SFLvaultClient(object):
 
         if decrypt:
             # Add it only if we can! (or if we want to)
-            if 'cryptgroupkey' in serv:
+            if serv.get('cryptgroupkey'):
                 self._decrypt_service(serv)
 
         return serv

@@ -1120,9 +1120,12 @@ class SFLvaultAccess(object):
         (seckey, ciphertext) = encrypt_secret(newsecret)
         serv.secret = ciphertext
         
+        # TODO absolutely:  verify this requesting user has access to the
+        # password first.  YES, he can add a new password, but not modify
+        # something he doesn't have access to, first.
+
         for sg in serv.groups_assoc:
             eg = [g for g in groups if g.id == sg.group_id][0].elgamal()
-            
             sg.cryptsymkey = encrypt_longmsg(eg, seckey)
 
         meta.Session.commit()

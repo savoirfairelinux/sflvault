@@ -93,9 +93,6 @@ def authenticated_admin(func, self, *args, **kwargs):
     return func(self, *args, **kwargs)
 
 
-
-
-
 ##
 ## See: http://wiki.pylonshq.com/display/pylonsdocs/Using+the+XMLRPCController
 ##
@@ -107,12 +104,7 @@ class XmlrpcController(XMLRPCController):
     
     def __call__(self, environ, start_response):
         """Invoke the Controller"""
-        # WSGIController.__call__ dispatches to the Controller method
-        # the request is routed to. This routing information is
-        # available in environ['pylons.routes_dict']
-        
         self.vault = SFLvaultAccess()
-        
         self.vault.setup_timeout = config['sflvault.vault.setup_timeout']
 
         try:
@@ -213,7 +205,19 @@ class XmlrpcController(XMLRPCController):
 
     @authenticated_user
     def sflvault_service_put(self, authtok, service_id, data):
-        return self.vault.service_put(service_id, data)
+        # 'user_id' required in session.
+        # TODO: verify I had access to the service previously.
+        req = sql.join(servicegroups_table, usergroups_table,
+                       ServiceGroup.group_id==UserGroup.group_id) \
+                 .join(users_table, User.id==UserGroup.user_id) \
+                 .select() \
+                 .where(User.id==self.sess['user_id']) \
+                 .where(ServiceGroup.service_id==service_id)
+        res = list(meta.Session.execute(req))
+        if not res:
+            return vaultMsg(False, "You don't have access to that service.")
+        else:
+            return self.vault.service_put(service_id, data)
 
     @authenticated_user
     def sflvault_search(self, authtok, search_query, filters=None,

@@ -25,7 +25,7 @@ import urlparse
 import re
 import readline
 
-__all__ = ['shred', 'urlparse', 'AuthenticationError',
+__all__ = ['shred', 'urlparse', 'AuthenticationError', 'PermissionError',
            'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
            'ServiceRequireError', 'ServiceExpectError', 'sflvault_escape_chr',
            'ask_for_service_password']
@@ -74,6 +74,12 @@ class AuthenticationError(Exception):
         """Sets an error message"""
         super(Exception, self).__init__(message)
 
+### Server restrictions errors
+
+class PermissionError(Exception):
+    """Raised when server enforces permissions"""
+    pass
+
 
 ### VaultError is in SFLvault-common
 
@@ -94,11 +100,11 @@ class RemotingError(Exception):
     """When something happens in the Remoting mechanisms"""
     pass
 
-class ServiceRequireError(Exception):
+class ServiceRequireError(RemotingError):
     """When the required() elements can't do what we want."""
     pass
 
-class ServiceExpectError(Exception):
+class ServiceExpectError(RemotingError):
     """When an error occurs in the expected values in prework to set up a
     service.
 
