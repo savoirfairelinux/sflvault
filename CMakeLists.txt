@@ -62,6 +62,9 @@ execute_process(COMMAND "patch" "-p0" "-o" "${CMAKE_BINARY_DIR}/qicons.py"
 install(FILES ${CMAKE_BINARY_DIR}/qicons.py
         DESTINATION "share/sflvault-qt4/images/")
 
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/images/sflvault.png
+        DESTINATION "share/pixmaps/")
+
 #i18n
 install_directory("i18n" "share/sflvault-qt4/"
                            ${CMAKE_CURRENT_SOURCE_DIR})

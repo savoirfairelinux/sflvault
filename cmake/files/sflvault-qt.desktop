@@ -1,9 +1,8 @@
 [Desktop Entry]
 Name=Sflvault
-Comment=Use the command line
-TryExec=sflvault-qt
-Exec=sflvault-qt
+Comment=Use the sflvault password manager
+Exec=sflvault-client-qt
 Icon=sflvault
 Type=Application
-Categories=Utility;
-StartupNotify=true
+Categories=Utility
+Terminal=false
