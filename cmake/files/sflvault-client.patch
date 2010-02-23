@@ -1,0 +1,11 @@
+--- sflvault-client-qt4.py	2010-02-22 13:29:46.172844287 -0500
++++ sflvault-client-qt4.py	2010-02-22 13:29:35.344741345 -0500
+@@ -26,6 +26,8 @@
+ from PyQt4 import QtCore, QtGui
+ from sflvault_qt import mainWindow
+ import sys
++sys.path.append('/usr/share/sflvault-qt4')
++
+ from images.qicons import *
+ from lib.auth import *
+ 

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+export PYTHONPATH=$PYTHONPATH;/usr/share/sflvault-qt4
+
+python /usr/lib/python2.6/sflvault_qt/sflvault-client-qt4.py
