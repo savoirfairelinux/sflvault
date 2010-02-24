@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export PYTHONPATH="$PYTHONPATH:/usr/share/sflvault-qt4"
+export PYTHONPATH="$PYTHONPATH:/usr/share/sflvault-qt4:/usr/lib/sflvault-qt"
 export SFLVAULT_ASKPASS=${SFLVAULT_ASKPASS:-$HOME/.sflvault/mypass}
 
-python /usr/lib/python2.6/sflvault_qt/sflvault-client-qt4.py
+python /usr/lib/sflvault-qt/sflvault_qt/sflvault-client-qt4.py

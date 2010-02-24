@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Sflvault
 Comment=Use the sflvault password manager
-Exec=sflvault-client-qt
+Exec=/usr/bin/sflvault-client-qt4
 Icon=sflvault
 Type=Application
 Categories=Utility

@@ -45,7 +45,7 @@ endforeach(file)
 endfunction()
 
 ##install
-set(PROJECT_PATH "lib/python2.6/")
+set(PROJECT_PATH "lib/sflvault-qt/")
 
 #main app
 install_directory("sflvault_qt" ${PROJECT_PATH} 
@@ -89,6 +89,11 @@ install(PROGRAMS "sflvault-client-qt4.py"
 install(PROGRAMS "cmake/files/sflvault-client-qt4"
         DESTINATION "bin")
 
+#install copyright
+install(FILES "cmake/files/copyright"
+        DESTINATION "share/doc/sflvault-qt4/")
+
+
 
 ##Cpack stuff
 set(CPACK_PACKAGE_VENDOR "Thibault Cohen")
@@ -104,15 +109,28 @@ set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "all")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "sflvault-common")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, python-qt4")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Arthur Gautier <arthur.gautier@savoirfairelinux.com>")
-set(CPACK_DEBIAN_PACKAGE_SECTION "Utils")
+set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
 set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
 
 set(CPACK_PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
 set(CPACK_PACKAGE_FILE_NAME
 "${CPACK_PACKAGE_NAME}-${CPACK_DEBIAN_PACKAGE_VERSION}")
 
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION 
+  "qt4 frontend for sflvault written in python
+ Qt4 frontend for sflvault - network credential utility")
+#set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
+#"${CMAKE_CURRENT_SOURCE_DIR}/cmake/files/copyright")
 
 set(CPACK_GENERATOR "DEB")
+
+#Cpack rebuild for permission fix
+
+add_custom_target(rebuild
+   COMMAND "bash" 
+   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/files/rebuild.sh"
+   "${CPACK_PACKAGE_FILE_NAME}")
+
 
 include(CPack)
 

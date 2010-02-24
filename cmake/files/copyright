@@ -1,0 +1,27 @@
+Format-Specification:
+    http://wiki.debian.org/Proposals/CopyrightFormat?action=recall&rev=143
+Upstream-Name: sflvault-qt4
+Unstream-Source: http://redmine.titilambert.org/projects/sflvault-qt4
+
+Files: *
+Copyright: Copyright 2009 Thibault cohen <titilambert@gmail.com> and others
+License: GPL-2
+ You can redistribute this software and/or modify it under the terms of
+ the GNU General Public License as published by the Free Software
+ Foundation; version 2 dated June, 1991.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ General Public License for more details.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ can be found in /usr/share/common-licenses/GPL-2 file.
+
+Files: debian/*
+Files: cmake/*
+Copyright: Copyright 2010, Arthur Gautier <arthur.gautier@savoirfairelinux.com>
+License: GPL-2
+
+This package was debianized by Arthur Gautier <arthur.gautier@savoirfairelinux.com> on
+Tue, 23 Feb 2010 19:25:53 -0500
