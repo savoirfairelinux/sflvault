@@ -308,7 +308,9 @@ class SFLvaultCommand(object):
 
     def user_del(self):
         """Delete an existing user."""
-        self.parser.set_usage("user-del username")
+        self.parser.set_usage("user-del <username>")
+        self.parser.add_option('-u', dest="username",
+                               help="Username to be removed")
         self._parse()
 
         if (len(self.args) != 1):
@@ -326,14 +328,16 @@ class SFLvaultCommand(object):
         customer with machines which has services that are parents to other
         services."""
         
-        self.parser.set_usage("customer-del customer_id")
+        self.parser.set_usage("customer-del <customer_id>")
+        self.parser.add_option('-c', dest="customer_id",
+                               help="Customer to be removed")
         self._parse()
 
-        # TODO someday: DRY
-        if len(self.args) != 1:
-            raise SFLvaultParserError("Invalid number of arguments")
-
-        customer_id = self.vault.vaultId(self.args[0], 'c')
+        if not self.opts.customer_id:
+            self.opts.customer_id = self.args[0]
+            if len(self.args) != 1:
+                raise SFLvaultParserError("Invalid number of arguments")
+        customer_id = self.vault.vaultId(self.opts.customer_id, 'c')
 
         self.vault.customer_del(customer_id)
 
@@ -343,16 +347,17 @@ class SFLvaultCommand(object):
 
         Make sure you have detached all services' childs before removing
         a machine which has services that are parents to other services.
-        """
-        
+        """        
         self.parser.set_usage("machine-del machine_id")
+        self.parser.add_option('-m', dest="machine_id",
+                               help="Machine to be removed")
         self._parse()
 
-        # TODO someday: DRY
-        if len(self.args) != 1:
-            raise SFLvaultParserError("Invalid number of arguments")
-
-        machine_id = self.vault.vaultId(self.args[0], 'm')
+        if not self.opts.machine_id:
+            self.opts.machine_id = self.args[0]
+            if len(self.args) != 1:
+                raise SFLvaultParserError("Invalid number of arguments")
+        machine_id = self.vault.vaultId(self.opts.machine_id, 'm')
 
         self.vault.machine_del(machine_id)
 
@@ -361,13 +366,15 @@ class SFLvaultCommand(object):
         """Delete an existing service. Make sure you have detached all
         childs before removing a parent service."""
         self.parser.set_usage("service-del service_id")
+        self.parser.add_option('-s', dest="service_id",
+                               help="Service to be removed")
         self._parse()
 
-        # TODO someday: DRY
-        if len(self.args) != 1:
-            raise SFLvaultParserError("Invalid number of arguments")
-
-        service_id = self.vault.vaultId(self.args[0], 's')
+        if not self.opts.service_id:
+            self.opts.service_id = self.args[0]
+            if len(self.args) != 1:
+                raise SFLvaultParserError("Invalid number of arguments")
+        service_id = self.vault.vaultId(self.opts.service_id, 's')
 
         self.vault.service_del(service_id)
         
@@ -729,15 +736,18 @@ class SFLvaultCommand(object):
 
         For this to be successful, the group must have no more services
         associated with it."""
-        self.parser.set_usage("group-del -g <group_id>")
+        self.parser.set_usage("group-del <group_id>")
         self.parser.add_option('-g', dest="group_id",
                                help="Group to be removed")
         self._parse()
-
+        
         if not self.opts.group_id:
-            raise SFLvaultParserError("-g option required")
-
-        self.vault.group_del(self.opts.group_id)
+            self.opts.group_id = self.args[0]
+            if len(self.args) != 1:
+                raise SFLvaultParserError("Invalid number of arguments")
+        group_id = self.vault.vaultId(self.opts.group_id, 'g')
+        
+        self.vault.group_del(group_id)
 
     def group_add(self):
         """Add a group to the vault

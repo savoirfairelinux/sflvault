@@ -650,11 +650,17 @@ class SFLvaultAccess(object):
     def group_del(self, group_id):
         """Remove a group from the vault. Only if no services are associated
         with it anymore."""
+        # Integerize
+        group_id = int(group_id)
+        
         try:
             grp = query(Group).options(eagerload('services_assoc')).get(group_id)
         except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % str(e))
 
+        if grp is None:
+            return vaultMsg(False, "Group not found: %s" %str(group_id))
+        
         if len(grp.services_assoc):
             return vaultMsg(False, "Group not empty, cannot delete")
 
