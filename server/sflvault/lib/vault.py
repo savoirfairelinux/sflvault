@@ -87,10 +87,9 @@ class SFLvaultAccess(object):
         u.pubkey = pubkey
         
         # Remove the user from the temporary collection
-        app_globals.delUser(user)
+        app_globals.delUser(u)
 
-        meta.Session.save(u)
-
+        # Save new informations
         meta.Session.commit()
 
         return vaultMsg(True, 'User setup complete for %s' % username)
@@ -343,7 +342,6 @@ class SFLvaultAccess(object):
                   results.
 
         """
-
         filter_types = ['groups', 'machines', 'customers']
         # Load objects on which to restrict the query:
         if filters:
