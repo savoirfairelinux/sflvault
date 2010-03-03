@@ -30,12 +30,11 @@ class Globals(object):
     def delUser(self, user):
         """Remove a user from the user's temporary collection using a username 
         as the key"""
-        user = None
         if isinstance(user, str):
             user = self.getUser(user)
         try:
             del self.users[user.username]
-        except KeyError:
+        except (KeyError, AttributeError):
             pass
         return user
 
