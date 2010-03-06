@@ -54,10 +54,6 @@ install_directory("sflvault_qt" ${PROJECT_PATH}
 #images
 install_directory("images" "share/sflvault-qt4/"
                            ${CMAKE_CURRENT_SOURCE_DIR})
-#patching qicons
-execute_process(COMMAND "patch" "-p0" "-o" "${CMAKE_BINARY_DIR}/qicons.py"
-  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/images/"
-  INPUT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/files/qicons.patch")
 
 install(FILES ${CMAKE_BINARY_DIR}/qicons.py
         DESTINATION "share/sflvault-qt4/images/")

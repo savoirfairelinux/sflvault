@@ -46,6 +46,7 @@ icons["information"] = "images/information.png"
 # Auto load all service icons in images/services/ folder
 service_icons = {}
 service_icons["service"] = "images/service.png"
+os.chdir(os.path.dirname(os.path.dirname(__file__)))
 for file in os.listdir("images/services"):
     service, ext = os.path.splitext(file)
     if ext in [".jpg", ".jpeg", ".png"]:
