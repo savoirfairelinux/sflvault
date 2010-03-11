@@ -30,6 +30,10 @@ import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
 import os
+try:
+    import keyring
+except:
+    pass
 
 
 class PreferencesWidget(QtGui.QDialog):
@@ -175,17 +179,24 @@ class PreferencesWidget(QtGui.QDialog):
         self.accept()
 
     def fillWallet(self, value):
-        if self.wallet.count() != 4:
-            self.wallet.clear()
-            self.wallet.addItem("Don't use wallet", QtCore.QVariant(0))
-            self.wallet.addItem("Autodetect", QtCore.QVariant(1))
-            self.wallet.addItem("KWallet", QtCore.QVariant(2))
-            self.wallet.addItem("SeaHorse", QtCore.QVariant(3))
-            if value:
-                self.wallet.setCurrentIndex(self.wallet.findData(QtCore.QVariant(value)))
-            else:
-                self.wallet.setCurrentIndex(0)
-        
+        self.wallet.clear()
+        self.wallet.addItem("Don't use wallet", QtCore.QVariant(None))
+        try:
+            backend_list = keyring.backend.get_all_keyring()
+            for backend in backend_list:
+                # recommend
+                if backend.supported () == 1:
+                    self.wallet.addItem("* - " + backend.__class__.__name__, QtCore.QVariant(backend.__class__.__name__))
+                # just supported
+                elif backend.supported () == 0:
+                    self.wallet.addItem(backend.__class__.__name__, QtCore.QVariant(backend.__class__.__name__))
+                if value:
+                    self.wallet.setCurrentIndex(self.wallet.findData(QtCore.QVariant(value)))
+                else:
+                    self.wallet.setCurrentIndex(0)
+        except:
+            pass
+
 
     def fillLanguage(self, value):
         self.language.clear()

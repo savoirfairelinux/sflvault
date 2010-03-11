@@ -61,6 +61,7 @@ class Page1(QtGui.QWizardPage):
         """
         QtGui.QWizard.__init__(self, parent)
         self.parent = parent
+        self.settings = self.parent.parent.settings
 
         self.setTitle("Save your password in your wallet")
 
@@ -72,13 +73,13 @@ class Page1(QtGui.QWizardPage):
         self.setLayout(layout)
 
         # Check if system has a supported wallet
-        if ("GNOME_KEYRING_SOCKET" in os.environ) or \
-            ("KDE_SESSION_VERSION" in os.environ and os.environ["KDE_SESSION_VERSION"] == "4"):
-            label.setText("This wizard will save your vault password in KWallet/Seahorse."
+        wallet_setting = str(self.settings.value("SFLvault-qt4/wallet").toString())
+        if wallet_setting:
+            label.setText("This wizard will save your vault password in you keyring system."
                         )
             self.next_page = PAGE_PASSWORD
         else:
-            label.setText("Your system doesn't have a supported wallet."
+            label.setText("Your system doesn't have a supported keyring system."
                         )
             self.next_page = PAGE_UNSUCCESS
 
@@ -96,6 +97,7 @@ class Page2(QtGui.QWizardPage):
         self.setSubTitle("Fill this form")
         self.setCommitPage(True)
         self.next_page = PAGE_SUCCESS
+        self.settings = self.parent.parent.settings
 
         password1_label = QtGui.QLabel(self.tr("&Password"))
         self.password1 = QtGui.QLineEdit(self.parent.password)
@@ -131,34 +133,13 @@ class Page2(QtGui.QWizardPage):
             error.exec_()
             return False
         # Check which wallet is used (kwallet or seahorse)
-        wallet_setting, bol = self.parent.parent.settings.value("SFLvault-qt4/wallet").toInt()
-        if wallet_setting == 1:
-            if "KDE_SESSION_VERSION" in os.environ and os.environ["KDE_SESSION_VERSION"] == "4":
-                ret = KDEsavePassword(unicode(self.password1.text()))
-                if ret:
-                    self.next_page = PAGE_SUCCESS
-                else:
-                    self.next_page = PAGE_UNSUCCESS
-            elif "GNOME_KEYRING_SOCKET" in os.environ:
-               ret = GNOMEsavePassword(unicode(self.password1.text()))
-               if ret:
-                   self.next_page = PAGE_SUCCESS
-               else:
-                   self.next_page = PAGE_UNSUCCESS 
-        elif wallet_setting == 2:
-            ret = KDEsavePassword(unicode(self.password1.text()))
-            if ret:
-                self.next_page = PAGE_SUCCESS
-            else:
-                self.next_page = PAGE_UNSUCCESS
-        elif wallet_setting == 3:
-           ret = GNOMEsavePassword(unicode(self.password1.text()))
-           if ret:
-               self.next_page = PAGE_SUCCESS
-           else:
-               self.next_page = PAGE_UNSUCCESS 
+        wallet_setting = str(self.settings.value("SFLvault-qt4/wallet").toString())
+        username = str(self.settings.value("SFLvault/username").toString())
+        ret = setSecret(unicode(self.password1.text()))
+        if ret:
+            self.next_page = PAGE_SUCCESS
         else:
-            print "error ???"
+            self.next_page = PAGE_UNSUCCESS
         return True
 
     def nextId(self):
