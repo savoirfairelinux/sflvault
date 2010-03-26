@@ -34,7 +34,9 @@ try to make it a table or a graph and order all of this sooner or later:
 * group_del requires 'global-admin' via xml-rpc.  Direct access to lib allowed.  Library doesn't allow deletion of non-empty groups.
 * group_list requires auth via xml-rpc.  Direct access to lib allowed.  Doesn't show hidden groups to non-members of those groups, except for global admins.  Via xml-rpc, can't override behavior.  Direct lib access allows override (see all groups no matter which hidden status it is in, with show_hidden=True).  TODO: make sure this is true! 
 * group_add_service requires auth via xml-rpc.  Direct lib allowed.  CRYPTO constraint: you need to have a decrypted service symkey (requiring your private key, and previous access to service_get) to add a service to any group.  The vault has no means to verify the consistency of your symkey.  Providing random symkeys will create an unusable service (accessed via this group).
+
 * group_del_service requires simple auth via xml-rpc.  Direct lib allowed.  Lib constraint: service must be in another group to be detached from this group (otherwise you'd lose your service :).  XML-RPC constraint: can't delete group if you're not admin of the group nor global-admin.  TODO: move group constraints and admin constraints to XML-RPC layer.
+
 * group_add_user requires XML-RPC auth.  Lib access allowed. CRYPTO constraint: you need to have a decrypted group key (requiring your private key, and previous access to group_add_user to retrieve the user's public key, and the group's encrypted private key).  Lib enforces being in the group, since this is the only way you can provide a validly encrypted groupkey.  Being global-admin in any case doesn't help here (because of CRYPTO constraints).  This command trusts that the remote user adding another user enters valid data as a cryptgroupkey. If junk is added in that field, the added user simply won't be able to access the group's data. Also will he need to be removed and added successfully to the group for everything to work.  TODO: implement group's symkey encryption + migration scripts.
 * group_del_user requires simple auth via XML-RPC.  Lib access allowed.  Lib constraints prevents from deleting yourself from the group.  Makes sure someone else will remain in the group.  The library will make everything possible to make sure there is at least a group admin left.  It will warn if there is no more.  It will prevent you from deleting the last admin.  XML-RPC will block if you are not either group-admin of this group, or global-admin.  TODO: Admin flags are to be verified in the XML-RPC layer.
 * machine_del requires 'global-admin' via xml-rpc.  Lib access is allowed.  Lib constraint: prevent deleting a machine that containts a service that is a parent to another service.  Otherwise, delete machine and it's services.
@@ -72,9 +74,9 @@ Permissions for each function (library and via xml-rpc)
 
 All functions requires user authentication when called via XML-RPC, unless otherwise noted.
 
-All functions can be access directly via the Python library with no constraints, unless otherwise noted.
+All functions can be accessed directly via the Python library with no constraints, unless otherwise noted.
 
-Of course, a call via XML-RPC will call the library if authentications and checks pass.
+Of course, a call via XML-RPC will call the library only if authentications and checks pass.
 
 =================  ====================================  =====================================
 Function name      Access via library                    Access via web (xml-rpc)
@@ -92,20 +94,30 @@ user_del           Removes user *directly*.              Requires 'global-admin'
 user_list          Returns setup statuses, admin flags,
                    each users' groups (and admin flags)
 -----------------  ------------------------------------  -------------------------------------
-service_add
+service_add        No group restrictions apply. Anyone
+                   can add service to any group. Mind
+                   that he can't necessariliy read it
+                   back.
 -----------------  ------------------------------------  -------------------------------------
-service_del
+service_del        Prevents removing services with       Requires 'global-admin' permission.
+                   childs. 'global-admin' and admins
+                   of all groups the service is in are
+                   allowed to delete the service.
+                   Otherwise, the service needs to be
+                   detached first.
 -----------------  ------------------------------------  -------------------------------------
-service_get      
+service_get
 -----------------  ------------------------------------  -------------------------------------
-service_put                                            
+service_put        WARN: No groups constraints are    
+                   enforced when updating a service.
 -----------------  ------------------------------------  -------------------------------------
 service_get_tree
 (show)
 -----------------  ------------------------------------  -------------------------------------
-service_list
+service_list       No cryptogram is transmitted here
 -----------------  ------------------------------------  -------------------------------------
-service_passwd
+service_passwd     Prior access to password is required
+                   and enforced.
 -----------------  ------------------------------------  -------------------------------------
 search
 -----------------  ------------------------------------  -------------------------------------
@@ -115,37 +127,75 @@ customer_put
 -----------------  ------------------------------------  -------------------------------------
 customer_add
 -----------------  ------------------------------------  -------------------------------------
-customer_del
+customer_del       Deletes all it's machines and         Requires 'global-admin' permission.
+                   services.  Stops if breaking service
+                   cascades.
 -----------------  ------------------------------------  -------------------------------------
 customer_list
 -----------------  ------------------------------------  -------------------------------------
-machine_put
+machine_put                                              Anyone can update machine infos.
 -----------------  ------------------------------------  -------------------------------------
 machine_get
 -----------------  ------------------------------------  -------------------------------------
 machine_add
 -----------------  ------------------------------------  -------------------------------------
-machine_del
+machine_del        Deletes all it's services as well.    Requires 'global-admin' permission.
+                   Stops if breaking service cascades.
 -----------------  ------------------------------------  -------------------------------------
 machine_list
 -----------------  ------------------------------------  -------------------------------------
 group_get
 -----------------  ------------------------------------  -------------------------------------
-group_put
+group_put          Group admin required to hide group.
+                   Group member required to modify.
 -----------------  ------------------------------------  -------------------------------------
-group_add
+group_add          Creator of the group is granted
+                   admin privs. on that group.
 -----------------  ------------------------------------  -------------------------------------
-group_del
+group_del          Can't remove non-empty groups         Requires 'global-admin' permission.
 -----------------  ------------------------------------  -------------------------------------
-group_list
+group_list         Hidden groups are hidden from non-
+                   members, unless 'global-admin'.
 -----------------  ------------------------------------  -------------------------------------
-group_add_service 
+group_add_service  CRYPTO constraint: you need to have
+                   a decrypted service symkey
+                   (requiring your private key, and
+                   previous access to service_get) to
+                   add a service to any group.  The
+                   vault has no means to verify the
+                   consistency of your symkey.
+                   Providing random symkeys will create
+                   an unusable service (accessed via
+                   this group).
 -----------------  ------------------------------------  -------------------------------------
-group_del_service
+group_del_service  Can't detach a service if it's its
+                   last group (otherwise, you lose it).
 -----------------  ------------------------------------  -------------------------------------
-group_add_user
+group_add_user     You need to have a decrypted group
+                   key (requiring your private key, and
+                   previous access to group_add_user to
+                   retrieve the user's public key, and
+                   the group's encrypted private key).
+                   Enforces being in the group, since
+                   this is the only way you can provide
+                   a validly encrypted groupkey.
+                   This command trusts that the remote
+                   user adding another user enters
+                   valid data as a cryptgroupkey.
+                   If junk is added in that field, the
+                   added user simply won't be able to
+                   access the group's data. Also will
+                   he need to be removed and added
+                   successfully to the group for
+                   everything to work.
 -----------------  ------------------------------------  -------------------------------------
-group _del_user
+group_del_user     Prevents from deleting yourself from  Group-admin or 'global-admin'
+                   the group.                            required
+                   Makes sure someone else will remain
+                   in the group.
+                   Makes everything possible to make
+                   sure there is at least a group admin
+                   left.
 =================  ====================================  =====================================
 
 
@@ -153,12 +203,24 @@ group _del_user
 What happens if the vault is compromised
 ----------------------------------------
 
-If only the vault is compromised on server side, it is still impossible to decrypt anything, except in the following situations:
+If the vault is compromised on server side -- some guy ran away with the database contents, or cracked the vault server, it is still impossible for him to decrypt anything, except in the following situations:
 
-- If the attacker also has access to a user's private key (decrypted, that is).  In that case:
-  - the attacker now has access to any service the user had.  Any services in any of the groups that user was member of.
-  - he still does not have access to any of the services that aren't in the user's groups.
-- If the attacker holds control of the vault, and it continues to be used, he could discover these three elements, which all have limited damage:
-  - When *adding a new service* (service_add), the attacker will gain knowledge of the symkey used to encrypt the secret, and the plaintext secret itself.  This would allow him to decrypt the secret in the future without any other constraint.  He also could just save the plaintext secret away.  This symkey, though, doesn't give access to any other service, only to this one.
-  - When *changing a service's password*, the same thing applies.  The attacker gains knowledge of both the generated symkey and the plaintext secret.
-  - When *adding a new group*, the attacker can gain knowledge of the group's generated private key.  It does not give access to any service at that particular moment, but could be used after several services have been added to that group, to decrypt those services' secret.  Though, if the attacker still has control of the vault, all these services were already compromised by the two previous cases (adding a new service, and changing a service's password).
+* If the attacker also has access to a user's private key (decrypted, that is).  In that case:
+
+  * the attacker now has access to any service the user had.  Any services in any of the groups that user was member of.
+
+  * he still does not have access to any of the services that aren't in the user's groups.
+
+* If the attacker holds control of the vault, and it continues to be used, he could discover these three elements, which all have limited damage:
+
+  * When *adding a new service* (service_add), the attacker will gain knowledge of the symkey used to encrypt the secret, and the plaintext secret itself.  This would allow him to decrypt the secret in the future without any other constraint.  He also could just save the plaintext secret away.  This symkey, though, doesn't give access to any other service, only to this one.
+
+  * When *changing a service's password*, the same thing applies.  The attacker gains knowledge of both the generated symkey and the plaintext secret.
+
+  * When *adding a new group*, the attacker can gain knowledge of the group's generated private key.  It does not give access to any service at that particular moment, but could be used after several services have been added to that group, to decrypt those services' secret.  Though, if the attacker still has control of the vault, all these services were already compromised by the two previous cases (adding a new service, and changing a service's password).
+
+
+Other risks involved
+--------------------
+
+A user could create a group, having admin privileges upon creation, and set a name that could fool other users into adding services to it, by giving it the same name as already existing group for example.  If another user adds a service to that group, the creator of the group could have access to that service, even if user didn't have access to the original group.

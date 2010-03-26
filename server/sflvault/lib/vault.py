@@ -132,14 +132,18 @@ class SFLvaultAccess(object):
         
 
     def user_del(self, user):
-        """Delete a user from database"""
+        """Delete a user from database.
+
+        :param user: can be a user_id, or username
+
+        This will remove the user and it's links to groups.
+        
+        """
         # Get user
         try:
             usr = model.get_user(user)
         except LookupError, e:
             return vaultMsg(False, str(e))
-        # TODO: check if there's anything else to delete when deleting
-        #       a user.
         t1 = model.usergroups_table
         meta.Session.execute(t1.delete(t1.c.user_id==usr.id))
         
@@ -244,7 +248,13 @@ class SFLvaultAccess(object):
 
         # We need no aliasing, because we'll only use `cryptgroupkey`,
         # `cryptsymkey` and `group_id` in there.
-        req = sql.join(servicegroups_table, usergroups_table, ServiceGroup.group_id==UserGroup.group_id).join(users_table, User.id==UserGroup.user_id).select(use_labels=True).where(User.id==self.myself_id).where(ServiceGroup.service_id==s.id).order_by(ServiceGroup.group_id)
+        req = sql.join(servicegroups_table, usergroups_table,
+                       ServiceGroup.group_id==UserGroup.group_id) \
+                 .join(users_table, User.id==UserGroup.user_id) \
+                 .select(use_labels=True) \
+                 .where(User.id==self.myself_id) \
+                 .where(ServiceGroup.service_id==s.id) \
+                 .order_by(ServiceGroup.group_id)
 
         # Deal with group if specified..
         if group_id:
@@ -668,14 +678,13 @@ class SFLvaultAccess(object):
         """Return a simple list of the available groups"""
         groups = query(Group).group_by(Group.name).all()
 
-        # TODO: implement hidden groups, you shouldn't show those groups,
-        #       unless you're admin of that group.
         ugs = query(UserGroup).filter_by(user_id=self.myself_id).all()
 
         me = query(User).get(self.myself_id)
 
         out = []
         for grp in groups:
+
             myug = [ug for ug in ugs if ug.group_id == grp.id]
             
             res = {'id': grp.id, 'name': grp.name,
@@ -684,11 +693,15 @@ class SFLvaultAccess(object):
             res['member'] = bool(myug)
 
             if grp.hidden:
+                # Only for global-admin or members, if we're asked to hide
+                # hidden groups
+                if not show_hidden and not me.is_admin and not myug:
+                    continue
                 res['hidden'] = True
 
             if len(myug) and myug[0].is_admin:
                 res['admin'] = True
-                    
+            
             out.append(res)
 
         return vaultMsg(True, 'Here is the list of groups', {'list': out})
@@ -729,9 +742,9 @@ class SFLvaultAccess(object):
 
     def group_del_service(self, group_id, service_id):
         """Remove the association between a group and a service, simply."""
-        try:
-            grp = query(Group).filter_by(id=group_id).one()
-        except InvalidReq, e:
+        grp = query(Group).filter_by(id=group_id).first()
+
+        if not grp:
             return vaultMsg(False, "Group not found: %s" % str(e))
 
         # TODO: DRY out this place, much copy from del_user and stuff
@@ -745,20 +758,6 @@ class SFLvaultAccess(object):
         # Make sure we don't lose all of the service's crypted information.
         if len(sgs) < 2:
             return vaultMsg(False, "This is the last group this service is in. Either delete the service, or add it to another group first")
-
-        # Verify if I'm is_admin on that group
-        ug = query(UserGroup).filter_by(group_id=group_id,
-                                        user_id=self.myself_id).first()
-
-        # Make sure I'm in that group (to be able to decrypt the groupkey)
-        # TODO: warning, global-admin won't pass this test!
-        if not ug:
-            return vaultMsg(False, "You are not part of that group")
-
-        me = query(User).get(self.myself_id)
-        
-        if not ug.is_admin and not me.is_admin:
-            return vaultMsg(False, "You are not admin on that group (nor global admin)")
 
         # Remove the GroupService from the Group object.
         meta.Session.delete(sg)
@@ -1021,7 +1020,6 @@ class SFLvaultAccess(object):
 
         # Make sure no service is child of this one
         childs = query(model.Service).filter_by(parent_service_id=service_id).all()
-
         if len(childs):
             # There are still some childs left, we can't delete this one.
             retval = []
@@ -1074,38 +1072,35 @@ class SFLvaultAccess(object):
         
         lst = meta.Session.execute(sel)
 
-        out = []
-        for x in lst:
-            nx = {'id': x.machines_id, 'name': x.machines_name,
+        out = [{'id': x.machines_id, 'name': x.machines_name,
                   'fqdn': x.machines_fqdn, 'ip': x.machines_ip,
                   'location': x.machines_location, 'notes': x.machines_notes,
                   'customer_id': x.customers_id,
                   'customer_name': x.customers_name}
-            out.append(nx)
+               for x in lst]
 
         return vaultMsg(True, "Here is the machines list", {'list': out})
     
 
     def service_list(self, machine_id=None, customer_id=None):
         """Return a simple list of the services"""
-        select = query(Service).join('machine')
+        services = query(Service).join('machine')
 
         # Filter also..
         if machine_id:
-            select = select.filter(Service.machine_id==machine_id)
+            services = services.filter(Service.machine_id==int(machine_id))
         if customer_id:
-            select = select.filter(Machine.customer_id==customer_id)
+            services = services.filter(Machine.customer_id==int(customer_id))
 
-        out = []
-        for service in select:
-            srv = {'id': service.id, 'url': service.url,
-                   'parent_service_id': service.parent_service_id,
-                   'metadata': service.metadata, 'notes': service.notes,
-                   'machine_id': service.machine_id,
-                   'secret': service.secret,
-                   'secret_last_modified': service.secret_last_modified,
-                   }
-            out.append(srv)
+        out = [{'id': s.id, 'url': s.url,
+                   'parent_service_id': s.parent_service_id,
+                   'metadata': s.metadata, 'notes': s.notes,
+                   'machine_id': s.machine_id,
+                   'secret': s.secret,
+                   'secret_last_modified': s.secret_last_modified,
+                }
+               for s in services]
+
         return vaultMsg(True, "Here is the machines list", {'list': out})
 
 

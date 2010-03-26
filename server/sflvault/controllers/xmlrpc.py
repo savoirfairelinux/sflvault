@@ -294,6 +294,10 @@ class XmlrpcController(XMLRPCController):
 
     @authenticated_user
     def sflvault_group_del_service(self, authtok, group_id, service_id):
+        fail = self._test_group_admin(group_id)
+        if fail:
+            return fail
+                
         return self.vault.group_del_service(group_id, service_id)
 
     @authenticated_user
@@ -304,6 +308,9 @@ class XmlrpcController(XMLRPCController):
 
     @authenticated_user
     def sflvault_group_del_user(self, authtok, group_id, user):
+        fail = self._test_group_admin(group_id)
+        if fail:
+            return fail
         return self.vault.group_del_user(group_id, user)
 
     @authenticated_user
@@ -314,6 +321,19 @@ class XmlrpcController(XMLRPCController):
     def sflvault_service_passwd(self, authtok, service_id, newsecret):
         return self.vault.service_passwd(service_id, newsecret)
 
+    def _test_group_admin(self, group_id):
+        if not query(Group).filter_by(id=group_id).first():
+            return vaultMsg(False, "Group not found: %s" % str(e))
+
+        # Verify if I'm is_admin on that group
+        ug = query(UserGroup).filter_by(group_id=group_id,
+                                        user_id=self.sess['user_id']).first()
+        me = query(User).get(self.sess['user_id'])
+        
+        # Make sure I'm in that group (to be able to decrypt the groupkey)
+        if not ug or (not ug.is_admin and not me.is_admin):
+            return vaultMsg(False, "You are not admin on that group (nor global admin)")
+        
 
 
 
