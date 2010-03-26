@@ -25,9 +25,5 @@ __all__ = ['VaultError']
 
 
 class VaultError(StandardError):
-    def __init__(self, message):
-        """Sets an error message"""
-        self.message = message
-    def __str__(self):
-        return self.message
-
+    """Vault-specific Error"""
+    pass
