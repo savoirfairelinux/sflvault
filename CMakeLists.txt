@@ -10,7 +10,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}"
 find_package(PyQt4 REQUIRED)
 
 ## Just include the subdirs
-add_subdirectory(sflvault_qt)
+#add_subdirectory(sflvault_qt)
 
 #Umask workaround
 execute_process(COMMAND "umask" "022")
@@ -55,7 +55,7 @@ install_directory("sflvault_qt" ${PROJECT_PATH}
 install_directory("images" "share/sflvault-qt4/"
                            ${CMAKE_CURRENT_SOURCE_DIR})
 
-install(FILES ${CMAKE_BINARY_DIR}/qicons.py
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/images/qicons.py
         DESTINATION "share/sflvault-qt4/images/")
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/images/sflvault.png
