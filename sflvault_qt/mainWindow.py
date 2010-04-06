@@ -265,7 +265,16 @@ class MainWindow(QtGui.QMainWindow):
         if not service:
             return False
         # Get service
-        url = QtCore.QUrl(service["services"][-1]["url"])
+        # Check if url have several @
+        username = None
+        if len(service["services"][-1]["url"].split("@")) > 2:
+            temp = service["services"][-1]["url"].rsplit("@",1)
+            username = temp[0].split("://")[-1]
+            protocol = temp[0].split("://")[0]
+            url = temp[1]
+            url = QtCore.QUrl(protocol + "://" + url)
+        else:
+            url = QtCore.QUrl(service["services"][-1]["url"])
         protocol = unicode(url.scheme())
         port = unicode(url.port())
         address  = unicode(url.host() + ":" + unicode(port) + url.path()) if port != "-1" else unicode(url.host() + url.path())
@@ -274,7 +283,9 @@ class MainWindow(QtGui.QMainWindow):
         if bool and clip == QtCore.Qt.Checked:
             self.copyToClip(password)
         # Prepare dictionnary
-        if url.userName():
+        if username:
+            options["user"] = username
+        elif url.userName():
             options["user"] = url.userName()
         else:
             options["user"] = None
