@@ -824,22 +824,17 @@ class SFLvaultCommand(object):
         VaultID - service ID as 's#123', '123', or alias pointing to a service
                   ID."""
         self.parser.set_usage("show [opts] VaultID")
-        self.parser.add_option('-v', '--verbose', dest="verbose",
-                               action="store_true", default=False,
-                               help="Show verbose output (include notes, "\
-                                    "location)")
-        self.parser.add_option('-g', '--groups', dest="with_groups",
-                               action="store_true", default=False,
-                               help="Show groups this service is member of")
+        self.parser.add_option('-q', '--quiet', dest="quiet",
+                               action="store_false", default=True,
+                               help="Show notes, locations, groups")
         self._parse()
 
         if len(self.args) != 1:
             raise SFLvaultParserError("Invalid number of arguments")
 
         vid = self.vault.vaultId(self.args[0], 's')
-        verbose = self.opts.verbose
 
-        self.vault.show(vid, verbose, self.opts.with_groups)
+        self.vault.show(vid, self.opts.quiet, self.opts.quiet)
 
 
 
