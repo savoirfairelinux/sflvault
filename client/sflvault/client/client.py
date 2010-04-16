@@ -556,7 +556,7 @@ class SFLvaultClient(object):
                      command line.
         """
         # possible-TODO: implement --force if user wants to override.
-        if self.cfg.has_option('SFLvault', 'username'):
+        if self.cfg.has_option('SFLvault', 'key'):
             raise VaultConfigurationError("WARNING: you already have a private key stored in %s.  Backup/rename this file before running this command again." % (self.config_filename))
             
         self._set_vault(vault_url, False)
