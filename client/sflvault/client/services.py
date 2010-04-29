@@ -436,7 +436,7 @@ class sudo(ShellService):
                 self.sendpass()
 
         # Send command
-        self.shell_handle.sendline('sudo -s')
+        self.shell_handle.sendline('sudo -i')
 
         expect_sudowork(self)
         
