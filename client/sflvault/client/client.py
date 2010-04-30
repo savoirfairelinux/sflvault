@@ -972,7 +972,7 @@ class SFLvaultClient(object):
         print "Success: %s" % retval['message']
 
     @authenticate()
-    def group_list(self):
+    def group_list(self, quiet=False):
         """Simply list the available groups"""
         retval = vaultReply(self.vault.group_list(self.authtok),
                             "Error listing groups")
@@ -992,6 +992,9 @@ class SFLvaultClient(object):
                 add.append('[admin]')
             print "\tg#%d\t%s %s" % (grp['id'], grp['name'], ' '.join(add))
 
+            if not quiet:
+                # TODO: LIST MEMBERS
+                pass
 
     @authenticate()
     def machine_list(self, verbose=False, customer_id=None):

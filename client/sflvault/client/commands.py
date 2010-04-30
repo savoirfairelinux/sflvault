@@ -308,7 +308,7 @@ class SFLvaultCommand(object):
 
     def user_del(self):
         """Delete an existing user."""
-        self.parser.set_usage("user-del <username>")
+        self.parser.set_usage("user-del -u <username>")
         self.parser.add_option('-u', dest="username",
                                help="Username to be removed")
         self._parse()
@@ -316,9 +316,7 @@ class SFLvaultCommand(object):
         if (len(self.args) != 1):
             raise SFLvaultParserError("Invalid number of arguments")
 
-        username = self.args[0]
-
-        self.vault.user_del(username)
+        self.vault.user_del(self.opts.username)
 
 
     def customer_del(self):
@@ -328,17 +326,15 @@ class SFLvaultCommand(object):
         customer with machines which has services that are parents to other
         services."""
         
-        self.parser.set_usage("customer-del <customer_id>")
-        self.parser.add_option('-c', dest="customer_id",
+        self.parser.set_usage("customer-del -c <customer_id>")
+        self.parser.add_option('-c', dest="customer_id", default=None,
                                help="Customer to be removed")
         self._parse()
 
         if not self.opts.customer_id:
-            self.opts.customer_id = self.args[0]
-            if len(self.args) != 1:
-                raise SFLvaultParserError("Invalid number of arguments")
-        customer_id = self.vault.vaultId(self.opts.customer_id, 'c')
+            raise SFLvaultParserError("customer_id is required.")
 
+        customer_id = self.vault.vaultId(self.opts.customer_id, 'c')
         self.vault.customer_del(customer_id)
 
 
@@ -348,34 +344,30 @@ class SFLvaultCommand(object):
         Make sure you have detached all services' childs before removing
         a machine which has services that are parents to other services.
         """        
-        self.parser.set_usage("machine-del machine_id")
-        self.parser.add_option('-m', dest="machine_id",
+        self.parser.set_usage("machine-del -m <machine_id>")
+        self.parser.add_option('-m', dest="machine_id", default=None,
                                help="Machine to be removed")
         self._parse()
 
         if not self.opts.machine_id:
-            self.opts.machine_id = self.args[0]
-            if len(self.args) != 1:
-                raise SFLvaultParserError("Invalid number of arguments")
-        machine_id = self.vault.vaultId(self.opts.machine_id, 'm')
+            raise SFLvaultParserError("machine_id is required")
 
+        machine_id = self.vault.vaultId(self.opts.machine_id, 'm')
         self.vault.machine_del(machine_id)
 
 
     def service_del(self):
         """Delete an existing service. Make sure you have detached all
         childs before removing a parent service."""
-        self.parser.set_usage("service-del service_id")
-        self.parser.add_option('-s', dest="service_id",
+        self.parser.set_usage("service-del -s <service_id>")
+        self.parser.add_option('-s', dest="service_id", default=None,
                                help="Service to be removed")
         self._parse()
 
         if not self.opts.service_id:
-            self.opts.service_id = self.args[0]
-            if len(self.args) != 1:
-                raise SFLvaultParserError("Invalid number of arguments")
-        service_id = self.vault.vaultId(self.opts.service_id, 's')
+            raise SFLvaultParserError("service_id is required")
 
+        service_id = self.vault.vaultId(self.opts.service_id, 's')
         self.vault.service_del(service_id)
         
 
@@ -387,7 +379,7 @@ class SFLvaultCommand(object):
                                help="Machine name, used for display everywhere")
         self.parser.add_option('-d', '--fqdn', dest="fqdn", default='',
                                help="Fully qualified domain name, if available")
-        self.parser.add_option('-i', '--ip', dest="ip", default='',
+        self.parser.add_option('-p', '--ip', dest="ip", default='',
                                help="Machine's IP address, in order to access itfrom it's hierarchical position")
         self.parser.add_option('-l', '--location', dest="location", default='',
                                help="Machine's physical location, position in racks, address, etc..")
@@ -576,7 +568,7 @@ class SFLvaultCommand(object):
         Do not specify password on command line, it will be asked on the
         next line.
         """
-        self.parser.set_usage("service-passwd [service_id]")
+        self.parser.set_usage("service-passwd <service_id>")
         self._parse()
 
         if not len(self.args):
@@ -736,17 +728,15 @@ class SFLvaultCommand(object):
 
         For this to be successful, the group must have no more services
         associated with it."""
-        self.parser.set_usage("group-del <group_id>")
-        self.parser.add_option('-g', dest="group_id",
+        self.parser.set_usage("group-del -g <group_id>")
+        self.parser.add_option('-g', dest="group_id", default=None,
                                help="Group to be removed")
         self._parse()
         
         if not self.opts.group_id:
-            self.opts.group_id = self.args[0]
-            if len(self.args) != 1:
-                raise SFLvaultParserError("Invalid number of arguments")
+            raise SFLvaultParserError("group_id is required")
+
         group_id = self.vault.vaultId(self.opts.group_id, 'g')
-        
         self.vault.group_del(group_id)
 
     def group_add(self):
@@ -755,7 +745,7 @@ class SFLvaultCommand(object):
         This command accepts a group name (as string) as first and only
         parameter.
         """
-        self.parser.set_usage("group-add <group name>")
+        self.parser.set_usage('group-add "group name"')
         self._parse()
 
         if len(self.args) != 1:
@@ -766,13 +756,15 @@ class SFLvaultCommand(object):
 
     def group_list(self):
         """List existing groups."""
-        self.parser.set_usage("group-list")
+        self.parser.set_usage("group-list [options]")
+        self.parser.add_option('-q', dest='quiet', default=False,
+                               action="store_true", help="Hide members")
         self._parse()
 
         if len(self.args):
             raise SFLvaultParserError("Invalid number of arguments")
 
-        self.vault.group_list()
+        self.vault.group_list(self.args.quiet)
 
 
     def machine_list(self):
@@ -781,6 +773,7 @@ class SFLvaultCommand(object):
         This command will list all machines in the vault's database."""
         ## TODO: add support for listing only machines of a certain c#id
         #        (customer_id)
+        self.parser.set_usage("machine-list [options]")
         self.parser.add_option('-v', '--verbose', action="store_true",
                                dest='verbose', default=False,
                                help="Enable verbose output (location and notes)")
@@ -833,7 +826,7 @@ class SFLvaultCommand(object):
 
         VaultID - service ID as 's#123', '123', or alias pointing to a service
                   ID."""
-        self.parser.set_usage("show [opts] VaultID")
+        self.parser.set_usage("show [options] <service_id>")
         self.parser.add_option('-q', '--quiet', dest="quiet",
                                action="store_false", default=True,
                                help="Show notes, locations, groups")
