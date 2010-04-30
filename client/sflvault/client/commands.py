@@ -752,7 +752,7 @@ class SFLvaultCommand(object):
         if len(self.args):
             raise SFLvaultParserError("Invalid number of arguments")
 
-        self.vault.group_list(self.args.quiet)
+        self.vault.group_list(self.opts.quiet)
 
 
     def machine_list(self):

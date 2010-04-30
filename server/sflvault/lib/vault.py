@@ -496,7 +496,7 @@ class SFLvaultAccess(object):
         nm.customer_id = int(customer_id)
         nm.created_time = datetime.now()
         if not name:
-            return vaultMsg(False, "Missing requierd argument: name")
+            return vaultMsg(False, "Missing required argument: name")
         nm.name = name
         nm.fqdn = fqdn or ''
         nm.ip = ip or ''
