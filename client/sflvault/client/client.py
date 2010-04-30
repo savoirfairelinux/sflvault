@@ -39,13 +39,6 @@ from sflvault.client import remoting
 
 
 
-# Default configuration
-
-# Default configuration file
-CONFIG_FILE = '~/.sflvault/config'
-# Environment variable to override default config file.
-CONFIG_FILE_ENV = 'SFLVAULT_CONFIG'
-
 
 
 ### Setup variables and functions
@@ -178,15 +171,15 @@ class SFLvaultClient(object):
     Whether you want to access a local or remote Vault server, this is the
     object you need.
     """
-    def __init__(self, cfg=None, shell=False):
+    def __init__(self, config, shell=False):
         """Set up initial configuration for function calls
 
-        :param cfg: Unused for now, leave a None.
+        :param config: Configuration filename to use.
         :param shell: if True, the private key will be cached for a while,
             not asking your password for each query to the vault.
         """
-
         # Load configuration
+        self.configfile = config
         self.config_read()
 
         # The function to call upon @authenticate to get passphrase from user.
@@ -224,22 +217,13 @@ class SFLvaultClient(object):
             print "Modes for %s must be 0600 (-rw-------)" % fullfile
             sys.exit()
 
-    @property
-    def config_filename(self):
-        """Return the configuration filename"""
-        # by default 'SFLVAULT_CONFIG'
-        if CONFIG_FILE_ENV in os.environ:
-            return os.environ[CONFIG_FILE_ENV]
-        else:
-            return CONFIG_FILE
-
     def config_read(self):
         """Return the ConfigParser object, fully loaded"""
 
-        self.config_check(self.config_filename)
+        self.config_check(self.configfile)
     
         self.cfg = ConfigParser()
-        fp = open(os.path.expanduser(self.config_filename), 'r')
+        fp = open(os.path.expanduser(self.configfile), 'r')
         self.cfg.readfp(fp)
         fp.close()
 
@@ -257,7 +241,7 @@ class SFLvaultClient(object):
 
     def config_write(self):
         """Write the ConfigParser element to disk."""
-        fp = open(os.path.expanduser(self.config_filename), 'w')
+        fp = open(os.path.expanduser(self.configfile), 'w')
         self.cfg.write(fp)
         fp.close()
 
@@ -557,7 +541,7 @@ class SFLvaultClient(object):
         """
         # possible-TODO: implement --force if user wants to override.
         if self.cfg.has_option('SFLvault', 'key'):
-            raise VaultConfigurationError("WARNING: you already have a private key stored in %s.  Backup/rename this file before running this command again." % (self.config_filename))
+            raise VaultConfigurationError("WARNING: you already have a private key stored in %s.  Backup/rename this file before running this command again." % (self.configfile))
             
         self._set_vault(vault_url, False)
         
@@ -569,7 +553,7 @@ class SFLvaultClient(object):
         pubkey = elgamal_pubkey(eg)
 
         print "You will need a passphrase to secure your private key. The"
-        print "encrypted key will be stored on this machine in %s" % self.config_filename
+        print "encrypted key will be stored on this machine in %s" % self.configfile
         print '-' * 80
 
         if not passphrase:

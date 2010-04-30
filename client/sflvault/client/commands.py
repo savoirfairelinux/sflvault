@@ -71,8 +71,8 @@ class NoExitParser(optparse.OptionParser):
         self.print_usage(sys.stderr)
 
 class SFLvaultShell(object):
-    def __init__(self, vault=None):
-        self.vault = (vault or SFLvaultClient(shell=True))
+    def __init__(self, config, vault=None):
+        self.vault = (vault or SFLvaultClient(config, shell=True))
 
     def _run(self):
         """Go through all commands on a pseudo-shell, and execute them,
@@ -117,16 +117,20 @@ class SFLvaultCommand(object):
     you run ``sflvault connect s#1`` on the command line, or when you run
     ``connect s#1`` from within the shell.
     """
-    def __init__(self, vault=None, parser=None):
+    def __init__(self, config=None, vault=None, parser=None):
         """Create a SFLvaultCommand object
 
-          :param vault: an existing SFLvaultClient object, otherwise it will be created
-          :param parser: an option parser, otherwise it will be created (recommended)
+        :param config: config filename to use, required if no vault specified
+        :param vault: an existing SFLvaultClient object, otherwise it will be created, using specified config
+        :param parser: an option parser, otherwise it will be created (recommended)
         """
         self.parser = (parser or optparse.OptionParser(usage=optparse.SUPPRESS_USAGE))
         
+        if not config and not vault:
+            raise ValueError("`config` required if `vault` not specified")
+
         # Use the specified, or create a new one.
-        self.vault = (vault or SFLvaultClient())
+        self.vault = (vault or SFLvaultClient(config))
 
 
     def _run(self, argv):
@@ -206,7 +210,7 @@ class SFLvaultCommand(object):
 
     def _parse(self):
         """Parse the command line options, and fill self.opts and self.args"""
-        (self.opts, self.args) = self.parser.parse_args(args=self.argv)
+        self.opts, self.args = self.parser.parse_args(args=self.argv)
 
 
     def help(self, cmd=None, error=None):
@@ -371,8 +375,9 @@ class SFLvaultCommand(object):
         self.vault.service_del(service_id)
         
 
-    def _machine_options(self):
-        self.parser.set_usage("machine-add [options]")
+    def machine_add(self):
+        """Add a new machine."""
+        self.parser.set_usage('machine-add -n "machine name" -c <customer_id> [options]')
         self.parser.add_option('-c', '--customer', dest="customer_id",
                                help="Customer id, as 'c#123' or '123'")
         self.parser.add_option('-n', '--name', dest="name",
@@ -385,11 +390,6 @@ class SFLvaultCommand(object):
                                help="Machine's physical location, position in racks, address, etc..")
         self.parser.add_option('--notes', dest="notes",
                                help="Notes about the machine, references, URLs.")
-        
-    def machine_add(self):
-        """Add a new machine."""
-
-        self._machine_options()
         self._parse()
 
         if not self.opts.name:
@@ -405,29 +405,6 @@ class SFLvaultCommand(object):
         self.vault.machine_add(customer_id, o.name, o.fqdn,
                                o.ip, o.location, o.notes)
 
-
-    def _service_options(self):
-        """Add options for calls to `service-add` and `service-edit`"""
-        
-        self.parser.add_option('-m', '--machine', dest="machine_id",
-                               help="Attach Service to Machine #, as "\
-                                    "'m#123', '123' or an alias")
-        self.parser.add_option('-u', '--url', dest="url",
-                               help="Service URL, full proto://[username@]"\
-                               "fqdn.example.org[:port][/path[#fragment]], "\
-                               "WITHOUT the secret.")
-
-        self.parser.add_option('-p', '--parent', dest="parent_id",
-                               help="Make this Service child of Parent "\
-                                    "Service #")
-        self.parser.add_option('-g', '--group', dest="group_ids",
-                               action="append", type="string",
-                               help="Access group_id for this service, as "\
-                               "'g#123' or '123'. Use group-list to view "\
-                               "complete list. You can specify multiple groups")
-        self.parser.add_option('--notes', dest="notes",
-                               help="Notes about the service, references, "\
-                                    "URLs.")
 
     def _service_clean_url(self, url):
         """Remove password in URL, and notify about rewrite."""
@@ -463,22 +440,31 @@ class SFLvaultCommand(object):
                command-line, to prevent sensitive information being held in
                history.
         """
-        
-        self._service_options()
+        self.parser.set_usage("service-add -u <url> -m <machine_id> -g <group_id> [options]")
+        self.parser.add_option('-m', '--machine', dest="machine_id",
+                               help="Attach Service to Machine #, as "\
+                                    "'m#123', '123' or an alias")
+        self.parser.add_option('-u', '--url', dest="url",
+                               help="Service URL, full proto://[username@]"\
+                               "fqdn.example.org[:port][/path[#fragment]], "\
+                               "WITHOUT the secret.")
+
+        self.parser.add_option('-p', '--parent', dest="parent_id",
+                               help="Make this Service child of Parent "\
+                                    "Service #")
+        self.parser.add_option('-g', '--group', dest="group_ids",
+                               action="append", type="string",
+                               help="Access group_id for this service, as "\
+                               "'g#123' or '123'. Use group-list to view "\
+                               "complete list. You can specify multiple groups")
+        self.parser.add_option('--notes', dest="notes",
+                               help="Notes about the service, references, "\
+                                    "URLs.")
         self._parse()
 
-        if not self.opts.url:
-            raise SFLvaultParserError("Required parameter 'url' omitted")
-        
-        ## TODO: make a list-customers and provide a selection using arrows or
-        #        or something alike.
-        if not self.opts.machine_id:
-            raise SFLvaultParserError("Machine ID required. Please specify -m|--machine [VaultID]")
-
-        if not self.opts.group_ids:
-            raise SFLvaultParserError("At least one group required")
-        
-        
+        for x in ('url', 'machine_id', 'group_ids'):
+            if not hasattr(self.opts, x):
+                raise SFLvaultParserError("Required parameter '%s' omitted" % x)
         o = self.opts
 
         url = urlparse.urlparse(o.url)
@@ -502,6 +488,7 @@ class SFLvaultCommand(object):
 
     def service_edit(self):
         """Edit service informations."""
+        # TODO: implement -s, -m an d-c for those EDIT things..
         self._something_edit("service-edit [service_id]",
                              'service_id', 's',
                              self.vault.service_get,
@@ -932,6 +919,12 @@ class SFLvaultCompleter:
 ###
 ### Execute requested command-line command
 ###    
+
+# Default configuration file
+CONFIG_FILE = '~/.sflvault/config'
+# Environment variable to override default config file.
+CONFIG_FILE_ENV = 'SFLVAULT_CONFIG'
+
 def main():
     # Call the appropriate function of the 'f' object, according to 'action'
     func_list = []
@@ -943,18 +936,33 @@ def main():
     readline.set_completer(SFLvaultCompleter(func_list).complete)
     readline.parse_and_bind("tab: complete")
 
+    # Extract the '-i "identity"' before starting if present.
+    args = sys.argv[:]
+    identity = None
+    if args[1] == '-i':
+        del args[1]
+        if len(args) == 1 or args[1].startswith('-'):
+            print "Error: Identity required after -i"
+            sys.exit()
+        identity = args.pop(1)
 
-    if len(sys.argv) == 1 or sys.argv[1] == 'shell':
-        s = SFLvaultShell()
+    configfile = CONFIG_FILE
+    if identity:
+        configfile = "%s.%s" % (CONFIG_FILE, identity)
+        print "NOTICE: USING VAULT IDENTITY: %s  (in %s)" % (identity, configfile)
+    elif CONFIG_FILE_ENV in os.environ:
+        configfile = os.environ[CONFIG_FILE_ENV]
+
+    if len(args) == 1 or args[1] == 'shell':
+        s = SFLvaultShell(config=configfile)
         try:
             s._run()
         except (KeyboardInterrupt, EOFError), e:
             print "\nExiting."
             sys.exit()
     else:
-        f = SFLvaultCommand()
-        f._run(sys.argv[1:])
-
+        f = SFLvaultCommand(config=configfile)
+        f._run(args[1:])
     
 
 # For wrappers.
