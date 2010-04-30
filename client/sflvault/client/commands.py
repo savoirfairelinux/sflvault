@@ -72,6 +72,7 @@ class NoExitParser(optparse.OptionParser):
 
 class SFLvaultShell(object):
     def __init__(self, config, vault=None):
+        self.config = config
         self.vault = (vault or SFLvaultClient(config, shell=True))
 
     def _run(self):
@@ -94,7 +95,7 @@ class SFLvaultShell(object):
                 getattr(self, args[0])()
             else:
                 parser = NoExitParser(usage=optparse.SUPPRESS_USAGE)
-                runcmd = SFLvaultCommand(self.vault, parser)
+                runcmd = SFLvaultCommand(self.config, self.vault, parser)
                 try:
                     runcmd._run(args)
                 except ExitParserException, e:
