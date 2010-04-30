@@ -4,7 +4,7 @@
 *.pyc
 
 # Database
-server/sflvault.sqlite
+server/sflvault.sqlite*
 sflvault.sqlite
 
 # Ignore eggs
@@ -32,3 +32,8 @@ test-database.db
 test-config
 test-suite.xml
 .coverage
+
+# SSL certs
+server/host.cert
+server/host.key
+server/host.pem

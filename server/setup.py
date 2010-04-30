@@ -19,6 +19,8 @@ setup(
                       "SQLAlchemy>=0.5.6",
                       "pysqlite",
                       "SFLvault-common",
+                      "Routes==1.10.3",
+                      "Paste>=1.7.3.1",
                       ],
     # For server installation:
     #  "ipython"
