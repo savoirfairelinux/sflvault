@@ -67,10 +67,9 @@ class SFLvaultAccess(object):
 
     def user_setup(self, username, pubkey):
         """Setup the user's account"""
-        u = query(User).filter_by(username=username).first()
-
-        if u is None:
-            u = app_globals.getUser(username)
+        # This user should have been added strictly to the temporary zone,
+        # not to the database.
+        u = app_globals.get_user(username)
 
         if u is None:
             return vaultMsg(False, 'No such temporary user %s, add it first' % username)
@@ -79,7 +78,7 @@ class SFLvaultAccess(object):
             return vaultMsg(False, 'Setup expired for user %s' % username)
 
         if u.pubkey:
-            return vaultMsg(False, 'User %s already have a public '\
+            return vaultMsg(False, 'User %s already has a public ' \
                                 'key stored' % username)
 
         # Ok, let's save the things and reset waiting_setup.
@@ -87,9 +86,10 @@ class SFLvaultAccess(object):
         u.pubkey = pubkey
         
         # Remove the user from the temporary collection
-        app_globals.delUser(u)
+        app_globals.del_user(u)
 
         # Save new informations
+        meta.Session.save(u)
         meta.Session.commit()
 
         return vaultMsg(True, 'User setup complete for %s' % username)
@@ -101,7 +101,7 @@ class SFLvaultAccess(object):
         
         msg = ''
 
-        usr = app_globals.getUser(username) 
+        usr = app_globals.get_user(username) 
 
         if usr is None:
             # New user
@@ -111,7 +111,7 @@ class SFLvaultAccess(object):
             usr.is_admin = bool(is_admin)
             usr.created_time = datetime.now()
 
-            app_globals.addUser(usr)
+            app_globals.add_user(usr)
             
             msg = 'added'
         else:
@@ -125,9 +125,10 @@ class SFLvaultAccess(object):
                 return vaultMsg(False, "User %s is waiting for setup" % \
                                 username)
 
-        return vaultMsg(True, '%s %s. User has a delay of %d seconds to invoke a "user-setup" command' % \
-                        ('Admin user' if is_admin else 'User',
-                         msg, int(self.setup_timeout)), {'user_id': usr.id})
+        return vaultMsg(True, '%s %s. User has a delay of %d seconds '
+                              'to invoke a "user-setup" command' % \
+                            ('Admin user' if is_admin else 'User',
+                             msg, int(self.setup_timeout)), {'user_id': usr.id})
         
 
     def user_del(self, user):
@@ -139,17 +140,22 @@ class SFLvaultAccess(object):
         
         """
         # Get user
+        if app_globals.get_user(user):
+            # This will obviously never work with user_id
+            usr = app_globals.del_user(user)
+            return vaultMsg(True, "Removed temporary user %s" % user)
+
         try:
             usr = model.get_user(user)
         except LookupError, e:
             return vaultMsg(False, str(e))
+
         t1 = model.usergroups_table
         meta.Session.execute(t1.delete(t1.c.user_id==usr.id))
-        
+        username = usr.username
         meta.Session.delete(usr)
         meta.Session.commit()
-
-        return vaultMsg(True, "User successfully deleted")
+        return vaultMsg(True, "User %s successfully deleted" % username)
 
 
     def user_list(self, groups=False):

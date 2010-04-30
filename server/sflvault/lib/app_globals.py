@@ -13,13 +13,13 @@ class Globals(object):
         """
         self.users = {}
 
-    def getUser(self, username):
+    def get_user(self, username):
         """Gets the a user by using a username key from the temporary
         users dict
         """
         return self.users.get(username, None)
 
-    def addUser(self, user):
+    def add_user(self, user):
         """Add a new user in the user's temporary collection using his username
         as the key"""
         if user.username not in self.users:
@@ -27,14 +27,22 @@ class Globals(object):
         else:
             raise KeyError('User %s already exists.' % user.username)
 
-    def delUser(self, user):
+    def del_user(self, user):
         """Remove a user from the user's temporary collection using a username 
-        as the key"""
+        as the key.
+
+        Either the User object or username is accepted.
+
+        Returns the User object if it was present.
+        """
         if isinstance(user, str):
-            user = self.getUser(user)
-        try:
-            del self.users[user.username]
-        except (KeyError, AttributeError):
-            pass
+            username = user
+            user = self.get_user(user)
+        else:
+            username = user.username
+
+        if username in self.users:
+            del self.users[username]
+
         return user
 
