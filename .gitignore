@@ -12,6 +12,7 @@ build
 dist
 eggs
 develop-eggs
+SFLvault_server.egg-info/
 
 # generated html files
 docs/*.html
@@ -32,6 +33,7 @@ test-database.db
 test-config
 test-suite.xml
 .coverage
+server/test-config.bak
 
 # SSL certs
 server/host.cert

@@ -275,6 +275,8 @@ class SFLvaultClient(object):
         # Save config.
         self.config_write()
 
+        return True
+
     def alias_del(self, alias):
         """Remove an alias from the config.
 
@@ -357,9 +359,10 @@ class SFLvaultClient(object):
                             "Error adding user")
 
         print "Success: %s" % retval['message']
-#        print "New user ID: u#%d" % retval['user_id']
         prms = (username, self.cfg.get('SFLvault', 'url'))
         print "The new user should run: sflvault user-setup %s %s" % prms
+
+        return retval
 
 
     @authenticate()
@@ -368,6 +371,8 @@ class SFLvaultClient(object):
                             "Error removing user")
 
         print "Success: %s" % retval['message']
+
+        return retval
 
 
     def _services_returned(self, retval):
@@ -392,6 +397,8 @@ class SFLvaultClient(object):
         retval = self.vault.customer_del(self.authtok, customer_id)
 
         self._services_returned(retval)
+
+        return retval
         
 
     @authenticate()
@@ -400,6 +407,7 @@ class SFLvaultClient(object):
 
         self._services_returned(retval)
         
+        return retval
 
 
     @authenticate(True)
@@ -418,6 +426,8 @@ class SFLvaultClient(object):
                             "Error saving data to vault, aborting.")
 
         print "Success: %s " % retval['message']
+
+        return retval
         
 
     @authenticate()
@@ -425,6 +435,8 @@ class SFLvaultClient(object):
         retval = self.vault.service_del(self.authtok, service_id)
 
         self._services_returned(retval)
+
+        return retval
 
 
     @authenticate()
@@ -435,6 +447,8 @@ class SFLvaultClient(object):
 
         print "Success: %s" % retval['message']
         print "New customer ID: c#%d" % retval['customer_id']
+
+        return retval
 
 
     @authenticate()
@@ -450,6 +464,7 @@ class SFLvaultClient(object):
         print "Success: %s" % retval['message']
         print "New machine ID: m#%d" % int(retval['machine_id'])
 
+        return retval
 
     @authenticate()
     def service_add(self, machine_id, parent_service_id, url, group_ids, secret,
@@ -480,6 +495,8 @@ class SFLvaultClient(object):
         print "Success: %s" % retval['message']
         print "New service ID: s#%d" % retval['service_id']
 
+        return retval
+
     @authenticate()
     def service_passwd(self, service_id, newsecret):
         """Updates the password on the Vault for a certain service"""
@@ -491,6 +508,8 @@ class SFLvaultClient(object):
 
         print "Success: %s" % retval['message']
         print "Password updated for service: s#%d" % int(retval['service_id'])
+
+        return retval
                             
 
     def _new_passphrase(self):
@@ -608,7 +627,7 @@ class SFLvaultClient(object):
                                               verbose),
                             "Error searching database")
 
-        print "Results:"
+        print "Results:"        
 
         # TODO: call the pager `less` when too long.
         level = 0
@@ -650,6 +669,8 @@ class SFLvaultClient(object):
                 
             if level in [0,1]:
                 print "%s" % (spc1) + '-' * (80 - len(spc1))
+
+            return retval
             
     def _decrypt_service(self, serv, onlysymkey=False, onlygroupkey=False):
         """Decrypt the service object returned from the vault.
@@ -735,6 +756,8 @@ class SFLvaultClient(object):
                             "Error saving data to vault, aborting.")
 
         print "Success: %s " % retval['message']
+
+        return retval
         
 
     @authenticate(True)
@@ -754,7 +777,7 @@ class SFLvaultClient(object):
 
         print "Success: %s " % retval['message']
         
-
+        return retval
 
     @authenticate(True)
     def show(self, service_id, verbose=False, with_groups=False):
@@ -847,6 +870,8 @@ class SFLvaultClient(object):
             print "There are expired users. To remove them, run:"
             for usr in to_clean:
                 print "   sflvault user-del %s" % usr
+
+        return retval
         
 
     @authenticate(True)
@@ -866,6 +891,7 @@ class SFLvaultClient(object):
 
         print "Success: %s " % retval['message']
         
+        return retval
 
 
     @authenticate(True)
@@ -890,6 +916,7 @@ class SFLvaultClient(object):
 
         print "Success: %s" % retval['message']
 
+        return retval
 
     @authenticate()
     def group_del_service(self, group_id, service_id):
@@ -898,6 +925,8 @@ class SFLvaultClient(object):
                             "Error removing service from group")
 
         print "Success: %s" % retval['message']
+
+        return retval
 
     @authenticate(True)
     def group_add_user(self, group_id, user, is_admin=False):
@@ -925,6 +954,8 @@ class SFLvaultClient(object):
 
         print "Success: %s" % retval['message']
 
+        return retval
+
     @authenticate()
     def group_del_user(self, group_id, user):
         retval = vaultReply(self.vault.group_del_user(self.authtok, group_id,
@@ -944,6 +975,8 @@ class SFLvaultClient(object):
 
         print "Success: %s " % retval['message']
         print "New group id: g#%d" % retval['group_id']
+
+        return retval
 
 
     @authenticate()
@@ -979,6 +1012,8 @@ class SFLvaultClient(object):
             if not quiet:
                 # TODO: LIST MEMBERS
                 pass
+        return retval
+
 
     @authenticate()
     def machine_list(self, verbose=False, customer_id=None):
@@ -998,18 +1033,27 @@ class SFLvaultClient(object):
                 print "\t\tNotes: %s" % x['notes'].replace('\n', '\t\t\n')
                 print '-' * 76
 
+        return retval
+
 
     @authenticate()
     def customer_list(self, customer_id=None):
+        """List customers in the vault and possibly corresponding to the needed id
+        
+        Keywords arguments:
+        customer_id -- Id of the needed customer to list
+
+        Receive a list: 
+        [{'id': '%d',
+         'name': 'blah'},
+         {'id': '%d',
+         'name': 'blah2'}]
+         """
         retval = vaultReply(self.vault.customer_list(self.authtok),
                             "Error listing customers")
-
-        # Receive a list: [{'id': '%d',
-        #                   'name': 'blah'},
-        #                  {'id': '%d',
-        #                   'name': 'blah2'}]
         print "Customer list:"
         for x in retval['list']:
             print "c#%d\t%s" % (x['id'], x['name'])
+        return retval
 
 

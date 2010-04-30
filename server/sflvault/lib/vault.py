@@ -64,7 +64,6 @@ class SFLvaultAccess(object):
 
         self.setup_timeout = 300
 
-
     def user_setup(self, username, pubkey):
         """Setup the user's account"""
         # This user should have been added strictly to the temporary zone,

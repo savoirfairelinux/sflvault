@@ -25,7 +25,7 @@ from pylons import config
 from sflvault.client import SFLvaultClient
 from sflvault.lib.vault import SFLvaultAccess
 
-__all__ = ['url_for', 'TestController']
+__all__ = ['setUp', 'tearDown', 'url_for', 'TestController']
 
 here_dir = os.path.dirname(os.path.abspath(__file__))
 conf_dir = os.path.dirname(os.path.dirname(here_dir))
@@ -35,65 +35,67 @@ pkg_resources.working_set.add_entry(conf_dir)
 pkg_resources.require('Paste')
 pkg_resources.require('PasteScript')
 
-# Remove the test database on each run.
 dbfile = os.path.join(conf_dir, 'test-database.db')
-if os.path.exists(dbfile):
-    os.unlink(dbfile)
-
+confile = os.path.join(conf_dir, 'test-config')
 test_file = os.path.join(conf_dir, 'test.ini')
-cmd = paste.script.appinstall.SetupCommand('setup-app')
-cmd.run([test_file])
+globs = {}
+vault = None
 
+def setUp(self):
+    """Setup the temporary SFLVault server"""
+    # Remove the test database on each run.
+    if os.path.exists(dbfile):
+        os.unlink(dbfile)
+
+# Remove the test config on each run
+confile = os.path.join(conf_dir, 'test-config')
+if os.path.exists(confile):
+    os.unlink(confile)
+
+    cmd = paste.script.appinstall.SetupCommand('setup-app')
+    cmd.run([test_file])
+
+    cfg = ConfigParser()
+    cfg.read(test_file)
+    sinfos = cfg._sections['server:main']
+    wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
+    server = serve(wsgiapp, sinfos['host'], sinfos['port'],
+                   socket_timeout=1, start_loop=False)
+    globs['server'] = server
+    t = threading.Thread(target=server.serve_forever)
+    t.setDaemon(True)
+    t.start()
+    
+    wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
+    app = paste.fixture.TestApp(wsgiapp)
+
+    # Create the vault test obj.
+    if 'SFLVAULT_ASKPASS' in os.environ:
+        del(os.environ['SFLVAULT_ASKPASS'])
+    os.environ['SFLVAULT_CONFIG'] = config['sflvault.testconfig']        
+
+def tearDown(self):
+    """Close the SFLVault server"""
+    globs['server'].server_close()
 
 class TestController(TestCase):
-
-
-    def setUp(self, *args, **kwargs):
-        print "\t--------------------------------------------------------------"
-        print "\t--- Setting up database test environment, please stand by. ---"
-        print "\t--------------------------------------------------------------"
-
-        self.globs = {}
-
-        infos = ConfigParser()
-        infos.read(test_file)
-        sinfos = infos._sections['server:main']
-        wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
-        server = self.globs['server'] = serve(wsgiapp,
-                                     sinfos['host'],
-                                     sinfos['port'],
-                                     socket_timeout=1,
-                                     start_loop=False,
-                                    )
-        t = threading.Thread(target=server.serve_forever)
-        t.setDaemon(True)
-        t.start()
-        #self.globs['app'] = paste.fixture.TestApp(wsgiapp)
-        
-        #def url_for_wrapper(*args, **kwargs):
-        #    lkwargs = {'protocol': 'http' ,'host':  "%s:%s" % \
-        #               (server.server_name, server.server_port)}
-        #    lkwargs.update(kwargs)
-        #    return url_for(*args, **lkwargs)
-        #self.globs['url_for'] = url_for_wrapper
-        #self.globs['url_for_orig'] = url_for
-
-    def tearDown(self):
-        self.globs['server'].server_close()
-
-
-
     def __init__(self, *args, **kwargs):
-        wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
-        self.app = paste.fixture.TestApp(wsgiapp)
-
-        # Create the vault test obj.
-        if 'SFLVAULT_ASKPASS' in os.environ:
-            del(os.environ['SFLVAULT_ASKPASS'])
-        os.environ['SFLVAULT_CONFIG'] = config['sflvault.testconfig']
-        
-        self.vault = SFLvaultClient(shell=True)
-        self.passphrase = 'test'
-        self.username = 'admin'
-        
         TestCase.__init__(self, *args, **kwargs)
+
+    def getVault(self):
+        """Get the SFLVault server vault"""
+        import sflvault.tests
+        if sflvault.tests.vault is None:
+            sflvault.tests.vault = SFLvaultClient(shell=True)
+            sflvault.tests.vault.passphrase = 'test'
+            sflvault.tests.vault.username = 'admin'    
+
+            def givepass():
+                return sflvault.tests.vault.passphrase        
+            sflvault.tests.vault.set_getpassfunc(givepass)
+            sflvault.tests.vault.user_setup(sflvault.tests.vault.username, 
+                                            'http://localhost:5551/vault/rpc', 
+                                            sflvault.tests.vault.passphrase)
+            self.cfg = sflvault.tests.vault.cfg
+        return sflvault.tests.vault
+    
