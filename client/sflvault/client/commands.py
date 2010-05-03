@@ -563,8 +563,9 @@ class SFLvaultCommand(object):
             raise SFLvaultParserError("Required argument: service_id")
 
         newsecret = ask_for_service_password("Enter new service password: ")
+        service_id = self.vault.vaultId(self.args[0], 's')
 
-        self.vault.service_passwd(self.args[0], newsecret)
+        self.vault.service_passwd(service_id, newsecret)
 
 
     def alias(self):
