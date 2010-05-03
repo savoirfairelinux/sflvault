@@ -297,7 +297,8 @@ class MainWindow(QtGui.QMainWindow):
         options["vaultconnect"] = "sflvault connect %s" % options["vaultid"]
         # Show Tooltip if checked in config
         tooltip, bool = self.settings.value("protocols/" + protocol + "/tooltip").toInt()
-        if bool and tooltip == QtCore.Qt.Checked:
+        if (bool and tooltip == QtCore.Qt.Checked) or \
+            not self.settings.value("protocols/" + protocol + "/command").toString():
             self.osd = Osd(password=password, username=options["user"], address=options["address"], parent=self)
             self.osd.show()
         # Prepare to launch command
