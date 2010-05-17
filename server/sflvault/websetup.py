@@ -18,17 +18,16 @@ def setup_config(command, filename, section, vars):
     log.info("Creating tables")
     model.meta.metadata.create_all(bind=model.meta.engine)
     ## Add default user 'admin' with 5 minutes for the client to call "sflvault setup"
-    try:
-        model.query(model.User).filter_by(username='admin').one()
+    if model.query(model.User).filter_by(username='admin').first():
         log.info("User 'admin' already exists, skipping insertion of admin user.")
-    except:
+    else:
         u = model.User()
         u.waiting_setup = datetime.now() + timedelta(0, 900)
         u.username = u'admin'
         u.created_time = datetime.now()
         u.is_admin = True
 
-        model.meta.Session.save(u)        
+        model.meta.Session.add(u)        
         model.meta.Session.commit()
 
         log.info("Added 'admin' user, you have 15 minutes to setup from your client")
