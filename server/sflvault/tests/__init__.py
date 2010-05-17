@@ -25,7 +25,7 @@ from pylons import config
 from sflvault.client import SFLvaultClient
 from sflvault.lib.vault import SFLvaultAccess
 
-__all__ = ['setUp', 'tearDown', 'url_for', 'TestController']
+__all__ = ['url_for', 'TestController', 'setUp', 'tearDown']
 
 here_dir = os.path.dirname(os.path.abspath(__file__))
 conf_dir = os.path.dirname(os.path.dirname(here_dir))
@@ -41,16 +41,21 @@ test_file = os.path.join(conf_dir, 'test.ini')
 globs = {}
 vault = None
 
-def setUp(self):
-    """Setup the temporary SFLVault server"""
+
+def tearDown():
+    """Close the SFLVault server"""
+    globs['server'].server_close()
+
+
+def setUp():
+    """Setup the temporary SFLvault server"""
     # Remove the test database on each run.
     if os.path.exists(dbfile):
         os.unlink(dbfile)
 
-# Remove the test config on each run
-confile = os.path.join(conf_dir, 'test-config')
-if os.path.exists(confile):
-    os.unlink(confile)
+    # Remove the test config on each run
+    if os.path.exists(confile):
+        os.unlink(confile)
 
     cmd = paste.script.appinstall.SetupCommand('setup-app')
     cmd.run([test_file])
@@ -65,7 +70,7 @@ if os.path.exists(confile):
     t = threading.Thread(target=server.serve_forever)
     t.setDaemon(True)
     t.start()
-    
+
     wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
     app = paste.fixture.TestApp(wsgiapp)
 
@@ -74,9 +79,7 @@ if os.path.exists(confile):
         del(os.environ['SFLVAULT_ASKPASS'])
     os.environ['SFLVAULT_CONFIG'] = config['sflvault.testconfig']        
 
-def tearDown(self):
-    """Close the SFLVault server"""
-    globs['server'].server_close()
+
 
 class TestController(TestCase):
     def __init__(self, *args, **kwargs):
@@ -86,7 +89,8 @@ class TestController(TestCase):
         """Get the SFLVault server vault"""
         import sflvault.tests
         if sflvault.tests.vault is None:
-            sflvault.tests.vault = SFLvaultClient(shell=True)
+            sflvault.tests.vault = SFLvaultClient(os.environ['SFLVAULT_CONFIG'],
+                                                  shell=True)
             sflvault.tests.vault.passphrase = 'test'
             sflvault.tests.vault.username = 'admin'    
 
