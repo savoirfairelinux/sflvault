@@ -869,7 +869,7 @@ class SFLvaultClient(object):
         if len(to_clean):
             print "There are expired users. To remove them, run:"
             for usr in to_clean:
-                print "   sflvault user-del %s" % usr
+                print "   sflvault user-del -u %s" % usr
 
         return retval
         

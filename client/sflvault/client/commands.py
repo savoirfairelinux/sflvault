@@ -318,8 +318,8 @@ class SFLvaultCommand(object):
                                help="Username to be removed")
         self._parse()
 
-        if (len(self.args) != 1):
-            raise SFLvaultParserError("Invalid number of arguments")
+        if not self.opts.username:
+            raise SFLvaultParserError("Please specify the user with -u")
 
         self.vault.user_del(self.opts.username)
 
@@ -941,7 +941,7 @@ def main():
     # Extract the '-i "identity"' before starting if present.
     args = sys.argv[:]
     identity = None
-    if args[1] == '-i':
+    if len(args) > 1 and args[1] == '-i':
         del args[1]
         if len(args) == 1 or args[1].startswith('-'):
             print "Error: Identity required after -i"
