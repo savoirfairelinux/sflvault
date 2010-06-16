@@ -696,7 +696,6 @@ class SFLvaultCommand(object):
                                default=False, help="Mark as group admin")
         self._group_user_options()
         self._parse()
-
         self._group_user_parse()
         
         self.vault.group_add_user(self.opts.group_id, self.opts.user,
@@ -937,6 +936,13 @@ def main():
     readline.set_completer_delims('_')
     readline.set_completer(SFLvaultCompleter(func_list).complete)
     readline.parse_and_bind("tab: complete")
+
+    # Set the output to UTF-8 if it's not set by the terminal (for PIPES
+    # redirection)
+    # See http://stackoverflow.com/questions/492483/setting-the-correct-encoding-when-piping-stdout-in-python
+    if sys.stdout.encoding is None:
+        import codecs
+        sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
     # Extract the '-i "identity"' before starting if present.
     args = sys.argv[:]
