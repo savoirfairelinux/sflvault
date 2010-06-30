@@ -728,6 +728,12 @@ class SFLvaultClient(object):
     @authenticate(True)
     def service_get_tree(self, service_id, with_groups=False):
         """Get information to be edited"""
+        return self._service_get_tree(service_id, with_groups)
+
+    def _service_get_tree(self, service_id, with_groups=False):
+        """Same as service_get_tree, but without authentication, so
+        that it can be called by ``show`` and ``connect``.
+        """
         retval = vaultReply(self.vault.service_get_tree(self.authtok,
                                                         service_id,
                                                         with_groups),
@@ -745,7 +751,6 @@ class SFLvaultClient(object):
             self._decrypt_service(x)
 
         return retval['services']
-
 
 
     @authenticate(True)
@@ -782,7 +787,7 @@ class SFLvaultClient(object):
     @authenticate(True)
     def show(self, service_id, verbose=False, with_groups=False):
         """Show informations to connect to a particular service"""
-        servs = self.service_get_tree(service_id, with_groups)
+        servs = self._service_get_tree(service_id, with_groups)
 
         print "Results:"
 
@@ -814,7 +819,7 @@ class SFLvaultClient(object):
     @authenticate(True)
     def connect(self, vid, command_line=''):
         """Connect to a distant machine (using SSH for now)"""
-        servs = self.service_get_tree(vid)
+        servs = self._service_get_tree(vid)
 
         # Check and decrypt all ciphers prior to start connection,
         # if there are some missing, it's not useful to start.
