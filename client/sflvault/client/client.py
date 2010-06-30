@@ -1016,7 +1016,7 @@ class SFLvaultClient(object):
 
             if not quiet:
                 # TODO: LIST MEMBERS
-                pass
+                print "MEMBERS: %s" % (grp['members'])
         return retval
 
 

@@ -667,23 +667,22 @@ class SFLvaultAccess(object):
         return vaultMsg(True, 'Removed group "%s" successfully' % name, retval)
 
 
-    def group_list(self, show_hidden=False):
+    def group_list(self, show_hidden=False, list_users=False):
         """Return a simple list of the available groups"""
-        groups = query(Group).group_by(Group.name).all()
-
-        ugs = query(UserGroup).filter_by(user_id=self.myself_id).all()
+        groups = query(Group).group_by(Group.name) \
+                       .options(model.eagerload_all('users_assoc.user')).all()
 
         me = query(User).get(self.myself_id)
 
         out = []
         for grp in groups:
-
-            myug = [ug for ug in ugs if ug.group_id == grp.id]
+            myug = [ug for ug in grp.users_assoc if ug.user_id == me.id]
             
-            res = {'id': grp.id, 'name': grp.name,
-                   'member': False, 'hidden': False, 'admin': False}
-
-            res['member'] = bool(myug)
+            res = {'id': grp.id,
+                   'name': grp.name,
+                   'member': me in grp.users,
+                   'hidden': False,
+                   'admin': False}
 
             if grp.hidden:
                 # Only for global-admin or members, if we're asked to hide
@@ -695,6 +694,8 @@ class SFLvaultAccess(object):
             if len(myug) and myug[0].is_admin:
                 res['admin'] = True
             
+            res['members'] = [(u.id, u.username) for u in grp.users]
+
             out.append(res)
 
         return vaultMsg(True, 'Here is the list of groups', {'list': out})

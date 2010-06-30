@@ -314,8 +314,8 @@ class XmlrpcController(XMLRPCController):
         return self.vault.group_del_user(group_id, user)
 
     @authenticated_user
-    def sflvault_group_list(self, authtok):
-        return self.vault.group_list()
+    def sflvault_group_list(self, authtok, list_users=False):
+        return self.vault.group_list(False, list_users)
 
     @authenticated_user
     def sflvault_service_passwd(self, authtok, service_id, newsecret):
