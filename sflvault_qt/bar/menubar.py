@@ -93,6 +93,10 @@ class MenuBar(QtGui.QMenuBar):
         self.preferences = self.edit.addAction(self.tr("&Settings..."))
         self.preferences.setStatusTip(self.tr("Sflvault settings"))
 
+        ## Set settings file
+        self.configfile = self.edit.addAction(self.tr("Set settings &File..."))
+        self.configfile.setStatusTip(self.tr("Set Sflvault settings file"))
+
         # Display
         self.listDockBoxes = {}
         ## Search

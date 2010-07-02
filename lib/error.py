@@ -54,8 +54,11 @@ class ErrorMessage(QtGui.QMessageBox):
         elif isinstance(self.exception, xmlrpclib.ProtocolError):
             # Protocol error means the token is now invalid
             self.protocolError()
-        elif exception.message == "Unable to decrypt groupkey (Error decrypting: inconsistent message)":
-            self.AccessError()
+        elif hasattr(exception, 'message'):
+            if exception.message == "Unable to decrypt groupkey (Error decrypting: inconsistent message)":
+                self.AccessError()
+            else:
+                self.message() 
         else:
             self.message()
         self.exec_()
@@ -91,13 +94,19 @@ class ErrorMessage(QtGui.QMessageBox):
         self.setIcon(QtGui.QMessageBox.Critical)
 
     def message(self):
-        if self.exception:
+        if isinstance(self.exception, str):
+            self.setWindowTitle(self.tr("Error message"))
+            self.setText(self.exception)
+        elif self.exception and hasattr(self.exception, 'message'):
+            self.setWindowTitle(self.tr("Error message"))
+            self.setText(self.exception.message)
+        elif self.exception:
             print "message error"
             try:
-                self.setWindowTitle(self.tr("Connection"))
+                self.setWindowTitle(self.tr("Error message"))
                 self.setText(self.exception[1])
             except IndexError, e:
-                self.setWindowTitle(self.tr("Message Error"))
+                self.setWindowTitle(self.tr("Error Message"))
                 self.setText(self.exception.message)
         else:
             self.setWindowTitle(self.tr("Error"))

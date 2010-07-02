@@ -220,17 +220,25 @@ class AliasView(QtGui.QTreeView):
             # if not do nothing
             return False
         menu = QtGui.QMenu(self)
-        menu.addAction(self.delAct)
+        menu.addAction(self.connectAct)
+        menu.addAction(self.showAct)
         menu.addAction(self.editAct)
+        menu.addAction(self.delAct)
         menu.exec_(event.globalPos())
 
     def createActions(self):
         """
             Create actions for contextMenu
         """
-        self.delAct = QtGui.QAction(self.tr("&Delete bookmark..."), self)
-        self.delAct.setStatusTip(self.tr("Delete bookmark"))
-        self.connect(self.delAct, QtCore.SIGNAL("triggered()"), self.parentView.model.delAlias)
+        self.connectAct = QtGui.QAction(self.tr("&Connect..."), self)
+        self.connectAct.setStatusTip(self.tr("Connect to this service or show password"))
+        #self.connect(self.connectAct, QtCore.SIGNAL("triggered()"), self.connection)
+        self.showAct = QtGui.QAction(self.tr("&Show password"), self)
+        self.showAct.setStatusTip(self.tr("Show password of this service"))
+        #self.connect(self.showAct, QtCore.SIGNAL("triggered()"), self.parentView.model.showAlias)
         self.editAct = QtGui.QAction(self.tr("&Edit bookmark..."), self)
         self.editAct.setStatusTip(self.tr("Edit bookmark"))
         self.connect(self.editAct, QtCore.SIGNAL("triggered()"), self.parentView.model.editAlias)
+        self.delAct = QtGui.QAction(self.tr("&Delete bookmark..."), self)
+        self.delAct.setStatusTip(self.tr("Delete bookmark"))
+        self.connect(self.delAct, QtCore.SIGNAL("triggered()"), self.parentView.model.delAlias)

@@ -36,6 +36,7 @@ from docks.aliasdock import AliasDock
 from config.protocols import ProtocolsWidget
 from config.users import UsersWidget
 from config.preferences import PreferencesWidget
+from config.configfile import ConfigFileWidget
 from config.config import Config
 from config.customer import EditCustomerWidget, DeleteCustomerWidget
 from config.machine import EditMachineWidget, DeleteMachineWidget
@@ -104,6 +105,7 @@ class MainWindow(QtGui.QMainWindow):
         self.protocols = ProtocolsWidget(parent=self)
         self.users = UsersWidget(parent=self)
         self.preferences = PreferencesWidget(parent=self)
+        self.configfile = ConfigFileWidget(parent=self)
         # Load shortcut
         self.setShortcut()
 
@@ -124,6 +126,8 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.menubar.connection, QtCore.SIGNAL("triggered()"), self.vaultConnection)
         ## Preferences
         QtCore.QObject.connect(self.menubar.preferences, QtCore.SIGNAL("triggered()"), self.preferences.exec_)
+        ## Set config file
+        QtCore.QObject.connect(self.menubar.configfile, QtCore.SIGNAL("triggered()"), self.configfile.exec_)
         ## Show search dock
         QtCore.QObject.connect(self.menubar.search, QtCore.SIGNAL("triggered(bool)"), self.searchdock.setShown)
         ## Show info dock
@@ -236,7 +240,7 @@ class MainWindow(QtGui.QMainWindow):
         if index.parent().parent().isValid():
             self.connection(idserv)
 
-    def GetIdByBookmark(self, index):
+    def GetIdByBookmark(self, index=None):
         """
             Get selected item id in bookmark and launch connection
         """
@@ -247,7 +251,32 @@ class MainWindow(QtGui.QMainWindow):
         # Check if seleted item is a service
         self.connection(idserv)
 
-    def connection(self, idserv):
+
+    def show_tooltip_by_bookmark(self, index=None):
+        """ Get selected item id in bookmark and show password
+        """
+        # Get Id colunm
+        indexId = self.alias_list.selectedIndexes()[1]
+        idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+        idserv = int(idserv.split("#")[1])
+        # Check if seleted item is a service
+        self.connection(idserv,True)
+
+
+    def show_tooltip(self, index=None):
+        """ Get selected item id in tree and show password
+        """
+        # Get Id colunm
+        if index == None:
+            index = self.tree.selectedIndexes()[0]
+        indexId = self.tree.selectedIndexes()[1]
+        idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+        idserv = int(idserv.split("#")[1])
+        # Check if seleted item is a service
+        if index.parent().parent().isValid():
+            self.connection(idserv,True)
+
+    def connection(self, idserv, show_tooltip=False):
         """
             Connect to a service
         """
@@ -257,7 +286,7 @@ class MainWindow(QtGui.QMainWindow):
         password = getPassword(idserv)
         # getPassword return None
         # means you can't access to this service
-        if password == None:
+        if not password:
             # Do nothing
             return False
         # Check if the service exist
@@ -298,9 +327,13 @@ class MainWindow(QtGui.QMainWindow):
         # Show Tooltip if checked in config
         tooltip, bool = self.settings.value("protocols/" + protocol + "/tooltip").toInt()
         if (bool and tooltip == QtCore.Qt.Checked) or \
-            not self.settings.value("protocols/" + protocol + "/command").toString():
+            not self.settings.value("protocols/" + protocol + "/command").toString()\
+            or show_tooltip:
             self.osd = Osd(password=password, username=options["user"], address=options["address"], parent=self)
             self.osd.show()
+            if show_tooltip:
+                # If tooltip == True then we just want to show password
+                return True
         # Prepare to launch command
         if self.settings.value("protocols/" + protocol + "/command").toString():
             # Create Command
@@ -332,7 +365,9 @@ class MainWindow(QtGui.QMainWindow):
         self.userinfo = getUserInfo(str(self.settings.value("SFLvault/username").toString()))
 
         ## "Connect" Alias
-        QtCore.QObject.connect(self.aliasdock.alias.alias_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark) 
+        QtCore.QObject.connect(self.aliasdock.alias.alias_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark)
+        QtCore.QObject.connect(self.aliasdock.alias.alias_list.connectAct, QtCore.SIGNAL("triggered()"), self.GetIdByBookmark)
+        QtCore.QObject.connect(self.aliasdock.alias.alias_list.showAct, QtCore.SIGNAL("triggered()"), self.show_tooltip_by_bookmark)
 
         # "Connect" search dock
         ## Update Group list in search box
@@ -354,6 +389,7 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.tree.newMachineAct, QtCore.SIGNAL("triggered()"), self.addMachine)
         QtCore.QObject.connect(self.tree.tunnelAct, QtCore.SIGNAL("triggered()"), self.tunnel)
         QtCore.QObject.connect(self.tree.connectAct, QtCore.SIGNAL("triggered()"), self.GetIdByTree)
+        QtCore.QObject.connect(self.tree.showAct, QtCore.SIGNAL("triggered()"), self.show_tooltip)
         ## Tree connection
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
         ## Tree item informations

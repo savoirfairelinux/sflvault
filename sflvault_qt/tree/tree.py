@@ -362,8 +362,9 @@ class TreeView(QtGui.QTreeView):
         """
         menu = QtGui.QMenu(self)
         if self.selectedIndexes()[0].parent().parent().isValid():
-            menu.addAction(self.editAct)
             menu.addAction(self.connectAct)
+            menu.addAction(self.showAct)
+            menu.addAction(self.editAct)
             menu.addAction(self.bookmarkAct)
             index = self.selectedIndexes()[0]
             self.url = QtCore.QUrl(index.data().toString())
@@ -392,20 +393,23 @@ class TreeView(QtGui.QTreeView):
         self.newAct.setShortcut(self.tr("Ctrl+N"))
         self.newAct.setStatusTip(self.tr("New item"))
 
+        self.connectAct = QtGui.QAction(self.tr("&Connect..."), self)
+#        self.connectAct.setShortcut(self.tr("Ctrl+D"))
+        self.connectAct.setStatusTip(self.tr("Connect to this service or show password"))
+
+        self.showAct = QtGui.QAction(self.tr("&Show password"), self)
+        self.showAct.setStatusTip(self.tr("Show password of this service"))
+
         self.editAct = QtGui.QAction(self.tr("&Edit..."), self)
         self.editAct.setShortcut(self.tr("Ctrl+E"))
         self.editAct.setStatusTip(self.tr("Edit item"))
 
-        self.tunnelAct = QtGui.QAction(self.tr("&Create tunnel..."), self)
-        self.tunnelAct.setStatusTip(self.tr("Create a ssh connection with tunnel"))
-
-        self.connectAct = QtGui.QAction(self.tr("&Connect..."), self)
-#        self.connectAct.setShortcut(self.tr("Ctrl+D"))
-        self.connectAct.setStatusTip(self.tr("Connect to this service"))
-
         self.bookmarkAct = QtGui.QAction(self.tr("&Create alias..."), self)
         self.bookmarkAct.setShortcut(self.tr("Ctrl+D"))
         self.bookmarkAct.setStatusTip(self.tr("Create an alias from this item"))
+
+        self.tunnelAct = QtGui.QAction(self.tr("&Create tunnel..."), self)
+        self.tunnelAct.setStatusTip(self.tr("Create a ssh connection with tunnel"))
 
         self.delAct = QtGui.QAction(self.tr("&Delete..."), self)
         self.delAct.setStatusTip(self.tr("Delete item"))
