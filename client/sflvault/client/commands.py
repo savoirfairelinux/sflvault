@@ -100,6 +100,10 @@ class SFLvaultShell(object):
                     runcmd._run(args)
                 except ExitParserException, e:
                     pass
+                
+                if hasattr(runcmd, 'next_command'):
+                    print "[Added to shell history: %s]" % runcmd.next_command
+                    readline.add_history(runcmd.next_command)
 
     def quit(self):
         """Quit command, only available in the shell"""
@@ -132,7 +136,6 @@ class SFLvaultCommand(object):
 
         # Use the specified, or create a new one.
         self.vault = (vault or SFLvaultClient(config))
-
 
     def _run(self, argv):
         """Run a certain command"""
@@ -308,7 +311,9 @@ class SFLvaultCommand(object):
 
         customer_name = self.args[0]
 
-        self.vault.customer_add(customer_name)
+        ret = self.vault.customer_add(customer_name)
+        # For the shell:
+        self.next_command = "machine-add -c c#%s " % ret['customer_id']
 
 
     def user_del(self):
@@ -403,8 +408,11 @@ class SFLvaultCommand(object):
 
         o = self.opts
         customer_id = self.vault.vaultId(o.customer_id, 'c')
-        self.vault.machine_add(customer_id, o.name, o.fqdn,
-                               o.ip, o.location, o.notes)
+        ret = self.vault.machine_add(customer_id, o.name, o.fqdn,
+                                     o.ip, o.location, o.notes)
+        # For the shell:
+        self.next_command = "service-add -m m#%s -u " % ret['machine_id']
+
 
 
     def _service_clean_url(self, url):

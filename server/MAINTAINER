@@ -2,14 +2,28 @@ Steps to perform when releasing SFLvault
 ----------------------------------------
 
 * Modify setup.py and change the version number
+
 * Make sure the MINIMAL_CLIENT_VERSION in controllers/xmlrpc.py is appropriate,
   to ensure backwards compatibility.
+
 * Run `python setup.py develop` to regenerate the EGG-INFO stuff
+
+* Modify `common/sflvault/common/__init__.py` to HIDE deprecation warnings.
+
 * Commit the release commit INCLUDING the Release Notes inside that commit.
-* Run `python setup.py bdist_egg` to compile the new egg.
+
+* For each module, SFLvault_common, SFLvault_server and SFLvault_client:
+** Run `python setup.py bdist_egg` to compile the new egg.
   NOTE: make sure you have permissions to write in ALL of the build/ directory!
-* Run `python setup.py bdist_egg upload` if everything went well.
+** Run `python setup.py bdist_egg upload` if everything went well.
+
 * Modify the UpgradePath page with everything required to upgrade.
-* Modify the wiki's front-page to announce it
+
+* Modify the wiki's front-page to announce it.
+** Link to the commit as "Release notes"
+
 * Tag the commit with the version number
+
 * Announce by other means, IRC, Freshmeat, Slashdot, etc...
+
+* Have another commit to RE-ENABLE deprecation warnings for development.
