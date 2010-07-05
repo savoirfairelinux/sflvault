@@ -1020,7 +1020,7 @@ class SFLvaultClient(object):
 
             if not quiet:
                 # TODO: LIST MEMBERS
-                print "MEMBERS: %s" % (grp['members'])
+                print "\t\tMembers: %s" % ', '.join(x[1] for x in grp['members'])
         return retval
 
 

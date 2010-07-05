@@ -40,6 +40,7 @@ import time as stdtime
 
 from sqlalchemy import sql
 from sqlalchemy.exceptions import InvalidRequestError as InvalidReq
+from sqlalchemy.orm import eagerload_all
 
 from sflvault.model import *
 from sflvault.lib.base import *
@@ -673,8 +674,7 @@ class SFLvaultAccess(object):
 
     def group_list(self, show_hidden=False, list_users=False):
         """Return a simple list of the available groups"""
-        groups = query(Group).group_by(Group.name) \
-                       .options(model.eagerload_all('users_assoc.user')).all()
+        groups = query(Group).options(eagerload_all('users_assoc.user')).all()
 
         me = query(User).get(self.myself_id)
 
@@ -698,7 +698,11 @@ class SFLvaultAccess(object):
             if len(myug) and myug[0].is_admin:
                 res['admin'] = True
             
-            res['members'] = [(u.id, u.username) for u in grp.users]
+            print "A" * 1000
+            print grp.users_assoc
+            print grp.users
+            res['members'] = [(u.user_id, u.user.username)
+                              for u in grp.users_assoc]
 
             out.append(res)
 
