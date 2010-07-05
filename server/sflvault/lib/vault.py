@@ -888,7 +888,7 @@ class SFLvaultAccess(object):
         
         ohoh = ''
         if not id_admins:
-            ohoh = "WARNING: there are no more group-admins in this group.  Ask a global-admin to elect someone group-admin for further management of this group."
+            ohoh = " - WARNING: there are no more group-admins in this group.  Ask a global-admin to elect someone group-admin for further management of this group."
 
         meta.Session.delete(hisug[0])
         meta.Session.commit()
