@@ -608,7 +608,7 @@ class SFLvaultClient(object):
     def search(self, query, filters=None, verbose=True):
         """Search the database for query terms.
 
-        query - list a REGEXPs to be matched
+        query - list of REGEXPs to be matched
         filters - is a dict with keys in ['groups', 'machines', 'customers']
                   that limits the records returned to those matching those
                   constraints. The values can be either int or str
@@ -622,11 +622,10 @@ class SFLvaultClient(object):
         # Remove empty filters:
         if filters:
             filters = dict([(x, filters[x]) for x in filters if filters[x]])
-                
+
         retval = vaultReply(self.vault.search(self.authtok, query, filters,
                                               verbose),
                             "Error searching database")
-
         print "Results:"        
 
         # TODO: call the pager `less` when too long.
@@ -648,7 +647,6 @@ class SFLvaultClient(object):
                         print "%s%slocation: %s" % (spc1, add, m['location'])
                     if m['notes']:
                         print "%s%snotes: %s" % (spc1, add, m['notes'])
-                                                             
 
                 spc2 = spc1 + add
                 print ""
@@ -670,7 +668,7 @@ class SFLvaultClient(object):
             if level in [0,1]:
                 print "%s" % (spc1) + '-' * (80 - len(spc1))
 
-            return retval
+        return retval
             
     def _decrypt_service(self, serv, onlysymkey=False, onlygroupkey=False):
         """Decrypt the service object returned from the vault.

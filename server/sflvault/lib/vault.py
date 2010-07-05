@@ -339,6 +339,7 @@ class SFLvaultAccess(object):
         """
         filter_types = ['groups', 'machines', 'customers']
         # Load objects on which to restrict the query:
+        newfilters = {}
         if filters:
             if not isinstance(filters, dict):
                 return vaultMsg(False, "filters must be a dictionary")
@@ -351,9 +352,12 @@ class SFLvaultAccess(object):
                 if not filters[flt]:
                     continue
 
-                filters[flt] = model.get_objects_ids(filters[flt], flt)
-                    
-        search = model.search_query(search_query, filters, verbose)
+                try:
+                    newfilters[flt] = model.get_objects_ids(filters[flt], flt)
+                except ValueError, e:
+                    return vaultMsg(False, str(e))
+
+        search = model.search_query(search_query, newfilters, verbose)
 
 
         # Quick helper funcs, to create the hierarchical 'out' structure.
