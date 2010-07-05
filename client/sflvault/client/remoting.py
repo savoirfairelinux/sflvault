@@ -36,7 +36,9 @@ must list some instances of the `Service` class or some derived class.
 
 from sflvault.client.utils import *
 
+import random
 import pexpect
+import sys
 
 __all__ = ['Service', 'Chain']
 
@@ -46,38 +48,36 @@ class Service(object):
     for it to establish a connection, even through a chain of services (like
     other ssh's, vpns, port-forwards, etc..)
 
-    This class is a mother class to be inherited from all the service-specific
+    his class is a mother class to be inherited from all the service-specific
     objects (ssh, vnc, rdp, mysql, http, https, drac, ftp, postgresql, su,
-    sudo, etc..)"""
+    sudo, etc..)
 
-    provides_modes = set() # List what a service handler supports (gives SHELL
-                           # access or can provide PORT_FORWARD, etc. Defaults
-                           # to nothing special: plugin is always an end-point.
-    operation_mode = None # By default, no operation mode, until we define
-                          # one in required() for each service.
-    
-    parent = None  # Used for link-listing
-    child = None   # Used for link-listing
+    NOTE: Always go through this function first when overloading this class.
 
-    # These two will be set for child operating in THROUGH_FWD_PORT mode
-    forward_bind_port = None # which port to listen to
-    forward_host_name = None # which host to forward to
-    forward_host_port = None # which port to forward to
-
-    # This will be filled for child requiring a `shell` handle
-    shell_handle = None
-
-    # This is set by __init__, from Chain::__init__(). It's a dict. received by
-    # XML-RPC mostly..
-    data = None
-
+    """
     def __init__(self, data, timeout=30, command_line=''):
         self.data = data
         self.url = urlparse.urlparse(data['url'])
         self.timeout = timeout
         self.command_line = command_line
         # We need a copy, as the modes can change when configuring chain.
-        self.provides_modes = self.provides_modes.copy()
+        self.provides_modes = set() # List what a service handler supports
+               # (gives SHELL access or can provide PORT_FORWARD, etc. Defaults
+               # to nothing special: plugin is always an end-point.
+        self.operation_mode = None # By default, no operation mode, until we
+                                   # define one in required() for each service.
+        # If this service is to go through another host/port
+        self.op_through_host = None
+        self.op_through_port = None
+        # Used for link-lists
+        self.parent = None
+        self.child = None
+        # This will be filled for child requiring a `shell` handle
+        self.shell_handle = None
+
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__,
+                             self.data.get('url'))
 
     def set_child(self, child):
         """Set the child of this service (sets the parent on the child too)"""
@@ -133,9 +133,14 @@ class Service(object):
         """Called after interact() is finished for the last child, in reverse order."""
         raise NotImplementedError
 
-    # Optional methods on derived classes (see services.ssh)
-    #def optparse(self, command_line): pass
-
+    ### Optional methods on derived classes (see services.ssh)
+    #
+    # def optparse(self, command_line):
+    #     pass
+    #
+    # @staticmethod
+    # def ask_password(edit:bool, url:string):
+    #     pass
 
 class Chain(object):
     """Service chain handler.
@@ -159,6 +164,59 @@ class Chain(object):
         # Link-list of the Service objects, 
         self.service_list = None
 
+
+    def debug_chain(self):
+        print "self.ready: ", self.ready
+        print "self.service_list:"
+        for s in self.service_list:
+            print " ", s
+            print "    self.data['url']: ", s.data['url']
+            print "    self.provides_modes: ", s.provides_modes
+            print "    self.local_forwards: ", s.local_forwards
+            print "    self.remote_forwards: ", s.remote_forwards
+            print "    self.ssh_pki_auth: ", s.ssh_pki_auth
+            print "    self.has_forwards(): ", s.has_forwards()
+            print "    self.child: ", s.child
+            print "    self.parent: ", s.parent
+            print "    self.operation_mode: ", s.operation_mode
+            print "    self.op_through_port: ", s.op_through_port
+            print "    self.op_through_host: ", s.op_through_host
+
+
+
+    def add_port_forward(self, service, direction, src_host, src_port,
+                         dest_host, dest_port):
+        """Add port forwards to every one in the chain starting from under
+        `service`.
+
+        This will generate intermediate ports to make sure you have the required
+        port on the end-point.
+
+        """
+        if direction == 'remote':
+            dest_host, src_host = src_host, dest_host
+            dest_port, src_port = src_port, dest_port
+        first_src = src_host, src_port
+        dest = dest_host, dest_port
+        lst = self.service_list
+        # All services or the one under the specified `service`
+        #print "List, from service: %s" % service
+        for srv in reversed(lst if service == None else lst[:lst.index(service)]):
+            # Last in chain ?
+            if not srv.parent:
+                src = first_src
+            else:
+                src = 'localhost', random.randint(58000, 60000)
+            if direction == 'remote':
+                add = "-R %s:%s:%s" % (dest[1], src[0], src[1])
+                #print "ADD to %s: %s" % (srv, add)
+                srv.remote_forwards.append(add)
+            elif direction == 'local':
+                add = "-L %s:%s:%s:%s" % (src + dest)
+                #print "ADD to %s: %s" % (srv, add)
+                srv.local_forwards.append(add)
+            dest = src
+
         
     def setup(self):
         """Tries to set up the service chain (one service at a time).
@@ -168,7 +226,6 @@ class Chain(object):
         exist prior to accessing a service which requires one, just like
         you can't establish an SSH connection over an HTTP connection)."""
 
-        from pkg_resources import iter_entry_points
 
         # Create Service objects for each of the service in the hierarchy.
         service_list = []
@@ -176,7 +233,7 @@ class Chain(object):
             parsed_url = urlparse.urlparse(srvdata['url'])
             service = None
 
-            for ep in iter_entry_points('sflvault.services'):
+            for ep in services_entry_points():
                 if ep.name == parsed_url.scheme:
                     srvobj = ep.load()
                     service = srvobj(srvdata)
@@ -228,30 +285,53 @@ class Chain(object):
             raise RemotingException("Chain not ready. Call setup() first.")
 
         last = None
+        go_break = False
         active_services = []
         # Setup communication
         for srv in self.service_list:
             try:
                 srv.prework()
-                active_services.append(srv)
-                last = srv
             except ServiceExpectError, e:
                 # Show error, fall back, and interact to last if it exists.
                 print "[SFLvault] Error connecting to %s: %s" % (srv.data['url'], str(e))
                 break
+            except TypeError, e:
+                print "[SFLvault] Timed out."
+                sys.stdout.write(srv.shell_handle.before)
+                go_break = True
             except pexpect.EOF, e:
                 print "[SFLvault] Child exited"
                 break
             except KeyboardInterrupt, e:
                 print ""
                 print "[SFLvault] Keyboard interrupt, dropping in interactive mode"
+                sys.stdout.write(srv.shell_handle.before)
                 last = srv
+                go_break = True
+
+            active_services.append(srv)
+            last = srv
+
+            # In case we want to be dropped in the *latest* shell, the one
+            # that didn't succeed.
+            if go_break:
                 break
 
 
         # Interact with end-point
         if last:
-            last.interact()
+            current = last
+            while True:
+                try:
+                    current.interact()
+                except OSError, e:
+                    # Make suer you clean-up anyways :)
+                    break
+                except ServiceSwitchException, e:
+                    # A way to switch shells..
+                    current = e.service
+                    continue
+                break
 
         # Close-up communication
         for srv in reversed(active_services):

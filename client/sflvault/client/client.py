@@ -788,12 +788,14 @@ class SFLvaultClient(object):
     def show(self, service_id, verbose=False, with_groups=False):
         """Show informations to connect to a particular service"""
         servs = self._service_get_tree(service_id, with_groups)
+        self._show(servs, verbose)
 
+    def _show(self, services, verbose=False):
+        """Show results fetched by _service_get_tree, to be called by both
+        `show` and `connect`."""
         print "Results:"
-
-        # TODO: call pager `less` when too long.
         pre = ''
-        for x in servs:
+        for x in services:
             # Show separator
             if pre:
                 pass
@@ -817,9 +819,12 @@ class SFLvaultClient(object):
 
 
     @authenticate(True)
-    def connect(self, vid, command_line=''):
+    def connect(self, vid, with_show=False, command_line=''):
         """Connect to a distant machine (using SSH for now)"""
         servs = self._service_get_tree(vid)
+
+        if with_show:
+            self._show(servs)
 
         # Check and decrypt all ciphers prior to start connection,
         # if there are some missing, it's not useful to start.
@@ -830,6 +835,7 @@ class SFLvaultClient(object):
         connection = remoting.Chain(servs, command_line=command_line)
         connection.setup()
         connection.connect()
+        #connection.debug_chain()
 
     @authenticate()
     def user_list(self, groups=False):

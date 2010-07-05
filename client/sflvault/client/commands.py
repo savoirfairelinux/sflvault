@@ -409,9 +409,9 @@ class SFLvaultCommand(object):
 
     def _service_clean_url(self, url):
         """Remove password in URL, and notify about rewrite."""
-
         # Rewrite url if a password was included... strip the port and
         #       username from the URL too.
+        url = urlparse.urlparse(url)
         if url.password:
             out = []
             if url.username:
@@ -426,9 +426,10 @@ class SFLvaultCommand(object):
                                        ''.join(out),
                                        url[2], url[3], url[4], url[5]))
 
-            print "NOTE: Do not specify password in URL. Rewritten: %s" % url
-
-        return url
+            print "NOTE: Do not specify password in URL. Rewritten as: %s" % url
+            return url
+        else:
+            return False
 
 
     def service_add(self):
@@ -464,14 +465,14 @@ class SFLvaultCommand(object):
         self._parse()
 
         for x in ('url', 'machine_id', 'group_ids'):
-            if not hasattr(self.opts, x):
+            if not getattr(self.opts, x):
                 raise SFLvaultParserError("Required parameter '%s' omitted" % x)
         o = self.opts
 
-        url = urlparse.urlparse(o.url)
-        url = self._service_clean_url(url)
+        rewritten_url = self._service_clean_url(o.url)
+        url = rewritten_url if rewritten_url else o.url
 
-        secret = ask_for_service_password("Enter service's password: ")
+        secret = ask_for_service_password(edit=True, url=url)
 
         machine_id = 0
         parent_id = 0
@@ -483,7 +484,7 @@ class SFLvaultCommand(object):
         if o.group_ids:
             group_ids = [self.vault.vaultId(g, 'g') for g in o.group_ids]
             
-        self.vault.service_add(machine_id, parent_id, o.url, group_ids, secret,
+        self.vault.service_add(machine_id, parent_id, url, group_ids, secret,
                                o.notes)
         
 
@@ -568,8 +569,11 @@ class SFLvaultCommand(object):
         if not len(self.args):
             raise SFLvaultParserError("Required argument: service_id")
 
-        newsecret = ask_for_service_password("Enter new service password: ")
         service_id = self.vault.vaultId(self.args[0], 's')
+
+        serv = self.vault.service_get(service_id)
+
+        newsecret = ask_for_service_password(edit=True, url=serv['url'])
 
         self.vault.service_passwd(service_id, newsecret)
 
@@ -847,6 +851,9 @@ class SFLvaultCommand(object):
                                default=None,
                                help="Add an alias to that service at the same "\
                                     "time")
+        self.parser.add_option('-s', '--show', dest="show",
+                               default=False, action="store_true",
+                               help="Show the credentials before connecting")
         self._parse()
 
         if len(self.args) < 1:
@@ -861,7 +868,7 @@ class SFLvaultCommand(object):
                 raise SFLvaultParserError(str(e))
             print "Alias added"
 
-        self.vault.connect(vid, command_line=self.args[1:])
+        self.vault.connect(vid, self.opts.show, command_line=self.args[1:])
 
 
 

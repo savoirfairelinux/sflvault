@@ -28,6 +28,7 @@ script on the client side things that will be sent to through the shell."""
 from sflvault.client.fishlib import FishClient, showstatus
 from sflvault.client.commands import SFLvaultCompleter, NoExitParser
 from sflvault.client.commands import ExitParserException, SFLvaultParserError
+from sflvault.client.utils import ServiceSwitchException
 import shlex
 import sys
 import readline
@@ -36,12 +37,15 @@ import os
 
 class SFLvaultFallback(object):
 
-    def __init__(self, shell_obj):
+    def __init__(self, chain, shell_obj):
         # we're to replace completer with new one
         self.parent_completer = readline.get_completer()
         self.parent_completer_last_item = readline.get_current_history_length()\
                                           - 1
         self.func_list = []
+        # Services chain
+        self.chain = chain
+        self.current_shell = shell_obj
 
         for onefunc in dir(SFLvaultFallback):
             if onefunc[0] != '_':
@@ -142,6 +146,33 @@ class SFLvaultFallback(object):
         if (error):
             print "ERROR calling %s: %s" % (cmd, error)
 
+
+    def shells(self):
+        """List available shells and switch between them"""
+        last = None
+        current = self.current_shell
+        star = False
+        count = 0
+        out = {}
+        for srv in reversed(self.chain.service_list):
+            if hasattr(srv, 'shell_handle'):
+                star = (current == srv.shell_handle)
+                if last == srv.shell_handle:
+                    continue
+                count += 1
+                print "%d. Shell on service %s%s" % (count, srv,
+                                                   ' (current)' if star else '')
+                last = srv.shell_handle
+                out[str(count)] = srv
+        while True:
+            shell = raw_input("Switch> ")
+            if shell in out:
+                srv = out[shell]
+                e = ServiceSwitchException("Switching to service %s" % srv)
+                e.service = srv
+                raise e
+            print "Please select a shell from the list"
+            break
 
     def quit(self):
         # Added only for auto completition

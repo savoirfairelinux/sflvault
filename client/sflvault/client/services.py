@@ -26,24 +26,25 @@ import struct, fcntl, termios, signal # for term size signaling..
 import optparse
 import pexpect
 import random
-import pxssh
+import pipes
+import time
 import sys
 import os
 
 # Enum used in the services' `provides`
-PROV_PORT_FORWARD = 'port-forward'
-PROV_SHELL_ACCESS = 'shell-access'
-PROV_MYSQL_CONSOLE = 'mysql-console'
-PROV_POSTGRES_CONSOLE = 'postgres-console'
+PROV_PORT_FORWARD = 'PROV_PORT_FORWARD'
+PROV_SHELL_ACCESS = 'PROV_SHELL_ACCESS'
+PROV_MYSQL_CONSOLE = 'PROV_MYSQL_CONSOLE'
+PROV_POSTGRES_CONSOLE = 'PROV_POSTGRES_CONSOLE'
 
 # Operational modes
-OP_DIRECT = 'direct-access'            # - When, let's say 'ssh' is going to
+OP_DIRECT = 'OP_DIRECT'                # - When, let's say 'ssh' is going to
                                        # spawn a process.
-OP_THRGH_FWD = 'through-fwd-port'      # - When we must go through a port
+OP_THRGH_FWD = 'OP_THRGH_FWD'          # - When we must go through a port
                                        # that's been forwarded.
                                        # In that case, the parent must provide
                                        # with  forwarded host and port.
-OP_THRGH_SHELL = 'through-shell'       # - When a command must be sent through
+OP_THRGH_SHELL = 'OP_THRGH_SHELL'      # - When a command must be sent through
                                        # an open shell
 
 
@@ -138,7 +139,7 @@ class ShellService(Service):
                 if not self.shell_handle.isalive():
                     break
 
-                s = SFLvaultFallback(self.shell_handle)
+                s = SFLvaultFallback(self.chain, self.shell_handle)
                 try:
                     s._run()
                 except (KeyboardInterrupt, EOFError), e:
@@ -154,11 +155,13 @@ class ShellService(Service):
         except OSError, e:
             print "[SFLvault] %s disconnected: %s" % (self.__class__.__name__,
                                                       e)
+            raise e
 
 
     def postwork(self):
         # Close any open connection.
         if not self.shell_handle.closed:
+            print "Closing connection for service %s" % self
             self.shell_handle.close()
         # NOTE: this will close all the `ssh` tunnel when it was continued
         #       through shells
@@ -168,10 +171,15 @@ class ShellService(Service):
 class ssh(ShellService):
     """ssh protocol service handler"""
 
-    # Modes this service handler can provide
-    provides_modes = set([PROV_SHELL_ACCESS, PROV_PORT_FORWARD])
-    local_forwards = []
-    remote_forwards = []
+    def __init__(self, data, timeout=45):
+        # Call parent
+        ShellService.__init__(self, data, timeout)
+        self.provides_modes = set([PROV_SHELL_ACCESS, PROV_PORT_FORWARD])
+        self.local_forwards = []
+        self.remote_forwards = []
+        # TODO: Add SOCKS forward...
+        
+    ssh_pki_auth = False   # Overwridden by ssh_pki
 
     def has_forwards(self):
         """Returns True if we have something to forward"""
@@ -195,14 +203,22 @@ class ssh(ShellService):
         # Save locals and remotes
         def parse_forward(fwd):
             # Return tuples in the form: (bind_address, port, host, hostport)
-            el = fwd.split(':')
-            if len(el) in [3, 4]:
+            el = tuple(fwd.split(':'))
+            if len(el) == 3:
+                return ('localhost',) + el
+            elif len(el) == 4:
                 return el
             else:
                 raise RemotingError('Parameters to -L or -R must be in the form: [bind_address:]port:host:hostport')
 
-        self.local_forwards = [parse_forward(l) for l in opts.locals]
-        self.remote_forwards = [parse_forward(r) for r in opts.remotes]
+        for l in opts.locals:
+            #print "Requesting LOCAL forward for: %s" % l
+            self.chain.add_port_forward(None, 'local', *parse_forward(l))
+        for r in opts.remotes:
+            #print "Requesting REMOTE forward for: %s" % r
+            self.chain.add_port_forward(None, 'remote', *parse_forward(r))
+        #self.local_forwards = [parse_forward(l) for l in opts.locals]
+        #self.remote_forwards = [parse_forward(r) for r in opts.remotes]
 
     def required(self, req=None):
         """Verify if this service handler can provide `req` type of
@@ -229,19 +245,30 @@ class ssh(ShellService):
             raise ServiceRequireError("ssh module can't provide '%s'" % req)
 
         if req != PROV_PORT_FORWARD:
-            # If we don't ask it, don't try to give it
+            # If we don't ask it, don't try to give it for the next one.
+            # self.provides_modes is *copied* in the __init__ of 'Service'
             self.provides_modes.discard(PROV_PORT_FORWARD)
 
-        if self.has_forwards():
-            # If the command line asked it, try to give it.
+        if self.ssh_pki_auth and self.parent:
+            # If the command line asked it, or we're authenticating through
+            # ssh keys, try to make port-forwards.
             self.provides_modes.add(PROV_PORT_FORWARD)
             if self.parent:
                 self.operation_mode = OP_THRGH_FWD
-                self.parent.forward_host_port = self.url.port or 22 # SSH
-                self.parent.forward_host_name = self.url.hostname
+                # Setup port-forwards
+                randport = random.randint(58000, 60000)
+                self.chain.add_port_forward(self, 'local', 'localhost',
+                                            randport, self.url.hostname,
+                                            self.url.port or 22)
+                self.op_through_host = 'localhost'
+                self.op_through_port = randport
             else:
                 self.operation_mode = OP_DIRECT
-            return self.parent.required(PROV_PORT_FORWARD)
+
+            if self.parent:
+                return self.parent.required(PROV_PORT_FORWARD)
+            else:
+                return True
 
         if not self.parent:
             # If there's no parent, then we're going to spawn ourself.
@@ -273,9 +300,28 @@ class ssh(ShellService):
             def denied(self):
                 'Permission denied.*$'
                 self.cnx.sendcontrol('c')
-                raise ServiceExpectError("Failed to authenticate ssh://")
+                raise ServiceExpectError("Failed to authenticate")
+            
+            def failed_login(self):
+                'assword:'
+                self.cnx.sendcontrol('c')
+                print ""
+                raise ServiceExpectError("Failed to authenticate")
+
+            def are_you_sure(self):
+                "(?i)are you sure you want to continue connecting.*\? "
+                ans = raw_input()
+                self.cnx.sendline(ans)
+                expect_shell(self.service)
+
+            def forward_error(self):
+                "Privileged ports can only be forwarded by root"
+                print ""
+                raise ServiceExpectError("Port forward failed.")
 
         class expect_login(ExpectClass): 
+            #forward_error = expect_shell.forward_error
+
             def sendlogin(self):
                 'assword:'
                 sys.stdout.write(" [sending password...] ")
@@ -324,49 +370,58 @@ class ssh(ShellService):
 
         sshcmd = "ssh"
         if self.operation_mode in [OP_DIRECT, OP_THRGH_SHELL]:
-            print "... Trying to login to %s as %s ..." % (self.url.hostname,
-                                                           user)
+            print "\n... Trying to login to %s as %s ..." % (self.url.hostname,
+                                                             user)
             sshcmd += " -l %s %s" % (user, self.url.hostname)
             if self.url.port:
                 sshcmd += " -p %d" % (self.url.port)
         elif self.operation_mode == OP_THRGH_FWD:
             # Take the bound port on the first (OP_DIRECT) ssh connection.
-            port = self.chain.service_list[0].forward_bind_port
+            port = self.op_through_port
+            host = self.op_through_host
             print "... Trying to login to %s (through local port-forward, " \
                   "port %d) as %s ..." % (self.url.hostname, port, user)
             # TODO: Do not take into consideration the `known hosts` list.
-            sshcmd += " -l %s localhost" % (user)
+            sshcmd += " -l %s %s" % (user,host)
             sshcmd += " -p %d" % (port)
             sshcmd += " -o NoHostAuthenticationForLocalhost=yes"
+            #time.sleep(0)
+
+        # Check if we have private key support
+        pki_cmd = None
+        if self.ssh_pki_auth:
+            # Write the private-key to a temp file.
+            randfifo = '/tmp/sshpki%d' % random.randint(100000,999999)
+            secret = pipes.quote(self.data['plaintext'])
+            pki_cmd = "rm -f %s ; touch %s ; chmod 0600 %s ; " \
+                      "((echo %s > %s; sleep 4; rm %s) &);" % (randfifo,
+                                                               randfifo,
+                                                               randfifo,
+                                                               secret, randfifo,
+                                                               randfifo)
+            sshcmd += " -i %s " % randfifo
 
         if PROV_PORT_FORWARD in self.provides_modes:
             if self.has_forwards():
                 # Do the last forwarding
                 # Locals
-                locals = [' -L ' + ':'.join(x) for x in self.local_forwards]
-                remotes = [' -R ' + ':'.join(x) for x in self.remote_forwards]
+                #locals = [' -L ' + ':'.join(x) for x in self.local_forwards]
+                #remotes = [' -R ' + ':'.join(x) for x in self.remote_forwards]
                 # Remotes
-                sshcmd += ''.join(locals) + ''.join(remotes)
-            else:
-                # Do the intermediate forwarding
-                if self.parent:
-                    bind_port = self.parent.forward_host_port
-                else:
-                    bind_port = random.randint(58000, 59000)
-                                                
-                host_name = self.forward_host_name or '127.0.0.1'
-                host_port = self.forward_host_port or \
-                    random.randint(58000, 59000)
-                sshcmd += " -L 127.0.0.1:%d:%s:%d " % (bind_port, host_name,
-                                                       host_port)
-                self.forward_bind_port = bind_port
-                self.forward_host_port = host_port
+                sshcmd += " %s %s " % (' '.join(self.local_forwards),
+                                       ' '.join(self.remote_forwards))
 
         if self.operation_mode in [OP_DIRECT, OP_THRGH_FWD]:
+            if pki_cmd:
+                print "Running SSH+PKI setup..."
+                os.system(pki_cmd)
             print "EXECUTING: %s" % sshcmd
             cnx = pexpect.spawn(sshcmd)
         elif self.operation_mode == OP_THRGH_SHELL:
             cnx = self.parent.shell_handle
+            if pki_cmd:
+                print "Sending SSH+PKI setup..."
+                cnx.sendline(pki_cmd)
             print "SENDING LINE: %s" % sshcmd
             cnx.sendline(sshcmd)
         else:
@@ -375,7 +430,36 @@ class ssh(ShellService):
 
         self.shell_handle = cnx
 
-        expect_login(self)
+        if self.ssh_pki_auth:
+            expect_shell(self)
+        else:
+            expect_login(self)
+
+
+
+
+
+class ssh_pki(ssh):
+    """SSH with private-key handler"""
+    ssh_pki_auth = True   # Overwridden by ssh_pki
+
+    @staticmethod
+    def ask_password(edit, parsed_url):
+        """Function to grab password"""
+        print """Copy and paste the SSH PRIVATE KEY, which looks like:
+-----BEGIN (D|R)SA PRIVATE KEY-----
+B64DEADBEEF...==
+-----END (D|R)SA PRIVATE KEY-----
+"""
+        pk = []
+        while True:
+            chunk = raw_input(">>> ")
+            pk.append(chunk)
+            if '---END' in chunk:
+                break
+        return '\n'.join(pk)
+        
+
 
 
 
@@ -416,6 +500,7 @@ class sudo(ShellService):
             def failed(self):
                 'assword:'
                 self.cnx.sendintr()
+                print ""
                 raise ServiceExpectError("Failed to authenticate sudo://")
 
             def failed2(self):
@@ -445,7 +530,7 @@ class sudo(ShellService):
     # Call parent
     #def postwork(self):
 
-    
+   
 class su(ShellService):
     """su app. service handler"""
 
