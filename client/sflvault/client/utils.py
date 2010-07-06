@@ -24,7 +24,7 @@
 import urlparse
 import re
 import readline
-from pkg_resources import iter_entry_points
+from pkg_resources import iter_entry_points, DistributionNotFound
 
 __all__ = ['shred', 'urlparse', 'AuthenticationError', 'PermissionError',
            'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
@@ -70,7 +70,10 @@ def ask_for_service_password(edit=False, url=None):
     parsed_url = urlparse.urlparse(url)
     for ep in services_entry_points():
         if ep.name == parsed_url.scheme:
-            srvobj = ep.load()
+            try:
+                srvobj = ep.load()
+            except DistributionNotFound, e:
+                break
             if hasattr(srvobj, 'ask_password'):
                 return srvobj.ask_password(edit, parsed_url)
 
