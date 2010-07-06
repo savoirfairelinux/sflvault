@@ -40,6 +40,7 @@ import time as stdtime
 
 from sqlalchemy import sql
 from sqlalchemy.exceptions import InvalidRequestError as InvalidReq
+from sqlalchemy.orm import eagerload_all
 
 from sflvault.model import *
 from sflvault.lib.base import *
@@ -673,8 +674,7 @@ class SFLvaultAccess(object):
 
     def group_list(self, show_hidden=False, list_users=False):
         """Return a simple list of the available groups"""
-        groups = query(Group).group_by(Group.name) \
-                       .options(model.eagerload_all('users_assoc.user')).all()
+        groups = query(Group).options(eagerload_all('users_assoc.user')).all()
 
         me = query(User).get(self.myself_id)
 
@@ -698,7 +698,11 @@ class SFLvaultAccess(object):
             if len(myug) and myug[0].is_admin:
                 res['admin'] = True
             
-            res['members'] = [(u.id, u.username) for u in grp.users]
+            print "A" * 1000
+            print grp.users_assoc
+            print grp.users
+            res['members'] = [(u.user_id, u.user.username, u.is_admin)
+                              for u in grp.users_assoc]
 
             out.append(res)
 
@@ -799,7 +803,7 @@ class SFLvaultAccess(object):
 
 
         # Make sure we don't double the group access.
-        if not query(UserGroup).filter_by(group_id=group_id,
+        if query(UserGroup).filter_by(group_id=group_id,
                                   user_id=usr.id).first():
             return vaultMsg(False, "User %s is already in that group" % user)
         
@@ -888,7 +892,7 @@ class SFLvaultAccess(object):
         
         ohoh = ''
         if not id_admins:
-            ohoh = "WARNING: there are no more group-admins in this group.  Ask a global-admin to elect someone group-admin for further management of this group."
+            ohoh = " - WARNING: there are no more group-admins in this group.  Ask a global-admin to elect someone group-admin for further management of this group."
 
         meta.Session.delete(hisug[0])
         meta.Session.commit()

@@ -1007,7 +1007,8 @@ class SFLvaultClient(object):
 
         lst = retval['list']
         lst.sort(key=lambda x: x['name'])
-
+        
+        show_legend = False
         for grp in lst:
             add = []
             if grp.get('hidden', False):
@@ -1018,9 +1019,14 @@ class SFLvaultClient(object):
                 add.append('[admin]')
             print "\tg#%d\t%s %s" % (grp['id'], grp['name'], ' '.join(add))
 
-            if not quiet:
-                # TODO: LIST MEMBERS
-                print "MEMBERS: %s" % (grp['members'])
+            if not quiet and 'members' in grp:
+                show_legend = any(bool(x[2]) for x in grp['members']) or \
+                    show_legend
+                l = ["%s%s" % ('*' if x[2] else '', x[1])
+                     for x in grp['members']]
+                print "\t\tMembers: %s" % ', '.join(l)
+        if not quiet and show_legend:
+            print "* = group admin"
         return retval
 
 
