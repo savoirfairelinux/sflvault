@@ -701,7 +701,7 @@ class SFLvaultAccess(object):
             print "A" * 1000
             print grp.users_assoc
             print grp.users
-            res['members'] = [(u.user_id, u.user.username)
+            res['members'] = [(u.user_id, u.user.username, u.is_admin)
                               for u in grp.users_assoc]
 
             out.append(res)
