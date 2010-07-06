@@ -390,7 +390,7 @@ class SFLvaultCommand(object):
                                help="Machine name, used for display everywhere")
         self.parser.add_option('-d', '--fqdn', dest="fqdn", default='',
                                help="Fully qualified domain name, if available")
-        self.parser.add_option('-p', '--ip', dest="ip", default='',
+        self.parser.add_option('-i', '--ip', dest="ip", default='',
                                help="Machine's IP address, in order to access itfrom it's hierarchical position")
         self.parser.add_option('-l', '--location', dest="location", default='',
                                help="Machine's physical location, position in racks, address, etc..")
