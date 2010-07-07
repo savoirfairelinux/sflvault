@@ -147,11 +147,10 @@ class AskPassMethods(object):
         """Default function to get passphrase from user, for authentication."""
         return getpass.getpass("Vault passphrase: ", stream=sys.stderr)
     
-    def __init__(self, configfile, cfg):
+    def __init__(self, config):
         # Default
         self.getpass = self.default
-        self.configfile = configfile
-        self.cfg = cfg
+        self.cfg = config
 
         # Use 'program' is SFLVAULT_ASKPASS env var exists
         env_var = AskPassMethods.env_var
@@ -160,21 +159,17 @@ class AskPassMethods(object):
             self.getpass = self.program
             return
 
-        try:
-            wallet = self.cfg.get("SFLvault", "wallet") 
-        except NoSectionError, e:
-            return
+        wallet = self.cfg.wallet_get()
 
         def keyring_wallet():
-            try:
-                import keyring
-            except ImportError, e:
-                raise VaultConfigurationError("[SFLvault] No keyring support,"
-                                             " please install python-keyring")
+            self.cfg._check_keyring()
+            import keyring
             keyring_backend = getattr(keyring.backend, wallet)()
-            return keyring_backend.get_password("sflvault", self.configfile)
+            return keyring_backend.get_password("sflvault",
+                                                self.cfg.config_file)
 
-        self.getpass = keyring_wallet
+        if wallet:
+            self.getpass = keyring_wallet
 
 ###
 ### Configuration manager for SFLvault
@@ -290,6 +285,73 @@ class SFLvaultConfig(object):
             return self.cfg.get('Aliases', alias)
 
 
+    def _check_keyring(self):
+        try:
+            import keyring
+        except ImportError, e:
+            raise KeyringError("No keyring support, please install python-keyring")
+        
+    def wallet_list(self):
+        """Return the list of available wallets, from Keyring
+
+        [('0', 'Manual', None, 'Disabled', True),
+         ('1', 'UncryptedKeyring', <UncryptedKeyring object>, 'Recommended', False),
+         ...]
+        """
+        self._check_keyring()
+        import keyring
+
+        current = self.wallet_get()
+        out = [('0', 'Manual', None, 'Disabled', current == None)]
+        ref = {1: "Recommended", 0: "Supported", -1: "Not installed"} 
+        for i, backend in enumerate(keyring.backend.get_all_keyring()):
+            out.append((str(i + 1),
+                        backend.__class__.__name__,
+                        backend,
+                        ref[backend.supported()],
+                        backend.__class__.__name__ == current,
+                        ))
+        return out
+        
+    def wallet_set(self, id, password):
+        if id is None or id == '0':
+            self.cfg.remove_option('SFLvault', 'wallet')
+        else:
+            lst = self.wallet_list()
+            ids = [x[0] for x in lst]
+            if id not in ids:
+                raise KeyringError("No such Wallet ID: %s" % id)
+            backend = [x for x in lst if x[0] == id][0]
+            ret = backend[2].set_password("sflvault", self.config_file,
+                                          password)
+            if ret:  # Error saving the password ?
+                raise KeyringError("Unable to store password in keyring")
+            # Set the wallet value
+            self.cfg.set('SFLvault', "wallet", backend[1])
+        # Save config.
+        self.config_write()
+        return True
+
+    def wallet_get(self):
+        """Return the currently configured wallet, otherwise None"""
+        if self.cfg.has_option('SFLvault', 'wallet'):
+            return self.cfg.get('SFLvault', 'wallet')
+        else:
+            return None
+
+    def wallet_get_obj(self):
+        """Return the currently configured wallet as a backend object,
+        otherwise None
+        """
+        name = self.wallet_get()
+        if not name:
+            return None
+        lst = self.wallet_list()
+        names = [x[1] for x in lst]
+        if name not in names:
+            raise KeyringError("No such Wallet type: %s" % name)
+        backend = [x[2] for x in lst if x[1] == name][0]
+        return backend()
 
 ###
 ### On définit les fonctions qui vont traiter chaque sorte de requête.
@@ -314,7 +376,7 @@ class SFLvaultClient(object):
         self.cfg = SFLvaultConfig(config)
 
         # The function to call upon @authenticate to get passphrase from user.
-        self.getpassfunc = AskPassMethods().getpass
+        self.getpassfunc = AskPassMethods(self.cfg).getpass
 
         self.shell_mode = shell
         self.authtok = ''
@@ -1106,45 +1168,5 @@ class SFLvaultClient(object):
         for x in retval['list']:
             print "c#%d\t%s" % (x['id'], x['name'])
         return retval
-
-    def wallet(self, wallet_name=None, password=None):
-        """Add an alias and save config."""
-
-        if not wallet_name:
-            try:
-                import keyring
-            except ImportError, e:
-                print "[SFLvault] No keyring support, please install python-keyring"
-                return False
-            return keyring.backend.get_all_keyring()
-
-        if wallet_name == "disabled":
-            self.cfg.remove_option('SFLvault', "wallet")
-            self.config_write()
-            print "[SFLvault] Wallet disabled"
-            return True
-
-        try:
-            import keyring 
-        except ImportError, e:
-            print "[SFLvault] No keyring support, please install python-keyring"
-            return False
-            
-        keyring_backend = getattr(keyring.backend, wallet_name)()
-        if not password:
-            password = getpass.getpass("Vault passphrase: ")
-        ret = keyring_backend.set_password("sflvault", self.configfile,
-                                            password)
-        if ret == 0:
-            # Set the wallet value
-            self.cfg.set('SFLvault', "wallet", wallet_name)
-        
-            # Save config.
-            self.config_write()
-            print "[SFLvault] Password saved in your wallet"
-        else:
-            print "[SFLvault] Password NOT saved in your wallet"
-
-        return True
 
 

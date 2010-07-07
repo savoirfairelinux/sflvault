@@ -30,7 +30,7 @@ __all__ = ['shred', 'urlparse', 'AuthenticationError', 'PermissionError',
            'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
            'ServiceRequireError', 'ServiceExpectError', 'sflvault_escape_chr',
            'ask_for_service_password', 'services_entry_points',
-           "ServiceSwitchException"]
+           "ServiceSwitchException", "KeyringError"]
 
 
 def services_entry_points():
@@ -89,13 +89,18 @@ def ask_for_service_password(edit=False, url=None):
     return sec
 
 
+### Passwords management exceptions
+
+class KeyringError(Exception):
+    pass
+
+
 
 ### Authentication Exceptions
 
 class AuthenticationError(Exception):
-    def __init__(self, message):
-        """Sets an error message"""
-        super(Exception, self).__init__(message)
+    pass
+
 
 ### Server restrictions errors
 

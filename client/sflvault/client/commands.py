@@ -918,39 +918,34 @@ class SFLvaultCommand(object):
         self.vault.search(self.args, filters or None, self.opts.verbose)
 
     def wallet(self):
-        """ Save password in wallet
-        """
+        """Put your SFLvault password in a wallet"""
         self.parser.set_usage('wallet [wallet ID]')
         self._parse()
+
+        if len(self.args) == 0:
+            for i, name, obj, status, current in self.vault.cfg.wallet_list():
+                print "%s. %s - %s%s" % (i, name, status,
+                                         " (*current)" if current else '')
+            return
+
+        # Otherwise
+        lst = self.vault.cfg.wallet_list()
+        ids = [x[0] for x in lst]
+
+        if self.args[0] == '0':
+            self.vault.cfg.wallet_set(None, None)
+            print "Keyring disabled"
+            return
+
+        if self.args[0] not in ids:
+            raise SFLvaultParserError("Invalid wallet ID. Try `wallet` without parameters")
         try:
-            import keyring
-        except ImportError, e:
-            print "[SFLvault] No keyring support, please install python-keyring"
+            passwd = getpass.getpass("Enter your current vault password: ")
+            self.vault.cfg.wallet_set(self.args[0], passwd)
+        except KeyringError, e:
+            print "[SFLvault] %s" % e
             return False
-        if not len(self.args):
-            backend_list = self.vault.wallet()
-            ref = {1: "Recommended", 0: "Supported", -1: "Unsupported" } 
-            print "Wallets:"
-            print "0. Disable Wallet"
-            for i, backend in enumerate(backend_list):
-                i = i + 1
-                print "%d. %s - %s" % (i, ref[backend.supported()], backend.__class__.__name__)
-            return False
-
-        backend_list = keyring.backend.get_all_keyring()
-        wallet_id = int(self.args[0]) - 1
-        if wallet_id >= 0 and wallet_id <= len(backend_list):
-            wallet_name = backend_list[wallet_id].__class__.__name__
-        elif wallet_id == -1:
-            wallet_name = "disabled"
-        else:
-            return False
-
-        return self.vault.wallet(wallet_name)
-
-
-
-
+        print "Keyring set and password saved"
 
 
 
