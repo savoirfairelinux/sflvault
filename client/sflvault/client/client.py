@@ -20,7 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import pkg_resources as pkgres
-from ConfigParser import ConfigParser
+from ConfigParser import ConfigParser, NoSectionError
 import xmlrpclib
 import getpass
 import sys
@@ -147,17 +147,34 @@ class AskPassMethods(object):
         """Default function to get passphrase from user, for authentication."""
         return getpass.getpass("Vault passphrase: ", stream=sys.stderr)
     
-    def __init__(self):
+    def __init__(self, configfile, cfg):
         # Default
         self.getpass = self.default
+        self.configfile = configfile
+        self.cfg = cfg
 
         # Use 'program' is SFLVAULT_ASKPASS env var exists
         env_var = AskPassMethods.env_var
         if env_var in os.environ:
             self._program_value = os.environ[env_var]
             self.getpass = self.program
+            return
 
-    
+        try:
+            wallet = self.cfg.get("SFLvault", "wallet") 
+        except NoSectionError, e:
+            return
+
+        def keyring_wallet():
+            try:
+                import keyring
+            except ImportError, e:
+                raise VaultConfigurationError("[SFLvault] No keyring support,"
+                                             " please install python-keyring")
+            keyring_backend = getattr(keyring.backend, wallet)()
+            return keyring_backend.get_password("sflvault", self.configfile)
+
+        self.getpass = keyring_wallet
 
 ###
 ### Configuration manager for SFLvault
@@ -1089,5 +1106,45 @@ class SFLvaultClient(object):
         for x in retval['list']:
             print "c#%d\t%s" % (x['id'], x['name'])
         return retval
+
+    def wallet(self, wallet_name=None, password=None):
+        """Add an alias and save config."""
+
+        if not wallet_name:
+            try:
+                import keyring
+            except ImportError, e:
+                print "[SFLvault] No keyring support, please install python-keyring"
+                return False
+            return keyring.backend.get_all_keyring()
+
+        if wallet_name == "disabled":
+            self.cfg.remove_option('SFLvault', "wallet")
+            self.config_write()
+            print "[SFLvault] Wallet disabled"
+            return True
+
+        try:
+            import keyring 
+        except ImportError, e:
+            print "[SFLvault] No keyring support, please install python-keyring"
+            return False
+            
+        keyring_backend = getattr(keyring.backend, wallet_name)()
+        if not password:
+            password = getpass.getpass("Vault passphrase: ")
+        ret = keyring_backend.set_password("sflvault", self.configfile,
+                                            password)
+        if ret == 0:
+            # Set the wallet value
+            self.cfg.set('SFLvault', "wallet", wallet_name)
+        
+            # Save config.
+            self.config_write()
+            print "[SFLvault] Password saved in your wallet"
+        else:
+            print "[SFLvault] Password NOT saved in your wallet"
+
+        return True
 
 

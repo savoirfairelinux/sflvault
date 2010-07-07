@@ -917,6 +917,42 @@ class SFLvaultCommand(object):
 
         self.vault.search(self.args, filters or None, self.opts.verbose)
 
+    def wallet(self):
+        """ Save password in wallet
+        """
+        self.parser.set_usage('wallet [wallet ID]')
+        self._parse()
+        try:
+            import keyring
+        except ImportError, e:
+            print "[SFLvault] No keyring support, please install python-keyring"
+            return False
+        if not len(self.args):
+            backend_list = self.vault.wallet()
+            ref = {1: "Recommended", 0: "Supported", -1: "Unsupported" } 
+            print "Wallets:"
+            print "0. Disable Wallet"
+            for i, backend in enumerate(backend_list):
+                i = i + 1
+                print "%d. %s - %s" % (i, ref[backend.supported()], backend.__class__.__name__)
+            return False
+
+        backend_list = keyring.backend.get_all_keyring()
+        wallet_id = int(self.args[0]) - 1
+        if wallet_id >= 0 and wallet_id <= len(backend_list):
+            wallet_name = backend_list[wallet_id].__class__.__name__
+        elif wallet_id == -1:
+            wallet_name = "disabled"
+        else:
+            return False
+
+        return self.vault.wallet(wallet_name)
+
+
+
+
+
+
 
 class SFLvaultCompleter:
     def __init__(self, namespace):
