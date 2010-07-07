@@ -36,14 +36,15 @@ class MenuBar(QtGui.QMenuBar):
     def __init__(self, parent=None, ):
         QtGui.QMenuBar.__init__(self, parent)
         self.parent = parent
-        self.file = self.addMenu(self.tr("&File"))
+        self.file_ = self.addMenu(self.tr("&File"))
         self.edit = self.addMenu(self.tr("&Edit"))
         self.display = self.addMenu(self.tr("&Display"))
-        self.help = self.addMenu(self.tr("&Help"))
+        self.tools = self.addMenu(self.tr("&Tools"))
+        self.help_ = self.addMenu(self.tr("&Help"))
        
         # File
         ## New
-        self.new = self.file.addMenu(self.tr("&New"))
+        self.new = self.file_.addMenu(self.tr("&New"))
         self.new.setStatusTip(self.tr("Create new item"))
         ### Customer
         self.newcust = self.new.addAction(self.tr("&Customer..."))
@@ -59,22 +60,16 @@ class MenuBar(QtGui.QMenuBar):
         self.newserv.setEnabled(0)
 
 
-        ## save password in wallet
-        self.savepass = self.file.addAction(self.tr("&Save password"))
-        self.savepass.setStatusTip(self.tr("Save your password in your wallet"))
-        ## First Connection
-        self.firstconnection = self.file.addAction(self.tr("&First connection to the vault"))
-        self.firstconnection.setStatusTip(self.tr("Initialize your vault account"))
         ## Connection
-        self.connection = self.file.addAction(self.tr("&Connect to the vault"))
+        self.connection = self.file_.addAction(self.tr("&Connect to the vault"))
         self.connection.setStatusTip(self.tr("Connect to the vault"))
         ## Quick Connection
-        self.quickconnect = self.file.addAction(self.tr("&Quick Connect..."))
+        self.quickconnect = self.file_.addAction(self.tr("&Quick Connect..."))
         self.quickconnect.setShortcut(self.tr("Ctrl+O"))
         self.quickconnect.setStatusTip(self.tr("Connect to a service..."))
         self.quickconnect.setEnabled(0)
         ## Quit
-        self.quit = self.file.addAction(self.tr("&Quit"))
+        self.quit = self.file_.addAction(self.tr("&Quit"))
         self.quit.setStatusTip(self.tr("Quit Sflvault-qt"))
  
         # Edit
@@ -94,8 +89,8 @@ class MenuBar(QtGui.QMenuBar):
         self.preferences.setStatusTip(self.tr("Sflvault settings"))
 
         ## Set settings file
-        self.configfile = self.edit.addAction(self.tr("Set settings &File..."))
-        self.configfile.setStatusTip(self.tr("Set Sflvault settings file"))
+#        self.configfile = self.edit.addAction(self.tr("Set settings &File..."))
+#        self.configfile.setStatusTip(self.tr("Set Sflvault settings file"))
 
         # Display
         self.listDockBoxes = {}
@@ -105,14 +100,12 @@ class MenuBar(QtGui.QMenuBar):
         self.search.setStatusTip(self.tr("Show/hide search dock"))
         self.search.setCheckable(True)
         self.listDockBoxes['search'] = self.search
-
         ## Alias
         self.alias = self.display.addAction(self.tr("&Alias"))
         self.alias.setShortcut(self.tr("Ctrl+Alt+A"))
         self.alias.setStatusTip(self.tr("Show/hide alias dock"))
         self.alias.setCheckable(True)
         self.listDockBoxes['alias'] = self.alias
-
         ## Info
         self.info = self.display.addAction(self.tr("&Informations"))
         self.info.setShortcut(self.tr("Ctrl+Alt+I"))
@@ -122,22 +115,27 @@ class MenuBar(QtGui.QMenuBar):
 
         self.checkDockBoxes()
 
+        # Tools
+        ## save password in wallet
+        self.savepass = self.tools.addAction(self.tr("&Save password"))
+        self.savepass.setStatusTip(self.tr("Save your password in your wallet"))
+        ## First Connection
+        self.firstconnection = self.tools.addAction(self.tr("&First connection to the vault"))
+        self.firstconnection.setStatusTip(self.tr("Initialize your vault account"))
+
+
         # Help
         ## Help
-        self.sflvaulthelp = self.help.addAction(self.tr("Sflvault &help"))
+        self.sflvaulthelp = self.help_.addAction(self.tr("Sflvault &help"))
         self.sflvaulthelp.setShortcut(self.tr("Ctrl+F1"))
         self.sflvaulthelp.setStatusTip(self.tr("Help for sflvault"))
 
-        ## Language
-        self.lang = self.help.addAction(self.tr("&Language"))
-        self.lang.setStatusTip(self.tr("Choose your language"))
-
         ## About sflvault
-        self.sflvaultabout = self.help.addAction(self.tr("&About Sflvault"))
+        self.sflvaultabout = self.help_.addAction(self.tr("&About Sflvault"))
         self.sflvaultabout.setStatusTip(self.tr("About Sflvault"))
 
         ## About sflvault-qt
-        self.guiabout = self.help.addAction(self.tr("About Sflvault-QT"))
+        self.guiabout = self.help_.addAction(self.tr("About Sflvault-QT"))
         self.guiabout.setStatusTip(self.tr("About Sflvault-QT"))
 
     def enableItems(self):
