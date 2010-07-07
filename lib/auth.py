@@ -37,6 +37,7 @@ except:
     print "No keyring system supported"
 
 client = None
+config = '/home/' + os.getenv( 'USER' ) + '/.sflvault/config'
 error_message = QtCore.QObject()
 
 
@@ -100,7 +101,7 @@ def getAuth():
     """
     global client
     #if not client:
-    client = SFLvaultClient()
+    client = SFLvaultClient(config)
     
     settings = Config()
     wallet_setting = str(settings.value("SFLvault-qt4/wallet").toString())
@@ -132,7 +133,7 @@ def getAuth():
 def registerAccount(username, vaultaddress, password):
     """ Init you vault account
     """
-    client = SFLvaultClient()
+    client = SFLvaultClient(config)
     try:
         client.user_setup(username, vaultaddress, password)
     except Exception, e:
@@ -141,8 +142,7 @@ def registerAccount(username, vaultaddress, password):
     return True 
 
 def getUserInfo(username):
-    """
-        Get Your informations
+    """ Get Your informations
     """
     global client
     try:
@@ -221,7 +221,7 @@ def vaultSearch(pattern, groups_ids=None):
     global client
     result = None
     try:
-        result = client.vault.search(client.authtok, pattern, groups_ids)
+        result = client.vault.search(client.authtok, pattern, {'groups': groups_ids})
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the client is now invalid
         # So we have to get a new client
@@ -317,7 +317,7 @@ def listGroup():
         return False
     return status
 
-client_alias = SFLvaultClient()
+client_alias = SFLvaultClient(config)
 
 def getAliasList():
     aliases = client_alias.alias_list()
