@@ -220,8 +220,13 @@ class XmlrpcController(XMLRPCController):
             return self.vault.service_put(service_id, data)
 
     @authenticated_user
-    def sflvault_search(self, authtok, search_query, filters=None,
-                        verbose=False):
+    def sflvault_search(self, authtok, search_query, group_ids=None,
+                        verbose=False, filters=None):
+        if group_ids and not filters:
+            filters = {'groups': group_ids}
+        if group_ids and isinstance(filters, dict) and 'groups' not in filters:
+            # Please don't do that, use filters instead.
+            filters['groups'] = group_ids
         return self.vault.search(search_query, filters, verbose)
 
     @authenticated_user

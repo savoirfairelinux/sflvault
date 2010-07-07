@@ -140,7 +140,7 @@ class AskPassMethods(object):
             p.wait()
             return p.stdout.read()
         except OSError, e:
-            msg = "Failed to run '%s' : %s" % (os.environ[env_var], e)
+            msg = "Failed to run '%s' : %s" % (os.environ[self.env_var], e)
             raise ValueError(msg)
 
     def default(self):
@@ -623,8 +623,8 @@ class SFLvaultClient(object):
         if filters:
             filters = dict([(x, filters[x]) for x in filters if filters[x]])
 
-        retval = vaultReply(self.vault.search(self.authtok, query, filters,
-                                              verbose),
+        retval = vaultReply(self.vault.search(self.authtok, query,
+                 filters.get('groups') if filters else None, verbose, filters),
                             "Error searching database")
         print "Results:"        
 
