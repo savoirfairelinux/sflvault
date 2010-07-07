@@ -37,63 +37,61 @@ except:
     print "No keyring system supported"
 
 client = None
-config = '/home/' + os.getenv( 'USER' ) + '/.sflvault/config'
 error_message = QtCore.QObject()
 
 
+settings = Config()
+client_alias = SFLvaultClient(str(settings.fileName()))
+
+
 def getSecret():
-    try:
-        settings = Config()
-        wallet_setting = str(settings.value("SFLvault-qt4/wallet").toString())
-        username = str(settings.value("SFLvault/username").toString())
-        keyring_backend = eval("keyring.backend." + wallet_setting)()
-        secret = keyring_backend.get_password("sflvault", username)
-        return secret if secret else False 
-    except Exception, e:
-        ErrorMessage(e)
+    wallet_setting = str(settings.value("SFLvault/wallet").toString())
+    if hasattr(keyring.backend, wallet_setting):
+        keyring_backend = getattr(keyring.backend, wallet_setting)()
+        secret = keyring_backend.get_password("sflvault", str(settings.fileName()))
+        return secret if secret else False
+    else:
         return False
 
-def setSecret(password):
-    try:
-        settings = Config()
-        wallet_setting = str(settings.value("SFLvault-qt4/wallet").toString())
-        username = str(settings.value("SFLvault/username").toString())
-        keyring_backend = eval("keyring.backend." + wallet_setting)()
-        # Check if sflvault item exists
-        if getSecret() != False:
-            question = QtGui.QMessageBox(QtGui.QMessageBox.Question,
-                                        "Save password in your wallet",
-                                        "This password already exists."
-                                        "Do you want to replace it ?",
-                                        )
-            question.addButton(QtGui.QMessageBox.Save)
-            question.addButton(QtGui.QMessageBox.Cancel)
-            # Ask to user if he wants to replace old password
-            ret = question.exec_()
-            if ret == QtGui.QMessageBox.Cancel:
-                # Do nothing
-                return False
-            # Simplify code or keep it simple to understand ?
-            else:
-                # Replace password
-                try:
-                    ret = keyring_backend.set_password("sflvault", username, password)
-                except Exception, e:
-                    ErrorMessage(e)
-                    return False
-                return True if ret == 0 else False
+def setSecret(wallet_id, password=None):
+    settings = Config()
+    client = SFLvaultClient(str(settings.fileName()))
 
+
+    # Disable wallet
+    if wallet_id == '0':
+        client.cfg.wallet_set(wallet_id, None)
+        return True
+    # Check if sflvault item exists
+    if getSecret() != False:
+        question = QtGui.QMessageBox(QtGui.QMessageBox.Question,
+                                    "Save password in your wallet",
+                                    "This password already exists."
+                                    "Do you want to replace it ?",
+                                    )
+        question.addButton(QtGui.QMessageBox.Save)
+        question.addButton(QtGui.QMessageBox.Cancel)
+        # Ask to user if he wants to replace old password
+        ret = question.exec_()
+        if ret == QtGui.QMessageBox.Cancel:
+            # Do nothing
+            return False
+        # Simplify code or keep it simple to understand ?
         else:
-            # Save a new password
+            # Replace password
             try:
-                ret = keyring_backend.set_password("sflvault", username, password)
+                return client.cfg.wallet_set(wallet_id, password)
             except Exception, e:
                 ErrorMessage(e)
                 return False
-        return True if ret == 0 else False
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+
+    else:
+        # Save a new password
+        try:
+            return client.cfg.wallet_set(wallet_id, password)
+        except Exception, e:
+            ErrorMessage(e)
+            return False
 
 def getAuth():
     """
@@ -101,22 +99,8 @@ def getAuth():
     """
     global client
     #if not client:
-    client = SFLvaultClient(config)
+    client = SFLvaultClient(str(settings.fileName()))
     
-    settings = Config()
-    wallet_setting = str(settings.value("SFLvault-qt4/wallet").toString())
-    if wallet_setting:
-        keyring_backend = eval("keyring.backend." + wallet_setting)()
-        try:
-            if getSecret():
-                client.getpassfunc = getSecret
-            else:
-                e = Exception("Password Error")
-                e.message = error_message.tr("Error while getting password from keyring")
-                raise e
-        except Exception, e:
-            ErrorMessage(e)
-
     try:
         # Search nothing, just to get a valid client
         status = client.search(["}{[a]"])
@@ -133,7 +117,7 @@ def getAuth():
 def registerAccount(username, vaultaddress, password):
     """ Init you vault account
     """
-    client = SFLvaultClient(config)
+    client = SFLvaultClient(str(settings.fileName()))
     try:
         client.user_setup(username, vaultaddress, password)
     except Exception, e:
@@ -318,20 +302,19 @@ def listGroup():
         return False
     return status
 
-client_alias = SFLvaultClient(config)
 
 def getAliasList():
-    aliases = client_alias.alias_list()
+    aliases = client_alias.cfg.alias_list()
     return aliases
 
 def saveAlias(alias, id):
-    client_alias.alias_add(alias,id)
+    client_alias.cfg.alias_add(alias,id)
 
 def delAlias(alias):
-    client_alias.alias_del(alias)
+    client_alias.cfg.alias_del(alias)
 
 def getAlias(alias):
-    id = client_alias.alias_get(alias)
+    id = client_alias.cfg.alias_get(alias)
     return id
 
 def addCustomer(name):

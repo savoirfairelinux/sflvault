@@ -39,19 +39,21 @@ PAGE_SUCCESS = 2
 PAGE_UNSUCCESS = 3
 
 class SavePasswordWizard(QtGui.QWizard):
-    def __init__(self, password=None, parent=None):
+    def __init__(self, password=None, wallet_id=None, parent=None):
         """ Wizard to save password in wallet
         """
         QtGui.QWizard.__init__(self, parent)
         self.parent = parent
         self.password = password
+        self.wallet_id = wallet_id
 
+        self.setModal(True)
         self.setPage(PAGE_INTRO, Page1(self))
         self.setPage(PAGE_PASSWORD, Page2(self))
         self.setPage(PAGE_SUCCESS, Page3(self))
         self.setPage(PAGE_UNSUCCESS, Page4(self))
 
-        self.setWindowTitle("Save your password")
+        self.setWindowTitle(self.tr("Save your password"))
         self.show()
 
 
@@ -93,11 +95,15 @@ class Page2(QtGui.QWizardPage):
         """
         QtGui.QWizardPage.__init__(self, parent)
         self.parent = parent
-        self.setTitle("Save your vault password")
-        self.setSubTitle("Fill this form")
+        self.setTitle(self.tr("Save your vault password"))
+        self.setSubTitle(self.tr("Fill this form"))
         self.setCommitPage(True)
         self.next_page = PAGE_SUCCESS
         self.settings = self.parent.parent.settings
+
+        if self.parent.wallet_id is None:
+            wallet_label = QtGui.QLabel(self.tr("Choose your wallet"))
+            self.wallet = QtGui.QComboBox()
 
         password1_label = QtGui.QLabel(self.tr("&Password"))
         self.password1 = QtGui.QLineEdit(self.parent.password)
@@ -110,14 +116,20 @@ class Page2(QtGui.QWizardPage):
         password2_label.setBuddy(self.password2)
 
         layout = QtGui.QGridLayout(self)
-        layout.addWidget(password1_label,0,0)
-        layout.addWidget(self.password1,0,1)
-        layout.addWidget(password2_label,1,0)
-        layout.addWidget(self.password2,1,1)
+        if self.parent.wallet_id is None:
+            layout.addWidget(wallet_label, 0, 0)
+            layout.addWidget(self.wallet, 0, 1)
+        layout.addWidget(password1_label, 1, 0)
+        layout.addWidget(self.password1, 1, 1)
+        layout.addWidget(password2_label, 2, 0)
+        layout.addWidget(self.password2, 2, 1)
 
         self.setLayout(layout)
         self.registerField("password1", self.password1)
         self.registerField("password2", self.password2)
+        if self.parent.wallet_id is None:
+            self.registerField("wallet", self.wallet)
+            self.fillWallet()
 
     def validatePage(self):
         """ Check form and define next page
@@ -133,9 +145,11 @@ class Page2(QtGui.QWizardPage):
             error.exec_()
             return False
         # Check which wallet is used (kwallet or seahorse)
-        wallet_setting = str(self.settings.value("SFLvault-qt4/wallet").toString())
-        username = str(self.settings.value("SFLvault/username").toString())
-        ret = setSecret(unicode(self.password1.text()))
+        if self.parent.wallet_id is None:
+            wallet_id = self.wallet.currentIndex() + 1
+        else:
+            wallet_id = self.parent.wallet_id
+        ret = setSecret(str(wallet_id), unicode(self.password1.text()))
         if ret:
             self.next_page = PAGE_SUCCESS
         else:
@@ -144,6 +158,21 @@ class Page2(QtGui.QWizardPage):
 
     def nextId(self):
         return self.next_page
+
+    def fillWallet(self):
+        self.wallet.clear()
+        client = SFLvaultClient(str(self.settings.fileName()))
+        backend_list = client.cfg.wallet_list()
+        for i,backend in enumerate(backend_list[1:]):
+            # recommend
+            if backend[3] == "Recommended":
+                self.wallet.addItem("* - " + backend[1], QtCore.QVariant(backend[1]))
+            # just supported
+            elif backend[3] == "Supported":
+                self.wallet.addItem(backend[1], QtCore.QVariant(backend[1]))
+            # Set current wallet
+            if backend[4] == True:
+                self.wallet.setCurrentIndex(i - 1)
 
 
 class Page3(QtGui.QWizardPage):

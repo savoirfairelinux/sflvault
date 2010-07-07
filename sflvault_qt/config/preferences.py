@@ -27,6 +27,7 @@ from PyQt4 import QtCore, QtGui
 import re
 from PyQt4.QtCore import Qt
 import sflvault
+from lib.auth import setSecret
 from sflvault.client import SFLvaultClient
 import shutil
 import os
@@ -41,6 +42,7 @@ class PreferencesWidget(QtGui.QDialog):
         QtGui.QDialog.__init__(self, parent)
         self.parent = parent
         self.settings = self.parent.settings
+        self.wizard = False
 
         # Load gui items
         self.save = QtGui.QPushButton(self.tr("Save"))
@@ -52,6 +54,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.url = QtGui.QLineEdit()
         self.wallet_label = QtGui.QLabel(self.tr("Use wallet :"))
         self.wallet = QtGui.QComboBox()
+        self.change_password = QtGui.QPushButton(self.tr("Change password"))
         self.saveMainWindowLabel = QtGui.QLabel(self.tr("Save dock positions :"))
         self.saveMainWindow = QtGui.QCheckBox()
         self.autoConnectLabel = QtGui.QLabel(self.tr("Auto connect :"))
@@ -86,6 +89,7 @@ class PreferencesWidget(QtGui.QDialog):
         gridLayout.addWidget(self.url,1,1)
         gridLayout.addWidget(self.wallet_label,2,0)
         gridLayout.addWidget(self.wallet,2,1)
+        gridLayout.addWidget(self.change_password,3,1)
         vaultbox.setLayout(gridLayout)
 
         # Gui Group box
@@ -129,14 +133,27 @@ class PreferencesWidget(QtGui.QDialog):
         self.resize(500,400)
 
         # SIGNALS
-        QtCore.QObject.connect(self.save, QtCore.SIGNAL("clicked()"), self.saveConfig)
-        QtCore.QObject.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        QtCore.QObject.connect(self.save,
+                                QtCore.SIGNAL("clicked()"),
+                                self.saveConfig)
+        QtCore.QObject.connect(self.cancel,
+                                QtCore.SIGNAL("clicked()"),
+                                self, QtCore.SLOT("reject()"))
+#        QtCore.QObject.connect(self.change_password,
+#                                QtCore.SIGNAL("clicked()"),
+#                                self.parent.savePassword)
+
 
     def exec_(self):
         # load config
         self.readConfig()
         # Show dialog
         self.show()
+
+    def save_password_in_wallet(self, wallet_id):
+        if wallet_id != 0:
+            self.parent.savePassword(wallet_id)
+
 
     def readConfig(self):
         """ ReadConfig
@@ -153,7 +170,7 @@ class PreferencesWidget(QtGui.QDialog):
         self.minSearch.setValue(self.settings.value("SFLvault-qt4/minsearch").toInt()[0])
         self.osd.setValue(self.settings.value("osd/timer").toInt()[0])
         self.fillLanguage(self.settings.value("SFLvault-qt4/language").toString())
-        self.fillWallet(self.settings.value("SFLvault-qt4/wallet").toString())
+        self.fillWallet()
 
     def saveConfig(self):
         """ Save configuration
@@ -170,33 +187,36 @@ class PreferencesWidget(QtGui.QDialog):
         self.settings.setValue("SFLvault-qt4/minsearch", QtCore.QVariant(self.minSearch.value()))
         self.settings.setValue("osd/timer", QtCore.QVariant(self.osd.value()))
         self.settings.setValue("SFLvault-qt4/language", QtCore.QVariant(self.language.currentText()))
-        self.settings.setValue("SFLvault-qt4/wallet", QtCore.QVariant(self.wallet.itemData(self.wallet.currentIndex())))
+        #self.settings.setValue("SFLvault-qt4/wallet", QtCore.QVariant(self.wallet.itemData(self.wallet.currentIndex())))
         self.parent.loadUnloadSystrayConfig()
         self.parent.disEnableEffectsConfig()
         self.parent.showHideFilterBarConfig()
         self.parent.webpreviewConfig()
+        if self.wallet.currentIndex() == 0:
+            setSecret('0')
         # Close dialog
         self.accept()
 
-    def fillWallet(self, value):
+    def fillWallet(self):
         self.wallet.clear()
-        self.wallet.addItem("Don't use wallet", QtCore.QVariant(None))
-        try:
-            backend_list = keyring.backend.get_all_keyring()
-            for backend in backend_list:
-                # recommend
-                if backend.supported () == 1:
-                    self.wallet.addItem("* - " + backend.__class__.__name__, QtCore.QVariant(backend.__class__.__name__))
-                # just supported
-                elif backend.supported () == 0:
-                    self.wallet.addItem(backend.__class__.__name__, QtCore.QVariant(backend.__class__.__name__))
-                if value:
-                    self.wallet.setCurrentIndex(self.wallet.findData(QtCore.QVariant(value)))
-                else:
-                    self.wallet.setCurrentIndex(0)
-        except:
-            pass
+        client = SFLvaultClient(str(self.settings.fileName()))
+        backend_list = client.cfg.wallet_list()
+        self.wallet.addItem(backend_list[0][1], QtCore.QVariant(backend_list[0][1]))
+        for i,backend in enumerate(backend_list):
+            # recommend
+            if backend[3] == "Recommended":
+                self.wallet.addItem("* - " + backend[1], QtCore.QVariant(backend[1]))
+            # just supported
+            elif backend[3] == "Supported":
+                self.wallet.addItem(backend[1], QtCore.QVariant(backend[1]))
+            # Set current wallet
+            if backend[4] == True:
+                self.wallet.setCurrentIndex(i)
+                self.wallet_id = i
 
+        QtCore.QObject.connect(self.wallet,
+                                QtCore.SIGNAL("currentIndexChanged (int)"),
+                                self.save_password_in_wallet)
 
     def fillLanguage(self, value):
         self.language.clear()
@@ -207,6 +227,4 @@ class PreferencesWidget(QtGui.QDialog):
                 self.language.addItem(lang)
                 if lang == value:
                     self.language.setCurrentIndex(self.language.count()-1)
-            
-
 

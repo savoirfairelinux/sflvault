@@ -683,5 +683,5 @@ class MainWindow(QtGui.QMainWindow):
     def firstConnection(self):
         self.firstconnection = InitAccount(self)
 
-    def savePassword(self):
-        self.savepass = SavePasswordWizard(parent=self)
+    def savePassword(self, wallet_id=None):
+        self.savepass = SavePasswordWizard(wallet_id=wallet_id, parent=self)
