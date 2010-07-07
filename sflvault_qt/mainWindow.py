@@ -36,7 +36,7 @@ from docks.aliasdock import AliasDock
 from config.protocols import ProtocolsWidget
 from config.users import UsersWidget
 from config.preferences import PreferencesWidget
-from config.configfile import ConfigFileWidget
+#from config.configfile import ConfigFileWidget
 from config.config import Config
 from config.customer import EditCustomerWidget, DeleteCustomerWidget
 from config.machine import EditMachineWidget, DeleteMachineWidget
