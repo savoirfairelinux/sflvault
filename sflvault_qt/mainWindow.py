@@ -105,7 +105,7 @@ class MainWindow(QtGui.QMainWindow):
         self.protocols = ProtocolsWidget(parent=self)
         self.users = UsersWidget(parent=self)
         self.preferences = PreferencesWidget(parent=self)
-        self.configfile = ConfigFileWidget(parent=self)
+#        self.configfile = ConfigFileWidget(parent=self)
         # Load shortcut
         self.setShortcut()
 
@@ -127,7 +127,7 @@ class MainWindow(QtGui.QMainWindow):
         ## Preferences
         QtCore.QObject.connect(self.menubar.preferences, QtCore.SIGNAL("triggered()"), self.preferences.exec_)
         ## Set config file
-        QtCore.QObject.connect(self.menubar.configfile, QtCore.SIGNAL("triggered()"), self.configfile.exec_)
+#        QtCore.QObject.connect(self.menubar.configfile, QtCore.SIGNAL("triggered()"), self.configfile.exec_)
         ## Show search dock
         QtCore.QObject.connect(self.menubar.search, QtCore.SIGNAL("triggered(bool)"), self.searchdock.setShown)
         ## Show info dock
@@ -155,7 +155,7 @@ class MainWindow(QtGui.QMainWindow):
         """
         if self.search_timer.isActive():
             self.search_timer.stop()
-        self.search_timer.start(1500)
+        self.search_timer.start(1000)
 
 
     def search(self, research=None):
@@ -276,7 +276,7 @@ class MainWindow(QtGui.QMainWindow):
         if index.parent().parent().isValid():
             self.connection(idserv,True)
 
-    def connection(self, idserv, show_tooltip=False):
+    def connection(self, idserv, show_tooltip=False, tunnel=False):
         """
             Connect to a service
         """
@@ -323,7 +323,11 @@ class MainWindow(QtGui.QMainWindow):
         options["port"] = port
         options["protocol"] = protocol
         options["vaultid"] = service["services"][-1]["id"]
-        options["vaultconnect"] = "sflvault connect %s" % options["vaultid"]
+        if tunnel:
+            # TODO Fix option
+            options["vaultconnect"] = "sflvault connect %s -- %s" % (options["vaultid"], tunnel)
+        else:
+            options["vaultconnect"] = "sflvault connect %s" % options["vaultid"]
         # Show Tooltip if checked in config
         tooltip, bool = self.settings.value("protocols/" + protocol + "/tooltip").toInt()
         if (bool and tooltip == QtCore.Qt.Checked) or \
@@ -640,7 +644,21 @@ class MainWindow(QtGui.QMainWindow):
         self.addservice.exec_()
 
     def tunnel(self):
-        print "tunnel"
+        index = self.tree.selectedIndexes()[0]
+        indexId = self.tree.selectedIndexes()[1]
+        idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+        idserv = int(idserv.split("#")[1])
+
+        tunnel,bool = QtGui.QInputDialog().getText(
+                                    self,
+                                    "SSH Tunnel",
+                                    "Enter the ssh tunnel (ex: -L 5000:127.0.0.1:3306 )",
+                                    QtGui.QLineEdit.Normal,
+                                    "",
+                                    )
+        if not bool or tunnel == "":
+            return False
+        self.connection(idserv, show_tooltip=False, tunnel=tunnel)
 
     def addItem(self):
         # Get Id colunm
