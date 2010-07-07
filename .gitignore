@@ -20,6 +20,9 @@ docs/*.html
 # pylons configuration
 *.ini
 
+# Pip stufff
+pip-log.txt
+
 # virtualenv link (to be activated with . env/bin/activate)
 env
 
@@ -39,3 +42,13 @@ server/test-config.bak
 server/host.cert
 server/host.key
 server/host.pem
+
+
+# Debian generated files
+/sflvault-*.deb
+/sflvault-*.changes
+/sflvault-*.dsc
+/sflvault-*.tar.gz
+build-stamp
+/*/debian/sflvault-*
+/*/debian/files

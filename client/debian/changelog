@@ -1,0 +1,62 @@
+sflvault-client (0.7.5dev) unstable; urgency=low
+
+  * Released 0.7.5dev
+
+  * SFLvault now split into 3 different packages.
+    * Plugins system layed out
+    * SFLvault-common and SFLvault-client required for client
+    * SFLvault-common and SFLvault-server required for server
+  * Fixed double authentication on `show` and `connect`
+  * `group-list` now lists members, unless the new `-q` is specified.
+  * Output from SFLvault can now be piped, to less or some other standard input
+    * Output is always UTF-8
+  * DEFAULT SERVER CONFIG IS NOW SSL ENABLED.
+    * Clients will have to switch to https instead of http
+  * The `sudo` command now execute `sudo -i` instead of `sudo -s`.
+  * Most of the functions now ask for a -u when specifying a user, a -c when specifying a customer
+    * "user-del -u user" instead of "user-del user"
+    * "customer-del -c customer", "machine-del -m machine", "service-del -s service", "group-del -g group"
+  * `show` now shows detailed view by default, and will quiet down with `-q`.
+    * This includes listing the services' groups
+  * Added connect -a | --alias, which will add an alias while connecting
+    * Equivalent to "alias <something> <vault_id>" and then "connect <vault_id>"
+  * Added connect -s, which will execute a "show <vault_id>" before connecting
+  * Search now reports customers or machines even if no services are attached to them.
+  * Added support for identities
+    * Running @sflvault -i something@ will use @~/.sflvault/config.something@ as a config file.
+  * Added port forward capabilities
+    * Services can request port-forwarding for functioning
+    * The `connect` command now support:
+      * @connect s#123 -- -L 1234:localhost:80@ and will forward through multiple hops, the right ports to the right places
+  * Added search in machines, and in customers, in addition to searching in groups.
+    * `search -m 123 key words` or `search -c 123 key words`, or a mix of both.
+  * Fixed crash on `service-edit` or other `-edit` calls
+  * Added support for `postgres` service
+  * Added support for hosts different than `localhost` in the MySQL service
+  * Added support for `ssh+pki` service (authentication by PRIVATE KEY stored in the vault)
+    * Any service starting with ssh+pki://username@hostname
+    * SSH+PKI will always require port-forwarded operation, so that the private key is never sent to intermediate servers.  It does it automatically, of course.
+  * Added auto-complete in SFLvault Shell
+  * Implemented SFLvault Fall-back shell.
+    * Access with Ctrl+Alt+; while in an `ssh` session.
+    * First draft of a FISH file exchange protocol
+    * Added a shell switcher via the Fallback, when using port forwards.
+  * Service password will be erased from screen after being entered
+  * Fixed support of PostgreSQL and other strict databases (compared to SQLite)
+  * Many fixes to prevent accidental erasing of private key, and other security features
+  * Implemented several security checks at the XML-RPC level
+    * Added some permissions documentation (see docs/)
+  * Plenty of bug fixes
+  * Improved error messages
+  * Cosmetics
+  * Improved documentation (Sphinx documentation added)
+  * Libraries updated
+
+ -- Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>  Wed, 07 Jul 2010 11:47:11 -0400
+
+sflvault-client (0.7.3) unstable; urgency=low
+
+  * Initial release
+
+ -- Arthur Gautier <arthur.gautier@savoirfairelinux.com>  Mon, 23 Feb 2009 21:10:38 +0100
+
