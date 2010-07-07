@@ -217,16 +217,17 @@ def getCustomer(id):
         return False
     return customer
 
-def vaultSearch(pattern, groups_ids=None):
+def vaultSearch(pattern, filters={}):
     global client
     result = None
     try:
-        result = client.vault.search(client.authtok, pattern, {'groups': groups_ids})
+        result = client.vault.search(client.authtok, pattern,
+                                filters.get('groups'), False, filters)
     except xmlrpclib.ProtocolError, e:
         # Protocol error means the client is now invalid
         # So we have to get a new client
         getAuth()
-        result = vaultSearch(pattern, groups_ids)
+        result = vaultSearch(pattern, filters)
     except Exception, e:
         ErrorMessage(e)
         return False

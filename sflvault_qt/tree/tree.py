@@ -83,8 +83,11 @@ class TreeModel(QtCore.QAbstractItemModel):
 
         if not self.research:
             self.research = "."
-        search_result = vaultSearch(self.research, self.groups_ids)
-
+        search_result = vaultSearch(self.research, 
+                                        {"groups": self.groups_ids,
+                                         "machines": [],
+                                         "customers": [],
+                                        })
         for custoid, custo in search_result["results"].items():
             parents[-1].appendChild(TreeItem([custo["name"],"c#" + custoid], Qicons("customer"), parents[-1]))
             parents.append(parents[-1].child(parents[-1].childCount() - 1))
