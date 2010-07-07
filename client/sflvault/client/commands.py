@@ -598,7 +598,7 @@ class SFLvaultCommand(object):
         self._parse()
 
         if self.opts.delete:
-            res = self.vault.alias_del(self.opts.delete)
+            res = self.vault.cfg.alias_del(self.opts.delete)
 
             if res:
                 print "Alias removed"
@@ -607,14 +607,14 @@ class SFLvaultCommand(object):
 
         elif len(self.args) == 0:
             # List aliases
-            l = self.vault.alias_list()
+            l = self.vault.cfg.alias_list()
             print "Aliased VaultIDs:"
             for x in l:
                 print "\t%s\t%s" % (x[0], x[1])
 
         elif len(self.args) == 1:
             # Show this alias's value
-            a = self.vault.alias_get(self.args[0])
+            a = self.vault.cfg.alias_get(self.args[0])
             if a:
                 print "Aliased VaultID:"
                 print "\t%s\t%s" % (self.args[0], a)
@@ -623,7 +623,7 @@ class SFLvaultCommand(object):
 
         elif len(self.args) == 2:
             try:
-                r = self.vault.alias_add(self.args[0], self.args[1])
+                r = self.vault.cfg.alias_add(self.args[0], self.args[1])
             except ValueError, e:
                 raise SFLvaultParserError(str(e))
 
@@ -871,7 +871,7 @@ class SFLvaultCommand(object):
 
         if self.opts.alias:
             try:
-                r = self.vault.alias_add(self.opts.alias, "s#%d" % vid)
+                r = self.vault.cfg.alias_add(self.opts.alias, "s#%d" % vid)
             except ValueError, e:
                 raise SFLvaultParserError(str(e))
             print "Alias added"
@@ -975,22 +975,22 @@ def main():
             sys.exit()
         identity = args.pop(1)
 
-    configfile = CONFIG_FILE
+    config_file = CONFIG_FILE
     if identity:
-        configfile = "%s.%s" % (CONFIG_FILE, identity)
-        print "NOTICE: USING VAULT IDENTITY: %s  (in %s)" % (identity, configfile)
+        config_file = "%s.%s" % (CONFIG_FILE, identity)
+        print "NOTICE: USING VAULT IDENTITY: %s  (in %s)" % (identity, config_file)
     elif CONFIG_FILE_ENV in os.environ:
-        configfile = os.environ[CONFIG_FILE_ENV]
+        config_file = os.environ[CONFIG_FILE_ENV]
 
     if len(args) == 1 or args[1] == 'shell':
-        s = SFLvaultShell(config=configfile)
+        s = SFLvaultShell(config=config_file)
         try:
             s._run()
         except (KeyboardInterrupt, EOFError), e:
             print "\nExiting."
             sys.exit()
     else:
-        f = SFLvaultCommand(config=configfile)
+        f = SFLvaultCommand(config=config_file)
         f._run(args[1:])
     
 

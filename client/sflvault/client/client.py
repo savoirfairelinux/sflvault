@@ -160,43 +160,27 @@ class AskPassMethods(object):
     
 
 ###
-### On définit les fonctions qui vont traiter chaque sorte de requête.
+### Configuration manager for SFLvault
 ###
-class SFLvaultClient(object):
-    """This is the main SFLvault Client object.
+class SFLvaultConfig(object):
+    """This object deals with everything configuration.
 
-    It is used to script some access to the vault, to retrieve data, to store
-    data, or to create a GUI interface on the top of it.
+    It handles the aliases adding/removal and talks with other systems
+    through Exceptions.
 
-    Whether you want to access a local or remote Vault server, this is the
-    object you need.
+    It handles the keyring support and passwords management
+
     """
-    def __init__(self, config, shell=False):
-        """Set up initial configuration for function calls
-
-        :param config: Configuration filename to use.
-        :param shell: if True, the private key will be cached for a while,
-            not asking your password for each query to the vault.
-        """
-        # Load configuration
-        self.configfile = config
+    def __init__(self, config_file):
+        self.config_file = os.path.expanduser(config_file)
+        self.config_check()
         self.config_read()
-
-        # The function to call upon @authenticate to get passphrase from user.
-        self.getpassfunc = AskPassMethods().getpass    
-
-        self.shell_mode = shell
-        self.authtok = ''
-        self.authret = None
-        # Set the default route to the Vault
-        url = self.cfg.get('SFLvault', 'url')
-        if url:
-            self.vault = xmlrpclib.Server(url, allow_none=True).sflvault
-
-    def config_check(self, config_file):
+        
+        
+    def config_check(self):
         """Checks for ownership and modes for all paths and files, à-la SSH"""
-        fullfile = os.path.expanduser(config_file)
-        fullpath = os.path.dirname(fullfile)
+        fullfile = self.config_file
+        fullpath = os.path.dirname(self.config_file)
     
         if not os.path.exists(fullpath):
             os.makedirs(fullpath, mode=0700)
@@ -218,12 +202,9 @@ class SFLvaultClient(object):
             sys.exit()
 
     def config_read(self):
-        """Return the ConfigParser object, fully loaded"""
-
-        self.config_check(self.configfile)
-    
+        """Return the ConfigParser object, fully loaded"""    
         self.cfg = ConfigParser()
-        fp = open(os.path.expanduser(self.configfile), 'r')
+        fp = open(self.config_file, 'r')
         self.cfg.readfp(fp)
         fp.close()
 
@@ -241,9 +222,90 @@ class SFLvaultClient(object):
 
     def config_write(self):
         """Write the ConfigParser element to disk."""
-        fp = open(os.path.expanduser(self.configfile), 'w')
+        fp = open(self.config_file, 'w')
         self.cfg.write(fp)
         fp.close()
+
+    # Fake being the actual ConfigParser object
+    def get(self, *args, **kwargs):
+        return self.cfg.get(*args, **kwargs)
+    def set(self, *args, **kwargs):
+        return self.cfg.set(*args, **kwargs)
+    def has_option(self, *args, **kwargs):
+        return self.cfg.has_option(*args, **kwargs)
+
+    def alias_add(self, alias, ptr):
+        """Add an alias and save config."""
+        tid = re.match(r'(.)#(\d+)', ptr)
+        if not tid:
+            raise ValueError("VaultID must be in the format: (.)#(\d+)")
+
+        # Set the alias value
+        self.cfg.set('Aliases', alias, ptr)
+        # Save config.
+        self.config_write()
+        return True
+
+    def alias_del(self, alias):
+        """Remove an alias from the config.
+
+        :rtype: True if removed, False otherwise.
+        """
+        if self.cfg.has_option('Aliases', alias):
+            self.cfg.remove_option('Aliases', alias)
+            self.config_write()
+            return True
+        else:
+            return False
+
+    def alias_list(self):
+        """Return a list of aliases
+
+        :rtype: list of (alias, value) pairs.
+        """
+        return self.cfg.items('Aliases')
+
+    def alias_get(self, alias):
+        """Return the pointer for a given alias"""
+        if not self.cfg.has_option('Aliases', alias):
+            return None
+        else:
+            return self.cfg.get('Aliases', alias)
+
+
+
+###
+### On définit les fonctions qui vont traiter chaque sorte de requête.
+###
+class SFLvaultClient(object):
+    """This is the main SFLvault Client object.
+
+    It is used to script some access to the vault, to retrieve data, to store
+    data, or to create a GUI interface on the top of it.
+
+    Whether you want to access a local or remote Vault server, this is the
+    object you need.
+    """
+    def __init__(self, config, shell=False):
+        """Set up initial configuration for function calls
+
+        :param config: Configuration filename to use.
+        :param shell: if True, the private key will be cached for a while,
+            not asking your password for each query to the vault.
+        """
+        # Load configuration
+        self.cfg = SFLvaultConfig(config)
+
+        # The function to call upon @authenticate to get passphrase from user.
+        self.getpassfunc = AskPassMethods().getpass
+
+        self.shell_mode = shell
+        self.authtok = ''
+        self.authret = None
+        # Set the default route to the Vault
+        url = self.cfg.get('SFLvault', 'url')
+        if url:
+            self.vault = xmlrpclib.Server(url, allow_none=True).sflvault
 
     def set_getpassfunc(self, func):
         """Set the function to ask for passphrase.
@@ -259,49 +321,6 @@ class SFLvaultClient(object):
         self.vault = xmlrpclib.Server(url).sflvault
         if save:
             self.cfg.set('SFLvault', 'url', url)
-
-
-    def alias_add(self, alias, ptr):
-        """Add an alias and save config."""
-
-        tid = re.match(r'(.)#(\d+)', ptr)
-
-        if not tid:
-            raise ValueError("VaultID must be in the format: (.)#(\d+)")
-
-        # Set the alias value
-        self.cfg.set('Aliases', alias, ptr)
-        
-        # Save config.
-        self.config_write()
-
-        return True
-
-    def alias_del(self, alias):
-        """Remove an alias from the config.
-
-        :rtype: True if removed, False otherwise."""
-
-        if self.cfg.has_option('Aliases', alias):
-            self.cfg.remove_option('Aliases', alias)
-            self.config_write()
-            return True
-        else:
-            return False
-
-    def alias_list(self):
-        """Return a list of aliases
-
-        :rtype: list of (alias, value) pairs."""
-        return self.cfg.items('Aliases')
-
-    def alias_get(self, alias):
-        """Return the pointer for a given alias"""
-        if not self.cfg.has_option('Aliases', alias):
-            return None
-        else:
-            return self.cfg.get('Aliases', alias)
-
 
     def vaultId(self, vid, prefix, check_alias=True):
         """Return an integer value for a given VaultID.
@@ -337,7 +356,7 @@ class SFLvaultClient(object):
             return int(tid.group(2))
 
         if check_alias:
-            nid = self.alias_get(vid)
+            nid = self.cfg.alias_get(vid)
 
             if not nid:
                 raise VaultIDSpecError("No such alias '%s'. Use `alias %s %s#[ID]` to set." % (vid, vid, prefix))
@@ -530,7 +549,7 @@ class SFLvaultClient(object):
         """Change the password protecting the local private key."""
         old_passphrase = getpass.getpass('Enter your old passphrase: ')
         # Re-read configuration in case it changed since the shell is open.
-        self.config_read()
+        self.cfg.config_read()
         privkey_enc = self.cfg.get('SFLvault', 'key')
         # Decrypt the privkey
         try:
@@ -560,7 +579,7 @@ class SFLvaultClient(object):
         """
         # possible-TODO: implement --force if user wants to override.
         if self.cfg.has_option('SFLvault', 'key'):
-            raise VaultConfigurationError("WARNING: you already have a private key stored in %s.  Backup/rename this file before running this command again." % (self.configfile))
+            raise VaultConfigurationError("WARNING: you already have a private key stored in %s.  Backup/rename this file before running this command again." % (self.cfg.config_file))
             
         self._set_vault(vault_url, False)
         
@@ -572,7 +591,7 @@ class SFLvaultClient(object):
         pubkey = elgamal_pubkey(eg)
 
         print "You will need a passphrase to secure your private key. The"
-        print "encrypted key will be stored on this machine in %s" % self.configfile
+        print "encrypted key will be stored on this machine in %s" % self.cfg.config_file
         print '-' * 80
 
         if not passphrase:
