@@ -345,12 +345,14 @@ class SFLvaultConfig(object):
         name = self.wallet_get()
         if not name:
             return None
+
         lst = self.wallet_list()
         names = [x[1] for x in lst]
         if name not in names:
             raise KeyringError("No such Wallet type: %s" % name)
-        backend = [x[2] for x in lst if x[1] == name][0]
         self.wallet_test(name)
+
+        backend = [x[2] for x in lst if x[1] == name][0]
         return backend
 
     def wallet_test(self, name):
@@ -396,7 +398,7 @@ class SFLvaultClient(object):
         self.cfg = SFLvaultConfig(config)
 
         # The function to call upon @authenticate to get passphrase from user.
-        self.getpassfunc = AskPassMethods(self.cfg).getpass
+        self.set_getpassfunc(None)
 
         self.shell_mode = shell
         self.authtok = ''
@@ -406,14 +408,17 @@ class SFLvaultClient(object):
         if url:
             self.vault = xmlrpclib.Server(url, allow_none=True).sflvault
 
-    def set_getpassfunc(self, func):
+    def set_getpassfunc(self, func=None):
         """Set the function to ask for passphrase.
 
         By default, it is set to _getpass, which asks for the passphrase on the
         command line, but you can create a new function, that would for example
         pop-up a window, or use another mechanism to ask for passphrase and
         continue authentication."""
-        self.getpassfunc = func
+        if not func:
+            self.getpassfunc = AskPassMethods(self.cfg).getpass
+        else:
+            self.getpassfunc = func
         
     def _set_vault(self, url, save=False):
         """Set the vault's URL and optionally save it"""

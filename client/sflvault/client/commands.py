@@ -936,6 +936,7 @@ class SFLvaultCommand(object):
 
         if id == '0':
             self.vault.cfg.wallet_set(None, None)
+            self.vault.set_getpassfunc(None)
             print "Keyring disabled"
             return
 
