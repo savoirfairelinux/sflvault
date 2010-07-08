@@ -39,10 +39,16 @@ except:
 client = None
 error_message = QtCore.QObject()
 
-
 settings = Config()
 client_alias = SFLvaultClient(str(settings.fileName()))
 
+def manual_auth():
+    password, ok = QtGui.QInputDialog.getText( None,
+                                   "Enter your SFLvault password",
+                                   "Password",
+                                   QtGui.QLineEdit.Normal,
+                                    )
+    return str(password)
 
 def getSecret():
     wallet_setting = str(settings.value("SFLvault/wallet").toString())
@@ -56,7 +62,6 @@ def getSecret():
 def setSecret(wallet_id, password=None):
     settings = Config()
     client = SFLvaultClient(str(settings.fileName()))
-
 
     # Disable wallet
     if wallet_id == '0':
@@ -100,7 +105,11 @@ def getAuth():
     global client
     #if not client:
     client = SFLvaultClient(str(settings.fileName()))
-    
+
+    # Check if wallet is disabled
+    if client.cfg.wallet_list()[0][4] == True:
+        client.getpassfunc = manual_auth
+
     try:
         # Search nothing, just to get a valid client
         status = client.search(["}{[a]"])
