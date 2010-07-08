@@ -1,30 +1,55 @@
 Steps to perform when releasing SFLvault
-----------------------------------------
+========================================
 
 * Modify setup.py and change the version number
 
 * Make sure the MINIMAL_CLIENT_VERSION in controllers/xmlrpc.py is appropriate,
   to ensure backwards compatibility.
 
-* Run `python setup.py develop` to regenerate the EGG-INFO stuff
-
 * Modify `common/sflvault/common/__init__.py` to HIDE deprecation warnings.
 
 * Commit the release commit INCLUDING the Release Notes inside that commit.
+  Note all new features and fixes.
+
+* Update the debian/changelog with the same information as in the Release
+  commit.
 
 * Step OUTSIDE of the virtualenv, with `deactivate` (otherwise, your virtenv's path will go in the `sflvault` executable file)
 
-* For each module, SFLvault_common, SFLvault_server and SFLvault_client:
-** Run `python setup.py bdist_egg` to compile the new egg.
-  NOTE: make sure you have permissions to write in ALL of the build/ directory!
-** Run `python setup.py bdist_egg upload` if everything went well.
+* For each module, SFLvault-common, SFLvault-server, SFLvault-client and
+  SFLvault-client-qt:
+  
+  $ python setup.py sdist 
+  $ python setup.py sdist upload    # prepend "register" the first time
+
+* Prepare the Debian packages:
+
+  $ for path in common client client-qt
+  do
+    cd $path
+    dpkg-buildpackage -kFDFE4451
+  done
+  $ 
+
+* Upload Debian packages:
+
+  $ cd ..
+  $ dput ppa:savoirfairelinux/sflvault sflvault-client-qt_0.7.5dev_i386.changes
+
+
+Update documentation
+--------------------
 
 * Modify the UpgradePath page with everything required to upgrade.
 
 * Modify the wiki's front-page to announce it.
-** Link to the commit as "Release notes"
+  Link to the commit as "Release notes"
 
 * Tag the commit with the version number
+
+* Push with tags:
+
+  git push --tags
 
 * Announce by other means, IRC, Freshmeat, Slashdot, etc...
 
