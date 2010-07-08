@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #    lib/auth.py
 #
@@ -29,7 +29,7 @@ import sys
 import os
 from PyQt4 import QtCore, QtGui
 from sflvault.client import SFLvaultClient
-from sflvault_qt.config.config import Config
+from sflvault.clientqt.gui.config.config import Config
 from error import *
 try:
     import keyring
