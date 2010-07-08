@@ -2,7 +2,7 @@
 # -*- makefile -*-
 # Uncomment this to turn on verbose mode.
 export DH_VERBOSE=1
-package=sflvault-client
+package=sflvault-client-qt
 
 clean:
 	dh_testdir
@@ -43,7 +43,7 @@ binary-indep: build install
 	dh_fixperms
 	dh_pysupport
 	find debian/$(package) -type f -perm 755 | xargs -r chmod 644
-	chmod 755 debian/${package}/usr/bin/sflvault
+	chmod 755 debian/${package}/usr/bin/sflvault-client-qt
 	rm debian/${package}/usr/share/pyshared/sflvault/__init__.py
 	dh_installdeb
 	dh_gencontrol

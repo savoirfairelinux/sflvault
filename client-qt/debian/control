@@ -1,11 +1,12 @@
-Package: sflvault-qt4
+Package: sflvault-client-qt
 Version: 0.9.0
 Section: utils
 Priority: optional
 Architecture: all
-Depends: sflvault-common, python-qt4
-Installed-Size: 462252
-Maintainer: Arthur Gautier <arthur.gautier@savoirfairelinux.com>
-Description: qt4 frontend for sflvault written in python
- Qt4 frontend for sflvault - network credential utility
-
+Depends: sflvault-common, sflvault-client, python-qt4
+Maintainer: Thibault Cohen <thibault.cohen@savoirfairelinux.com>
+Homepage: http://www.sflvault.org/
+Vcs-Git: http://git.sflvault.org/sflvault.git
+Vcs-Browser: https://projects.savoirfairelinux.com/repositories/show/sflvault
+Description: SFLvault is a Networked credentials store and authentication manager.
+ This is the Qt4 Client package.
