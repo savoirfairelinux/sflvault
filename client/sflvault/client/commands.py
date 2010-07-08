@@ -209,7 +209,8 @@ class SFLvaultCommand(object):
             print "[SFLvault] VaultID spec. error: %s" % e
         except socket.error, e:
             print "[SFLvault] Cannot connect to the vault: %s" % e
-            
+        except KeyringError, e:
+            print "[SFLvault] Keyring error: %s" % e
         
 
     def _parse(self):
@@ -929,19 +930,24 @@ class SFLvaultCommand(object):
             return
 
         # Otherwise
+        id = self.args[0]
         lst = self.vault.cfg.wallet_list()
         ids = [x[0] for x in lst]
 
-        if self.args[0] == '0':
+        if id == '0':
             self.vault.cfg.wallet_set(None, None)
             print "Keyring disabled"
             return
 
-        if self.args[0] not in ids:
+        if id not in ids:
             raise SFLvaultParserError("Invalid wallet ID. Try `wallet` without parameters")
+
+        # Make sure the wallet is supported
+        self.vault.cfg.wallet_test([x[1] for x in lst if x[0] == id][0])
+
         try:
             passwd = getpass.getpass("Enter your current vault password: ")
-            self.vault.cfg.wallet_set(self.args[0], passwd)
+            self.vault.cfg.wallet_set(id, passwd)
         except KeyringError, e:
             print "[SFLvault] %s" % e
             return False

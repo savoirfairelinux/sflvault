@@ -159,16 +159,15 @@ class AskPassMethods(object):
             self.getpass = self.program
             return
 
-        wallet = self.cfg.wallet_get()
+        wallet_name = self.cfg.wallet_get()
 
         def keyring_wallet():
             self.cfg._check_keyring()
             import keyring
-            keyring_backend = getattr(keyring.backend, wallet)()
-            return keyring_backend.get_password("sflvault",
-                                                self.cfg.config_file)
+            backend = self.cfg.wallet_get_obj()
+            return backend.get_password("sflvault", self.cfg.config_file)
 
-        if wallet:
+        if wallet_name:
             self.getpass = keyring_wallet
 
 ###
@@ -303,7 +302,7 @@ class SFLvaultConfig(object):
 
         current = self.wallet_get()
         out = [('0', 'Manual', None, 'Disabled', current == None)]
-        ref = {1: "Recommended", 0: "Supported", -1: "Not installed"} 
+        ref = {1: "Recommended", 0: "Supported", -1: "Not installed/supported"} 
         for i, backend in enumerate(keyring.backend.get_all_keyring()):
             out.append((str(i + 1),
                         backend.__class__.__name__,
@@ -351,7 +350,28 @@ class SFLvaultConfig(object):
         if name not in names:
             raise KeyringError("No such Wallet type: %s" % name)
         backend = [x[2] for x in lst if x[1] == name][0]
-        return backend()
+        self.wallet_test(name)
+        return backend
+
+    def wallet_test(self, name):
+        """Test if the Wallet is supported, otherwise, suggest to install
+        packages
+        """
+        lst = self.wallet_list()
+        backend = [x[2] for x in lst if x[1] == name][0]
+        assoc = {'CryptedFileKeyring': 'python-keyring',
+                 'UncryptedFileKeyring': 'python-keyring',
+                 'KDEKWallet': 'python-keyring-kwallet',
+                 'GnomeKeyring': 'python-keyring-gnome',
+                 }
+        if backend.supported() == -1:
+            if name in assoc:
+                add = ' To add support, please install the `%s` package.' % \
+                    assoc[name]
+            raise KeyringError("Keyring (%s) is not supported.%s "
+                               "Use the `wallet` command to reconfigure." %
+                               (name, add))
+        return True
 
 ###
 ### On définit les fonctions qui vont traiter chaque sorte de requête.

@@ -12,6 +12,8 @@ Steps to perform when releasing SFLvault
 
 * Commit the release commit INCLUDING the Release Notes inside that commit.
 
+* Step OUTSIDE of the virtualenv, with `deactivate` (otherwise, your virtenv's path will go in the `sflvault` executable file)
+
 * For each module, SFLvault_common, SFLvault_server and SFLvault_client:
 ** Run `python setup.py bdist_egg` to compile the new egg.
   NOTE: make sure you have permissions to write in ALL of the build/ directory!
