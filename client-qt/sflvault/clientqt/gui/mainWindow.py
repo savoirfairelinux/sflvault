@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #    sqlvault_qt/mainWindow.py 
 #
@@ -62,6 +62,9 @@ class MainWindow(QtGui.QMainWindow):
         self.listWidget = {}
         self.userinfo = None
         self.search_timer = QtCore.QTimer()
+
+        # Set main window title
+        self.setWindowTitle("SFLvault Client")
 
         # Load settings
         self.settings = Config(parent=self)

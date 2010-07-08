@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #    sflvault_qt/docs/infodock.py
 #
@@ -143,7 +143,7 @@ class Info(QtGui.QWidget):
         # Label Title
         ## Service
         self.serviceListTitle["id"] = QtGui.QLabel(self.tr("Id :"))
-        self.serviceListTitle["metadata"] = QtGui.QLabel(self.tr("Metadata :"))
+        #self.serviceListTitle["metadata"] = QtGui.QLabel(self.tr("Metadata :"))
         ## Machine
         self.machineListTitle["fqdn"] = QtGui.QLabel(self.tr("Machine FQDN :"))
         self.machineListTitle["id"] = QtGui.QLabel(self.tr("Machine Id :"))

@@ -89,11 +89,21 @@ class TreeModel(QtCore.QAbstractItemModel):
                                          "customers": [],
                                         })
         for custoid, custo in search_result["results"].items():
-            parents[-1].appendChild(TreeItem([custo["name"],"c#" + custoid], Qicons("customer"), parents[-1]))
+            it = TreeItem([custo["name"],
+                           "c#" + custoid],
+                          Qicons("customer"),
+                          parents[-1])
+            parents[-1].appendChild(it)
             parents.append(parents[-1].child(parents[-1].childCount() - 1))
 
             for machineid, machine in custo["machines"].items():
-                parents[-1].appendChild(TreeItem([machine["name"],"m#" + machineid], Qicons("machine"), parents[-1]))
+                it = TreeItem(["%s (%s - %s)" % (machine["name"],
+                                                 machine["fqdn"],
+                                                 machine["ip"]),
+                               "m#" + machineid],
+                              Qicons("machine"),
+                              parents[-1])
+                parents[-1].appendChild(it)
                 parents.append(parents[-1].child(parents[-1].childCount() - 1))
 
                 for serviceid, service in machine["services"].items():
@@ -101,7 +111,11 @@ class TreeModel(QtCore.QAbstractItemModel):
                         continue
                     else:
                         protocol = service["url"].split(":")[0]
-                        parents[-1].appendChild(TreeItem([service["url"],"s#" + serviceid], Qicons(protocol, "service"), parents[-1]))
+                        it = TreeItem([service["url"],
+                                       "s#" + serviceid],
+                                      Qicons(protocol, "service"),
+                                      parents[-1])
+                        parents[-1].appendChild(it)
 
                 parents.pop()
 
