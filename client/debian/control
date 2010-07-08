@@ -13,7 +13,8 @@ Vcs-Browser: https://projects.savoirfairelinux.com/repositories/show/sflvault
 Package: sflvault-client
 Architecture: all
 Depends: ${python:Depends}, python-crypto, python-pexpect(>=2.3), python-urwid(>=0.9.8.1),
- python-decorator, python-keyring, sflvault-common(>=0.7.5)
+ python-decorator, sflvault-common(>=0.7.5)
+Recommends: python-keyring
 Suggests: python-keyring-gnome, python-keyring-kwallet
 XB-Python-Version: ${python:Versions}
 Description: SFLvault is a Networked credentials store and authentication manager.

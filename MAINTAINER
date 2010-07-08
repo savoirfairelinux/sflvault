@@ -28,13 +28,16 @@ Steps to perform when releasing SFLvault
   do
     cd $path
     dpkg-buildpackage -kFDFE4451
+    cd ..
   done
   $ 
 
 * Upload Debian packages:
 
-  $ cd ..
-  $ dput ppa:savoirfairelinux/sflvault sflvault-client-qt_0.7.5dev_i386.changes
+  $ for file in *.changes
+  do
+    dput ppa:savoirfairelinux/sflvault $file
+  done
 
 
 Update documentation

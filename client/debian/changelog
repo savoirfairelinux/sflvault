@@ -1,4 +1,4 @@
-sflvault-client (0.7.5dev) unstable; urgency=low
+sflvault-client (0.7.5dev) karmic lucid; urgency=low
 
   * Released 0.7.5dev
 
@@ -54,7 +54,7 @@ sflvault-client (0.7.5dev) unstable; urgency=low
 
  -- Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>  Wed, 07 Jul 2010 11:47:11 -0400
 
-sflvault-client (0.7.3) unstable; urgency=low
+sflvault-client (0.7.3) karmic lucid; urgency=low
 
   * Initial release
 
