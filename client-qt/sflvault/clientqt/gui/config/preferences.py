@@ -28,6 +28,7 @@ import re
 from PyQt4.QtCore import Qt
 import sflvault
 from sflvault.clientqt.lib.auth import setSecret
+import sflvault.clientqt
 from sflvault.client import SFLvaultClient
 import shutil
 import os
@@ -189,7 +190,9 @@ class PreferencesWidget(QtGui.QDialog):
 
     def fillLanguage(self, value):
         self.language.clear()
-        for file in os.listdir("i18n"):
+        i18n_dir = os.path.join(os.path.dirname(sflvault.clientqt.__file__),
+                                'i18n')
+        for file in os.listdir(i18n_dir):
             filename, ext = os.path.splitext(file)
             if ext == ".qm":
                 appname, lang = filename.split("_",1)
