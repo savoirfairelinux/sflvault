@@ -30,7 +30,7 @@ setup(
     #        ('public/**', 'ignore', None)]},
     entry_points="""
     [console_scripts]
-    sflvault-client-qt = sflvaultclientqt4:main
+    sflvault-client-qt = sflvault.clientqt:main
     """,
 )
 

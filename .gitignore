@@ -13,6 +13,7 @@ dist
 eggs
 develop-eggs
 SFLvault_server.egg-info/
+SFLvault_client_qt.egg-info/
 
 # generated html files
 docs/*.html
