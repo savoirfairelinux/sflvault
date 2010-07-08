@@ -50,7 +50,8 @@ server/host.pem
 /sflvault-*.changes
 /sflvault-*.dsc
 /sflvault-*.tar.gz
+/sflvault-*.ppa.upload
+/sflvault-*_source.build
 build-stamp
 /*/debian/sflvault-*
 /*/debian/files
-/sflvault-*.ppa.upload

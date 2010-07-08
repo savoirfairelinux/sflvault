@@ -27,14 +27,14 @@ Steps to perform when releasing SFLvault
   $ for path in common client client-qt
   do
     cd $path
-    dpkg-buildpackage -kFDFE4451
+    debuild -S -sa -kFDFE4451
     cd ..
   done
   $ 
 
 * Upload Debian packages:
 
-  $ for file in *.changes
+  $ for file in *_source.changes
   do
     dput ppa:savoirfairelinux/sflvault $file
   done
