@@ -9,21 +9,19 @@ except ImportError:
 
 setup(
     name='SFLvault-client-qt',
-    version="0.9.0",
+    version="0.7.5dev",
     description='Networked credentials store and authentication manager - Qt Client',
     author='Thibault Cohen',
     author_email='thibault.cohen@savoirfairelinux.com',
     url='http://www.sflvault.org',
-    license='GPLv3',
+    license='GPLv2',
     install_requires=[
                     #"PyQt",
                       "SFLvault-client",
                       "SFLvault-common",
                       ],
     packages=find_packages(exclude=['ez_setup']),
-    include_package_data=True,
     test_suite='nose.collector',
-    package_data={'sflvault': ['i18n/*/LC_MESSAGES/*.mo']},
     #message_extractors = {'sflvault': [
     #        ('**.py', 'python', None),
     #        ('templates/**.mako', 'mako', None),

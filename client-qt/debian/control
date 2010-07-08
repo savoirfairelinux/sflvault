@@ -1,5 +1,5 @@
 Package: sflvault-client-qt
-Version: 0.9.0
+Version: 0.7.5dev
 Section: utils
 Priority: optional
 Architecture: all
