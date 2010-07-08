@@ -1,0 +1,11 @@
+Package: sflvault-qt4
+Version: 0.9.0
+Section: utils
+Priority: optional
+Architecture: all
+Depends: sflvault-common, python-qt4
+Installed-Size: 462252
+Maintainer: Arthur Gautier <arthur.gautier@savoirfairelinux.com>
+Description: qt4 frontend for sflvault written in python
+ Qt4 frontend for sflvault - network credential utility
+

@@ -29,8 +29,7 @@ import sys
 from images.qicons import *
 from lib.auth import *
 
-
-if __name__ == "__main__":
+def main():
     app = QtGui.QApplication(sys.argv)
   
     app.setWindowIcon(Qicons("sflvault_icon"))
