@@ -302,7 +302,7 @@ class SFLvaultConfig(object):
 
         current = self.wallet_get()
         out = [('0', 'Manual', None, 'Disabled', current == None)]
-        ref = {1: "Recommended", 0: "Supported", -1: "Not installed/supported"} 
+        ref = {1: "Recommended", 0: "Supported", -1: "Not installed"} 
         for i, backend in enumerate(keyring.backend.get_all_keyring()):
             out.append((str(i + 1),
                         backend.__class__.__name__,
