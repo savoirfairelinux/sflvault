@@ -27,7 +27,7 @@ from PyQt4 import QtCore, QtGui
 import re
 from PyQt4.QtCore import Qt
 import sflvault
-from lib.auth import setSecret
+from sflvault.clientqt.lib.auth import setSecret
 from sflvault.client import SFLvaultClient
 import shutil
 import os

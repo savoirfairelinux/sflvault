@@ -49,8 +49,8 @@ from bar.osd import Osd
 from sflvault.client import SFLvaultClient
 import shutil
 import os
-from lib.error import *
-from lib.auth import *
+from sflvault.clientqt.lib.error import *
+from sflvault.clientqt.lib.auth import *
 
 
 class MainWindow(QtGui.QMainWindow):

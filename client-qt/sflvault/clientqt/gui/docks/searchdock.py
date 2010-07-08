@@ -31,7 +31,7 @@ from sflvault.client import SFLvaultClient
 import shutil
 import os
 
-from lib.auth import *
+from sflvault.clientqt.lib.auth import *
 
 class SearchDock(QtGui.QDockWidget):
     def __init__(self, parent=None, ):

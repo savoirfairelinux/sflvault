@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #    sflvault-client-qt4.py 
 #
@@ -24,10 +24,10 @@
 
     
 from PyQt4 import QtCore, QtGui
-from sflvault_qt import mainWindow
+from sflvault.clientqt.gui import mainWindow
 import sys
-from images.qicons import *
-from lib.auth import *
+from sflvault.clientqt.images.qicons import *
+from sflvault.clientqt.lib.auth import *
 
 def main():
     app = QtGui.QApplication(sys.argv)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #    sflvault_qt/config/users.py
 #
@@ -31,8 +31,8 @@ from sflvault.client import SFLvaultClient
 import shutil
 import os
 
-from lib.auth import *
-from sflvault_qt.dialog import progressdialog
+from sflvault.clientqt.lib.auth import *
+from sflvault.clientqt.gui.dialog import progressdialog
 
 
 class UsersWidget(QtGui.QDialog):

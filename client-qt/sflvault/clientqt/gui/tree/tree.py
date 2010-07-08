@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #    sflvault_qt/tree/tree.py
 #
@@ -27,11 +27,11 @@ import sys
 from PyQt4 import QtCore, QtGui, QtWebKit
 
 from sflvault.client import SFLvaultClient
-from sflvault_qt.bar.filterbar import FilterBar
-from sflvault_qt.dialog.webpreview import WebPreviewWidget
-from images.qicons import *
+from sflvault.clientqt.gui.bar.filterbar import FilterBar
+from sflvault.clientqt.gui.dialog.webpreview import WebPreviewWidget
+from sflvault.clientqt.images.qicons import *
 
-from lib.auth import *
+from sflvault.clientqt.lib.auth import *
 
 
 class TreeItem(QtCore.QObject):

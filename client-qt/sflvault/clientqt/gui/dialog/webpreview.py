@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #    sflvault_qt/bar/filterbar.py
 #
@@ -28,7 +28,7 @@ import re
 from PyQt4.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
-from images.qicons import *
+from sflvault.clientqt.images.qicons import *
 import shutil
 import os
 

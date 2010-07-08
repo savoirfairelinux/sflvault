@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #    sflvault_qt/config/service.py
 #
@@ -30,8 +30,8 @@ import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
 import os
-from sflvault_qt.dialog import progressdialog
-from lib.auth import *
+from sflvault.clientqt.gui.dialog import progressdialog
+from sflvault.clientqt.lib.auth import *
 
 
 class DeleteServiceWidget(QtGui.QMessageBox):

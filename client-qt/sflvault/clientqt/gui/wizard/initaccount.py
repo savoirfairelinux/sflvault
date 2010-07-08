@@ -29,7 +29,7 @@ from PyQt4.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 from savepassword import SavePasswordWizard
-from lib.auth import *
+from sflvault.clientqt.lib.auth import *
 import shutil
 import os
 

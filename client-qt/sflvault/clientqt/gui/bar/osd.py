@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #    sflvault_qt/bar/ocd.py
 #
@@ -31,8 +31,8 @@ import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
 import os
-from images.qicons import *
-from lib.auth import *
+from sflvault.clientqt.images.qicons import *
+from sflvault.clientqt.lib.auth import *
 
 
 class Osd(QtGui.QWidget):
