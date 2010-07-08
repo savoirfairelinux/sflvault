@@ -29,10 +29,6 @@ from PyQt4.QtCore import Qt
 import shutil
 import os
 
-# Set folders
-image_folder = "images/"
-image_service_folder = image_folder + "services/"
-
 # load standard icons
 icons = {}
 icons["sflvault_icon"] = "images/sflvault.png"
@@ -46,11 +42,13 @@ icons["information"] = "images/information.png"
 # Auto load all service icons in images/services/ folder
 service_icons = {}
 service_icons["service"] = "images/service.png"
-os.chdir(os.path.dirname(os.path.dirname(__file__)))
-for file in os.listdir("images/services"):
+this_dir = os.path.dirname(os.path.dirname(__file__))
+services_dir = os.path.join(this_dir, "images", "services")
+for file in os.listdir(services_dir):
     service, ext = os.path.splitext(file)
     if ext in [".jpg", ".jpeg", ".png"]:
-        service_icons[service] = image_service_folder + service + ".png"
+        service_icons[service] = os.path.join("images", "services",
+                                              service + ext)
 
 
 def Qicons(icon_name, type=None):
@@ -64,7 +62,7 @@ def Qicons(icon_name, type=None):
     if type == "service":
         if not icon_name in service_icons.keys():
             icon_name = "service"
-        return QtGui.QIcon(service_icons[icon_name])
+        return QtGui.QIcon(os.path.join(this_dir, service_icons[icon_name]))
     # Return standard icons
     else:
-        return QtGui.QIcon(icons[icon_name])
+        return QtGui.QIcon(os.path.join(this_dir, icons[icon_name]))

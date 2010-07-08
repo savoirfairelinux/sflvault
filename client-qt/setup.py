@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name='SFLvault-client-qt',
-    version="0.7.5dev",
+    version="0.7.5",
     description='Networked credentials store and authentication manager - Qt Client',
     author='Thibault Cohen',
     author_email='thibault.cohen@savoirfairelinux.com',
@@ -20,6 +20,7 @@ setup(
                       "SFLvault-client",
                       "SFLvault-common",
                       ],
+    include_package_data=True,
     packages=find_packages(exclude=['ez_setup']),
     test_suite='nose.collector',
     #message_extractors = {'sflvault': [
