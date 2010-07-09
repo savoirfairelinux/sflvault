@@ -576,6 +576,9 @@ class SFLvaultAccess(object):
         if grp.hidden and (not ug or not ug.is_admin):
             return vaultMsg(False, "Group not found*")
 
+        if ug:
+            out['cryptgroupkey'] = ug.cryptgroupkey
+        
         return vaultMsg(True, "Here is the group", {'group': out})
 
 
@@ -645,7 +648,8 @@ class SFLvaultAccess(object):
         meta.Session.commit()
 
         return vaultMsg(True, "Added group '%s'" % ng.name,
-                        {'name': ng.name, 'group_id': int(ng.id)})
+                        {'name': ng.name, 'group_id': int(ng.id),
+                         'cryptgroupkey': nug.cryptgroupkey})
 
     def group_del(self, group_id):
         """Remove a group from the vault. Only if no services are associated
@@ -695,8 +699,10 @@ class SFLvaultAccess(object):
                     continue
                 res['hidden'] = True
 
-            if len(myug) and myug[0].is_admin:
-                res['admin'] = True
+            if len(myug):
+                res['cryptgroupkey'] = myug[0].cryptgroupkey
+                if myug[0].is_admin:
+                    res['admin'] = True
             
             print "A" * 1000
             print grp.users_assoc
