@@ -377,6 +377,8 @@ class TreeView(QtGui.QTreeView):
         """
             Create contextMenu on right click
         """
+        if len(self.selectedIndexes()) < 1:
+            return event.ignore()
         menu = QtGui.QMenu(self)
         if self.selectedIndexes()[0].parent().parent().isValid():
             menu.addAction(self.connectAct)
