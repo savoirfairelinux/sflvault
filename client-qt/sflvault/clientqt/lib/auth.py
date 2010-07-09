@@ -44,9 +44,9 @@ client_alias = SFLvaultClient(str(settings.fileName()))
 
 def manual_auth():
     password, ok = QtGui.QInputDialog.getText( None,
-                                   "Enter your SFLvault password",
-                                   "Password",
-                                   QtGui.QLineEdit.Normal,
+                                   "SFLvault password",
+                                   "Type your SFLvault password",
+                                   QtGui.QLineEdit.Password,
                                     )
     return str(password)
 
