@@ -920,13 +920,15 @@ class SFLvaultCommand(object):
 
     def wallet(self):
         """Put your SFLvault password in a wallet"""
-        self.parser.set_usage('wallet [wallet ID]')
+        self.parser.set_usage('wallet [num]')
         self._parse()
 
         if len(self.args) == 0:
             for i, name, obj, status, current in self.vault.cfg.wallet_list():
                 print "%s. %s - %s%s" % (i, name, status,
                                          " (*current)" if current else '')
+            print
+            print "Execute 'wallet <num>' to change wallet"
             return
 
         # Otherwise
