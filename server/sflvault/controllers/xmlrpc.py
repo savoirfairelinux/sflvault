@@ -23,7 +23,7 @@ import logging
 from distutils.version import LooseVersion
 
 
-MINIMAL_CLIENT_VERSION = LooseVersion('0.7.4')
+MINIMAL_CLIENT_VERSION = LooseVersion('0.7.6')
 
 
 # ALL THE FOLLOWING IMPORTS MOVED TO vault.py:
