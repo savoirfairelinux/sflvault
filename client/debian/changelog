@@ -1,3 +1,10 @@
+sflvault-client (0.7.6.1dev~ppa1) lucid; urgency=high
+
+    * Released 0.7.6.1dev
+    * Fixes critical bug with user-setup and user-passwd
+
+ -- Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>  Wed, 14 Jul 2010 10:00:00 -0400
+
 sflvault-client (0.7.6dev~ppa1) lucid; urgency=low
 
     * Released 0.7.6dev
