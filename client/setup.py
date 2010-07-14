@@ -37,6 +37,7 @@ setup(
     ssh = sflvault.client.services:ssh
     ssh+pki = sflvault.client.services:ssh_pki
     content = sflvault.client.services:content
+    sflvault = sflvault.client.services:sflvault
     vnc = sflvault.client.services:vnc
     mysql = sflvault.client.services:mysql
     psql = sflvault.client.services:postgres

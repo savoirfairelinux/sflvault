@@ -473,7 +473,12 @@ class content(Service):
                 chunk = raw_input(">>> ")
                 pk.append(chunk)
         except KeyboardInterrupt, e:
+            print ""
             return '\n'.join(pk)
+
+class sflvault(content):
+    """Inherit password entry, when storing other Vault's Private key"""
+    pass
 
 
 
