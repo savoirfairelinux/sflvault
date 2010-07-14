@@ -28,8 +28,9 @@ import xmlrpclib
 import getpass
 import shlex
 import socket
-import readline
-
+import platform
+if platform.system() != 'Windows':
+    import readline
 
 from Crypto.PublicKey import ElGamal
 from base64 import b64decode, b64encode
@@ -998,7 +999,10 @@ class SFLvaultCompleter:
 ###    
 
 # Default configuration file
-CONFIG_FILE = '~/.sflvault/config'
+if platform.system() == 'Windows':
+    CONFIG_FILE = '~/Application Data/SFLvault/config.ini'
+else:
+    CONFIG_FILE = '~/.sflvault/config'
 # Environment variable to override default config file.
 CONFIG_FILE_ENV = 'SFLVAULT_CONFIG'
 

@@ -30,14 +30,20 @@ import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
 import os
+import platform
 
 
 class Config(QtCore.QSettings):
-    def __init__(self, config_filename='/home/' + os.getenv( 'USER' ) + '/.sflvault/config', parent=None):
-        QtCore.QSettings.__init__(self, config_filename, 0, parent)
-        sHomeUser   = '/home/' + os.getenv( 'USER' ) + '/'
+    def __init__(self, parent=None):
+        if platform.system() == 'Windows':
+            QtCore.QSettings.__init__(self, QtCore.QSettings.IniFormat,
+                                        QtCore.QSettings.UserScope,
+                                        "SFLvault", "config", parent);
+        else:
+            QtCore.QSettings.__init__(self,
+                         '/home/' + os.getenv( 'USER' ) + '/.sflvault/config',
+                         0, parent)
         self.parent = parent
-        self.config_filename = config_filename
         self.checkConfig()
 
     def readConfig(self, group=None):
