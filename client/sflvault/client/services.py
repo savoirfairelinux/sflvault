@@ -461,6 +461,20 @@ B64DEADBEEF...==
         
 
 
+class content(Service):
+    """Static content store.  Will store any blob into the database as the secret"""
+    @staticmethod
+    def ask_password(edit, parsed_url):
+        """Function to grab the content and set it as the secret"""
+        print """Paste the content to store, and hit Ctrl+C"""
+        pk = []
+        try:
+            while True:
+                chunk = raw_input(">>> ")
+                pk.append(chunk)
+        except KeyboardInterrupt, e:
+            return '\n'.join(pk)
+
 
 
 # TODO: document that the `sudo` doesn't need a password, it takes the password
