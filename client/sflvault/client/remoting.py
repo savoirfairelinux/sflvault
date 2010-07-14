@@ -38,6 +38,7 @@ from sflvault.client.utils import *
 
 import random
 import sys
+import platform
 if platform.system() != 'Windows':
     import pexpect
 

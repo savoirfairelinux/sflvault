@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import platform
 if platform.system() != 'Windows':
     import pexpect
 import os
