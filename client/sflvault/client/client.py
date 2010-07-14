@@ -667,7 +667,7 @@ class SFLvaultClient(object):
             new_passphrase = self._new_passphrase()
         # Encrypt and set the new passphrase
         self.cfg.set('SFLvault', 'key', encrypt_privkey(thething, new_passphrase))
-        self.config_write()
+        self.cfg.config_write()
 
         print "user-passwd successful"
         
@@ -724,7 +724,7 @@ class SFLvaultClient(object):
         del(eg)
 
         print "Saving settings..."
-        self.config_write()
+        self.cfg.config_write()
 
 
     @authenticate()
