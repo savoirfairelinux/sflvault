@@ -24,6 +24,7 @@
 import urlparse
 import re
 from pkg_resources import iter_entry_points, DistributionNotFound
+import platform
 if platform.system() != 'Windows':
     import readline
 

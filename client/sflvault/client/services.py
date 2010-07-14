@@ -29,6 +29,7 @@ import pipes
 import time
 import sys
 import os
+import platform
 if platform.system() != 'Windows':
     import pexpect
 

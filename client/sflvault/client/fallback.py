@@ -33,6 +33,7 @@ import shlex
 import sys
 import optparse
 import os
+import platform
 if platform.system() != 'Windows':
     import readline
 
