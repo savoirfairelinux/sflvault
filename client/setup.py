@@ -5,6 +5,7 @@ except ImportError:
     use_setuptools()
     from setuptools import setup, find_packages
 
+import platform
 
 
 setup(
@@ -17,10 +18,11 @@ setup(
     license='GPLv3',
     install_requires=["SFLvault-common",
                       "pycrypto",
-                      "pexpect>=2.3",
-                      "urwid>=0.9.8.1",
                       "decorator",
-                      ],
+                      ] + \
+                     ([] if platform.system() == 'Windows'
+                         else ["urwid>=0.9.8.1",
+                               "pexpect>=2.3"]),
     packages=find_packages(exclude=['ez_setup']),
     include_package_data=True,
     test_suite='nose.collector',

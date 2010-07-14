@@ -24,12 +24,13 @@ from sflvault.client.utils import *
 from sflvault.client.fallback import SFLvaultFallback
 import struct, fcntl, termios, signal # for term size signaling..
 import optparse
-import pexpect
 import random
 import pipes
 import time
 import sys
 import os
+if platform.system() != 'Windows':
+    import pexpect
 
 # Enum used in the services' `provides`
 PROV_PORT_FORWARD = 'PROV_PORT_FORWARD'

@@ -31,9 +31,10 @@ from sflvault.client.commands import ExitParserException, SFLvaultParserError
 from sflvault.client.utils import ServiceSwitchException
 import shlex
 import sys
-import readline
 import optparse
 import os
+if platform.system() != 'Windows':
+    import readline
 
 class SFLvaultFallback(object):
 

@@ -37,8 +37,9 @@ must list some instances of the `Service` class or some derived class.
 from sflvault.client.utils import *
 
 import random
-import pexpect
 import sys
+if platform.system() != 'Windows':
+    import pexpect
 
 __all__ = ['Service', 'Chain']
 

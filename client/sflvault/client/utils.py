@@ -23,8 +23,10 @@
 
 import urlparse
 import re
-import readline
 from pkg_resources import iter_entry_points, DistributionNotFound
+if platform.system() != 'Windows':
+    import readline
+
 
 __all__ = ['shred', 'urlparse', 'AuthenticationError', 'PermissionError',
            'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
