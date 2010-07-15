@@ -102,7 +102,8 @@ class SFLvaultShell(object):
                 except ExitParserException, e:
                     pass
                 
-                if hasattr(runcmd, 'next_command'):
+                if hasattr(runcmd, 'next_command')\
+                          and if platform.system() != 'Windows':
                     print "[Added to shell history: %s]" % runcmd.next_command
                     readline.add_history(runcmd.next_command)
 
@@ -1013,9 +1014,10 @@ def main():
         if onefunc[0] != '_':
             func_list.append(onefunc.replace('_', '-'))
 
-    readline.set_completer_delims('_')
-    readline.set_completer(SFLvaultCompleter(func_list).complete)
-    readline.parse_and_bind("tab: complete")
+    if platform.system() != 'Windows':
+        readline.set_completer_delims('_')
+        readline.set_completer(SFLvaultCompleter(func_list).complete)
+        readline.parse_and_bind("tab: complete")
 
     # Set the output to UTF-8 if it's not set by the terminal (for PIPES
     # redirection)
