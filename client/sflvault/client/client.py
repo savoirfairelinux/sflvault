@@ -316,7 +316,7 @@ class SFLvaultConfig(object):
     def _wallet_key(self):
         """Standardizes the key to be stored in the keystore"""
         return re.subn(r'\.+', '.', re.subn(r'[-_:\\ /]', '.',
-                                               self.config_file)[0].lower())
+                                               self.config_file)[0].lower())[0]
 
     def wallet_set(self, id, password):
         if id is None or id == '0':
