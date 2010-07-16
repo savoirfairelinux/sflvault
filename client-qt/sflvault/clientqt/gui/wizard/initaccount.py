@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #    sflvault_qt/wizard/initaccount.py
 #
@@ -83,7 +83,7 @@ class Page2(QtGui.QWizardPage):
 
         address_label = QtGui.QLabel(self.tr("&Vault URL"))
         self.address = QtGui.QLineEdit()
-        self.address.setText("http://localhost:5000/vault/rp")
+        self.address.setText("https://localhost:5000/vault/rpc")
         address_label.setBuddy(self.address)
 
         password1_label = QtGui.QLabel(self.tr("&Password"))
