@@ -75,15 +75,8 @@ class Page1(QtGui.QWizardPage):
         self.setLayout(layout)
 
         # Check if system has a supported wallet
-        wallet_setting = str(self.settings.value("SFLvault-qt4/wallet").toString())
-        if wallet_setting:
-            label.setText("This wizard will configure your wallet and save your SFLvault password."
-                        )
-            self.next_page = PAGE_PASSWORD
-        else:
-            label.setText("Your system doesn't have a supported keyring system."
-                        )
-            self.next_page = PAGE_UNSUCCESS
+        label.setText("This wizard will configure your wallet and save your SFLvault password."
+        self.next_page = PAGE_PASSWORD
 
     def nextId(self):
         return self.next_page
