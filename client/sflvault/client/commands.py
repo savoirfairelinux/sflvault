@@ -102,8 +102,8 @@ class SFLvaultShell(object):
                 except ExitParserException, e:
                     pass
                 
-                if hasattr(runcmd, 'next_command')\
-                          and if platform.system() != 'Windows':
+                if hasattr(runcmd, 'next_command') \
+                          and platform.system() != 'Windows':
                     print "[Added to shell history: %s]" % runcmd.next_command
                     readline.add_history(runcmd.next_command)
 
