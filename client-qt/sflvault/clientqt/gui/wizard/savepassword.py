@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #    sflvault_qt/wizard/savepassword.py
 #
@@ -75,7 +75,7 @@ class Page1(QtGui.QWizardPage):
         self.setLayout(layout)
 
         # Check if system has a supported wallet
-        label.setText("This wizard will configure your wallet and save your SFLvault password."
+        label.setText("This wizard will configure your wallet and save your SFLvault password.")
         self.next_page = PAGE_PASSWORD
 
     def nextId(self):
