@@ -244,15 +244,9 @@ class ssh(ShellService):
             # Sorry, we don't know what you're talking about :)
             raise ServiceRequireError("ssh module can't provide '%s'" % req)
 
-        if req != PROV_PORT_FORWARD:
-            # If we don't ask it, don't try to give it for the next one.
-            # self.provides_modes is *copied* in the __init__ of 'Service'
-            self.provides_modes.discard(PROV_PORT_FORWARD)
-
         if self.ssh_pki_auth and self.parent:
             # If the command line asked it, or we're authenticating through
             # ssh keys, try to make port-forwards.
-            self.provides_modes.add(PROV_PORT_FORWARD)
             if self.parent:
                 self.operation_mode = OP_THRGH_FWD
                 # Setup port-forwards
@@ -401,15 +395,11 @@ class ssh(ShellService):
                                                                randfifo)
             sshcmd += " -i %s " % randfifo
 
-        if PROV_PORT_FORWARD in self.provides_modes:
-            if self.has_forwards():
-                # Do the last forwarding
-                # Locals
-                #locals = [' -L ' + ':'.join(x) for x in self.local_forwards]
-                #remotes = [' -R ' + ':'.join(x) for x in self.remote_forwards]
-                # Remotes
-                sshcmd += " %s %s " % (' '.join(self.local_forwards),
-                                       ' '.join(self.remote_forwards))
+        #if PROV_PORT_FORWARD in self.provides_modes:
+        if self.has_forwards():
+            # Do the last forwarding
+            sshcmd += " %s %s " % (' '.join(self.local_forwards),
+                                   ' '.join(self.remote_forwards))
 
         if self.operation_mode in [OP_DIRECT, OP_THRGH_FWD]:
             if pki_cmd:
