@@ -422,7 +422,7 @@ class SFLvaultClient(object):
         
     def _set_vault(self, url, save=False):
         """Set the vault's URL and optionally save it"""
-        self.vault = xmlrpclib.Server(url).sflvault
+        self.vault = xmlrpclib.Server(url, allow_none=True).sflvault
         if save:
             self.cfg.set('SFLvault', 'url', url)
 
@@ -597,7 +597,7 @@ class SFLvaultClient(object):
         machine_id - A m#id machine identifier.
         parent_service_id - A s#id, parent service ID, to which you should
                             connect before connecting to the service you're
-                            adding. Specify 0 of None if no parent exist.
+                            adding. Specify 0 or None if no parent exist.
                             If you set this, machine_id is disregarded.
         url - URL of the service, with username, port and path if required
         group_ids - Multiple group IDs the service is part of. See `list-groups`
@@ -606,11 +606,10 @@ class SFLvaultClient(object):
         """
 
         # TODO: accept group_id as group_ids, accept list and send list.
-
+        psi = int(parent_service_id) if parent_service_id else None
         retval = vaultReply(self.vault.service_add(self.authtok,
                                                   int(machine_id),
-                                                  int(parent_service_id),
-                                                  url,
+                                                  psi, url,
                                                   group_ids, secret,
                                                   notes or ''),
                             "Error adding service")

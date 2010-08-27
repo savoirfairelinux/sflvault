@@ -8,4 +8,6 @@ export PIP_DOWNLOAD_CACHE=$HOME/.pip/download_cache
 
 . env/bin/activate
 
-nosetests tests
+export SFLVAULT_IN_TEST=true
+nosetests tests -s --with-xunit
+
