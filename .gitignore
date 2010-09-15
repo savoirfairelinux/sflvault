@@ -38,6 +38,8 @@ test-config
 test-suite.xml
 .coverage
 server/test-config.bak
+tests/host.*
+tests/testconfig
 
 # SSL certs
 server/host.cert
