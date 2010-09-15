@@ -63,6 +63,20 @@ class SFLvaultAccess(object):
 
         self.setup_timeout = 300
 
+    def _log_any(self, log_func, msg, data):
+        head = "User: u#d%d - %s - " % (self.myself_id, self.myself_username)
+        log_func(head + msg % data)
+
+    def log_e(self, msg, data=None):
+        self._log_any(log.error, msg, data)
+
+    def log_i(self, msg, data=None):
+        self._log_any(log.info, msg, data)
+
+    def log_w(self, msg, data=None):
+        self._log_any(log.warning, msg, data)
+
+
     def user_setup(self, username, pubkey):
         """Setup the user's account"""
         from pylons import app_globals
@@ -70,12 +84,18 @@ class SFLvaultAccess(object):
         u = query(User).filter_by(username=username).first()
 
         if u is None:
+            self.log_i('No such temporary user %(username)s, add it first',
+                       {"username": username})
             return vaultMsg(False, 'No such temporary user %s, add it first' % username)
         
         if u.setup_expired():
+            self.log_i('Setup expired for user %(username)s',
+                       {"username": username})
             return vaultMsg(False, 'Setup expired for user %s' % username)
 
         if u.pubkey:
+            self.log_i('User %(username)s already has a publics',
+                       {"username": username})
             return vaultMsg(False, 'User %s already has a public ' \
                                 'key stored' % username)
 
@@ -87,6 +107,8 @@ class SFLvaultAccess(object):
         meta.Session.add(u)
         meta.Session.commit()
 
+        self.log_i('User setup complete for %(username)s',
+                   {"username": username})
         return vaultMsg(True, 'User setup complete for %s' % username)
 
 
@@ -105,6 +127,7 @@ class SFLvaultAccess(object):
 
             meta.Session.add(usr)
             
+            self.log_i('User %(username)s added.', {"username": username})
             msg = 'added'
         elif usr.waiting_setup:
             if usr.waiting_setup < datetime.now():
@@ -112,11 +135,16 @@ class SFLvaultAccess(object):
                 usr.waiting_setup = datetime.now() + \
                                     timedelta(0, int(self.setup_timeout))
             
+                self.log_i('updated (had setup timeout expired).', {})
                 msg = 'updated (had setup timeout expired)'
             else:
+                self.log_i('User %(username)s is waiting for setup.',
+                       {"username": username})
                 return vaultMsg(False, "User %s is waiting for setup" % \
                                 username)
         else:
+            self.log_i('User %(username)s already exists.',
+                       {"username": username})
             return vaultMsg(False, 'User %s already exists.' % username)
 
         meta.Session.commit()
@@ -138,6 +166,7 @@ class SFLvaultAccess(object):
         try:
             usr = model.get_user(user)
         except LookupError, e:
+            self.log_w('User UNsuccessfully deleted - ' + str(e), {})
             return vaultMsg(False, str(e))
 
         t1 = model.usergroups_table
@@ -145,6 +174,8 @@ class SFLvaultAccess(object):
         username = usr.username
         meta.Session.delete(usr)
         meta.Session.commit()
+        self.log_i('User %(username)s successfully deleted.',
+                   {"username": username})
         return vaultMsg(True, "User %s successfully deleted" % username)
 
 
@@ -207,6 +238,7 @@ class SFLvaultAccess(object):
         try:
             s = query(Service).filter_by(id=service_id).one()
         except InvalidReq, e:
+            self.log_i('Service not found: %(error)s', {"error": str(e)})
             return vaultMsg(False, "Service not found: %s" % str(e))
 
         #Save:
@@ -229,6 +261,8 @@ class SFLvaultAccess(object):
 
         meta.Session.commit()
 
+        self.log_i('Service s#(service_id)s saved successfully' ,
+                   {"service_id": service_id})
         return vaultMsg(True, "Service s#%s saved successfully" % service_id)
 
     def _service_get_data(self, service_id, group_id=None, with_groups=False):
@@ -236,6 +270,8 @@ class SFLvaultAccess(object):
         try:
             s = query(Service).filter_by(id=service_id).one()
         except InvalidReq, e:
+            self.log_w('Service not found: %(service_id)s (%(error)s)',
+                       {"service_id", service_id, "error": str(e)})
             raise VaultError("Service not found: %s (%s)" % (service_id,
                                                              str(e)))
         # unused
@@ -303,6 +339,7 @@ class SFLvaultAccess(object):
                 data = self._service_get_data(service_id,
                                               with_groups=with_groups)
             except VaultError, e:
+                self.log_e('Show service: %(error)s', {"error": str(e)})
                 return vaultMsg(False, str(e))
             
             out.append(data)
@@ -315,10 +352,13 @@ class SFLvaultAccess(object):
 
             # check if we're not in an infinite loop!
             if service_id in [x['id'] for x in out]:
+                self.log_e('Circular references of parent services, aborting.', {})
                 return vaultMsg(False, "Circular references of parent services, aborting.")
 
         out.reverse()
 
+
+        self.log_i('Service shown: %(service_id)s', {"service_id": service_id})
         return vaultMsg(True, "Here are the services", {'services': out})    
 
     
@@ -419,6 +459,8 @@ class SFLvaultAccess(object):
         try:
             cust = query(Customer).filter_by(id=customer_id).one()
         except InvalidReq, e:
+            self.log_w('Customer not found: %(customer_id)s',
+                       {"customer_id": customer_id})
             return vaultMsg(False, "Customer not found: %s" % str(e))
 
         if 'name' in data:
@@ -426,6 +468,8 @@ class SFLvaultAccess(object):
 
         meta.Session.commit()
 
+        self.log_i('Customer c#%(customer_id)s saved successfully)s',
+                  {"customer_id": customer_id})
         return vaultMsg(True, "Customer c#%s saved successfully" % customer_id)
 
 
@@ -444,6 +488,7 @@ class SFLvaultAccess(object):
         
         meta.Session.commit()
 
+        self.log_i('Customer add: c#%(customer_id)s', {"customer_id": nc.id})
         return vaultMsg(True, 'Customer added', {'customer_id': nc.id})
 
 
@@ -452,6 +497,8 @@ class SFLvaultAccess(object):
         try:
             m = query(Machine).filter_by(id=machine_id).one()
         except InvalidReq, e:
+            self.log_w('Machine m#%(machine_id)s saved successfully',
+                   {"machine_id": machine_id})
             return vaultMsg(False, "Machine not found: %s" % str(e))
 
         if 'customer_id' in data:
@@ -462,6 +509,8 @@ class SFLvaultAccess(object):
                 m.__setattr__(x, data[x])
         meta.Session.commit()
 
+        self.log_i('Machine m#%(machine_id)s saved successfully',
+                   {"machine_id": machine_id})
         return vaultMsg(True, "Machine m#%s saved successfully" % machine_id)
 
     def machine_get(self, machine_id):
