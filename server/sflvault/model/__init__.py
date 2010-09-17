@@ -400,5 +400,7 @@ def search_query(swords, filters=None, verbose=False):
 
     sel = sel.where(sql.and_(*andlist))
 
+    sel = sel.order_by(Machine.name, Service.url)
+
     return meta.Session.execute(sel)
 

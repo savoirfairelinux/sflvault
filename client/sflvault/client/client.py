@@ -748,14 +748,15 @@ class SFLvaultClient(object):
         retval = vaultReply(self.vault.search(self.authtok, query,
                  filters.get('groups') if filters else None, verbose, filters),
                             "Error searching database")
-        print "Results:"        
+        print "Results:"
+        encode = lambda x: x.encode('utf-8') if isinstance(x, unicode) else x
 
         # TODO: call the pager `less` when too long.
         level = 0
         for c_id, c in retval['results'].items():
             level = 0
             # Display customer info
-            print "c#%s  %s" % (c_id, c['name'])
+            print "c#%s  %s" % (c_id, encode(c['name']))
 
             spc1 = ' ' * (4 + len(c_id))
             for m_id, m in c['machines'].items():
@@ -763,12 +764,15 @@ class SFLvaultClient(object):
                 # Display machine infos: 
                 add = ' ' * (4 + len(m_id))
                 print "%sm#%s  %s (%s - %s)" % (spc1, m_id,
-                                                m['name'], m['fqdn'], m['ip'])
+                                                encode(m['name']),
+                                                m['fqdn'], m['ip'])
                 if verbose:
                     if m['location']:
-                        print "%s%slocation: %s" % (spc1, add, m['location'])
+                        print "%s%slocation: %s" % (spc1, add,
+                                                 encode(m['location']))
                     if m['notes']:
-                        print "%s%snotes: %s" % (spc1, add, m['notes'])
+                        print "%s%snotes: %s" % (spc1, add,
+                                                 encode(m['notes']))
 
                 spc2 = spc1 + add
                 print ""
@@ -777,12 +781,14 @@ class SFLvaultClient(object):
                     # Display service infos
                     add = ' ' * (4 + len(s_id))
                     p_id = s.get('parent_service_id')
-                    print "%ss#%s  %s%s" % (spc2, s_id, s['url'],
+                    print "%ss#%s  %s%s" % (spc2, s_id,
+                                            encode(s['url']),
                                             ("   (depends: s#%s)" % \
                                              p_id if p_id else ''))
                     if verbose:
                         if s['notes']:
-                            print "%s%snotes: %s" % (spc2, add, s['notes'])
+                            print "%s%snotes: %s" % (spc2, add,
+                                                     encode(s['notes']))
 
                 if level == 2:
                     print "%s" % (spc2) + '-' * (80 - len(spc2))
