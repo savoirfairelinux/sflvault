@@ -47,7 +47,8 @@ class ProtocolsWidget(QtGui.QDialog):
                                 <table>\
                                 <tr><td> - %(user)s         : </td><td> User name of the service </td></tr>\
                                 <tr><td> - %(address)s      : </td><td> Address of the service (without protocol)</td></tr>\
-                                <tr><td> - %(protocol)s      : </td><td> Protocol of the service</td></tr>\
+                                <tr><td> - %(protocol)s     : </td><td> Protocol of the service</td></tr>\
+                                <tr><td> - %(password)s     : </td><td> Password of the service</td></tr>\
                                 <tr><td> - %(vaultid)s      : </td><td> Vault id of the service </td></tr>\
                                 <tr><td> - %(vaultconnect)s : </td><td> Vault connection command </td></tr>\
                                 </table>\
@@ -71,7 +72,7 @@ class ProtocolsWidget(QtGui.QDialog):
         cancel = QtGui.QPushButton(self.tr("Cancel"))
         groupbox = QtGui.QGroupBox()
         # Configure table view
-        self.protocol_list = QtGui.QTableView(self)
+        self.protocol_list = ProtocolView(self)
         self.protocol_list.setModel(self.model)
         self.protocol_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.protocol_list.setSortingEnabled(1)
@@ -120,7 +121,7 @@ class ProtocolsWidget(QtGui.QDialog):
         self.readConfig()
         # Show dialog
         self.show()
-        self.resize(600,500)
+        self.resize(1000,700)
 
     def readConfig(self):
         """
@@ -135,10 +136,11 @@ class ProtocolsWidget(QtGui.QDialog):
             # Get values in config
             protocol_name = unicode(protocol_name)
             command = unicode(self.settings.value("protocols/" + protocol_name + "/command").toString())
+            args = unicode(self.settings.value("protocols/" + protocol_name + "/args").toString())
             clip, bool = self.settings.value("protocols/" + protocol_name + "/clip").toInt()
             tooltip, bool = self.settings.value("protocols/" + protocol_name + "/tooltip").toInt()
             # Create new item
-            self.model.addProtocol(protocol_name, command, clip, tooltip)
+            self.model.addProtocol(protocol_name, command, args, clip, tooltip)
         # Set Geometries
         self.setGeometries()
 
@@ -154,11 +156,13 @@ class ProtocolsWidget(QtGui.QDialog):
             # Get values
             protocol_name = self.model.data(self.model.index(row,0), QtCore.Qt.DisplayRole).toString()
             command = self.model.data(self.model.index(row,1), QtCore.Qt.DisplayRole).toString()
-            clip, bool = self.model.data(self.model.index(row,2), QtCore.Qt.CheckStateRole).toInt()
-            tooltip, bool = self.model.data(self.model.index(row,3), QtCore.Qt.CheckStateRole).toInt()
+            args = self.model.data(self.model.index(row,2), QtCore.Qt.DisplayRole).toString()
+            clip, bool = self.model.data(self.model.index(row,3), QtCore.Qt.CheckStateRole).toInt()
+            tooltip, bool = self.model.data(self.model.index(row,4), QtCore.Qt.CheckStateRole).toInt()
             # Write values in config
             self.settings.beginGroup(protocol_name)
             self.settings.setValue("command", QtCore.QVariant(command))
+            self.settings.setValue("args", QtCore.QVariant(args))
             self.settings.setValue("clip", QtCore.QVariant(clip))
             self.settings.setValue("tooltip", QtCore.QVariant(tooltip))
             self.settings.endGroup()
@@ -180,12 +184,27 @@ class ProtocolsWidget(QtGui.QDialog):
         h.setStretchLastSection(0)
         # Set size
         self.protocol_list.setColumnWidth(0,100)
-        self.protocol_list.setColumnWidth(2,100)
+        self.protocol_list.setColumnWidth(2,300)
         # Hide vertical hearder
         h = self.protocol_list.verticalHeader()
         h.hide()
 
+class ProtocolView(QtGui.QTableView):
+    def __init__(self, parent=None):
+        QtGui.QTableView.__init__(self, parent)
+        self.parent = parent
 
+        QtCore.QObject.connect(self, QtCore.SIGNAL("clicked(const QModelIndex&)"), self.select_bin)
+
+
+    def select_bin(self, index):
+        if index.column() == 1:
+            get_file_dialog = QtGui.QFileDialog(self)
+            get_file_dialog.setAcceptMode(QtGui.QFileDialog.AcceptOpen)
+            bin_file_name = get_file_dialog.getOpenFileName()
+            selected_protocol = self.model().protocols[index.row()]
+            self.model().setData(index, QtCore.QVariant(bin_file_name))
+        
 
 class ProtocolModel(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
@@ -197,22 +216,24 @@ class ProtocolModel(QtGui.QStandardItemModel):
         self.columns = [
                         "name",
                         "command",
+                        "args",
                         "clip",
                         "tooltip",
                         ]
 
     def setHeaders(self):
-        self.setColumnCount(4)
+        self.setColumnCount(5)
         self.setRowCount(0)
         self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Protocol"))
         self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Command"))
-        self.setHeaderData(2, QtCore.Qt.Horizontal, QtCore.QVariant("Pass to Clip"))
-        self.setHeaderData(3, QtCore.Qt.Horizontal, QtCore.QVariant("Show tooltip"))
+        self.setHeaderData(2, QtCore.Qt.Horizontal, QtCore.QVariant("Arguments"))
+        self.setHeaderData(3, QtCore.Qt.Horizontal, QtCore.QVariant("Pass to Clip"))
+        self.setHeaderData(4, QtCore.Qt.Horizontal, QtCore.QVariant("Show tooltip"))
 
-    def addProtocol(self, protocol=None, command=None, clip=QtCore.Qt.Unchecked, tooltip=QtCore.Qt.Unchecked):
+    def addProtocol(self, protocol=None, command=None, args=None, clip=QtCore.Qt.Unchecked, tooltip=QtCore.Qt.Unchecked):
         # Create new item
         # Save protocol in protocol list
-        self.protocols.append(Protocol(protocol, command, clip, tooltip))
+        self.protocols.append(Protocol(protocol, command, args, clip, tooltip))
         # Add it to the view
         self.insertRow(self.rowCount())
 
@@ -228,12 +249,11 @@ class ProtocolModel(QtGui.QStandardItemModel):
 
     def flags(self, index):
         f = QtCore.QAbstractTableModel.flags(self,index)
-        if index.column() == 2 or index.column() == 3:
+        if index.column() == 3 or index.column() == 4:
             f |= QtCore.Qt.ItemIsUserCheckable
         else:
             f |= QtCore.Qt.ItemIsEditable
         return f
-
 
     def data(self, index, role):
         # if index is not valid
@@ -247,21 +267,22 @@ class ProtocolModel(QtGui.QStandardItemModel):
 
         # get value of the checkbox
         if role == QtCore.Qt.CheckStateRole:
-            if index.column() == 2 or index.column() == 3:
+            if index.column() == 3 or index.column() == 4:
                 attrName = self.columns[index.column()]
                 value = getattr(protocol, attrName) 
                 return QtCore.QVariant(value)
 
-        # get value of protocol name and command
+        # get value of protocol name and command and args
         if role in [QtCore.Qt.EditRole, QtCore.Qt.DisplayRole]:
-            if index.column() == 0 or index.column() == 1:
+            if index.column() == 0 or index.column() == 1 \
+               or index.column() == 2:
                 attrName = self.columns[index.column()]
                 value = getattr(protocol, attrName)
                 return QtCore.QVariant(value)
 
         return QtCore.QVariant()
 
-    def setData(self, index, value, role):
+    def setData(self, index, value, role=None):
         # if index is not valid
         if not index.isValid():
             return False
@@ -282,16 +303,15 @@ class ProtocolModel(QtGui.QStandardItemModel):
         return result
 
 
-
-
 class Protocol(QtCore.QObject):
-    def __init__(self, name=None, command=None, clip=QtCore.Qt.Unchecked, tooltip=QtCore.Qt.Unchecked):
+    def __init__(self, name=None, command=None, args=None, clip=QtCore.Qt.Unchecked, tooltip=QtCore.Qt.Unchecked):
         """
             Item protocol which is used to show and
             set parameters
         """
         self.name = name
         self.command = command
+        self.args = args
         self.clip = clip
         self.tooltip = tooltip
 
@@ -305,7 +325,7 @@ class Protocol(QtCore.QObject):
                 setattr(self, attr, value)
                 return True
 
-        elif attr == "name" or attr == "command":
+        elif attr in ["name", "command", "args"]:
             value = unicode(value.toString())
             if value:
                 setattr(self, attr, value)

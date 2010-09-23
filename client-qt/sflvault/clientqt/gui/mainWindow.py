@@ -330,7 +330,7 @@ class MainWindow(QtGui.QMainWindow):
 
         options["port"] = port
         options["protocol"] = protocol
-        options["vaultid"] = service["services"][-1]["id"]
+        options["vaultid"] = int(service["services"][-1]["id"])
         if tunnel:
             # TODO Fix option
             options["vaultconnect"] = "sflvault connect %s -- %s" % (options["vaultid"], tunnel)
@@ -339,25 +339,29 @@ class MainWindow(QtGui.QMainWindow):
         # Show Tooltip if checked in config
         tooltip, bool = self.settings.value("protocols/" + protocol + "/tooltip").toInt()
         if (bool and tooltip == QtCore.Qt.Checked) or \
-            not self.settings.value("protocols/" + protocol + "/command").toString()\
-            or show_tooltip:
+           not self.settings.value("protocols/" + protocol + "/command").toString()\
+           or show_tooltip:
             self.osd = Osd(password=password, username=options["user"], address=options["address"], parent=self)
             self.osd.show()
             if show_tooltip:
                 # If tooltip == True then we just want to show password
                 return True
         # Prepare to launch command
-        if self.settings.value("protocols/" + protocol + "/command").toString():
+        command = unicode(self.settings.value("protocols/" + protocol + "/command").toString())
+        if command:
             # Create Command
+            args = unicode(self.settings.value("protocols/" + protocol + "/args").toString())
             command = unicode(self.settings.value("protocols/" + protocol + "/command").toString())
-            command = command % options
-            print command
+            args = args % options
+            print " ".join([command, args])
+            args = [QtCore.QString(arg) for arg in args.split(" ")]
+            args_list = QtCore.QStringList(args)
              
             # Exit if command is empty (to prevent segfault. See bug #4)
             if command.strip() == "": return
             # Launch process
             self.procxterm = QtCore.QProcess()
-            self.procxterm.start(command)
+            self.procxterm.start(command, args_list)
 
     def copyToClip(self, password):
         """
