@@ -74,9 +74,13 @@ class Systray(QtGui.QSystemTrayIcon):
         # Only if it s a left clik
         if reason == QtGui.QSystemTrayIcon.Trigger:
             if self.parent.isVisible():
+                state = QtCore.QVariant(self.parent.saveGeometry())
+                self.parent.settings.setValue("SFLvault-qt4/binsavewindow", state)
                 self.parent.hide()
             else:
                 self.parent.show()
+                geometry = self.parent.settings.value("SFLvault-qt4/binsavewindow").toByteArray()
+                self.parent.restoreGeometry(geometry)
 
     def createTrayMenu(self):
         """

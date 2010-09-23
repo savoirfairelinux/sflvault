@@ -144,13 +144,18 @@ class MainWindow(QtGui.QMainWindow):
         ## new service
         QtCore.QObject.connect(self.menubar.newserv, QtCore.SIGNAL("triggered(bool)"), self.editService)
 
+        geometry = self.settings.value("SFLvault-qt4/binsavewindow").toByteArray()
+        self.restoreGeometry(geometry)
+
 
     def closeEvent(self, event):
         if self.settings.value("SFLvault-qt4/hide").toInt()[0] == QtCore.Qt.Checked:
             event.ignore()
+            state = QtCore.QVariant(self.saveGeometry())
+            self.settings.setValue("SFLvault-qt4/binsavewindow", state)
             self.hide()
         elif self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
-            state = QtCore.QVariant(self.saveState())
+            state = QtCore.QVariant(self.saveGeometry())
             self.settings.setValue("SFLvault-qt4/binsavewindow", state)
 
     def searchWaiting(self, research):
