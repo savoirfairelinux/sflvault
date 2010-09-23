@@ -48,14 +48,14 @@ class TestVault(BaseTestCase):
 
 
     def test_group_add_service(self):
-        """testing add a service to a group to the vault"""
+        """testing add a service to a group to the vault & search"""
         gres3 = self.vault.group_add("test_group3_user")
         self.assertFalse(gres3['error'])
         cres = self.vault.customer_add(u"Testing é les autres")
         self.assertTrue('added' in cres['message'])
         self.assertFalse(cres['error'])
         mres = self.vault.machine_add(str(cres['customer_id']), 
-                                      "Machine name 3",
+                                      u"Machine namé 3",
                                       "domain1.example2.com", 
                                       '4.3.2.1',
                                       None, 
@@ -66,10 +66,13 @@ class TestVault(BaseTestCase):
                                       'ssh://root@localhost',
                                       [gres3['group_id']], 
                                       'test_secret',
-                                      'Some notes')
+                                      u'Some notés')
         self.assertFalse(sres['error'])
         dres = self.vault.service_del(sres['service_id'])
         self.assertTrue(dres is not None)
+
+        res = self.vault.search('.')
+        self.assertFalse(res['error'])
 
 
     def test_customer_del(self):

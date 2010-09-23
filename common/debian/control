@@ -12,7 +12,7 @@ Vcs-Browser: https://projects.savoirfairelinux.com/repositories/show/sflvault
 
 Package: sflvault-common
 Architecture: all
-Depends: ${python:Depends}, python-crypto
+Depends: ${python:Depends}, python-crypto, python-distribute
 XB-Python-Version: ${python:Versions}
 Description: SFLvault is a Networked credentials store and authentication manager.
  This is the common package, used by both the client and the server (and other
