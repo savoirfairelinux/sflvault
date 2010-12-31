@@ -169,7 +169,7 @@ class Info(QtGui.QWidget):
         # Label information
         ## Service
         self.serviceList["id"] = QtGui.QLabel()
-        self.serviceList["metadata"] = QtGui.QLabel()
+        #self.serviceList["metadata"] = QtGui.QLabel()
         ## Machine
         self.machineList["id"] = QtGui.QLabel()
         self.machineList["name"] = QtGui.QLabel()
@@ -338,21 +338,21 @@ class Info(QtGui.QWidget):
             self.showMachine()
             self.showCustomer()
             self.showService()
-            for key, data in service["services"][-1].items():
+            for key, data in service['services'][-1].items():
                 if key in ["id", ]:
                     # Show and hide label
                     self.serviceList["id"].show()
                     self.serviceList["id"].setText(unicode("s#" + str(data)))
                     self.serviceListTitle["id"].show()
             # show machine information
-            for key, data in machine["machine"].items():
+            for key, data in machine['machine'].items():
                 if not key in ["customer_id", "id", ]:
                     self.machineList[key].setText(unicode(data))
                 # Show "#" for id
                 elif key in ["id", ]:
                     self.machineList[key].setText(unicode("m#" + str(data)))
             # show customer information
-            for key, data in customer["customer"].items():
+            for key, data in customer['customer'].items():
                 # Show "#" for id
                 if key in ["id", ]:
                     self.customerList[key].setText(unicode("c#" + str(data)))
@@ -364,14 +364,14 @@ class Info(QtGui.QWidget):
             self.hideService()
             self.hideMachine()
             # show machine id
-            for key, data in machine["machine"].items():
+            for key, data in machine['machine'].items():
                 if key in ["id", ]:
                     # Show and hide label
                     self.machineList["id"].show()
                     self.machineList["id"].setText(unicode("m#" + str(data)))
                     self.machineListTitle["id"].show()
             # show customer information
-            for key, data in customer["customer"].items():
+            for key, data in customer['customer'].items():
                 # Show "#" for id
                 if key in ["id", ]:
                     self.customerList[key].setText(unicode("c#" + str(data)))
@@ -383,7 +383,7 @@ class Info(QtGui.QWidget):
             self.hideMachine()
             self.hideCustomer()
             # Show only customer id
-            for key, data in customer["customer"].items():
+            for key, data in customer.items():
                 # Show "#" for id
                 if key in ["id", ]:
                     # Show and hide label
@@ -427,7 +427,7 @@ class InfoModel(QtGui.QStandardItemModel):
         self.attributes = []
         if service:
             self.mode = "service"
-            for key, data in service["services"][-1].items():
+            for key, data in service['services'][-1].items():
                 if key in ["url", "notes", "group_id", "parent_service_id", "groups_list"]:
                     if type(data) == list:
                         data = unicode(u" | ".join([ group[1] + "(g#" + unicode(group[0]) + ")"  for group in data]))
@@ -435,13 +435,13 @@ class InfoModel(QtGui.QStandardItemModel):
                     self.attributes.append({key: data})
         elif machine:
             self.mode = "machine"
-            for key, data in machine["machine"].items():
+            for key, data in machine['machine'].items():
                 if key in ["name", "ip", "fqdn", "location", "notes"]:
                     self.insertRow(0)
                     self.attributes.append({key: data})
         elif customer:
             self.mode = "customer"
-            for key, data in customer["customer"].items():
+            for key, data in customer['customer'].items():
                 if key in ["name", ]:
                     self.insertRow(0)
                     self.attributes.append({key: data})
