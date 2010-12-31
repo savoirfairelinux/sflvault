@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
 Build-Depends: debhelper (>= 5), python-all-dev, python-setuptools (>= 0.6b3-1~)
 Build-Depends-Indep: python-support (>= 0.6.4)
-Standards-Version: 0.7.5dev
+Standards-Version: 0.7.6.1dev
 XS-Python-Version: all
 Homepage: http://www.sflvault.org/
 Vcs-Git: http://git.sflvault.org/sflvault.git

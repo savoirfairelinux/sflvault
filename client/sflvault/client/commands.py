@@ -102,8 +102,8 @@ class SFLvaultShell(object):
                 except ExitParserException, e:
                     pass
                 
-                if hasattr(runcmd, 'next_command')\
-                          and if platform.system() != 'Windows':
+                if hasattr(runcmd, 'next_command') \
+                          and platform.system() != 'Windows':
                     print "[Added to shell history: %s]" % runcmd.next_command
                     readline.add_history(runcmd.next_command)
 
@@ -869,17 +869,32 @@ class SFLvaultCommand(object):
 
         if len(self.args) < 1:
             raise SFLvaultParserError("Invalid number of arguments")
-
-        vid = self.vault.vaultId(self.args[0], 's')
+        
+        where = self.args[0]
+        vid = self.vault.vaultId(where, 's') # In case we want to add an alias
+        command_line = self.args[1:]
 
         if self.opts.alias:
             try:
-                r = self.vault.cfg.alias_add(self.opts.alias, "s#%d" % vid)
+                al = "s#%d" % vid
+                if command_line:
+                    al += " " + ' '.join(command_line)
+                r = self.vault.cfg.alias_add(self.opts.alias, al)
             except ValueError, e:
                 raise SFLvaultParserError(str(e))
             print "Alias added"
 
-        self.vault.connect(vid, self.opts.show, command_line=self.args[1:])
+        # Grab alias's arguments if they exist...
+        alias = self.vault.cfg.alias_get(where)
+        if alias:
+            chunks = alias.split()
+            if len(chunks) > 1:
+                command_line += chunks[1:]
+            where = chunks[0]
+
+        vid = self.vault.vaultId(where, 's')
+
+        self.vault.connect(vid, self.opts.show, command_line=command_line)
 
 
 

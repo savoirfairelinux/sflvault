@@ -10,7 +10,7 @@ import platform
 
 setup(
     name='SFLvault-client',
-    version="0.7.5",
+    version="0.7.6.1",
     description='Networked credentials store and authentication manager - Client',
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
@@ -38,6 +38,8 @@ setup(
     [sflvault.services]
     ssh = sflvault.client.services:ssh
     ssh+pki = sflvault.client.services:ssh_pki
+    content = sflvault.client.services:content
+    sflvault = sflvault.client.services:sflvault
     vnc = sflvault.client.services:vnc
     mysql = sflvault.client.services:mysql
     psql = sflvault.client.services:postgres

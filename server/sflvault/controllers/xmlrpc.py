@@ -23,21 +23,18 @@ import logging
 from distutils.version import LooseVersion
 
 
-MINIMAL_CLIENT_VERSION = LooseVersion('0.7.4')
+MINIMAL_CLIENT_VERSION = LooseVersion('0.7.6')
 
 
 # ALL THE FOLLOWING IMPORTS MOVED TO vault.py:
 import xmlrpclib
-#import pylons
 from pylons import request
-from base64 import b64decode, b64encode
+from base64 import b64encode
 from datetime import *
-import time as stdtime
 from decorator import decorator
 from pylons.controllers.xmlrpc import xmlrpc_fault
 
 from sflvault.lib.base import *
-from sflvault.common import VaultError
 from sflvault.lib.vault import SFLvaultAccess
 from sflvault.model import *
 
@@ -55,7 +52,7 @@ def _authenticated_user_first(self, *args, **kwargs):
     s = get_session(args[0])
 
     if not s:
-        raise xmlrpclib.Fault(0, "Permission denied")
+        return vaultMsg(False, "Permission denied")
 
     self.sess = s
 
@@ -75,7 +72,9 @@ def authenticated_user(func, self, *args, **kwargs):
     WARNING: authenticated_user READ the FIRST non-keyword argument
              (should be authtok)
     """
-    _authenticated_user_first(self, *args, **kwargs)
+    ret = _authenticated_user_first(self, *args, **kwargs)
+    if ret:
+        return ret
 
     return func(self, *args, **kwargs)
 
@@ -85,10 +84,12 @@ def authenticated_admin(func, self, *args, **kwargs):
 
     Check authenticated_user , everything written then applies here as well.
     """
-    _authenticated_user_first(self, *args, **kwargs)
-            
+    ret = _authenticated_user_first(self, *args, **kwargs)
+    if ret:
+        return ret
+
     if not self.sess['userobj'].is_admin:
-        return xmlrpclib.Fault(0, "Permission denied, admin priv. required")
+        return vaultMsg(False, "Permission denied, admin priv. required")
 
     return func(self, *args, **kwargs)
 

@@ -1,3 +1,25 @@
+sflvault-client (0.7.6.1dev~ppa1) lucid; urgency=high
+
+    * Released 0.7.6.1dev
+    * Fixes critical bug with user-setup and user-passwd
+
+ -- Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>  Wed, 14 Jul 2010 10:00:00 -0400
+
+sflvault-client (0.7.6dev~ppa1) lucid; urgency=low
+
+    * Released 0.7.6dev
+
+    * Multiple bug fixes
+    * Fixed annoying server crash on auth. failed.
+    * Integrated Gnome Keyring and/or KWallet using the `wallet` command
+    ** Requires either `python-keyring-gnome` or `python-keyring-kwallet` available on Ubuntu Lucid
+    * New Qt4-based GUI
+    * Added debian packages
+    * Modified slightly the SFLvaultClient object to better support multiple identities.
+    * Disabled Python warnings by default.
+
+ -- Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>  Wed, 12 Jul 2010 12:00:00 -0400
+
 sflvault-client (0.7.5dev~ppa1) lucid; urgency=low
 
   * Released 0.7.5dev

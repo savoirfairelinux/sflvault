@@ -22,6 +22,19 @@ Steps to perform when releasing SFLvault
   $ python setup.py sdist 
   $ python setup.py sdist upload    # prepend "register" the first time
 
+* For WINDOWS distribution, under the WINDOWS Platform:
+
+  Checkout the project
+
+  $ cd client-qt
+  $ python.exe setup.py bdist_wininst
+  $ cd ..\client
+  $ python.exe setup.py bdist_wininst
+  $ cd ..\common
+  $ python.exe setup.py bdist_wininst
+
+  Packages will be under pkg/dist/
+
 * Prepare the Debian packages:
 
   $ for path in common client client-qt
@@ -57,3 +70,4 @@ Update documentation
 * Announce by other means, IRC, Freshmeat, Slashdot, etc...
 
 * Have another commit to RE-ENABLE deprecation warnings for development.
+
