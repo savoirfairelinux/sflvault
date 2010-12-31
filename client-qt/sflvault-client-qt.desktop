@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=SFLvault
+Name[en_GB]=SFLvault GUI Client
+Name[fr]=SFLvault GUI client
+GenericName=SFLvault
+GenericName[en_GB]=Sflvault
+GenericName[fr]=SFLvault
+Comment=SFLvault Client for password management
+Comment[en_GB]=SFLvault Client for password management
+Comment[fr]=Client SFLvault pour gestion de mots de passe
+Icon=sflvault
+TryExec=sflvault-client-qt
+Exec=sflvault-client-qt
+Categories=Qt;Security;Utility;System;X-MandrivaLinux-System;
