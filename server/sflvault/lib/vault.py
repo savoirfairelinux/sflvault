@@ -166,7 +166,8 @@ class SFLvaultAccess(object):
         try:
             usr = model.get_user(user)
         except LookupError, e:
-            self.log_w('User UNsuccessfully deleted - ' + str(e), {})
+            self.log_w('User UNsuccessfully deleted: %(error)s',
+                        {'error': str(e)})
             return vaultMsg(False, str(e))
 
         t1 = model.usergroups_table
@@ -271,7 +272,7 @@ class SFLvaultAccess(object):
             s = query(Service).filter_by(id=service_id).one()
         except InvalidReq, e:
             self.log_w('Service not found: %(service_id)s (%(error)s)',
-                       {"service_id", service_id, "error": str(e)})
+                       {"service_id": service_id, "error": str(e)})
             raise VaultError("Service not found: %s (%s)" % (service_id,
                                                              str(e)))
         # unused
@@ -383,6 +384,7 @@ class SFLvaultAccess(object):
         newfilters = {}
         if filters:
             if not isinstance(filters, dict):
+                self.log_e('Search: filters must be a dictionary')
                 return vaultMsg(False, "filters must be a dictionary")
             for flt in filter_types:
                 # Skip filters that aren't specified
@@ -396,6 +398,7 @@ class SFLvaultAccess(object):
                 try:
                     newfilters[flt] = model.get_objects_ids(filters[flt], flt)
                 except ValueError, e:
+                    self.log_e('Search error: %(error)s' % {"error": str(e)})
                     return vaultMsg(False, str(e))
 
         search = model.search_query(search_query, newfilters, verbose)
@@ -439,6 +442,8 @@ class SFLvaultAccess(object):
 
 
         # Return 'out', in a nicely structured hierarchical form.
+        #self.log_i('Search successfull for: %(search)s',
+        #            {'search': search_query})
         return vaultMsg(True, "Here are the search results", {'results': out})
 
 
@@ -447,6 +452,7 @@ class SFLvaultAccess(object):
         try:
             cust = query(Customer).filter_by(id=customer_id).one()
         except InvalidReq, e:
+            self.log_i('Customer not found: %(error)s', {"error": str(e)})
             return vaultMsg(False, "Customer not found: %s" % str(e))
 
         out = {'id': cust.id,
@@ -550,6 +556,7 @@ class SFLvaultAccess(object):
         
         meta.Session.commit()
 
+        self.log_i('Machine added: m#%(machine_id)s', {"machine_id": nm.id})
         return vaultMsg(True, "Machine added.", {'machine_id': nm.id})
 
 
