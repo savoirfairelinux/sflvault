@@ -29,6 +29,10 @@ import sys
 from sflvault.clientqt.images.qicons import *
 from sflvault.clientqt.lib.auth import *
 
+## TODO USELESS ???
+#import os
+#os.environ['SFLVAULT_CONFIG'] = "~/Application Data/SFLvault/config2.ini"
+
 def main():
     app = QtGui.QApplication(sys.argv)
   

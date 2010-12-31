@@ -24,8 +24,10 @@
 to manage SFLvault elements (customers, machines, services)
 """
 
-import urwid
-import urwid.raw_display
+import platform
+if platform.system() != 'Windows':
+    import urwid
+    import urwid.raw_display
 
 class DialogExit(Exception):
     pass

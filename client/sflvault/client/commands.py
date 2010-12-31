@@ -28,8 +28,9 @@ import xmlrpclib
 import getpass
 import shlex
 import socket
-import readline
-
+import platform
+if platform.system() != 'Windows':
+    import readline
 
 from Crypto.PublicKey import ElGamal
 from base64 import b64decode, b64encode
@@ -101,7 +102,8 @@ class SFLvaultShell(object):
                 except ExitParserException, e:
                     pass
                 
-                if hasattr(runcmd, 'next_command'):
+                if hasattr(runcmd, 'next_command') \
+                          and platform.system() != 'Windows':
                     print "[Added to shell history: %s]" % runcmd.next_command
                     readline.add_history(runcmd.next_command)
 
@@ -998,7 +1000,10 @@ class SFLvaultCompleter:
 ###    
 
 # Default configuration file
-CONFIG_FILE = '~/.sflvault/config'
+if platform.system() == 'Windows':
+    CONFIG_FILE = '~/Application Data/SFLvault/config.ini'
+else:
+    CONFIG_FILE = '~/.sflvault/config'
 # Environment variable to override default config file.
 CONFIG_FILE_ENV = 'SFLVAULT_CONFIG'
 
@@ -1009,9 +1014,10 @@ def main():
         if onefunc[0] != '_':
             func_list.append(onefunc.replace('_', '-'))
 
-    readline.set_completer_delims('_')
-    readline.set_completer(SFLvaultCompleter(func_list).complete)
-    readline.parse_and_bind("tab: complete")
+    if platform.system() != 'Windows':
+        readline.set_completer_delims('_')
+        readline.set_completer(SFLvaultCompleter(func_list).complete)
+        readline.parse_and_bind("tab: complete")
 
     # Set the output to UTF-8 if it's not set by the terminal (for PIPES
     # redirection)

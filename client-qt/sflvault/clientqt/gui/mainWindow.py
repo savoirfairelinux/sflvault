@@ -51,6 +51,9 @@ import shutil
 import os
 from sflvault.clientqt.lib.error import *
 from sflvault.clientqt.lib.auth import *
+import platform
+import shlex
+
 
 
 class MainWindow(QtGui.QMainWindow):
