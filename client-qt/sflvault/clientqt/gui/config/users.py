@@ -326,8 +326,9 @@ class UsersModel(QtGui.QStandardItemModel):
         self.parent = parent
         self.setHeaders()
         self.users = users
-        for user in users:
-            self.addUser(user["username"], "u#" + unicode(user["id"]))
+        if users != False:
+            for user in users:
+                self.addUser(user["username"], "u#" + unicode(user["id"]))
 
     def setHeaders(self):
         self.setColumnCount(2)
