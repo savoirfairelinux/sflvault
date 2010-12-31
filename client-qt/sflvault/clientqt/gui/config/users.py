@@ -589,7 +589,7 @@ class NewUserWidget(QtGui.QDialog):
         # Add user
         status = addUser(username, admin)
         # Reload user list if no error
-        if not status["error"]:
+        if status != False:
             self.parent.loadUserList()
             self.done(status["user_id"])
         else:
