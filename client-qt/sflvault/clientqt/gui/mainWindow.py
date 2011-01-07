@@ -584,7 +584,10 @@ class MainWindow(QtGui.QMainWindow):
         indexId = self.tree.selectedIndexes()[1]
         index = self.tree.selectedIndexes()[0]
         itemid = indexId.data(QtCore.Qt.DisplayRole).toString()
-        itemid = int(itemid.split("#")[1])
+        try:
+            itemid = int(itemid.split("#")[1])
+        except ValueError, e:
+            return False
         # Check if seleted item is a service
         if index.parent().parent().isValid():
             self.editService(itemid)
@@ -623,7 +626,10 @@ class MainWindow(QtGui.QMainWindow):
         indexId = self.tree.selectedIndexes()[1]
         index = self.tree.selectedIndexes()[0]
         itemid = indexId.data(QtCore.Qt.DisplayRole).toString()
-        itemid = int(itemid.split("#")[1])
+        try:
+            itemid = int(itemid.split("#")[1])
+        except ValueError, e:
+            return False
         # Check if seleted item is a service
         if index.parent().parent().isValid():
             self.delService(itemid)
@@ -654,7 +660,10 @@ class MainWindow(QtGui.QMainWindow):
         indexId = self.tree.selectedIndexes()[1]
         index = self.tree.selectedIndexes()[0]
         machid = indexId.data(QtCore.Qt.DisplayRole).toString()
-        machid = int(machid.split("#")[1])
+        try:
+            machid = int(machid.split("#")[1])
+        except ValueError, e:
+            return False
         self.addservice = EditServiceWidget(False, machid, parent=self)
         self.addservice.exec_()
 
