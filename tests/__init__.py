@@ -37,38 +37,13 @@ pkg_resources.require('PasteScript')
 
 vault = None
 
-
-def tearDown():
-    """Close the SFLVault server"""
-    if os.path.exists('test-server.pid'):
-        os.system("kill $(cat test-server.pid) ; rm test-server.pid")
-
 def setUp():
     """Setup the temporary SFLvault server"""
-
-    print "Wiping test directory"
-    os.chdir(here_dir)
-    os.system("rm test-server.ini")  # Remove server config
-    os.system("rm sflvault.sqlite")  # Remove database
-    os.system("rm test-config")  # Remove user config
-    os.system("rm -f host.key host.pem host.cert")
-
-    print "Creating test config, certificate, etc.."
-    os.system("paster make-config SFLvault-server test-server.ini")
-    os.system('sed -i "s/port = 5000/port = 5767/" test-server.ini')
-    os.system("paster setup-app test-server.ini")
-    os.system("openssl genrsa 1024 > host.key ; chmod 400 host.key ; openssl req -new -x509 -config test-certif-config -nodes -sha1 -days 365 -key host.key > host.cert ; cat host.cert host.key > host.pem ; chmod 400 host.pem")
-
-    print "Launching server..."
-    os.system("paster serve --pid-file test-server.pid test-server.ini &")
 
     # Create the vault test obj.
     if 'SFLVAULT_ASKPASS' in os.environ:
         del(os.environ['SFLVAULT_ASKPASS'])
     os.environ['SFLVAULT_CONFIG'] = os.path.join(here_dir, 'test-config')
-
-    # Wait until the server is started
-    time.sleep(1)
 
 
 class BaseTestCase(TestCase):

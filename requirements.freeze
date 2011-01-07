@@ -15,7 +15,7 @@ WebError==0.10.1
 WebHelpers==0.6.4
 WebOb==0.9.6.1
 WebTest==1.1
-coverage==3.3.1
+coverage==3.4
 decorator==3.1.2
 docutils==0.6
 logilab-astng==0.20.1
