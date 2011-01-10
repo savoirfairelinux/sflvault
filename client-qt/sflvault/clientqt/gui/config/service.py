@@ -301,7 +301,7 @@ class EditServiceWidget(QtGui.QDialog):
         # Fill machine combo box
         selected_machine = self.machineline.text()
         for machine in machines["list"]:
-            self.machine.addItem(machine['name'] +" - m#" + unicode(machine['id']), QtCore.QVariant(machine['id']))
+            self.machine.addItem(machine['name'] + " - m#" + unicode(machine['id']), QtCore.QVariant(machine['id']))
         # Select good row
         index = self.machine.findText(" - " + selected_machine, QtCore.Qt.MatchEndsWith)
         if index > -1:

@@ -175,7 +175,11 @@ class return_element(object):
         def return_el(*k, **a):
             status = func(*k, **a)
             if isinstance(status, dict):
-                status = status[self.element]
+                if self.element in status:
+                    status = status[self.element]
+                elif self.element == 'plaintext':
+                    ErrorMessage("Access denied")
+                    return False
             return status
         return return_el
 
