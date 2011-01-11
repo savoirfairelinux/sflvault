@@ -132,7 +132,7 @@ class Info(QtGui.QWidget):
         self.service_list_title.append(self.service_params_label)
         self.service_list.append(self.service_params)
         self.service_url_label = QtGui.QLabel(self.tr("Service url"))
-        self.service_url = Marquee_QLabel()
+        self.service_url = QtGui.QLabel()
         self.service_list_title.append(self.service_url_label)
         self.service_list.append(self.service_url)
         self.service_parent_label = QtGui.QLabel(self.tr("Service parent"))
@@ -267,17 +267,49 @@ class Info(QtGui.QWidget):
         # Fix column width
         # change cursor to selectable
         # add marquee qlabel when text is too long
+        for info in self.service_list_title:
+            info.setMinimumWidth(130)
+            info.setMinimumHeight(20)
+
+        for info in self.machine_list_title:
+            info.setMinimumWidth(130)
+            info.setMinimumHeight(20)
+
+        for info in self.customer_list_title:
+            info.setMinimumWidth(130)
+            info.setMinimumHeight(20)
+
+        for info in self.vault_list_title:
+            info.setMinimumWidth(130)
+            info.setMinimumHeight(20)
+
         for info in self.service_list:
             info.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            info.setAlignment(QtCore.Qt.AlignRight)
+            info.setMargin(2)
+            info.setMinimumHeight(20)
+            info.setWordWrap(1)
 
         for info in self.machine_list:
             info.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            info.setAlignment(QtCore.Qt.AlignRight)
+            info.setMargin(2)
+            info.setMinimumHeight(20)
+            info.setWordWrap(1)
 
         for info in self.customer_list:
             info.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            info.setAlignment(QtCore.Qt.AlignRight)
+            info.setMargin(2)
+            info.setMinimumHeight(20)
+            info.setWordWrap(1)
 
         for info in self.vault_list:
             info.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            info.setAlignment(QtCore.Qt.AlignRight)
+            info.setMargin(2)
+            info.setMinimumHeight(20)
+            info.setWordWrap(1)
 
         #self.service_url.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
@@ -287,11 +319,13 @@ class Info(QtGui.QWidget):
 
     def show_service_info(self, service):
         if not 'group_id' in service or service['group_id'] == '':
-            self.service_access.setText(self.tr(u"""<font color="red"><b>Denied</b></font>"""))
+            self.service_access.setText(self.tr(u"""<font color="red"><b>\
+                                                 Denied</b></font>"""))
         else:
-            self.service_access.setText(self.tr(u"""<font color="green"><b>Authorized</b></font>"""))
+            self.service_access.setText(self.tr(u"""<font color="green"><b>\
+                                                 Authorized</b></font>"""))
 
-        self.service_id.setText(u"s#" + unicode(service['id']))
+        self.service_id.setText(u"<b>s#" + unicode(service['id']) + u"</b>")
 
         advanced_url = unicode(service['url'])
         # Split data
@@ -315,19 +349,20 @@ class Info(QtGui.QWidget):
         self.service_scheme.setText(protocol)
         self.service_params.setText(uri)
 
-        self.service_url.setText(service['url'])
+        url.setUserName('')
+        self.service_url.setText(url.toString())
 
         if service['parent_service_id'] != 0 \
            and service['parent_service_id'] is not None:
-            self.service_parent.setText(u"s#" + \
-                        unicode(service['parent_service_id']))
+            self.service_parent.setText(u"<b>s#" + \
+                        unicode(service['parent_service_id']) + u"</b>")
         else:
             self.service_parent.clear()
 
 #        self.service_groups.
 
     def show_machine_info(self, machine):
-        self.machine_id.setText(u"m#" + unicode(machine['id']))
+        self.machine_id.setText(u"<b>m#" + unicode(machine['id']) + u"</b>")
         self.machine_fqdn.setText(machine['fqdn'])
         self.machine_ip.setText(machine['ip'])
         self.machine_location.setText(machine['location'])
@@ -335,7 +370,7 @@ class Info(QtGui.QWidget):
         self.machine_notes.setText(machine['notes'])
 
     def show_customer_info(self, customer):
-        self.customer_id.setText(u"c#" + unicode(customer['id']))
+        self.customer_id.setText(u"<b>c#" + unicode(customer['id']) + u"</b>")
         self.customer_name.setText(unicode(customer['name']))
 
     def show_vault_info(self):
@@ -375,58 +410,4 @@ class Info(QtGui.QWidget):
             self.service_groupbox.hide()
             self.machine_groupbox.hide()
             self.customer_groupbox.hide()
-
-
-class Marquee_QLabel(QtGui.QLabel):
-    def __init__(self, parent=None):
-        QtGui.QLabel.__init__(self, parent)
-        self.parent = parent
-        self.px = 0
-        self.py = 15
-        self.timer = QtCore.QTimer() #QTimer timer;
-        self.m_align = QtCore.Qt.AlignTop
-        #Qt::Alignment m_align;
-        self.speed = 0.5
-        self.direction = QtCore.Qt.LeftToRight
-#        self.fontPointSize
-#        self.textLength
-
-        QtCore.QObject.connect(self.timer, QtCore.SIGNAL('timeout()'), self.refreshLabel)
-        self.timer.start(10)
-
-    def refreshLabel(self):
-        self.repaint()
-
-    def paintEvent(self, event):
-        self.updateCoordinates();
-        p = QtGui.QPainter(self);
-        if self.direction == QtCore.Qt.RightToLeft:
-            self.px -= self.speed
-            if self.px <= -self.textLength :
-                self.px = self.width()
-        else:
-            self.px += self.speed
-            if self.px >= self.width():
-                self.px = -self.textLength
-
-        p.drawText(self.px, self.py + self.fontPointSize, self.text())
-        p.translate(self.px, 0)
-
-    def updateCoordinates(self):
-
-        if self.m_align == QtCore.Qt.AlignTop:
-            self.py = 10
-        elif self.m_align == QtCore.Qt.AlignBottom:
-            self.py = self.height() - 10
-        elif self.m_align == QtCore.Qt.RightToLeft:
-            self.py = self.height() / 2
-
-        self.fontPointSize = self.font().pointSize()/2
-        self.textLength = self.fontMetrics().width(self.text())
-
-    def resizeEvent(self, event):
-        print "QQQ"
-        self.updateCoordinates();
-        QtGui.QLabel.resizeEvent(self, event)
-#        QLabel::resizeEvent(evt);
 
