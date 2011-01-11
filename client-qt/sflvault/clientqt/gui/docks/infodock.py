@@ -359,7 +359,10 @@ class Info(QtGui.QWidget):
         else:
             self.service_parent.clear()
 
-#        self.service_groups.
+        groups_list = "<br>".join([u"g#%s - %s" % tuple(group )
+                                   for group in service['groups_list']])
+            
+        self.service_groups.setText(groups_list)
 
     def show_machine_info(self, machine):
         self.machine_id.setText(u"<b>m#" + unicode(machine['id']) + u"</b>")
