@@ -58,8 +58,8 @@ class InfoDock(QtGui.QDockWidget):
         self.machine = None
         self.service = None
         # Set a new model
-        self.info.model.clear()
-        self.info.model.setHeaders()
+#        self.info.model.clear()
+#        self.info.model.setHeaders()
 
         self.customer = getCustomer(customerid)
         self.setWindowTitle("Customer")
@@ -78,131 +78,183 @@ class InfoDock(QtGui.QDockWidget):
         elif not self.customer:
             self.setWindowTitle("Informations")
             return None
-        self.info.model.attributes = []
-        self.info.edit_info_bar.hide()
-        self.info.save.hide()
-        self.info.reinit.hide()
-        self.info.model.showEditableInformations(self.customer, self.machine, self.service)
+        #self.info.model.attributes = []
+        #self.info.edit_info_bar.hide()
+        #self.info.save.hide()
+        #self.info.reinit.hide()
+        #self.info.model.showEditableInformations(self.customer, self.machine, self.service)
         self.info.showInformations(self.customer, self.machine, self.service)
 
-
-class ModificationStatus(QtGui.QWidget):
-    def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-        self.parent = parent
-
-        self.status = QtGui.QLabel("Edition Mode")
-        # QGridLayout
-        mainLayout = QtGui.QGridLayout()
-        mainLayout.addWidget(self.status,0,0)
-        mainLayout.setMargin(0)
-        mainLayout.setSpacing(0)
-        
-        # Show window
-        self.setLayout(mainLayout)
-        self.hide()
 
 class Info(QtGui.QWidget):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.parent = parent
 
-        self.serviceList = {}
-        self.machineList = {}
-        self.customerList = {}
-        self.serviceListTitle = {}
-        self.machineListTitle = {}
-        self.customerListTitle = {}
+        self.service_list = []
+        self.machine_list = []
+        self.customer_list = []
+        self.vault_list = []
+        self.service_list_title = []
+        self.machine_list_title = []
+        self.customer_list_title = []
+        self.vault_list_title = []
 
-        # QlineEdits
-        self.tree = InfoTree(self)
-        self.reinit = QtGui.QPushButton(self.tr("Reinitialize"))
-        self.reinit.hide()
-        self.save = QtGui.QPushButton(self.tr("Save"))
-        self.save.hide()
-        self.info_box = QtGui.QGroupBox()
+        # Service info
+        service_layout = QtGui.QGridLayout()
+        service_layout.setSpacing(False)
+        self.service_access_label = QtGui.QLabel(self.tr("Service access :"))
+        self.service_access = QtGui.QLabel()
+        self.service_list_title.append(self.service_access_label)
+        self.service_list.append(self.service_access)
+        self.service_id_label = QtGui.QLabel(self.tr("Service access :"))
+        self.service_id = QtGui.QLabel()
+        self.service_list_title.append(self.service_id_label)
+        self.service_list.append(self.service_id)
+        self.service_scheme_label = QtGui.QLabel(self.tr("Service scheme :"))
+        self.service_scheme = QtGui.QLabel()
+        self.service_list_title.append(self.service_scheme_label)
+        self.service_list.append(self.service_scheme)
+        self.service_host_label = QtGui.QLabel(self.tr("Service host :"))
+        self.service_host = QtGui.QLabel()
+        self.service_list_title.append(self.service_host_label)
+        self.service_list.append(self.service_host)
+        self.service_port_label = QtGui.QLabel(self.tr("Service port :"))
+        self.service_port = QtGui.QLabel()
+        self.service_list_title.append(self.service_port_label)
+        self.service_list.append(self.service_port)
+        self.service_username_label = QtGui.QLabel(self.tr("Service username"))
+        self.service_username = QtGui.QLabel()
+        self.service_list_title.append(self.service_username_label)
+        self.service_list.append(self.service_username)
+        self.service_params_label = QtGui.QLabel(self.tr("Service path"))
+        self.service_params = QtGui.QLabel()
+        self.service_list_title.append(self.service_params_label)
+        self.service_list.append(self.service_params)
+        self.service_url_label = QtGui.QLabel(self.tr("Service url"))
+        self.service_url = QtGui.QLabel()
+        self.service_list_title.append(self.service_url_label)
+        self.service_list.append(self.service_url)
+        self.service_parent_label = QtGui.QLabel(self.tr("Service parent"))
+        self.service_parent = QtGui.QLabel()
+        self.service_list_title.append(self.service_parent_label)
+        self.service_list.append(self.service_parent)
+        self.service_groups_label = QtGui.QLabel(self.tr("Service group"))
+        self.service_groups = QtGui.QLabel()
+        self.service_list_title.append(self.service_groups_label)
+        self.service_list.append(self.service_groups)
+        service_layout.addWidget(self.service_access_label, 0, 0)
+        service_layout.addWidget(self.service_access, 0, 1)
+        service_layout.addWidget(self.service_id_label, 1, 0)
+        service_layout.addWidget(self.service_id, 1, 1)
+        service_layout.addWidget(self.service_scheme_label, 2, 0)
+        service_layout.addWidget(self.service_scheme, 2, 1)
+        service_layout.addWidget(self.service_host_label, 3, 0)
+        service_layout.addWidget(self.service_host, 3, 1)
+        service_layout.addWidget(self.service_port_label, 4, 0)
+        service_layout.addWidget(self.service_port, 4, 1)
+        service_layout.addWidget(self.service_username_label, 5, 0)
+        service_layout.addWidget(self.service_username, 5, 1)
+        service_layout.addWidget(self.service_params_label, 6, 0)
+        service_layout.addWidget(self.service_params, 6, 1)
+        service_layout.addWidget(self.service_url_label, 7, 0)
+        service_layout.addWidget(self.service_url, 7, 1)
+        service_layout.addWidget(self.service_parent_label, 8, 0)
+        service_layout.addWidget(self.service_parent, 8, 1)
+        service_layout.addWidget(self.service_groups_label, 9, 0)
+        service_layout.addWidget(self.service_groups, 9, 1)
+        self.service_groupbox = QtGui.QGroupBox()
+        self.service_groupbox.setTitle(self.tr("Service"))
+        self.service_groupbox.setLayout(service_layout)
 
-        # Info bar
-        self.edit_info_bar = ModificationStatus(self)
+        # Machine info
+        machine_layout = QtGui.QGridLayout()
+        machine_layout.setSpacing(False)
+        self.machine_id_label = QtGui.QLabel(self.tr("Machine id :"))
+        self.machine_id = QtGui.QLabel()
+        self.machine_list_title.append(self.machine_id_label)
+        self.machine_list.append(self.machine_id)
+        self.machine_fqdn_label = QtGui.QLabel(self.tr("Machine FQDN :"))
+        self.machine_fqdn = QtGui.QLabel()
+        self.machine_list_title.append(self.machine_fqdn_label)
+        self.machine_list.append(self.machine_fqdn)
+        self.machine_ip_label = QtGui.QLabel(self.tr("Machine IP :"))
+        self.machine_ip = QtGui.QLabel()
+        self.machine_list_title.append(self.machine_ip_label)
+        self.machine_list.append(self.machine_ip)
+        self.machine_location_label = QtGui.QLabel(self.tr("Machine Location :"))
+        self.machine_location = QtGui.QLabel()
+        self.machine_list_title.append(self.machine_location_label)
+        self.machine_list.append(self.machine_location)
+        self.machine_name_label = QtGui.QLabel(self.tr("Machine Name :")) 
+        self.machine_name = QtGui.QLabel()
+        self.machine_list_title.append(self.machine_name_label)
+        self.machine_list.append(self.machine_name)
+        self.machine_notes_label = QtGui.QLabel(self.tr("Machine Notes :"))
+        self.machine_notes = QtGui.QLabel()
+        self.machine_list_title.append(self.machine_notes_label)
+        self.machine_list.append(self.machine_notes)
+        machine_layout.addWidget(self.machine_id_label, 0, 0)
+        machine_layout.addWidget(self.machine_id, 0, 1)
+        machine_layout.addWidget(self.machine_fqdn_label, 1, 0)
+        machine_layout.addWidget(self.machine_fqdn, 1, 1)
+        machine_layout.addWidget(self.machine_ip_label, 2, 0)
+        machine_layout.addWidget(self.machine_ip, 2, 1)
+        machine_layout.addWidget(self.machine_location_label, 3, 0)
+        machine_layout.addWidget(self.machine_location, 3, 1)
+        machine_layout.addWidget(self.machine_name_label, 4, 0)
+        machine_layout.addWidget(self.machine_name, 4, 1)
+        machine_layout.addWidget(self.machine_notes_label, 5, 0)
+        machine_layout.addWidget(self.machine_notes, 5, 1)
+        self.machine_groupbox = QtGui.QGroupBox()
+        self.machine_groupbox.setTitle(self.tr("Machine"))
+        self.machine_groupbox.setLayout(machine_layout)
 
-        self.model = InfoModel(self)
-        self.tree.setModel(self.model)
+        # Customer info
+        customer_layout = QtGui.QGridLayout()
+        customer_layout.setSpacing(False)
+        self.customer_id_label = QtGui.QLabel(self.tr("Customer id :"))
+        self.customer_id = QtGui.QLabel()
+        self.customer_list_title.append(self.customer_id_label)
+        self.customer_list.append(self.customer_id)
+        self.customer_name_label = QtGui.QLabel(self.tr("Customer name :"))
+        self.customer_name = QtGui.QLabel()
+        self.customer_list_title.append(self.customer_name_label)
+        self.customer_list.append(self.customer_name)
+        customer_layout.addWidget(self.customer_id_label, 0, 0)
+        customer_layout.addWidget(self.customer_id, 0, 1)
+        customer_layout.addWidget(self.customer_name_label, 1, 0)
+        customer_layout.addWidget(self.customer_name, 1, 1)
+        self.customer_groupbox = QtGui.QGroupBox()
+        self.customer_groupbox.setTitle(self.tr("Customer"))
+        self.customer_groupbox.setLayout(customer_layout)
 
-        button_layout = QtGui.QHBoxLayout()
-        button_layout.addWidget(self.reinit)
-        button_layout.addWidget(self.save)
-
-        self.clearService()
-        self.clearMachine()
-        self.clearCustomer()
-
-        # Positionning items
-        ## Groups groupbox
-        gridLayout = QtGui.QGridLayout()
-
-        # Label Title
-        ## Service
-        self.serviceListTitle["id"] = QtGui.QLabel(self.tr("Id :"))
-        #self.serviceListTitle["metadata"] = QtGui.QLabel(self.tr("Metadata :"))
-        ## Machine
-        self.machineListTitle["fqdn"] = QtGui.QLabel(self.tr("Machine FQDN :"))
-        self.machineListTitle["id"] = QtGui.QLabel(self.tr("Machine Id :"))
-        self.machineListTitle["ip"] = QtGui.QLabel(self.tr("Machine IP :"))
-        self.machineListTitle["location"] = QtGui.QLabel(self.tr("Machine Location :"))
-        self.machineListTitle["name"] = QtGui.QLabel(self.tr("Machine Name :"))
-        self.machineListTitle["notes"] = QtGui.QLabel(self.tr("Machine Notes :"))
-        ## Customer
-        self.customerListTitle["id"] = QtGui.QLabel(self.tr("Customer Id :"))
-        self.customerListTitle["name"] = QtGui.QLabel(self.tr("Customer Name :"))
-        # Register Qlabels
-        i = 0
-        for label in self.serviceListTitle.values():
-            gridLayout.addWidget(label, i, 0)
-            i = i + 1;
-        for label in self.machineListTitle.values():
-            gridLayout.addWidget(label, i, 0)
-            i = i + 1;
-        for label in self.customerListTitle.values():
-            gridLayout.addWidget(label, i, 0)
-            i = i + 1;
-
-        # Label information
-        ## Service
-        self.serviceList["id"] = QtGui.QLabel()
-        #self.serviceList["metadata"] = QtGui.QLabel()
-        ## Machine
-        self.machineList["id"] = QtGui.QLabel()
-        self.machineList["name"] = QtGui.QLabel()
-        self.machineList["ip"] = QtGui.QLabel()
-        self.machineList["fqdn"] = QtGui.QLabel()
-        self.machineList["location"] = QtGui.QLabel()
-        self.machineList["notes"] = QtGui.QLabel()
-        ## Customer
-        self.customerList["id"] = QtGui.QLabel()
-        self.customerList["name"] = QtGui.QLabel()
-        # Register Qlabels
-        i = 0
-        for label in self.serviceList.values():
-            label.setWordWrap(True)
-            gridLayout.addWidget(label, i, 1)
-            i = i + 1;
-        for label in self.machineList.values():
-            label.setWordWrap(True)
-            gridLayout.addWidget(label, i, 1)
-            i = i + 1;
-        for label in self.customerList.values():
-            label.setWordWrap(True)
-            gridLayout.addWidget(label, i, 1)
-            i = i + 1;
-
-        self.info_box.setLayout(gridLayout)
+        # Vault info
+        vault_layout = QtGui.QGridLayout()
+        vault_layout.setSpacing(False)
+        self.vault_server_label = QtGui.QLabel(self.tr("Vault address :"))
+        self.vault_server = QtGui.QLabel()
+        self.vault_list_title.append(self.vault_server_label)
+        self.vault_list.append(self.vault_server)
+        self.vault_user_label = QtGui.QLabel(self.tr("vault username :"))
+        self.vault_user = QtGui.QLabel()
+        self.vault_list_title.append(self.vault_user_label)
+        self.vault_list.append(self.vault_user)
+        vault_layout.addWidget(self.vault_server_label, 0, 0)
+        vault_layout.addWidget(self.vault_server, 0, 1)
+        vault_layout.addWidget(self.vault_user_label, 1, 0)
+        vault_layout.addWidget(self.vault_user, 1, 1)
+        self.vault_groupbox = QtGui.QGroupBox()
+        self.vault_groupbox.setTitle(self.tr("Vault"))
+        self.vault_groupbox.setLayout(vault_layout)
 
         # QGridLayout
         mainLayout = QtGui.QGridLayout()
-        mainLayout.addWidget(self.tree,0,0)
-        mainLayout.addWidget(self.edit_info_bar,1,0,1,2)
-        mainLayout.addLayout(button_layout,2,0)
-        mainLayout.addWidget(self.info_box,3,0,1,2)
+        mainLayout.setSpacing(False)
+        mainLayout.addWidget(self.service_groupbox, 0, 0)
+        mainLayout.addWidget(self.machine_groupbox, 1, 0)
+        mainLayout.addWidget(self.customer_groupbox, 2, 0)
+        mainLayout.addWidget(self.vault_groupbox, 3, 0)
 
         # Geometries
         self.setWindowTitle(self.tr("Items Informations"))
@@ -210,159 +262,56 @@ class Info(QtGui.QWidget):
         # Show window
         self.setLayout(mainLayout)
 
-        # Signals
-        QtCore.QObject.connect(self.reinit, QtCore.SIGNAL("clicked()"), self.reloadInformation)
-        QtCore.QObject.connect(self.save, QtCore.SIGNAL("clicked()"), self.editItem)
+    def show_service_info(self, service):
+        if not 'group_id' in service or service['group_id'] == '':
+            self.service_access.setText(self.tr("""<font color="red"><b>Denied</b></font>"""))
+        else:
+            self.service_access.setText(self.tr("""<font color="green"><b>Authorized</b></font>"""))
 
+        self.service_id.setText("s#" + unicode(service['id']))
 
-    # Back to actual informations
-    def reloadInformation(self):
-        # Set a new model
-        self.model.clear()
-        self.model.setHeaders()
-        self.model.showEditableInformations(self.parent.customer, self.parent.machine, self.parent.service)
-        self.showInformations(self.parent.customer, self.parent.machine, self.parent.service)
-        # Hide edit mode
-        self.edit_info_bar.hide()
-        self.save.hide()
-        self.reinit.hide()
+        advanced_url = unicode(service['url'])
+        # Split data
+        if len(advanced_url.split("@")) > 2:
+            temp = advanced_url.rsplit("@",1)
+            username = temp[0].split("://")[-1]
+            protocol = temp[0].split("://")[0]
+            url = temp[1]
+            url = QtCore.QUrl(protocol + "://" + url)
+        else:
+            url = QtCore.QUrl(advanced_url)
+        username = unicode(url.userName())
+        protocol = unicode(url.scheme())
+        port = unicode(url.port() if url.port() > 0 else '')
+        host = unicode(url.host())
+        uri = unicode(url.path())
+        # Set fields
+        self.service_username.setText(username)
+        self.service_host.setText(host)
+        self.service_port.setText(port)
+        self.service_scheme.setText(protocol)
+        self.service_params.setText(uri)
 
-    def editItem(self):
-        # if item is a customer
-        if self.model.mode == "customer":
-            custid = self.parent.customerid
-            cust_info = {}
-            # Create dict
-            for attribute in self.model.attributes:
-                try:
-                    new_value = int(attribute.values()[0])
-                except:
-                    new_value = attribute.values()[0]
-                cust_info[attribute.keys()[0]] = new_value
-            # Save it
-            editCustomer(custid, cust_info)
-        # if item is a machine
-        elif self.model.mode == "machine":
-            machid = self.parent.machineid
-            mach_info = {}
-            # Create dict
-            for attribute in self.model.attributes:
-                try:
-                    new_value = int(attribute.values()[0])
-                except:
-                    new_value = attribute.values()[0]
-                mach_info[attribute.keys()[0]] = new_value
-            # Save it
-            editMachine(machid, mach_info)
-        # if item is a service
-        elif self.model.mode == "service":
-            servid = self.parent.serviceid
-            serv_info = {}
-            # Create dict
-            for attribute in self.model.attributes:
-                try:
-                    new_value = int(attribute.values()[0])
-                except:
-                    new_value = attribute.values()[0]
-                serv_info[attribute.keys()[0]] = new_value
-            # Save it
-            editService(servid, serv_info)
-        # Hide edit mode
-        self.edit_info_bar.hide()
-        self.save.hide()
-        self.reinit.hide()
-        # Reload Tree
-        self.parent.parent.search(None)
+        self.service_url.setText(service['url'])
 
+        if service['parent_service_id'] != 0:
+            self.service_parent.setText(unicode(service['parent_service_id']))
 
-    # Show
-    def showService(self):
-        for label in self.serviceList.values():
-            label.show()
-        for label in self.serviceListTitle.values():
-            label.show()
+#        self.service_groups.
 
-    def showMachine(self):
-        for label in self.machineList.values():
-            label.show()
-        for label in self.machineListTitle.values():
-            label.show()
-
-    def showCustomer(self):
-        for label in self.customerList.values():
-            label.show()
-        for label in self.customerListTitle.values():
-            label.show()
-
-    # Hide
-    def hideService(self):
-        for label in self.serviceList.values():
-            label.hide()
-        for label in self.serviceListTitle.values():
-            label.hide()
-
-    def hideMachine(self):
-        for label in self.machineList.values():
-            label.hide()
-        for label in self.machineListTitle.values():
-            label.hide()
-
-    def hideCustomer(self):
-        for label in self.customerList.values():
-            label.hide()
-        for label in self.customerListTitle.values():
-            label.hide()
-
-    # Clear
-    def clearService(self):
-        for label in self.serviceList.values():
-            label.clear()
-        for label in self.serviceListTitle.values():
-            label.clear()
-
-    def clearMachine(self):
-        for label in self.machineList.values():
-            label.clear()
-        for label in self.machineListTitle.values():
-            label.clear()
-
-    def clearCustomer(self):
-        for label in self.customerList.values():
-            label.clear()
-        for label in self.customerListTitle.values():
-            label.clear()
 
     def showInformations(self, customer, machine=None, service=None):
         if service:
             # Show service, machine and customer
-            self.showMachine()
-            self.showCustomer()
-            self.showService()
-            for key, data in service['services'][-1].items():
-                if key in ["id", ]:
-                    # Show and hide label
-                    self.serviceList["id"].show()
-                    self.serviceList["id"].setText(unicode("s#" + str(data)))
-                    self.serviceListTitle["id"].show()
-            # show machine information
-            for key, data in machine['machine'].items():
-                if not key in ["customer_id", "id", ]:
-                    self.machineList[key].setText(unicode(data))
-                # Show "#" for id
-                elif key in ["id", ]:
-                    self.machineList[key].setText(unicode("m#" + str(data)))
-            # show customer information
-            for key, data in customer['customer'].items():
-                # Show "#" for id
-                if key in ["id", ]:
-                    self.customerList[key].setText(unicode("c#" + str(data)))
-                else:
-                    self.customerList[key].setText(unicode(data))
+            self.service_groupbox.show()
+            self.machine_groupbox.show()
+            self.customer_groupbox.show()
+            self.show_service_info(service['services'][-1])
         elif machine:
             # Hide service and machine, show customer
-            self.showCustomer()
-            self.hideService()
-            self.hideMachine()
+            self.service_groupbox.hide()
+            self.machine_groupbox.show()
+            self.customer_groupbox.show()
             # show machine id
             for key, data in machine['machine'].items():
                 if key in ["id", ]:
@@ -379,9 +328,9 @@ class Info(QtGui.QWidget):
                     self.customerList[key].setText(unicode(data))
         elif customer:
             # Hide all
-            self.hideService()
-            self.hideMachine()
-            self.hideCustomer()
+            self.service_groupbox.hide()
+            self.machine_groupbox.hide()
+            self.customer_groupbox.show()
             # Show only customer id
             for key, data in customer.items():
                 # Show "#" for id
@@ -390,115 +339,3 @@ class Info(QtGui.QWidget):
                     self.customerList[key].show()
                     self.customerList[key].setText(unicode("c#" + str(data)))
                     self.customerListTitle[key].show()
-
-
-class InfoTree(QtGui.QTreeView):
-    def __init__(self, parent=None):
-        QtGui.QTreeView.__init__(self, parent)
-        self.parent = parent
-        self.setRootIsDecorated(False)
-        # Get Editor
-        Editor = self.itemDelegate()
-        QtCore.QObject.connect(Editor, QtCore.SIGNAL("commitData (QWidget *)"), self.editorClosed)
-
-    def editorClosed(self, editor):
-        self.parent.edit_info_bar.show()
-        self.parent.save.show()
-        self.parent.reinit.show()
-
-class InfoModel(QtGui.QStandardItemModel):
-    def __init__(self, parent=None):
-        QtGui.QStandardItemModel.__init__(self, 0, 2, parent)
-        self.parent = parent
-        self.setHeaders()
-        self.mode = None
-        self.attributes = []
-
-    def setHeaders(self):
-        self.setColumnCount(2)
-        self.setRowCount(0)
-        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
-        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Value"))
-
-    def showEditableInformations(self, customer, machine=None, service=None):
-        """
-            Show services informations
-        """
-        self.attributes = []
-        if service:
-            self.mode = "service"
-            for key, data in service['services'][-1].items():
-                if key in ["url", "notes", "group_id", "parent_service_id", "groups_list"]:
-                    if type(data) == list:
-                        data = unicode(u" | ".join([ group[1] + "(g#" + unicode(group[0]) + ")"  for group in data]))
-                    self.insertRow(0)
-                    self.attributes.append({key: data})
-        elif machine:
-            self.mode = "machine"
-            for key, data in machine['machine'].items():
-                if key in ["name", "ip", "fqdn", "location", "notes"]:
-                    self.insertRow(0)
-                    self.attributes.append({key: data})
-        elif customer:
-            self.mode = "customer"
-            for key, data in customer['customer'].items():
-                if key in ["name", ]:
-                    self.insertRow(0)
-                    self.attributes.append({key: data})
-
-    def flags(self, index):
-        f = QtCore.QAbstractTableModel.flags(self,index)
-        if index.column() == 1:
-            f |= QtCore.Qt.ItemIsEditable
-        return f
-
-
-    def data(self, index, role):
-        # if index is not valid
-        if not index.isValid():
-            return QtCore.QVariant()
-        # if attributes is empty
-        if not self.attributes:
-            return QtCore.QVariant()
-
-        try:
-            attribute = self.attributes[index.row()]
-        except IndexError, e:
-            return  QtCore.QVariant()
-
-        # get value of protocol name and command
-        if role in [QtCore.Qt.EditRole, QtCore.Qt.DisplayRole]:
-            if index.column() == 0:
-                value = attribute.keys()[0]
-                return QtCore.QVariant(value)
-            if index.column() == 1:
-                value = attribute.values()[0]
-                return QtCore.QVariant(value)
-
-        return QtCore.QVariant()
-
-
-    def setData(self, index, value, role=QtCore.Qt.DisplayRole):
-        # if index is not valid
-        if not index.isValid():
-            return QtCore.QVariant()
-        # if attributes is empty
-        if not self.attributes:
-            return QtCore.QVariant()
-
-         # Get attribute
-        attribute = self.attributes[index.row()]
-        # Get attribute name
-        key = attribute.keys()[0]
-        # Get New value
-        new_value, bool = value.toInt()
-        if not bool:
-            new_value = unicode(value.toString())
-        # Set attribute with new value
-        try:
-            attribute[key] = new_value
-            self.dataChanged.emit(index, index)
-            return True
-        except:    
-            return False
-
