@@ -19,22 +19,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from base64 import b64decode, b64encode
+from datetime import datetime
+import re
+
+from Crypto.PublicKey import ElGamal
 from sqlalchemy import Column, MetaData, Table, types, ForeignKey
 from sqlalchemy.orm import mapper, relation, backref
 from sqlalchemy.orm import scoped_session, sessionmaker, eagerload, lazyload
 from sqlalchemy.orm import eagerload_all
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy import sql
-from datetime import datetime
-
-from Crypto.PublicKey import ElGamal
-from base64 import b64decode, b64encode
 
 from sflvault.model import meta
 from sflvault.model.meta import Session, metadata
+from sflvault.model.custom_types import JSONEncodedDict
 from sflvault.common.crypto import *
-
-import re
 
 
 # TODO: add an __all__ statement here, to speed up loading...
@@ -135,7 +135,7 @@ services_table = Table('services', metadata,
                        #       ForeignKey('groups.id')),
                        Column('url', types.String(250)), # Full service desc.
                        # simplejson'd python structures, depends on url scheme
-                       Column('metadata', types.Text), # reserved.
+                       Column('metadata', JSONEncodedDict), # reserved.
                        Column('notes', types.Text),
                        Column('secret', types.Text),
                        Column('secret_last_modified', types.DateTime)

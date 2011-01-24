@@ -471,6 +471,10 @@ class SFLvaultCommand(object):
         self.parser.add_option('--notes', dest="notes",
                                help="Notes about the service, references, "\
                                     "URLs.")
+        self.parser.add_option('--metadata', dest="metadata",
+                               action="append", type="string",
+                               help="Add metadata to this service. Specify as key=value. "\
+                                    "This option can appear more than once.")
         self._parse()
 
         for x in ('url', 'machine_id', 'group_ids'):
@@ -492,10 +496,17 @@ class SFLvaultCommand(object):
             parent_id = self.vault.vaultId(o.parent_id, 's')
         if o.group_ids:
             group_ids = [self.vault.vaultId(g, 'g') for g in o.group_ids]
-            
-        self.vault.service_add(machine_id, parent_id, url, group_ids, secret,
-                               o.notes)
+        metadata = {}
+        if o.metadata:
+            for s in o.metadata:
+                try:
+                    key, val = s.split('=', 1)
+                except ValueError:
+                    raise SFLvaultParserError("Missing '=' in metadata option: '%s'" % s)
+                metadata[key] = val
         
+        self.vault.service_add(machine_id, parent_id, url, group_ids, secret,
+                               o.notes, metadata)
 
     def service_edit(self):
         """Edit service informations."""

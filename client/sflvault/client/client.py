@@ -591,7 +591,7 @@ class SFLvaultClient(object):
 
     @authenticate()
     def service_add(self, machine_id, parent_service_id, url, group_ids, secret,
-                    notes):
+                    notes, metadata):
         """Add a service to the Vault's database.
 
         machine_id - A m#id machine identifier.
@@ -611,7 +611,8 @@ class SFLvaultClient(object):
                                                   int(machine_id),
                                                   psi, url,
                                                   group_ids, secret,
-                                                  notes or ''),
+                                                  notes or '',
+                                                  metadata),
                             "Error adding service")
 
         print "Success: %s" % retval['message']
@@ -939,6 +940,11 @@ class SFLvaultClient(object):
             
             if verbose:
                 print "%s%s   notes: %s" % (pre,spc, x['notes'])
+                if x['metadata']:
+                    print "%s%s   metadata:" % (pre, spc)
+                    for key, val in x['metadata'].items():
+                        print "%s%s     %s: %s" % (pre, spc, key, val)
+
             del(secret)
 
             pre = pre + '   ' + spc
