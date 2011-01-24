@@ -52,7 +52,7 @@ OP_THRGH_SHELL = 'OP_THRGH_SHELL'      # - When a command must be sent through
 ### Service definitions
 
 class ExpectClass(object):
-    def __init__(self, service_obj):
+    def __init__(self, service_obj, strings_and_funcs=None):
         # Hold the parent Service object here..
         self.service = service_obj
         self.error = None
@@ -62,6 +62,10 @@ class ExpectClass(object):
 
         funcs = []
         strings = []
+        if strings_and_funcs:
+            for s, f in strings_and_funcs:
+                strings.append(s)
+                funcs.append(getattr(self, f))
         for x in dir(self):
             if x.startswith('_'):
                 continue
@@ -281,6 +285,13 @@ class ssh(ShellService):
 
         # Prework classes
         class expect_shell(ExpectClass):
+
+            def __init__(self, service, strings_and_funcs=None):
+                strings_and_funcs = strings_and_funcs[:] if strings_and_funcs else []
+                shell_regexp = service.data['metadata'].get('shell_regexp') or r'[^ ]*@.*:.*[$#] '
+                strings_and_funcs.append((shell_regexp, 'shell'))
+                ExpectClass.__init__(self, service, strings_and_funcs)
+
             def terminal_type(self):
                 "Terminal type\?.*$"
                 sys.stdout.write(" [sending: xterm] ")
@@ -288,7 +299,6 @@ class ssh(ShellService):
                 sys.stdout.flush()
             
             def shell(self):
-                r'[^ ]*@.*:.*[$#] '
                 pass # We're in :)
             
             def denied(self):
