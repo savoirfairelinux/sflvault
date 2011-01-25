@@ -106,6 +106,23 @@ class ExpectClass(object):
         sys.stdout.flush()
 
 
+class ExpectShell(ExpectClass):
+    """When initialized, this class will wait for a shell prompt via pexpect
+    and call its ``shell`` method when it sees one.
+
+    The shell prompt can be configured for each service using the
+    ``shell_prompt`` metadata key.
+    """
+    def __init__(self, service, strings_and_funcs=None):
+        strings_and_funcs = strings_and_funcs[:] if strings_and_funcs else []
+        shell_regexp = service.data['metadata'].get('shell_regexp') or r'[^ ]*@.*:.*[$#] '
+        strings_and_funcs.append((shell_regexp, 'shell'))
+        ExpectClass.__init__(self, service, strings_and_funcs)
+
+    def shell(self):
+        pass
+
+
 class ShellService(Service):
     """Abstract class for services running over ssh. Helper funcs."""
 
@@ -284,13 +301,7 @@ class ssh(ShellService):
     def prework(self):
 
         # Prework classes
-        class expect_shell(ExpectClass):
-
-            def __init__(self, service, strings_and_funcs=None):
-                strings_and_funcs = strings_and_funcs[:] if strings_and_funcs else []
-                shell_regexp = service.data['metadata'].get('shell_regexp') or r'[^ ]*@.*:.*[$#] '
-                strings_and_funcs.append((shell_regexp, 'shell'))
-                ExpectClass.__init__(self, service, strings_and_funcs)
+        class expect_shell(ExpectShell):
 
             def terminal_type(self):
                 "Terminal type\?.*$"
@@ -511,9 +522,9 @@ class sudo(ShellService):
         # Inherit shell handle
         self.shell_handle = self.parent.shell_handle
 
-        class expect_waitshell(ExpectClass):
-            def gotshell(self):
-                r'[^ ]*@.*:.*[$#]'
+        class expect_waitshell(ExpectShell):
+
+            def shell(self):
                 return True
 
             def failed(self):
@@ -578,9 +589,9 @@ class su(ShellService):
         # Inherit shell handle
         self.shell_handle = self.parent.shell_handle
 
-        class expect_waitshell(ExpectClass):
-            def gotshell(self):
-                r'[^ ]*@.*:.*[$#]'
+        class expect_waitshell(ExpectShell):
+
+            def shell(self):
                 return True
 
             def failed(self):
@@ -591,7 +602,7 @@ class su(ShellService):
                 'incorrect'
                 self.failed()
 
-        class expect_suwork(ExpectClass):
+        class expect_suwork(ExpectShell):
             def sendpass(self):
                 'assword:'
 
@@ -600,8 +611,7 @@ class su(ShellService):
 
                 expect_waitshell(self.service)
 
-            def gotshell(self):
-                r'[^ ]*@.*:.*[$#]'
+            def shell(self):
                 return True
                 
 
