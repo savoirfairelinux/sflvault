@@ -232,9 +232,9 @@ class XmlrpcController(XMLRPCController):
 
     @authenticated_user
     def sflvault_service_add(self, authtok, machine_id, parent_service_id, url,
-                             group_ids, secret, notes):
+                             group_ids, secret, notes, metadata):
         return self.vault.service_add(machine_id, parent_service_id, url,
-                                      group_ids, secret, notes)
+                                      group_ids, secret, notes, metadata)
         
     @authenticated_admin
     def sflvault_service_del(self, authtok, service_id):

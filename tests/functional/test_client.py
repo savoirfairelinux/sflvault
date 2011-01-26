@@ -66,7 +66,8 @@ class TestVault(BaseTestCase):
                                       'ssh://root@localhost',
                                       [gres3['group_id']], 
                                       'test_secret',
-                                      u'Some notés')
+                                      u'Some notés',
+                                      {'meta': 'data'})
         self.assertFalse(sres['error'])
         dres = self.vault.service_del(sres['service_id'])
         self.assertTrue(dres is not None)

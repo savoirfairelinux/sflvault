@@ -54,7 +54,7 @@ OP_THRGH_SHELL = 'OP_THRGH_SHELL'      # - When a command must be sent through
 ### Service definitions
 
 class ExpectClass(object):
-    def __init__(self, service_obj):
+    def __init__(self, service_obj, strings_and_funcs=None):
         # Hold the parent Service object here..
         self.service = service_obj
         self.error = None
@@ -64,6 +64,10 @@ class ExpectClass(object):
 
         funcs = []
         strings = []
+        if strings_and_funcs:
+            for s, f in strings_and_funcs:
+                strings.append(s)
+                funcs.append(getattr(self, f))
         for x in dir(self):
             if x.startswith('_'):
                 continue
@@ -102,6 +106,23 @@ class ExpectClass(object):
         sys.stdout.write(self.cnx.before)
         sys.stdout.write(self.cnx.after)
         sys.stdout.flush()
+
+
+class ExpectShell(ExpectClass):
+    """When initialized, this class will wait for a shell prompt via pexpect
+    and call its ``shell`` method when it sees one.
+
+    The shell prompt can be configured for each service using the
+    ``shell_prompt`` metadata key.
+    """
+    def __init__(self, service, strings_and_funcs=None):
+        strings_and_funcs = strings_and_funcs[:] if strings_and_funcs else []
+        shell_regexp = service.data['metadata'].get('shell_regexp') or r'[^ ]*@.*:.*[$#] '
+        strings_and_funcs.append((shell_regexp, 'shell'))
+        ExpectClass.__init__(self, service, strings_and_funcs)
+
+    def shell(self):
+        pass
 
 
 class ShellService(Service):
@@ -282,7 +303,8 @@ class ssh(ShellService):
     def prework(self):
 
         # Prework classes
-        class expect_shell(ExpectClass):
+        class expect_shell(ExpectShell):
+
             def terminal_type(self):
                 "Terminal type\?.*$"
                 sys.stdout.write(" [sending: xterm] ")
@@ -290,7 +312,6 @@ class ssh(ShellService):
                 sys.stdout.flush()
             
             def shell(self):
-                r'[^ ]*@.*:.*[$#] '
                 pass # We're in :)
             
             def denied(self):
@@ -503,9 +524,9 @@ class sudo(ShellService):
         # Inherit shell handle
         self.shell_handle = self.parent.shell_handle
 
-        class expect_waitshell(ExpectClass):
-            def gotshell(self):
-                r'[^ ]*@.*:.*[$#]'
+        class expect_waitshell(ExpectShell):
+
+            def shell(self):
                 return True
 
             def failed(self):
@@ -570,9 +591,9 @@ class su(ShellService):
         # Inherit shell handle
         self.shell_handle = self.parent.shell_handle
 
-        class expect_waitshell(ExpectClass):
-            def gotshell(self):
-                r'[^ ]*@.*:.*[$#]'
+        class expect_waitshell(ExpectShell):
+
+            def shell(self):
                 return True
 
             def failed(self):
@@ -583,7 +604,7 @@ class su(ShellService):
                 'incorrect'
                 self.failed()
 
-        class expect_suwork(ExpectClass):
+        class expect_suwork(ExpectShell):
             def sendpass(self):
                 'assword:'
 
@@ -592,8 +613,7 @@ class su(ShellService):
 
                 expect_waitshell(self.service)
 
-            def gotshell(self):
-                r'[^ ]*@.*:.*[$#]'
+            def shell(self):
                 return True
                 
 
