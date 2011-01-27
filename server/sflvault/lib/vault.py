@@ -64,7 +64,11 @@ class SFLvaultAccess(object):
         self.setup_timeout = 300
 
     def _log_any(self, log_func, msg, data):
-        head = "User: u#d%d - %s - " % (self.myself_id, self.myself_username)
+        # Need to do that for user-setup
+        if self.myself_username == None and self.myself_id == None:
+            head = "New user-setup - "
+        else:
+            head = "User: u#d%d - %s - " % (self.myself_id, self.myself_username)
         log_func(head + msg % data)
 
     def log_e(self, msg, data=None):
