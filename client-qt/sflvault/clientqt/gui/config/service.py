@@ -26,6 +26,7 @@ import sys
 import re
 import shutil
 import os
+from functools import partial
 
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
@@ -74,6 +75,7 @@ class EditServiceWidget(QtGui.QDialog):
         self.settings = self.parent.settings
         self.servid = servid
         self.machid = machid
+        self.metadata = {}
         if not self.servid:
             self.mode = "add"
         else:
@@ -114,6 +116,22 @@ class EditServiceWidget(QtGui.QDialog):
         info_layout.addWidget(self.groups, 2, 1)
         info_layout.addWidget(self.notesLabel, 3, 0)
         info_layout.addWidget(self.notes, 3, 1)
+
+        # Metadata groupbox
+        self.metadata_layout = QtGui.QGridLayout()
+        self.groupbox_metadata = QtGui.QGroupBox()
+        self.groupbox_metadata.setTitle(self.tr("Metadata"))
+        self.groupbox_metadata.setLayout(self.metadata_layout)
+        self.metadata_key_label = QtGui.QLabel(self.tr("Metadata key"))
+        self.metadata_value_label = QtGui.QLabel(self.tr("Metadata value"))
+        self.metadata_button = QtGui.QPushButton(self.tr("Add metadata"))
+        self.metadata_layout.addWidget(self.metadata_key_label, 0, 0)
+        self.metadata_layout.addWidget(self.metadata_value_label, 0, 1)
+
+        self.metadata_layout.addWidget(self.metadata_button, 1, 1)
+        self.groupbox_metadata.setLayout(self.metadata_layout)
+        info_layout.addWidget(self.groupbox_metadata, 4, 0, 1, 2)
+        self.groupbox_metadata.hide()
         
         # Url groupbox
         url_layout = QtGui.QGridLayout()
@@ -210,9 +228,42 @@ class EditServiceWidget(QtGui.QDialog):
         self.connect(self.url, QtCore.SIGNAL("textEdited(const QString&)"), self.advanced_to_simple)
         self.connect(self.password_button, QtCore.SIGNAL("clicked()"), self.fill_password)
 
+        self.connect(self.metadata_button, QtCore.SIGNAL("clicked()"), self.add_metadata)
+
         self.connect(self.advanced, QtCore.SIGNAL("clicked()"), self.switch_edit)
         self.connect(self.save, QtCore.SIGNAL("clicked()"), self.editService)
         self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+
+    def add_metadata(self):
+        key, ret = QtGui.QInputDialog.getText(self,
+                                            self.tr("New Metadata"),
+                                            self.tr("Metadata key:"),
+                                            QtGui.QLineEdit.Normal,
+                                            '');
+        if key == '':
+            print "error"
+        else:
+            value, ret = QtGui.QInputDialog.getText(self,
+                                            self.tr("New Metadata"),
+                                            self.tr("Metadata value:"),
+                                            QtGui.QLineEdit.Normal,
+                                            '');
+            if value == '':
+                print "error"
+            key_label = QtGui.QLabel(key)
+            value_label = QtGui.QLabel(value)
+
+            self.metadata[key_label] = value_label
+
+            length = self.metadata_layout.count()
+            self.metadata_layout.addWidget(key_label, length, 0)
+            self.metadata_layout.addWidget(value_label, length, 1)
+            self.metadata_layout.addWidget(self.metadata_button, length + 1, 0)
+            del_button = QtGui.QPushButton("-")
+            del_button.key = key_label 
+            temp_func = partial(self.del_metadata, del_button)
+            self.connect(del_button, QtCore.SIGNAL("clicked()"), temp_func) 
+            self.metadata_layout.addWidget(del_button, length, 2)
 
 
     def switch_edit(self):
@@ -231,6 +282,8 @@ class EditServiceWidget(QtGui.QDialog):
             # Show advanced url
             self.urlLabel.show()
             self.url.show()
+            self.groupbox_metadata.show()
+            self.metadata_button.show()
             self.advanced.setText(self.tr("Simple"))
         else:
             self.usernameLabel.show()
@@ -245,6 +298,8 @@ class EditServiceWidget(QtGui.QDialog):
             self.params.show()
             self.urlLabel.hide()
             self.url.hide()
+            self.groupbox_metadata.hide()
+            self.metadata_button.hide()
             self.advanced.setText(self.tr("Advanced"))
 
     def advanced_to_simple(self):
@@ -337,6 +392,14 @@ class EditServiceWidget(QtGui.QDialog):
             index = 0
         self.parentserv.setCurrentIndex(index)
 
+    def del_metadata(self, button):
+        self.metadata[button.key].hide()
+        button.key.hide()
+        button.hide()
+        self.metadata[button.key].destroy()
+        del(self.metadata[button.key])
+        
+
     def exec_(self):
         # get groups lists
         groups = listGroup()
@@ -368,6 +431,22 @@ class EditServiceWidget(QtGui.QDialog):
                     if len(item_list) > 0:
                         item_list[0].setSelected(True) 
             self.notes.setText(self.informations["notes"])
+            # metadata
+            self.metadata = dict([ (QtGui.QLabel(key), QtGui.QLabel(value))
+                                   for key, value in
+                                 self.informations["metadata"].items() ])
+            for i, data in enumerate(self.metadata.items()):
+                key_label, value_label = data
+                self.metadata_layout.addWidget(key_label, i + 1, 0)
+                self.metadata_layout.addWidget(value_label, i + 1, 1)
+                del_button = QtGui.QPushButton("-")
+                del_button.key = key_label
+                temp_func = partial(self.del_metadata, del_button)
+                self.connect(del_button, QtCore.SIGNAL("clicked()"), temp_func)
+                self.metadata_layout.addWidget(del_button, i+1, 2)
+            self.metadata_layout.addWidget(self.metadata_button,
+                                            len(self.metadata) + 1,
+                                            0)
             # get machine lists
             self.fillMachinesList()
             # get services lists
@@ -415,11 +494,19 @@ class EditServiceWidget(QtGui.QDialog):
 
         service_info["notes"] = unicode(self.notes.text())
 
+        service_info["metadata"] = dict([(unicode(key.text()),
+                                          unicode(value.text()))
+                                    for key, value in self.metadata.items()])
+
         if self.mode == "add":
             # Add a new service
-            addService(service_info["machine_id"], service_info["parent_service_id"],
-                         service_info["url"], group_ids,
-                        service_info["secret"], service_info["notes"])
+            addService(service_info["machine_id"],
+                        service_info["parent_service_id"],
+                        service_info["url"],
+                        group_ids,
+                        service_info["secret"],
+                        service_info["notes"],
+                        service_info["metadata"])
         elif self.mode == "edit":
             # Edit a service
             ## Group management

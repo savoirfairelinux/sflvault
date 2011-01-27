@@ -358,12 +358,13 @@ def delMachine(machid):
 
 @try_connect
 @reauth
-def addService(machid, parentid, url, groupids, password, notes):
+def addService(machid, parentid, url, groupids, password, notes, metadata):
     # TODO: put parentid to 0 by default
     global client
     if not parentid:
         parentid = 0
-    status = client.vault.service.add(client.authtok, machid, parentid, url, groupids, password, notes)
+    status = client.vault.service.add(client.authtok, machid, parentid, url,
+                                        groupids, password, notes, metadata)
     return status
 
 @try_connect
