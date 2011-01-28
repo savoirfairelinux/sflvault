@@ -124,11 +124,13 @@ class EditServiceWidget(QtGui.QDialog):
         self.groupbox_metadata.setLayout(self.metadata_layout)
         self.metadata_key_label = QtGui.QLabel(self.tr("Metadata key"))
         self.metadata_value_label = QtGui.QLabel(self.tr("Metadata value"))
-        self.metadata_button = QtGui.QPushButton(self.tr("Add metadata"))
+        self.metadata_button = QtGui.QPushButton(self.tr("+"))
+        self.metadata_button.adjustSize()
+        w = self.metadata_button.height()
+        self.metadata_button.setMaximumWidth(w)
         self.metadata_layout.addWidget(self.metadata_key_label, 0, 0)
         self.metadata_layout.addWidget(self.metadata_value_label, 0, 1)
-
-        self.metadata_layout.addWidget(self.metadata_button, 1, 1)
+        self.metadata_layout.addWidget(self.metadata_button, 1, 2)
         self.groupbox_metadata.setLayout(self.metadata_layout)
         info_layout.addWidget(self.groupbox_metadata, 4, 0, 1, 2)
         self.groupbox_metadata.hide()
@@ -258,8 +260,11 @@ class EditServiceWidget(QtGui.QDialog):
             length = self.metadata_layout.count()
             self.metadata_layout.addWidget(key_label, length, 0)
             self.metadata_layout.addWidget(value_label, length, 1)
-            self.metadata_layout.addWidget(self.metadata_button, length + 1, 0)
+            self.metadata_layout.addWidget(self.metadata_button, length + 1, 2)
             del_button = QtGui.QPushButton("-")
+            del_button.adjustSize()
+            w = del_button.height()
+            del_button.setMaximumWidth(w)
             del_button.key = key_label 
             temp_func = partial(self.del_metadata, del_button)
             self.connect(del_button, QtCore.SIGNAL("clicked()"), temp_func) 
@@ -440,13 +445,16 @@ class EditServiceWidget(QtGui.QDialog):
                 self.metadata_layout.addWidget(key_label, i + 1, 0)
                 self.metadata_layout.addWidget(value_label, i + 1, 1)
                 del_button = QtGui.QPushButton("-")
+                del_button.adjustSize()
+                w = del_button.height()
+                del_button.setMaximumWidth(w)
                 del_button.key = key_label
                 temp_func = partial(self.del_metadata, del_button)
                 self.connect(del_button, QtCore.SIGNAL("clicked()"), temp_func)
                 self.metadata_layout.addWidget(del_button, i+1, 2)
             self.metadata_layout.addWidget(self.metadata_button,
                                             len(self.metadata) + 1,
-                                            0)
+                                            2)
             # get machine lists
             self.fillMachinesList()
             # get services lists
