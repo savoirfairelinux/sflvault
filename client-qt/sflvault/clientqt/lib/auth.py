@@ -27,10 +27,14 @@
 
 import sys
 import os
+
 from PyQt4 import QtCore, QtGui
+from Crypto.PublicKey import ElGamal
+
 from sflvault.client import SFLvaultClient
 from sflvault.clientqt.gui.config.config import Config
 from error import *
+
 try:
     import keyring
 except:
@@ -134,183 +138,149 @@ def registerAccount(username, vaultaddress, password):
         return False
     return True 
 
+def try_connect(func):
+    """ Decorator to try to connect to sflvault server
+    """
+    def try_func(*k,**a):
+        try:
+            status = func(*k, **a)
+        except socket.error, e:
+            ErrorMessage(e)
+            return False
+        return status
+    return try_func
+
+def reauth(func):
+    """ Decorator to reactivate the client if is expired
+    """
+    def reauth_func(*k, **a):
+        status = func(*k, **a)
+        if 'error' in status and status["error"]:
+            if status['message'] == 'Permission denied':
+                getAuth()
+                status = func(*k, **a)
+            else:
+                ErrorMessage(status['message'])
+        return status
+    return reauth_func
+
+class return_element(object):
+    """ Decorator to get a specified element of the "status" response
+        of the vault
+    """
+    def __init__(self, element):
+        self.element = element
+
+    def __call__(self, func):
+        def return_el(*k, **a):
+            status = func(*k, **a)
+            if isinstance(status, dict):
+                status = status[self.element]
+            return status
+        return return_el
+
+def return_user(func):
+    """ Decorator to return current user info
+    """
+    def ret_user(*k, **a):
+        status = func(*k, **a)
+        if 'list' in status:
+            for user in status['list']:
+                if user['username'] == k[0]:
+                    return user
+        return False
+    return ret_user
+
+@return_user
+@try_connect
+@reauth
 def getUserInfo(username):
     """ Get Your informations
     """
     global client
-    try:
-        # get user list, to find you inside ...
-        status = client.vault.user_list(client.authtok, True)
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        getUserInfo(username)
-    except Exception, e:
-        ErrorMessage(e)
-        return False
-    try:
-        if status["error"]:
-            e = Exception('userinfo')
-            e.message = error_message.tr("Error while getting your informations")
-            ErrorMessage(e)
-            return False
-
-        for user in status['list']:
-            if user['username'] == username:
-                return user
-    except UnboundLocalError:
-        user = getUserInfo(username)
-        return user
+    status = client.vault.user_list(client.authtok, True)
+#        for user in status['list']:
+#            if user['username'] == username:
+#                return user
+#    except UnboundLocalError:
+#        user = getUserInfo(username)
+#        return user
     # Your are not in database ??!!
-    return False
+    return status
 
+@try_connect
+@reauth
 def getService(id, groups=False):
     global client
-    try:
-        service = client.vault.service_get_tree(client.authtok, id, groups)
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        service = getService(id)
-    except Exception, e:
-        ErrorMessage(e)
-        return False
-    if service["error"]:
-        ErrorMessage("No service Found")
-        return False
-    return service
+    status = client.vault.service_get_tree(client.authtok, id, groups)
+    return status
 
+@try_connect
+@reauth
 def getMachine(id):
-    global client
-    try:
-        machine = client.vault.machine.get(client.authtok, id)
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        machine = getMachine(id)
-    except Exception, e:
-        ErrorMessage(e)
-        return False
-    return machine
+    status = client.vault.machine.get(client.authtok, id)
+    return status
 
+@try_connect
+@reauth
 def getCustomer(id):
     global client
-    try:
-        customer = client.vault.customer.get(client.authtok, id)
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        customer = getCustomer(id)
-    except Exception, e:
-        ErrorMessage(e)
-        return False
-    return customer
+    status = client.vault.customer.get(client.authtok, id)
+    return status
 
+@try_connect
+@reauth
 def vaultSearch(pattern, filters={}):
     global client
-    result = None
-    try:
-        result = client.vault.search(client.authtok, pattern,
+    result = client.vault.search(client.authtok, pattern,
                                 filters.get('groups'), False, filters)
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        result = vaultSearch(pattern, filters)
-    except Exception, e:
-        ErrorMessage(e)
-        return False
     return result
 
+@return_element("plaintext")
+@try_connect
+@reauth
 def getPassword(id):
+    # Can not use client.vault
+    # TODO ???
     global client
-    password = None
-    try:
-        password = client.service_get(id)["plaintext"]
-    except Exception, e:
-        ErrorMessage(e)
-        return False
-    return password
+    status = client.service_get(id)
+    return status
 
+@try_connect
+@reauth
 def editPassword(id, password):
     global client
-    try:
-        password = client.vault.service.passwd(client.authtok, id, password)
-    except Exception, e:
-        ErrorMessage(e)
-        return False
-    return password
+    status = client.vault.service.passwd(client.authtok, id, password)
+    return status
 
+@return_element("list")
+@try_connect
+@reauth
 def listUsers(groups=True):
     global client
-    users = None
-    try:
-        users = client.vault.user_list(client.authtok, groups)["list"]
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        users = listUsers()
-    except Exception, e:
-        ErrorMessage(e)
-        return False
-    return users
+    status = client.vault.user_list(client.authtok, groups)
+    return status
 
+@try_connect
+@reauth
 def addUser(username, admin):
     global client
-    try:
-        status = client.vault.user.add(client.authtok, username, admin)
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = addUser(username, admin)
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.user.add(client.authtok, username, admin)
     return status
 
+@try_connect
+@reauth
 def delUser(username):
     global client
-    try:
-        status = client.vault.user_del(client.authtok, username)
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = delUser(username)
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.user_del(client.authtok, username)
     return status
 
+@try_connect
+@reauth
 def listGroup():
     global client
-    groups = None
-    try:
-        status = client.vault.group.list(client.authtok)
-        if status["error"]:
-            e = Exception('listgroup')
-            e.message = error_message.tr("Can not list groups")
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = listGroup()
-        if status["error"]:
-            e = Exception('listgroup')
-            e.message = error_message.tr("Can not list groups")
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.group.list(client.authtok)
     return status
-
 
 def getAliasList():
     aliases = client_alias.cfg.alias_list()
@@ -326,421 +296,143 @@ def getAlias(alias):
     id = client_alias.cfg.alias_get(alias)
     return id
 
+@try_connect
+@reauth
 def addCustomer(name):
     global client
-    try:
-        status = client.vault.customer.add(client.authtok, name)
-        if status["error"]:
-            e = Exception('addcustomer')
-            e.message = error_message.tr("Can not add customer : %s" % name)
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = addCustomer(name)
-        if status["error"]:
-            e = Exception('addcustomer')
-            e.message = error_message.tr("Can not add customer : %s" % name)
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.customer.add(client.authtok, name)
     return status
 
+@try_connect
+@reauth
 def listCustomers():
-    try:
-        status = client.vault.customer.list(client.authtok)
-        if status["error"]:
-            e = Exception('listcustomer')
-            e.message = error_message.tr("Can not list customers")
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = listCustomers()
-        if status["error"]:
-            e = Exception('listcustomer')
-            e.message = error_message.tr("Can not list customers")
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    global client
+    status = client.vault.customer_list(client.authtok)
     return status
 
+@try_connect
+@reauth
 def editCustomer(custid, informations):
     global client
-    try:
-        status = client.vault.customer.put(client.authtok, custid, informations)
-        if status["error"]:
-            e = Exception('editcustomer')
-            e.message = error_message.tr("Can not edit customer : %s" % informations["name"])
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = editCustomer(custid, informations)
-        if status["error"]:
-            e = Exception('editcustomer')
-            e.message = error_message.tr("Can not edit customer : %s" % informations["name"])
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.customer.put(client.authtok, custid, informations)
     return status
 
+@try_connect
+@reauth
 def delCustomer(custid):
     global client
-    try:
-        status = client.vault.customer_del(client.authtok, custid)
-        if status["error"]:
-            e = Exception('delcustomer')
-            e.message = error_message.tr("Can not delete customer : %s" % custid)
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = delCustomer(custid)
-        if status["error"]:
-            e = Exception('delcustomer')
-            e.message = error_message.tr("Can not delete customer : %s" % custid)
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.customer_del(client.authtok, custid)
     return status
 
+@try_connect
+@reauth
 def addMachine(name, custid, fqdn=None, address=None, location=None, notes=None):
     global client
-    try:
-        status = client.vault.machine.add(client.authtok, custid, name, fqdn, address, location, notes)
-        if status["error"]:
-            e = Exception('addmachine')
-            e.message = error_message.tr("Can not add machine : %s" % name)
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = addMachine(name, custid, fqdn=None, address=None, location=None, notes=None)
-        if status["error"]:
-            e = Exception('addmachine')
-            e.message = error_message.tr("Can not add machine : %s" % name)
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.machine.add(client.authtok, custid, name, fqdn, address, location, notes)
     return status
 
+@try_connect
+@reauth
 def listMachine():
     global client
-    try:
-        status = client.vault.machine_list(client.authtok)
-        if status["error"]:
-            e = Exception('listmachine')
-            e.message = error_message.tr("Can not list machines")
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = listMachine()
-        if status["error"]:
-            e = Exception('listmachine')
-            e.message = error_message.tr("Can not list machines")
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.machine_list(client.authtok)
     return status
 
+@try_connect
+@reauth
 def editMachine(machid, informations):
     global client
-    try:
-        status = client.vault.machine.put(client.authtok, machid, informations)
-        if status["error"]:
-            e = Exception('editmachine')
-            e.message = error_message.tr("Can not edit machine : %s" % informations["name"])
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = editMachine(machid, informations)
-        if status["error"]:
-            e = Exception('editmachine')
-            e.message = error_message.tr("Can not edit machine : %s" % informations["name"])
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.machine.put(client.authtok, machid, informations)
     return status
 
+@try_connect
+@reauth
 def delMachine(machid):
     global client
-    try:
-        status = client.vault.machine_del(client.authtok, machid)
-        if status["error"]:
-            e = Exception('delmachine')
-            e.message = error_message.tr("Can not delete machine : %s" % machid)
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = delMachine(machid)
-        if status["error"]:
-            e = Exception('delmachine')
-            e.message = error_message.tr("Can not delete machine : %s" % machid)
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.machine_del(client.authtok, machid)
     return status
 
+@try_connect
+@reauth
 def addService(machid, parentid, url, groupids, password, notes):
+    # TODO: put parentid to 0 by default
     global client
     if not parentid:
         parentid = 0
-    try:
-        if parentid == 0:
-            parentif = None
-        status = client.vault.service.add(client.authtok, machid, parentid, url, groupids, password, notes)
-        if status["error"]:
-            e = Exception('addservice')
-            e.message = error_message.tr("Can not add service : %s" % url)
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = addService(machid, parentid, url, groupids, password, notes)
-        if status["error"]:
-            e = Exception('addservice')
-            e.message = error_message.tr("Can not add service : %s" % url)
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.service.add(client.authtok, machid, parentid, url, groupids, password, notes)
     return status
 
+@try_connect
+@reauth
 def listService():
     global client
-    try:
-        status = client.vault.service.list(client.authtok, None)
-        if status["error"]:
-            e = Exception('listservice')
-            # FIXME
-            # Print message from vault... but can t be translate ...
-            #e.message = status["message"]
-            e.message = error_message.tr("Can not list services")
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = listService()
-        if status["error"]:
-            e = Exception('listservice')
-            e.message = error_message.tr("Can not list services")
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.service.list(client.authtok, None)
     return status
 
+@try_connect
+@reauth
 def editService(servid, informations):
     global client
     if not informations["parent_service_id"]:
         informations["parent_service_id"] = 0
-    try:
-        status = client.vault.service.put(client.authtok, servid, informations)
-        if status["error"]:
-            e = Exception('editservice')
-            e.message = error_message.tr("Can not edit service : %s" % informations["url"])
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = editService(servid, informations)
-        if status["error"]:
-            e = Exception('editservice')
-            e.message = error_message.tr("Can not edit service : %s" % informations["url"])
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.service.put(client.authtok, servid, informations)
     return status
 
+@try_connect
+@reauth
 def delService(servid):
     global client
-    try:
-        status = client.vault.service_del(client.authtok, servid)
-        if status["error"]:
-            e = Exception('delservice')
-            e.message = error_message.tr("Can not delete service : %s" % servid)
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = delService(servid)
-        if status["error"]:
-            e = Exception('delservice')
-            e.message = error_message.tr("Can not delete service : %s" % servid)
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.service_del(client.authtok, servid)
     return status
 
+@try_connect
+@reauth
 def addUserGroup(group_id, user, is_admin):
     global client
-    from Crypto.PublicKey import ElGamal
-    try:
-        # TODO: USE this following function
-        # status = client.vault.group_add_user(client.authtok, group_id, user, is_admin) 
-        # Not is one ...
-        client.group_add_user(group_id, user, is_admin)
-        # For now ...
-        status = {}
-        status["error"] = False
-        if status["error"]:
-            e = Exception('groupadduser')
-            e.message = error_message.tr("Can not add %s user to group g#%d : %s" % (user, group_id, status["message"]))
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = addUserGroup(group_id, user, is_admin)
-        if status["error"]:
-            e = Exception('groupadduser')
-            e.message = error_message.tr("Can not add %s user to group g#%d : %s" % (user, group_id, status["message"]))
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    # TODO: USE this following function
+    # status = client.vault.group_add_user(client.authtok, group_id, user, is_admin, symkey)
+    # Cause symkey => HOWTO to get this !
+    # Not is one ...
+    status = client.group_add_user(group_id, user, is_admin)
+    # For now ...
     return status
 
+@try_connect
+@reauth
 def delUserGroup(group_id, user):
     global client
-    try:
-        status = client.vault.group_del_user(client.authtok, group_id, user)
-        if status["error"]:
-            e = Exception('groupdeluser')
-            e.message = error_message.tr("Can not delete %s user to group g#%d : %s" % (user, group_id, status["message"]))
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = delUserGroup(group_id, user)
-        if status["error"]:
-            e = Exception('groupdeluser')
-            e.message = error_message.tr("Can not delete %s user to group g#%d : %s" % (user, group_id, status["message"]))
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.group_del_user(client.authtok, group_id, user)
     return status
 
+@try_connect
+@reauth
 def addGroup(group_name):
     global client
-    try:
-        status = client.vault.group_add(client.authtok, group_name)
-        print status
-        if status["error"]:
-            e = Exception('groupadd')
-            e.message = error_message.tr("Can not create a new group : %s" % (user,group_id))
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = addGroup(group_name)
-        if status["error"]:
-            e = Exception('groupadd')
-            e.message = error_message.tr("Can not create a new group : %s" % (user,group_id))
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.group_add(client.authtok, group_name)
     return status
-
+  
+@try_connect
+@reauth
 def delGroup(group_id):
     global client
-    try:
-        status = client.vault.group_del(client.authtok, group_id)
-        if status["error"]:
-            e = Exception('groupdel')
-            e.message = error_message.tr("Can not delete group : %s" % (user,group_id))
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = delGroup(group_id)
-        if status["error"]:
-            e = Exception('groupdel')
-            e.message = error_message.tr("Can not delete group : %s" % (user,group_id))
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.group_del(client.authtok, group_id)
     return status
 
+@try_connect
+@reauth
 def addServiceGroup(group_id, service_id):
     global client
-    from Crypto.PublicKey import ElGamal
-    try:
-        # TODO: USE this following function
-        # status = client.vault.group_add_service(client.authtok, group_id, service_id)
-        # Not is one ...
-        client.group_add_service(group_id, service_id)
-        # For now ...
-        status = {}
-        status["error"] = False
-        if status["error"]:
-            e = Exception('groupaddservice')
-            e.message = error_message.tr("Can not add service s#%s to group g#%d : %s" % (service_id, group_id, status["message"]))
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = addServiceGroup(group_id, service_id)
-        if status["error"]:
-            e = Exception('groupaddservice')
-            e.message = error_message.tr("Can not add service s#%s to group g#%d : %s" % (service_id, group_id, status["message"]))
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    # TODO: USE this following function
+    # status = client.vault.group_add_service(client.authtok, group_id, service_id, symkey)
+    # Cause symkey => HOWTO to get this !
+    # Not is one ...
+    status = client.group_add_service(group_id, service_id)
+    # For now ...
     return status
 
+@return_user
+@try_connect
 def delServiceGroup(group_id, service_id):
     global client
-    try:
-        status = client.vault.group_del_service(client.authtok, group_id, service_id)
-        if status["error"]:
-            e = Exception('groupdelservice')
-            e.message = error_message.tr("Can not delete service #%s to group g#%d : %s" % (service_id, group_id, status["message"]))
-            raise e
-    except xmlrpclib.ProtocolError, e:
-        # Protocol error means the client is now invalid
-        # So we have to get a new client
-        getAuth()
-        status = delServiceGroup(group_id, service_id)
-        if status["error"]:
-            e = Exception('groupdelservice')
-            e.message = error_message.tr("Can not delete service #%s to group g#%d : %s" % (service_id, group_id, status["message"]))
-            raise e
-    except Exception, e:
-        ErrorMessage(e)
-        return False
+    status = client.vault.group_del_service(client.authtok, group_id, service_id)
     return status

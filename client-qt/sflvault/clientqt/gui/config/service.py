@@ -149,9 +149,13 @@ class EditServiceWidget(QtGui.QDialog):
 
     def fillPassword(self):
         decodedpassword = getPassword(self.servid)
-        self.password.setText(decodedpassword)
-        self.password.show()
-        self.passwordProgress.hide()
+        if decodedpassword != False:
+            self.password.setText(decodedpassword)
+            self.password.show()
+            self.passwordProgress.hide()
+        else:
+            # TODO show error box (permission denied ?)
+            pass
 
     def fillMachinesList(self):
         machines = listMachine()
