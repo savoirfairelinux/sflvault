@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export COVERAGE_PROCESS_START=$PWD/.coveragerc
+
 # run from the root of the workspace
 rm -rf env
 export PIP_DOWNLOAD_CACHE=$HOME/.pip/download_cache
