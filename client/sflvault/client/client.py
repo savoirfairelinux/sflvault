@@ -165,7 +165,7 @@ class AskPassMethods(object):
             self.cfg._check_keyring()
             import keyring
             backend = self.cfg.wallet_get_obj()
-            return backend.get_password("sflvault", self.cfg.config_file)
+            return backend.get_password("sflvault", self.cfg._wallet_key)
 
         if wallet_name:
             self.getpass = keyring_wallet
@@ -312,6 +312,12 @@ class SFLvaultConfig(object):
                         ))
         return out
         
+    @property
+    def _wallet_key(self):
+        """Standardizes the key to be stored in the keystore"""
+        return re.subn(r'\.+', '.', re.subn(r'[-_:\\ /]', '.',
+                                               self.config_file)[0].lower())[0]
+
     def wallet_set(self, id, password):
         if id is None or id == '0':
             self.cfg.remove_option('SFLvault', 'wallet')
@@ -321,7 +327,7 @@ class SFLvaultConfig(object):
             if id not in ids:
                 raise KeyringError("No such Wallet ID: %s" % id)
             backend = [x for x in lst if x[0] == id][0]
-            ret = backend[2].set_password("sflvault", self.config_file,
+            ret = backend[2].set_password("sflvault", self._wallet_key,
                                           password)
             if ret:  # Error saving the password ?
                 raise KeyringError("Unable to store password in keyring")

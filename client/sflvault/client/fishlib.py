@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
-import pexpect
+import platform
+if platform.system() != 'Windows':
+    import pexpect
 import os
 from pprint import pprint
 import pdb

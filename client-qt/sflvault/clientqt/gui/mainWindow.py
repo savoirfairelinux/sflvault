@@ -51,6 +51,9 @@ import shutil
 import os
 from sflvault.clientqt.lib.error import *
 from sflvault.clientqt.lib.auth import *
+import platform
+import shlex
+
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -356,8 +359,13 @@ class MainWindow(QtGui.QMainWindow):
             # Exit if command is empty (to prevent segfault. See bug #4)
             if command.strip() == "": return
             # Launch process
-            self.procxterm = QtCore.QProcess()
-            self.procxterm.start(command)
+            if platform.system() == 'Windows':
+                c = shlex.split(command)
+                self.procxterm = QtCore.QProcess(self)
+                self.procxterm.start(c[0], c[1:])
+            else:
+                self.procxterm = QtCore.QProcess()
+                self.procxterm.start(command)
 
     def copyToClip(self, password):
         """

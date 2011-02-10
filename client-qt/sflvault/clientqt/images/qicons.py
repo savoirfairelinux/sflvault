@@ -31,17 +31,17 @@ import os
 
 # load standard icons
 icons = {}
-icons["sflvault_icon"] = "images/sflvault.png"
-icons["close"] = "images/close.png"
-icons["customer"] = "images/customer.png"
-icons["machine"] = "images/machine.png"
-icons["critical"] = "images/critical.png"
-icons["warning"] = "images/warning.png"
-icons["information"] = "images/information.png"
+icons["sflvault_icon"] = os.path.join("images", "sflvault.png")
+icons["close"] = os.path.join("images", "close.png")
+icons["customer"] = os.path.join("images", "customer.png")
+icons["machine"] = os.path.join("images", "machine.png")
+icons["critical"] = os.path.join("images", "critical.png")
+icons["warning"] = os.path.join("images", "warning.png")
+icons["information"] = os.path.join("images", "information.png")
 
 # Auto load all service icons in images/services/ folder
 service_icons = {}
-service_icons["service"] = "images/service.png"
+service_icons["service"] = os.path.join("images", "service.png")
 this_dir = os.path.dirname(os.path.dirname(__file__))
 services_dir = os.path.join(this_dir, "images", "services")
 for file in os.listdir(services_dir):
