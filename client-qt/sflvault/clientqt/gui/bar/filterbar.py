@@ -27,7 +27,6 @@ from PyQt4 import QtCore, QtGui
 import re
 from PyQt4.QtCore import Qt
 import sflvault
-from sflvault.client import SFLvaultClient
 from sflvault.clientqt.images.qicons import *
 import shutil
 import os

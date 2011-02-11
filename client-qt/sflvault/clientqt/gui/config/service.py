@@ -23,13 +23,16 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
 import re
-from PyQt4.QtCore import Qt
-import sflvault
-from sflvault.client import SFLvaultClient
 import shutil
 import os
+from functools import partial
+
+from PyQt4 import QtCore, QtGui
+from PyQt4.QtCore import Qt
+
+import sflvault
+from sflvault.client import SFLvaultClient
 from sflvault.clientqt.gui.dialog import progressdialog
 from sflvault.clientqt.lib.auth import *
 
@@ -72,6 +75,7 @@ class EditServiceWidget(QtGui.QDialog):
         self.settings = self.parent.settings
         self.servid = servid
         self.machid = machid
+        self.metadata = {}
         if not self.servid:
             self.mode = "add"
         else:
@@ -80,58 +84,132 @@ class EditServiceWidget(QtGui.QDialog):
         self.setMinimumWidth(500)
 
         # Load gui items
+        ## Main groupbox
         groupbox = QtGui.QGroupBox()
+        groupbox.setTitle(self.tr("Service"))
+
+        # Service info groupbox
+        info_layout = QtGui.QGridLayout()
+        groupbox_info = QtGui.QGroupBox()
+        groupbox_info.setTitle(self.tr("Service info"))
+        groupbox_info.setLayout(info_layout)
         self.machineLabel = QtGui.QLabel(self.tr("Machine"))
+        self.machineLabel.setMinimumWidth(100)
         self.machine = QtGui.QComboBox()
         self.machine.setEditable(1)
         self.parentservLabel = QtGui.QLabel(self.tr("Parent service"))
+        self.parentservLabel.setMinimumWidth(100)
         self.parentserv = QtGui.QComboBox()
         self.parentserv.setEditable(1)
-        self.urlLabel = QtGui.QLabel(self.tr("Url"))
-        self.url = QtGui.QLineEdit()
         self.groupsLabel = QtGui.QLabel(self.tr("Group"))
-        #self.groups = QtGui.QComboBox()
+        self.groupsLabel.setMinimumWidth(100)
         self.groups = QtGui.QListWidget(self)
         self.groups.setSelectionMode(QtGui.QAbstractItemView.MultiSelection)
-        self.passwordLabel = QtGui.QLabel(self.tr("Password"))
-        self.password = QtGui.QLineEdit()
-        self.password.hide()
-        self.passwordProgress = QtGui.QProgressBar()
-        self.passwordProgress.setMinimum(0)
-        self.passwordProgress.setMaximum(0)
-        self.passwordProgress.hide()
-        if self.mode == "edit":
-            self.password.hide()
-            self.passwordProgress.show()
-        else:
-            self.password.show()
-            self.passwordProgress.hide()
         self.notesLabel = QtGui.QLabel(self.tr("Notes"))
+        self.notesLabel.setMinimumWidth(100)
         self.notes = QtGui.QLineEdit()
+        info_layout.addWidget(self.machineLabel, 0, 0)
+        info_layout.addWidget(self.machine, 0, 1)
+        info_layout.addWidget(self.parentservLabel, 1, 0)
+        info_layout.addWidget(self.parentserv, 1, 1)
+        info_layout.addWidget(self.groupsLabel, 2, 0)
+        info_layout.addWidget(self.groups, 2, 1)
+        info_layout.addWidget(self.notesLabel, 3, 0)
+        info_layout.addWidget(self.notes, 3, 1)
 
+        # Metadata groupbox
+        self.metadata_layout = QtGui.QGridLayout()
+        self.groupbox_metadata = QtGui.QGroupBox()
+        self.groupbox_metadata.setTitle(self.tr("Metadata"))
+        self.groupbox_metadata.setLayout(self.metadata_layout)
+        self.metadata_key_label = QtGui.QLabel(self.tr("Metadata key"))
+        self.metadata_value_label = QtGui.QLabel(self.tr("Metadata value"))
+        self.metadata_button = QtGui.QPushButton(self.tr("+"))
+        self.metadata_button.adjustSize()
+        w = self.metadata_button.height()
+        self.metadata_button.setMaximumWidth(w)
+        self.metadata_layout.addWidget(self.metadata_key_label, 0, 0)
+        self.metadata_layout.addWidget(self.metadata_value_label, 0, 1)
+        self.metadata_layout.addWidget(self.metadata_button, 1, 2)
+        self.groupbox_metadata.setLayout(self.metadata_layout)
+        info_layout.addWidget(self.groupbox_metadata, 4, 0, 1, 2)
+        self.groupbox_metadata.hide()
+        
+        # Url groupbox
+        url_layout = QtGui.QGridLayout()
+        groupbox_url = QtGui.QGroupBox()
+        groupbox_url.setTitle(self.tr("Url"))
+        groupbox_url.setLayout(url_layout)
+        self.usernameLabel = QtGui.QLabel(self.tr("Username"))
+        self.usernameLabel.setMinimumWidth(100)
+        self.username = QtGui.QLineEdit()
+        self.hostLabel = QtGui.QLabel(self.tr("Host"))
+        self.hostLabel.setMinimumWidth(100)
+        self.host = QtGui.QLineEdit()
+        self.portLabel = QtGui.QLabel(self.tr("Port"))
+        self.portLabel.setMinimumWidth(100)
+        self.port = QtGui.QLineEdit()
+        self.schemeLabel = QtGui.QLabel(self.tr("Scheme"))
+        self.scheme = QtGui.QLineEdit()
+        self.paramsLabel = QtGui.QLabel(self.tr("Parameters"))
+        self.paramsLabel.setMinimumWidth(100)
+        self.params = QtGui.QLineEdit()
+        self.urlLabel = QtGui.QLabel(self.tr("Url"))
+        self.urlLabel.setMinimumWidth(100)
+        self.urlLabel.hide()
+        self.url = QtGui.QLineEdit()
+        self.url.hide()
+        url_layout.addWidget(self.schemeLabel, 0, 0)
+        url_layout.addWidget(self.scheme, 0, 1)
+        url_layout.addWidget(self.usernameLabel, 1, 0)
+        url_layout.addWidget(self.username, 1, 1)
+        url_layout.addWidget(self.hostLabel, 2, 0)
+        url_layout.addWidget(self.host, 2, 1)
+        url_layout.addWidget(self.portLabel, 3, 0)
+        url_layout.addWidget(self.port, 3, 1)
+        url_layout.addWidget(self.paramsLabel, 4, 0)
+        url_layout.addWidget(self.params, 4, 1)
+        url_layout.addWidget(self.urlLabel, 5, 0,)
+        url_layout.addWidget(self.url, 5, 2)
+        groupbox_url.setLayout(url_layout)
+
+        # Password Groupbox
+        password_layout = QtGui.QGridLayout()
+        groupbox_password = QtGui.QGroupBox()
+        groupbox_password.setTitle(self.tr("Secret"))
+        groupbox_password.setLayout(password_layout)
+        self.passwordLabel = QtGui.QLabel(self.tr("Password"))
+        self.passwordLabel.setMaximumWidth(100)
+        self.password = QtGui.QLineEdit()
+        self.password_button = QtGui.QPushButton(self.tr("Show Password"))
+        if self.mode == "edit":
+            self.password.setReadOnly(1)
+            self.password.setDisabled(1)
+        else:
+            self.password.setReadOnly(0)
+        password_layout.addWidget(self.passwordLabel, 0, 0)
+        password_layout.addWidget(self.password, 0, 1, 1, 2)
+        password_layout.addWidget(self.password_button, 0, 3)
+
+        # Button Groupbox
+        button_layout = QtGui.QHBoxLayout()
+        groupbox_button = QtGui.QGroupBox()
+        groupbox_button.setLayout(button_layout)
+        self.advanced = QtGui.QPushButton(self.tr("Advanced"))
         self.save = QtGui.QPushButton(self.tr("Save service"))
         self.cancel = QtGui.QPushButton(self.tr("Cancel"))
+        button_layout.addWidget(self.advanced)
+        button_layout.addWidget(self.save)
+        button_layout.addWidget(self.cancel)
 
         # Positionning items
-        ## Groups groupbox
+        # Main groupbox
         gridLayout = QtGui.QGridLayout()
-        gridLayout.addWidget(self.machineLabel, 1, 0)
-        gridLayout.addWidget(self.machine, 1, 1)
-        gridLayout.addWidget(self.parentservLabel, 2, 0)
-        gridLayout.addWidget(self.parentserv, 2, 1)
-        gridLayout.addWidget(self.urlLabel, 3, 0)
-        gridLayout.addWidget(self.url, 3, 1)
-        gridLayout.addWidget(self.groupsLabel, 4, 0)
-        gridLayout.addWidget(self.groups, 4, 1)
-        gridLayout.addWidget(self.passwordLabel, 5, 0)
-        gridLayout.addWidget(self.password, 5, 1)
-        gridLayout.addWidget(self.passwordProgress, 5, 1)
-        gridLayout.addWidget(self.notesLabel, 6, 0)
-        gridLayout.addWidget(self.notes, 6, 1)
-        gridLayout.addWidget(self.save, 7, 0)
-        gridLayout.addWidget(self.cancel, 7, 1)
+        gridLayout.addWidget(groupbox_url, 1, 0, 1, 2)
+        gridLayout.addWidget(groupbox_info, 2, 0, 1, 2)
+        gridLayout.addWidget(groupbox_password, 6, 0, 1, 2)
+        gridLayout.addWidget(groupbox_button, 7, 0, 1, 2)
         groupbox.setLayout(gridLayout)
-
         mainLayout = QtGui.QGridLayout()
         mainLayout.addWidget(groupbox,0,0)
         self.setLayout(mainLayout)
@@ -144,15 +222,136 @@ class EditServiceWidget(QtGui.QDialog):
         QtCore.QObject.connect(self.parentservline, QtCore.SIGNAL("editingFinished()"), self.completeParentserv)
 
         # SIGNALS
+        self.connect(self.username, QtCore.SIGNAL("textEdited(const QString&)"), self.simple_to_advanced)
+        self.connect(self.host, QtCore.SIGNAL("textEdited(const QString&)"), self.simple_to_advanced)
+        self.connect(self.port, QtCore.SIGNAL("textEdited(const QString&)"), self.simple_to_advanced)
+        self.connect(self.scheme, QtCore.SIGNAL("textEdited(const QString&)"), self.simple_to_advanced)
+        self.connect(self.params, QtCore.SIGNAL("textEdited(const QString&)"), self.simple_to_advanced)
+        self.connect(self.url, QtCore.SIGNAL("textEdited(const QString&)"), self.advanced_to_simple)
+        self.connect(self.password_button, QtCore.SIGNAL("clicked()"), self.fill_password)
+
+        self.connect(self.metadata_button, QtCore.SIGNAL("clicked()"), self.add_metadata)
+
+        self.connect(self.advanced, QtCore.SIGNAL("clicked()"), self.switch_edit)
         self.connect(self.save, QtCore.SIGNAL("clicked()"), self.editService)
         self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
 
-    def fillPassword(self):
+    def add_metadata(self):
+        key, ret = QtGui.QInputDialog.getText(self,
+                                            self.tr("New Metadata"),
+                                            self.tr("Metadata key:"),
+                                            QtGui.QLineEdit.Normal,
+                                            '');
+        if key == '':
+            print "error"
+        else:
+            value, ret = QtGui.QInputDialog.getText(self,
+                                            self.tr("New Metadata"),
+                                            self.tr("Metadata value:"),
+                                            QtGui.QLineEdit.Normal,
+                                            '');
+            if value == '':
+                print "error"
+            key_label = QtGui.QLabel(key)
+            value_label = QtGui.QLabel(value)
+
+            self.metadata[key_label] = value_label
+
+            length = self.metadata_layout.count()
+            self.metadata_layout.addWidget(key_label, length, 0)
+            self.metadata_layout.addWidget(value_label, length, 1)
+            self.metadata_layout.addWidget(self.metadata_button, length + 1, 2)
+            del_button = QtGui.QPushButton("-")
+            del_button.adjustSize()
+            w = del_button.height()
+            del_button.setMaximumWidth(w)
+            del_button.key = key_label 
+            temp_func = partial(self.del_metadata, del_button)
+            self.connect(del_button, QtCore.SIGNAL("clicked()"), temp_func) 
+            self.metadata_layout.addWidget(del_button, length, 2)
+
+
+    def switch_edit(self):
+        if self.advanced.text() == QtCore.QString(self.tr("Advanced")):
+            # Hide simple fields
+            self.usernameLabel.hide()
+            self.username.hide()
+            self.hostLabel.hide()
+            self.host.hide()
+            self.portLabel.hide()
+            self.port.hide()
+            self.schemeLabel.hide()
+            self.scheme.hide()
+            self.paramsLabel.hide()
+            self.params.hide()
+            # Show advanced url
+            self.urlLabel.show()
+            self.url.show()
+            self.groupbox_metadata.show()
+            self.metadata_button.show()
+            self.advanced.setText(self.tr("Simple"))
+        else:
+            self.usernameLabel.show()
+            self.username.show()
+            self.hostLabel.show()
+            self.host.show()
+            self.portLabel.show()
+            self.port.show()
+            self.schemeLabel.show()
+            self.scheme.show()
+            self.paramsLabel.show()
+            self.params.show()
+            self.urlLabel.hide()
+            self.url.hide()
+            self.groupbox_metadata.hide()
+            self.metadata_button.hide()
+            self.advanced.setText(self.tr("Advanced"))
+
+    def advanced_to_simple(self):
+        advanced_url = unicode(self.url.text())
+        # Split data
+        if len(advanced_url.split("@")) > 2:
+            temp = advanced_url.rsplit("@",1)
+            username = temp[0].split("://")[-1]
+            protocol = temp[0].split("://")[0]
+            url = temp[1]
+            url = QtCore.QUrl(protocol + "://" + url)
+        else:
+            url = QtCore.QUrl(advanced_url)
+        username = unicode(url.userName())
+        protocol = unicode(url.scheme())
+        port = unicode(url.port() if url.port() > 0 else '')
+        host = unicode(url.host())
+        uri = unicode(url.path())
+        # Set fields
+        self.username.setText(username)
+        self.host.setText(host)
+        self.port.setText(port)
+        self.scheme.setText(protocol)
+        self.params.setText(uri)
+
+    def simple_to_advanced(self):
+        username = self.username.text()
+        host = self.host.text()
+        port = self.port.text()
+        scheme = self.scheme.text()
+        params = self.params.text()
+
+        advanced_url = QtCore.QUrl()
+        advanced_url.setScheme(scheme)
+        advanced_url.setHost(host)
+        advanced_url.setPort(port.toInt()[0] if port.toInt()[1] else -1)
+        advanced_url.setPath(params)
+        advanced_url.setUserName(username)
+        self.url.setText(advanced_url.toString())
+
+    def fill_password(self):
         decodedpassword = getPassword(self.servid)
         if decodedpassword != False:
             self.password.setText(decodedpassword)
-            self.password.show()
-            self.passwordProgress.hide()
+            self.password.setEchoMode(QtGui.QLineEdit.Normal)
+            self.password.setReadOnly(0)
+            self.password.setDisabled(0)
         else:
             # TODO show error box (permission denied ?)
             pass
@@ -162,7 +361,7 @@ class EditServiceWidget(QtGui.QDialog):
         # Fill machine combo box
         selected_machine = self.machineline.text()
         for machine in machines["list"]:
-            self.machine.addItem(machine['name'] +" - m#" + unicode(machine['id']), QtCore.QVariant(machine['id']))
+            self.machine.addItem(machine['name'] + " - m#" + unicode(machine['id']), QtCore.QVariant(machine['id']))
         # Select good row
         index = self.machine.findText(" - " + selected_machine, QtCore.Qt.MatchEndsWith)
         if index > -1:
@@ -198,6 +397,14 @@ class EditServiceWidget(QtGui.QDialog):
             index = 0
         self.parentserv.setCurrentIndex(index)
 
+    def del_metadata(self, button):
+        self.metadata[button.key].hide()
+        button.key.hide()
+        button.hide()
+        self.metadata[button.key].destroy()
+        del(self.metadata[button.key])
+        
+
     def exec_(self):
         # get groups lists
         groups = listGroup()
@@ -215,6 +422,7 @@ class EditServiceWidget(QtGui.QDialog):
             self.informations = service["services"][-1]
             ## Show informations
             self.url.setText(self.informations["url"])
+            
             self.machineline.setText("m#" + str(self.informations["machine_id"]))
             if not self.informations["parent_service_id"]:
                 self.parentservline.setText(self.tr("No parent"))
@@ -228,12 +436,29 @@ class EditServiceWidget(QtGui.QDialog):
                     if len(item_list) > 0:
                         item_list[0].setSelected(True) 
             self.notes.setText(self.informations["notes"])
+            # metadata
+            self.metadata = dict([ (QtGui.QLabel(key), QtGui.QLabel(value))
+                                   for key, value in
+                                 self.informations["metadata"].items() ])
+            for i, data in enumerate(self.metadata.items()):
+                key_label, value_label = data
+                self.metadata_layout.addWidget(key_label, i + 1, 0)
+                self.metadata_layout.addWidget(value_label, i + 1, 1)
+                del_button = QtGui.QPushButton("-")
+                del_button.adjustSize()
+                w = del_button.height()
+                del_button.setMaximumWidth(w)
+                del_button.key = key_label
+                temp_func = partial(self.del_metadata, del_button)
+                self.connect(del_button, QtCore.SIGNAL("clicked()"), temp_func)
+                self.metadata_layout.addWidget(del_button, i+1, 2)
+            self.metadata_layout.addWidget(self.metadata_button,
+                                            len(self.metadata) + 1,
+                                            2)
             # get machine lists
             self.fillMachinesList()
             # get services lists
             self.fillServicesList()
-            # launch password decode thread
-            self.fillPassword()
             # Set mode and texts
             self.mode = "edit"
             self.setWindowTitle(self.tr("Edit service"))
@@ -246,6 +471,7 @@ class EditServiceWidget(QtGui.QDialog):
             # get services lists
             self.fillServicesList()
 
+        self.advanced_to_simple()
         self.show()
 
     def editService(self):
@@ -261,7 +487,7 @@ class EditServiceWidget(QtGui.QDialog):
         service_info["machine_id"], bool = self.machine.itemData(self.machine.currentIndex()).toInt()
         service_info["parent_service_id"], bool = self.parentserv.itemData(self.parentserv.currentIndex()).toInt()
         service_info["url"] = unicode(self.url.text())
-        # groups update
+        # Groups update
         group_ids_item_list = self.groups.selectedIndexes()
         if len(group_ids_item_list) < 1:
             error = QtGui.QMessageBox(QtGui.QMessageBox.Critical, self.tr("No group selected"), self.tr("You have to select at least one group"))
@@ -273,13 +499,22 @@ class EditServiceWidget(QtGui.QDialog):
             group_ids.append(group_id)
 
         service_info["secret"] = unicode(self.password.text())
+
         service_info["notes"] = unicode(self.notes.text())
+
+        service_info["metadata"] = dict([(unicode(key.text()),
+                                          unicode(value.text()))
+                                    for key, value in self.metadata.items()])
 
         if self.mode == "add":
             # Add a new service
-            addService(service_info["machine_id"], service_info["parent_service_id"],
-                         service_info["url"], group_ids,
-                        service_info["secret"], service_info["notes"])
+            addService(service_info["machine_id"],
+                        service_info["parent_service_id"],
+                        service_info["url"],
+                        group_ids,
+                        service_info["secret"],
+                        service_info["notes"],
+                        service_info["metadata"])
         elif self.mode == "edit":
             # Edit a service
             ## Group management
@@ -297,7 +532,8 @@ class EditServiceWidget(QtGui.QDialog):
             ## Edit service info 
             editService(self.servid, service_info)
             ## Edit service passwd 
-            editPassword(self.servid, service_info["secret"])
+            if service_info["secret"] != '':
+                editPassword(self.servid, service_info["secret"])
         else:
             print "ERROR ??"
             return False
