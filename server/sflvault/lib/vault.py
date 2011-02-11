@@ -66,7 +66,7 @@ class SFLvaultAccess(object):
     def _log_any(self, log_func, msg, data):
         # Need to do that for user-setup
         if self.myself_username == None and self.myself_id == None:
-            head = "New user-setup - "
+            head = "NO USER - "
         else:
             head = "User: u#d%d - %s - " % (self.myself_id, self.myself_username)
         log_func(head + msg % data)
