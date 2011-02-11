@@ -115,8 +115,8 @@ class ExpectShell(ExpectClass):
     """
     def __init__(self, service, strings_and_funcs=None):
         strings_and_funcs = strings_and_funcs[:] if strings_and_funcs else []
-        shell_regexp = service.data['metadata'].get('shell_regexp') or r'[^ ]*@.*:.*[$#] '
-        strings_and_funcs.append((shell_regexp, 'shell'))
+        prompt = service.data['metadata'].get('prompt') or r'[^ ]*@.*:.*[$#] '
+        strings_and_funcs.append((prompt, 'shell'))
         ExpectClass.__init__(self, service, strings_and_funcs)
 
     def shell(self):

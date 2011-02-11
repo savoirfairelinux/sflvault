@@ -499,12 +499,13 @@ class SFLvaultCommand(object):
         metadata = {}
         if o.metadata:
             for s in o.metadata:
-                try:
-                    key, val = s.split('=', 1)
-                except ValueError:
-                    raise SFLvaultParserError("Missing '=' in metadata option: '%s'" % s)
+                if '=' not in s:
+                    raise SFLvaultParserError("Missing '=' in " \
+                                              "metadata option: '%s'" % s)
+                key, val = s.split('=', 1)
                 metadata[key] = val
-        
+
+        # WARNING: we should check if server supports "metadata" before sending
         self.vault.service_add(machine_id, parent_id, url, group_ids, secret,
                                o.notes, metadata)
 

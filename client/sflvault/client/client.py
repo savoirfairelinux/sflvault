@@ -591,7 +591,7 @@ class SFLvaultClient(object):
 
     @authenticate()
     def service_add(self, machine_id, parent_service_id, url, group_ids, secret,
-                    notes, metadata):
+                    notes, metadata=None):
         """Add a service to the Vault's database.
 
         machine_id - A m#id machine identifier.
@@ -603,6 +603,7 @@ class SFLvaultClient(object):
         group_ids - Multiple group IDs the service is part of. See `list-groups`
         notes - Simple text field, with notes.
         secret - Password for the service. Plain-text.
+        metadata - Dictionary with metadata for services (depends on service).
         """
 
         # TODO: accept group_id as group_ids, accept list and send list.
