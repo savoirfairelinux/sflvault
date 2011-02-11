@@ -165,10 +165,12 @@ class ServiceEditDialogDisplay(DialogDisplay):
         #          urwid.CheckBox('tag2', True, user_data=2),
         #          urwid.CheckBox('tag 3', False, user_data=3)]
 
+        metadata_str = '\n'.join('%s=%s' % (key, val) for key, val in data['metadata'].items()) + '\n'
         inputs = {'url': urwid.Edit("", str(data['url']), wrap='clip'),
                   'machine_id': urwid.Edit("", str(data['machine_id'] or '')),
                   'parent_service_id': urwid.Edit("", str(data['parent_service_id'] or '')),
                   'notes': urwid.Edit("", str(data['notes'])),
+                  'metadata': urwid.Edit("", metadata_str, multiline=True)
                   }
                   
                 
@@ -188,6 +190,9 @@ class ServiceEditDialogDisplay(DialogDisplay):
             
             urwid.Columns([('fixed', 15, urwid.Text('Notes ', align="right")),
                   urwid.AttrWrap(inputs['notes'], 'editbx','editfc' )]),
+            urwid.Divider(),
+            urwid.Columns([('fixed', 15, urwid.Text('Metadata ', align="right")),
+                           urwid.AttrWrap(inputs['metadata'], 'editbx', 'editfc')])
             
             # Temp disabled (read above)
             #urwid.Divider(),
@@ -207,8 +212,6 @@ class ServiceEditDialogDisplay(DialogDisplay):
         self.data = data
         self.inputs = inputs
 
-
-
     def run(self):
         """Show the dialog box, and get the results afterwards."""
 
@@ -221,7 +224,12 @@ class ServiceEditDialogDisplay(DialogDisplay):
             for x in t:
                 if self.inputs[x].edit_text != self.data[x]:
                     data[x] = self.inputs[x].edit_text
-
+            metadata = {}
+            for line in self.inputs['metadata'].edit_text.split('\n'):
+                parts = line.split('=', 1)
+                if len(parts) == 2:
+                    metadata[parts[0].strip()] = parts[1].strip()
+            data['metadata'] = metadata
             return True, data
         else:
             # return nothing..

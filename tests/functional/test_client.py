@@ -61,13 +61,29 @@ class TestVault(BaseTestCase):
                                       None, 
                                       None)
         self.assertFalse(mres['error'])
+
+        # Add service with metadata, as a dictionary
         sres = self.vault.service_add(mres['machine_id'],
                                       None, 
                                       'ssh://root@localhost',
                                       [gres3['group_id']], 
                                       'test_secret',
-                                      u'Some notés')
+                                      u'Some notés',
+                                      {'meta': 'data'})
         self.assertFalse(sres['error'])
+        dres = self.vault.service_del(sres['service_id'])
+        self.assertTrue(dres is not None)
+
+        # Test without metadata
+        sres = self.vault.service_add(mres['machine_id'],
+                                      None, 
+                                      'sudo://',
+                                      [gres3['group_id']], 
+                                      'test2_secret',
+                                      u'More notés')
+        self.assertFalse(sres['error'])
+
+        # Delete the service
         dres = self.vault.service_del(sres['service_id'])
         self.assertTrue(dres is not None)
 

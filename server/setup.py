@@ -18,6 +18,7 @@ setup(
     install_requires=["Pylons==0.9.7",
                       "SQLAlchemy==0.5.8",
                       "pysqlite",
+                      "simplejson",
                       "SFLvault-common",
                       "Routes==1.10.3",
                       "Paste==1.7.3.1",

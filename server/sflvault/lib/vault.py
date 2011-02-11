@@ -263,6 +263,8 @@ class SFLvaultAccess(object):
             s.notes = data['notes']
         if 'url' in data:
             s.url = data['url']
+        if 'metadata' in data:
+            s.metadata = data['metadata']
 
         meta.Session.commit()
 
@@ -330,7 +332,7 @@ class SFLvaultAccess(object):
                'groups_list': groups_list,
                'parent_service_id': s.parent_service_id,
                'secret_last_modified': s.secret_last_modified,
-               'metadata': s.metadata or '',
+               'metadata': s.metadata or {},
                'notes': s.notes or ''}
 
         return out
@@ -565,7 +567,7 @@ class SFLvaultAccess(object):
 
 
     def service_add(self, machine_id, parent_service_id, url,
-                    group_ids, secret, notes):
+                    group_ids, secret, notes, metadata):
         # Get groups
         try:
             groups, group_ids = model.get_objects_list(group_ids, 'groups',
@@ -594,6 +596,7 @@ class SFLvaultAccess(object):
         ns.secret = ciphertext
         ns.secret_last_modified = datetime.now()
         ns.notes = notes
+        ns.metadata = metadata
 
         meta.Session.save(ns)
 

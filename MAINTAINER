@@ -52,6 +52,9 @@ Steps to perform when releasing SFLvault
     dput ppa:savoirfairelinux/sflvault $file
   done
 
+* Modify `common/sflvault/common/__init__.py` to SHOW deprecation warnings again.
+
+
 
 Update documentation
 --------------------
