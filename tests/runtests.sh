@@ -21,11 +21,11 @@ openssl genrsa 1024 > host.key ; chmod 400 host.key ; openssl req -new -x509 -co
 
 # Launch the server
 echo "Launching server..."
-coverage run --rcfile=../coverage.ini `which paster` serve --daemon --pid-file test-server.pid test-server.ini
+coverage run --rcfile=../coverage.conf `which paster` serve --daemon --pid-file test-server.pid test-server.ini
 sleep 3
 
 # Launch tests
-coverage run --rcfile=../coverage.ini `which nosetests` -w .. -s --with-xunit 
+coverage run --rcfile=../coverage.conf `which nosetests` -w .. -s --with-xunit 
 
 # Kill the test server
 echo "Killing server..."
