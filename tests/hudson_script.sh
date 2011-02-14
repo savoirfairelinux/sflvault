@@ -12,7 +12,7 @@ EXIT_CODE=$?
 
 # Compile coverage info
 echo "Compiling coverage info..."
-cd tests
+cd tests/sandbox
 coverage combine
 coverage xml
 

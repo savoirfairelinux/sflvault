@@ -43,7 +43,7 @@ def setUp():
     # Create the vault test obj.
     if 'SFLVAULT_ASKPASS' in os.environ:
         del(os.environ['SFLVAULT_ASKPASS'])
-    os.environ['SFLVAULT_CONFIG'] = os.path.join(here_dir, 'test-config')
+    os.environ['SFLVAULT_CONFIG'] = os.path.join(here_dir, 'sandbox/test-config')
 
 
 class BaseTestCase(TestCase):
