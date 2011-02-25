@@ -403,7 +403,6 @@ class EditServiceWidget(QtGui.QDialog):
         button.hide()
         self.metadata[button.key].destroy()
         del(self.metadata[button.key])
-        
 
     def exec_(self):
         # get groups lists
@@ -411,10 +410,11 @@ class EditServiceWidget(QtGui.QDialog):
         if not "list" in groups:
             return False
         for group in groups["list"]:
-            if group["member"]:
-                item = QtGui.QListWidgetItem(group['name'] +" - g#" + unicode(group['id']))
-                item.setData(Qt.UserRole, QtCore.QVariant(group['id']))
-                self.groups.addItem(item)
+            ## ADD a checkbox to show/hide all groups/membre groups
+            #if group["member"]:
+            item = QtGui.QListWidgetItem(group['name'] +" - g#" + unicode(group['id']))
+            item.setData(Qt.UserRole, QtCore.QVariant(group['id']))
+            self.groups.addItem(item)
 #                self.groups.addItem(group['name'] +" - g#" + unicode(group['id']), QtCore.QVariant(group['id']))
         if self.servid:
             # Fill fields for edit mode
