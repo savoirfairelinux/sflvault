@@ -1,7 +1,7 @@
 Steps to perform when releasing SFLvault
 ========================================
 
-* Modify setup.py and change the version number
+* Modify setup.py and change the version number, for each of the components.
 
 * Make sure the MINIMAL_CLIENT_VERSION in controllers/xmlrpc.py is appropriate,
   to ensure backwards compatibility.
@@ -11,10 +11,14 @@ Steps to perform when releasing SFLvault
 * Commit the release commit INCLUDING the Release Notes inside that commit.
   Note all new features and fixes.
 
-* Update the debian/changelog with the same information as in the Release
-  commit.
+* For each component, update the debian/changelog with the same information as
+  in the Release commit.
 
-* Step OUTSIDE of the virtualenv, with `deactivate` (otherwise, your virtenv's path will go in the `sflvault` executable file)
+* For each component, update the debian/control file with the new versions
+  we are releasing, and update the dependenciies.
+
+* Step OUTSIDE of the virtualenv, with `deactivate` (otherwise, your
+  virtenv's path will go in the `sflvault` executable file)
 
 * For each module, SFLvault-common, SFLvault-server, SFLvault-client and
   SFLvault-client-qt:
@@ -35,7 +39,19 @@ Steps to perform when releasing SFLvault
 
   Packages will be under pkg/dist/
 
-* Prepare the Debian packages:
+* Try the packages locally:
+
+  $ for path in common client client-qt
+  do
+    cd $path
+    debuild -i -us -uc -b
+    cd ..
+  done
+  $ 
+
+* Install and test locally
+
+* Prepare the Debian packages to be sent to Launchpad:
 
   $ for path in common client client-qt
   do
