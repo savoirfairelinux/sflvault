@@ -437,9 +437,12 @@ class EditServiceWidget(QtGui.QDialog):
                         item_list[0].setSelected(True) 
             self.notes.setText(self.informations["notes"])
             # metadata
-            self.metadata = dict([ (QtGui.QLabel(key), QtGui.QLabel(value))
+            if isinstance(self.informations["metadata"], dict):
+                self.metadata = dict([ (QtGui.QLabel(key), QtGui.QLabel(value))
                                    for key, value in
                                  self.informations["metadata"].items() ])
+            else:
+                self.metadata = {}
             for i, data in enumerate(self.metadata.items()):
                 key_label, value_label = data
                 self.metadata_layout.addWidget(key_label, i + 1, 0)
