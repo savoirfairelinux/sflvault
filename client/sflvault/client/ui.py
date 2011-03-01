@@ -165,7 +165,10 @@ class ServiceEditDialogDisplay(DialogDisplay):
         #          urwid.CheckBox('tag2', True, user_data=2),
         #          urwid.CheckBox('tag 3', False, user_data=3)]
 
-        metadata_str = '\n'.join('%s=%s' % (key, val) for key, val in data['metadata'].items()) + '\n'
+        if isinstance(data['metadata'], dict):
+            metadata_str = '\n'.join('%s=%s' % (key, val) for key, val in data['metadata'].items()) + '\n'
+        else:
+            metadata_str = ''
         inputs = {'url': urwid.Edit("", str(data['url']), wrap='clip'),
                   'machine_id': urwid.Edit("", str(data['machine_id'] or '')),
                   'parent_service_id': urwid.Edit("", str(data['parent_service_id'] or '')),
