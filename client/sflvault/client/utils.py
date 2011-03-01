@@ -85,7 +85,8 @@ def ask_for_service_password(edit=False, url=None):
     # you didn't know ?)
     sec = raw_input("Enter new service's password: " if edit
                     else "Enter service's password: ")
-    readline.remove_history_item(readline.get_current_history_length() - 1)
+    if readline.get_current_history_length() > 0:
+        readline.remove_history_item(readline.get_current_history_length() - 1)
     # CSI n F to go back one line. CSI n K to erase the line.
     # See http://en.wikipedia.org/wiki/ANSI_escape_code
     print "\033[1F\033[2K ... password taken ..."
