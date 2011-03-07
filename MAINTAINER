@@ -23,8 +23,21 @@ Steps to perform when releasing SFLvault
 * For each module, SFLvault-common, SFLvault-server, SFLvault-client and
   SFLvault-client-qt:
   
-  $ python setup.py sdist 
-  $ python setup.py sdist upload    # prepend "register" the first time
+  $ for path in common client client-qt server
+  do
+    cd $path
+    python setup.py sdist
+    cd ..
+  done
+
+  If this works, then upload it:
+
+  $ for path in common client client-qt server
+  do
+    cd $path
+    python setup.py sdist upload
+    cd ..
+  done
 
 * For WINDOWS distribution, under the WINDOWS Platform:
 

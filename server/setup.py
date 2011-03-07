@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name='SFLvault-server',
-    version="0.7.8",
+    version="0.7.8.1",
     description='Networked credentials store and authentication manager - Server',
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
@@ -19,7 +19,7 @@ setup(
                       "SQLAlchemy==0.5.8",
                       "pysqlite",
                       "simplejson",
-                      "SFLvault-common",
+                      "SFLvault-common==0.7.8.1",
                       "Routes==1.10.3",
                       "Paste==1.7.3.1",
                       ],
