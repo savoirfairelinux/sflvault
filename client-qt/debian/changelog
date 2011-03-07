@@ -1,3 +1,9 @@
+sflvault-client-qt (0.7.8.2~ppa1) lucid; urgency=low
+
+    * #3680 Use meta-data when using sudo:// without any password (NOPASSWD:), using the 'prompt' meta-data keyword.
+
+ -- Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>  Wed, 7 Mar 2011 16:00:00 -0500
+
 sflvault-client-qt (0.7.8.1~ppa1) lucid; urgency=low
 
     * Fix retro-compatibility bug

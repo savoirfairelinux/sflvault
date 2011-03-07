@@ -10,7 +10,7 @@ import platform
 
 setup(
     name='SFLvault-client',
-    version="0.7.8.1",
+    version="0.7.8.2",
     description='Networked credentials store and authentication manager - Client',
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
