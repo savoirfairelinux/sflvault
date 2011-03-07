@@ -1,3 +1,9 @@
+sflvault-common (0.7.8.1~ppa1) lucid; urgency=low
+
+    * Fix retro-compatibility bug
+
+ -- Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>  Wed, 7 Mar 2011 12:00:00 -0500
+
 sflvault-common (0.7.8~ppa2) lucid; urgency=low
 
     * Fix dependencies

@@ -8,7 +8,7 @@ except ImportError:
 
 setup(
     name='SFLvault-common',
-    version="0.7.8",
+    version="0.7.8.1",
     description='Networked credentials store and authentication manager - Common',
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
