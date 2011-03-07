@@ -90,6 +90,9 @@ def authenticate(keep_privkey=False):
             except DecryptError, e:
                 print "[SFLvault] Invalid passphrase"
                 return False
+            except TypeError, e:
+                print "[SFLvault] Could not retrieve passphrase, please resync your Keyring using the 'wallet' command."
+                return False
             except KeyboardInterrupt, e:
                 print "[aborted]"
                 return False
