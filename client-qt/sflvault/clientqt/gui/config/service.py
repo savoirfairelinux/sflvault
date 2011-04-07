@@ -187,6 +187,7 @@ class EditServiceWidget(QtGui.QDialog):
             self.password.setDisabled(1)
         else:
             self.password.setReadOnly(0)
+            self.password.setEchoMode(QtGui.QLineEdit.Password)
         password_layout.addWidget(self.passwordLabel, 0, 0)
         password_layout.addWidget(self.password, 0, 1, 1, 2)
         password_layout.addWidget(self.password_button, 0, 3)
@@ -346,15 +347,24 @@ class EditServiceWidget(QtGui.QDialog):
         self.url.setText(advanced_url.toString())
 
     def fill_password(self):
-        decodedpassword = getPassword(self.servid)
-        if decodedpassword != False:
-            self.password.setText(decodedpassword)
-            self.password.setEchoMode(QtGui.QLineEdit.Normal)
-            self.password.setReadOnly(0)
-            self.password.setDisabled(0)
+        if self.mode == "edit":
+            decodedpassword = getPassword(self.servid)
+            if decodedpassword != False:
+                self.password.setText(decodedpassword)
+                self.password.setEchoMode(QtGui.QLineEdit.Normal)
+                self.password.setReadOnly(0)
+                self.password.setDisabled(0)
+            else:
+                # TODO show error box (permission denied ?)
+                pass
         else:
-            # TODO show error box (permission denied ?)
-            pass
+            if self.password.echoMode() == QtGui.QLineEdit.Password:
+                self.password_button.setText(self.tr("Hide Password"))
+                self.password.setEchoMode(QtGui.QLineEdit.Normal)
+            else:
+                self.password_button.setText(self.tr("Show Password"))
+                self.password.setEchoMode(QtGui.QLineEdit.Password)
+
 
     def fillMachinesList(self):
         machines = listMachine()
