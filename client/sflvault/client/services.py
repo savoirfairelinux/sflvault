@@ -529,8 +529,7 @@ class sudo(ShellService):
 
         class expect_waitshell(ExpectShell):
 
-            def shell(self):
-                return True
+            # def shell(self): from ExpectShell (uses prompt)
 
             def failed(self):
                 'assword:'
@@ -542,7 +541,10 @@ class sudo(ShellService):
                 'Sorry'
                 self.failed()
 
-        class expect_sudowork(ExpectClass):
+        class expect_sudowork(ExpectShell):
+
+            # def shell(self): from ExpectShell (uses prompt)
+
             def sendpass(self):
                 'assword:'
 
