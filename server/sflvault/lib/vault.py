@@ -1185,6 +1185,7 @@ class SFLvaultAccess(object):
 
         (seckey, ciphertext) = encrypt_secret(newsecret)
         serv.secret = ciphertext
+        serv.secret_last_modified = datetime.now()
         
         # TODO absolutely:  verify this requesting user has access to the
         # password first.  YES, he can add a new password, but not modify
