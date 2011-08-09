@@ -211,9 +211,9 @@ If the vault is compromised on server side -- some guy ran away with the databas
 
   * he still does not have access to any of the services that aren't in the user's groups.
 
-* If the attacker holds control of the vault, and it continues to be used, he could discover these three elements, which all have limited damage:
+* If the attacker holds control of the vault, and it continues to be used, he could discover these three elements, which all have limited damage at start, but grows over time:
 
-  * When *adding a new service* (service_add), the attacker will gain knowledge of the symkey used to encrypt the secret, and the plaintext secret itself.  This would allow him to decrypt the secret in the future without any other constraint.  He also could just save the plaintext secret away.  This symkey, though, doesn't give access to any other service, only to this one.
+  * When *adding a new service* (service_add), the attacker will gain knowledge of the symkey used to encrypt the secret, and the plaintext secret itself.  This would allow him to decrypt the secret in the future without any other constraint.  He could also simply save the secret!  This symkey, though, doesn't give access to any other service, only to this one.  This symkey is regenerated when the password is changed with `service_passwd`, but if he still has access to running a compromised vault, he will probably get the new service password also.
 
   * When *changing a service's password*, the same thing applies.  The attacker gains knowledge of both the generated symkey and the plaintext secret.
 
@@ -223,4 +223,4 @@ If the vault is compromised on server side -- some guy ran away with the databas
 Other risks involved
 --------------------
 
-A user could create a group, having admin privileges upon creation, and set a name that could fool other users into adding services to it, by giving it the same name as already existing group for example.  If another user adds a service to that group, the creator of the group could have access to that service, even if user didn't have access to the original group.
+A user could create a group, having admin privileges upon creation, and set a name that could fool other users into adding services to it, by giving it the same name as already existing group for example.  If another user adds a service to that group, the creator of the group could have access to that service, even if the user didn't have access to the original group.

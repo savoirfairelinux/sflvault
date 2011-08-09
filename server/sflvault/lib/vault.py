@@ -174,6 +174,9 @@ class SFLvaultAccess(object):
                         {'error': str(e)})
             return vaultMsg(False, str(e))
 
+        # TODO: prevent removing a user if it is the last link
+        # to a group which holds some passwords.
+        
         t1 = model.usergroups_table
         meta.Session.execute(t1.delete(t1.c.user_id==usr.id))
         username = usr.username
@@ -1185,10 +1188,14 @@ class SFLvaultAccess(object):
 
         (seckey, ciphertext) = encrypt_secret(newsecret)
         serv.secret = ciphertext
+        serv.secret_last_modified = datetime.now()
         
         # TODO absolutely:  verify this requesting user has access to the
         # password first.  YES, he can add a new password, but not modify
         # something he doesn't have access to, first.
+
+        # TODO: for traceability, mark the date we changed the password.
+        #       
 
         for sg in serv.groups_assoc:
             eg = [g for g in groups if g.id == sg.group_id][0].elgamal()

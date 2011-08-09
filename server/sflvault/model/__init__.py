@@ -62,7 +62,7 @@ users_table = Table("users", metadata,
                     # their account before this date/time
                     Column('waiting_setup', types.DateTime, nullable=True),
                     Column('created_time', types.DateTime,
-                           default=datetime.now()),
+                           default=datetime.now),
                     # Admin flag, allows to add users, and grant access.
                     Column('is_admin', types.Boolean, default=False)
                     )
@@ -107,7 +107,8 @@ customers_table = Table('customers', metadata,
 machines_table = Table('machines', metadata,
                       Column('id', types.Integer, primary_key=True),
                       Column('customer_id', types.Integer, ForeignKey('customers.id')), # relation customers
-                      Column('created_time', types.DateTime),
+                      Column('created_time', types.DateTime,
+                             default=datetime.now),
                       # Unicode lisible, un peu de descriptif
                       Column('name', types.Unicode(150)),
                       # Domaine complet.
@@ -138,7 +139,8 @@ services_table = Table('services', metadata,
                        Column('metadata', JSONEncodedDict), # reserved.
                        Column('notes', types.Text),
                        Column('secret', types.Text),
-                       Column('secret_last_modified', types.DateTime)
+                       Column('secret_last_modified', types.DateTime,
+                              default=datetime.now)
                        )
 
 
