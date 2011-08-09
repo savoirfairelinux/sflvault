@@ -90,9 +90,9 @@ class ProtocolsWidget(QtGui.QDialog):
 
         buttonLayout = QtGui.QHBoxLayout()
         buttonLayout.addStretch(1)
+        buttonLayout.addWidget(cancel)
         buttonLayout.addWidget(reload)
         buttonLayout.addWidget(save)
-        buttonLayout.addWidget(cancel)
 
         mainLayout = QtGui.QVBoxLayout()
         mainLayout.addWidget(groupbox)

@@ -85,8 +85,8 @@ class EditCustomerWidget(QtGui.QDialog):
         gridLayout = QtGui.QGridLayout()
         gridLayout.addWidget(self.nameLabel,0,0)
         gridLayout.addWidget(self.name,0,1)
-        gridLayout.addWidget(self.save,1,0)
-        gridLayout.addWidget(self.cancel,1,1)
+        gridLayout.addWidget(self.cancel,1,0)
+        gridLayout.addWidget(self.save,1,1)
         groupbox.setLayout(gridLayout)
 
         mainLayout = QtGui.QGridLayout()

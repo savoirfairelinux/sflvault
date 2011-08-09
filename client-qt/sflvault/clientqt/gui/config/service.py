@@ -199,9 +199,9 @@ class EditServiceWidget(QtGui.QDialog):
         self.advanced = QtGui.QPushButton(self.tr("Advanced"))
         self.save = QtGui.QPushButton(self.tr("Save service"))
         self.cancel = QtGui.QPushButton(self.tr("Cancel"))
+        button_layout.addWidget(self.cancel)
         button_layout.addWidget(self.advanced)
         button_layout.addWidget(self.save)
-        button_layout.addWidget(self.cancel)
 
         # Positionning items
         # Main groupbox

@@ -119,8 +119,8 @@ class PreferencesWidget(QtGui.QDialog):
         # Positionning items
         buttonLayout = QtGui.QHBoxLayout()
         buttonLayout.addStretch(1)
-        buttonLayout.addWidget(self.save)
         buttonLayout.addWidget(self.cancel)
+        buttonLayout.addWidget(self.save)
 
         mainLayout = QtGui.QVBoxLayout()
         mainLayout.addWidget(vaultbox)

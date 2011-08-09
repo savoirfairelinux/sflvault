@@ -107,8 +107,8 @@ class EditMachineWidget(QtGui.QDialog):
         gridLayout.addWidget(self.location, 4, 1)
         gridLayout.addWidget(self.notesLabel, 5, 0)
         gridLayout.addWidget(self.notes, 5, 1)
-        gridLayout.addWidget(self.save, 6, 0)
-        gridLayout.addWidget(self.cancel,6,1)
+        gridLayout.addWidget(self.cancel,6,0)
+        gridLayout.addWidget(self.save, 6, 1)
         groupbox.setLayout(gridLayout)
 
         mainLayout = QtGui.QGridLayout()

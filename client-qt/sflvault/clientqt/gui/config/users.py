@@ -128,8 +128,8 @@ class UsersWidget(QtGui.QDialog):
 
         buttonLayout = QtGui.QHBoxLayout()
         buttonLayout.addStretch(1)
-        buttonLayout.addWidget(okButton)
         buttonLayout.addWidget(cancelButton)
+        buttonLayout.addWidget(okButton)
 
         mainLayout = QtGui.QGridLayout()
         mainLayout.addWidget(userbox,0,0,2,1)

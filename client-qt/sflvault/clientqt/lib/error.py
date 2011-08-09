@@ -51,10 +51,13 @@ class ErrorMessage(QtGui.QMessageBox):
             elif self.exception[0] == 133:
                 # Error : (113, "Aucun chemin d'acc\xc3\xa8s pour atteindre l'h\xc3\xb4te cible")
                 self.connectionError()
+            elif self.exception[0] == 1:
+                # SSL ERROR
+                self.protocolError()
         elif isinstance(self.exception, xmlrpclib.ProtocolError):
             # Protocol error means the token is now invalid
             self.protocolError()
-        elif hasattr(exception, 'message'):
+        elif hasattr(exception, 'message') and exception.message != '':
             if exception.message == "Unable to decrypt groupkey (Error decrypting: inconsistent message)":
                 self.AccessError()
             else:
@@ -78,12 +81,12 @@ class ErrorMessage(QtGui.QMessageBox):
     def AccessError(self):
         self.setWindowTitle(self.tr("Access Error"))
         self.setText("Access Denied")
-        print "protocol error"
+        print "access denied"
         self.setIcon(QtGui.QMessageBox.Critical)
 
     def protocolError(self):
         self.setWindowTitle(self.tr("Protocol Error"))
-        self.setText("Protocol")
+        self.setText("Protocol Error")
         print "protocol error"
         self.setIcon(QtGui.QMessageBox.Critical)
 
