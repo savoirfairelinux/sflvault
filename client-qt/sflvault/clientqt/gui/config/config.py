@@ -39,6 +39,10 @@ class Config(QtCore.QSettings):
             QtCore.QSettings.__init__(self, QtCore.QSettings.IniFormat,
                                         QtCore.QSettings.UserScope,
                                         "SFLvault", "config", parent);
+        elif platform.system() == 'Darwin':
+             QtCore.QSettings.__init__(self, QtCore.QSettings.IniFormat,
+                                        QtCore.QSettings.UserScope,
+                                        "SFLvault", "config", parent);
         else:
             QtCore.QSettings.__init__(self,
                          '/home/' + os.getenv( 'USER' ) + '/.sflvault/config',
