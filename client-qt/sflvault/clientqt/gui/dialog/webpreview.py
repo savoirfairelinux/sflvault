@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui, QtWebKit
+from PySide import QtCore, QtGui, QtWebKit
 import re
-from PyQt4.QtCore import Qt
+from PySide.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 from sflvault.clientqt.images.qicons import *

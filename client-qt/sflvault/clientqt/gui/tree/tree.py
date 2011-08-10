@@ -24,7 +24,7 @@
 
 
 import sys
-from PyQt4 import QtCore, QtGui, QtWebKit
+from PySide import QtCore, QtGui, QtWebKit
 
 from sflvault.clientqt.gui.bar.filterbar import FilterBar
 from sflvault.clientqt.gui.dialog.webpreview import WebPreviewWidget

@@ -23,7 +23,7 @@
 #
 
     
-from PyQt4 import QtCore, QtGui
+from PySide import QtCore, QtGui
 from sflvault.clientqt.gui import mainWindow
 import sys
 from sflvault.clientqt.images.qicons import *

@@ -24,9 +24,9 @@
 
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PySide import QtCore, QtGui
 import re
-from PyQt4.QtCore import Qt
+from PySide.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil

@@ -12,7 +12,7 @@ Vcs-Browser: https://projects.savoirfairelinux.com/repositories/show/sflvault
 
 Package: sflvault-client-qt
 Architecture: all
-Depends: sflvault-common(>=0.7.8.1~ppa1), sflvault-client(>=0.7.8.2~ppa1), python-qt4
+Depends: sflvault-common(>=0.7.8.1~ppa1), sflvault-client(>=0.7.8.2~ppa1), python-pyside
 XB-Python-Version: ${python:Versions}
 Description: SFLvault is a Networked credentials store and authentication manager.
  This is the Qt4 Client package.
