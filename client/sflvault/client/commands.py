@@ -1014,6 +1014,8 @@ class SFLvaultCompleter:
 # Default configuration file
 if platform.system() == 'Windows':
     CONFIG_FILE = '~/Application Data/SFLvault/config.ini'
+elif platform.system() == 'Darwin':
+    CONFIG_FILE = '/Users/' + os.environ.get( "USERNAME" ) + '/.sflvault/config'
 else:
     CONFIG_FILE = '~/.sflvault/config'
 # Environment variable to override default config file.
