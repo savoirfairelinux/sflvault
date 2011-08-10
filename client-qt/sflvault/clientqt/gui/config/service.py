@@ -28,8 +28,8 @@ import shutil
 import os
 from functools import partial
 
-from PySide import QtCore, QtGui
-from PySide.QtCore import Qt
+from PyQt4 import QtCore, QtGui
+from PyQt4.QtCore import Qt
 
 import sflvault
 from sflvault.client import SFLvaultClient

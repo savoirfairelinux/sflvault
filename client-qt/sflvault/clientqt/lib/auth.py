@@ -28,7 +28,7 @@
 import sys
 import os
 
-from PySide import QtCore, QtGui
+from PyQt4 import QtCore, QtGui
 from Crypto.PublicKey import ElGamal
 
 from sflvault.client import SFLvaultClient
