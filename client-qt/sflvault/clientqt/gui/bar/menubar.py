@@ -123,7 +123,6 @@ class MenuBar(QtGui.QMenuBar):
         self.firstconnection = self.tools.addAction(self.tr("&First connection to the vault"))
         self.firstconnection.setStatusTip(self.tr("Initialize your vault account"))
 
-
         # Help
         ## Help
         self.sflvaulthelp = self.help_.addAction(self.tr("Sflvault &help"))
@@ -135,8 +134,8 @@ class MenuBar(QtGui.QMenuBar):
         self.sflvaultabout.setStatusTip(self.tr("About Sflvault"))
 
         ## About sflvault-qt
-        self.guiabout = self.help_.addAction(self.tr("About Sflvault-QT"))
-        self.guiabout.setStatusTip(self.tr("About Sflvault-QT"))
+        self.qtabout = self.help_.addAction(self.tr("About Sflvault-QT"))
+        self.qtabout.setStatusTip(self.tr("About Sflvault-QT"))
 
     def enableItems(self):
         """

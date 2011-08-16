@@ -41,6 +41,7 @@ from config.config import Config
 from config.customer import EditCustomerWidget, DeleteCustomerWidget
 from config.machine import EditMachineWidget, DeleteMachineWidget
 from config.service import EditServiceWidget, DeleteServiceWidget
+from dialog.aboutdialog import AboutDialog, About_sflvaultqt_dialog, Help_dialog
 from wizard.initaccount import InitAccount
 from wizard.savepassword import SavePasswordWizard
 from bar.menubar import MenuBar
@@ -146,10 +147,28 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.menubar.newmach, QtCore.SIGNAL("triggered(bool)"), self.editMachine)
         ## new service
         QtCore.QObject.connect(self.menubar.newserv, QtCore.SIGNAL("triggered(bool)"), self.editService)
+        ## about
+        QtCore.QObject.connect(self.menubar.sflvaultabout, QtCore.SIGNAL("triggered(bool)"), self.showAbout)
+        QtCore.QObject.connect(self.menubar.qtabout, QtCore.SIGNAL("triggered(bool)"), self.show_qt_about)
+        QtCore.QObject.connect(self.menubar.sflvaulthelp, QtCore.SIGNAL("triggered(bool)"), self.show_help)
 
         geometry = self.settings.value("SFLvault-qt4/binsavewindow").toByteArray()
         self.restoreGeometry(geometry)
 
+    def show_help(self):
+        helpd = Help_dialog(self)
+        helpd.open()
+        helpd.show()
+
+    def showAbout(self):
+        about = AboutDialog(self)
+        about.open()
+        about.show()
+ 
+    def show_qt_about(self):
+        about = About_sflvaultqt_dialog(self)
+        about.open()
+        about.show()
 
     def closeEvent(self, event):
         if self.settings.value("SFLvault-qt4/hide").toInt()[0] == QtCore.Qt.Checked:

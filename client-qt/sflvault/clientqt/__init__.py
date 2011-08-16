@@ -33,6 +33,7 @@ from sflvault.clientqt.lib.auth import *
 #import os
 #os.environ['SFLVAULT_CONFIG'] = "~/Application Data/SFLvault/config2.ini"
 
+
 def main():
     app = QtGui.QApplication(sys.argv)
   
