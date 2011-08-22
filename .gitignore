@@ -6,7 +6,7 @@
 # Database
 server/sflvault.sqlite*
 sflvault.sqlite
-
+*.db
 # Ignore eggs
 build
 dist
