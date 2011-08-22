@@ -1,0 +1,46 @@
+Upgrade procedures
+==================
+
+This is when you upgrade from an older version to a more recent version, and to
+keep track of changes. Usually, inside an sqlite shell:
+
+  $ sqlite3 vault-database.db
+
+--------------------------------------------------------------------------------
+
+ALTER TABLE services ADD url VARCHAR(250);
+
+hmm... you're better off with a clean database, using SQLite.
+
+ALTER TABLE services ADD parent_service_id INTEGER
+
+
+UPGRADE TO 0.6.6:
+-----------------
+
+To upgrade to 0.6.6, you should rename the column `stuff` to `cryptsymkey`  in
+the `userciphers` table. This is to have better semantics as suggested by
+Yannick Gingras.
+
+
+
+UPGRADE TO 0.6.7:
+-----------------
+
+Issue SQL:
+
+  INSERT INTO services_groups (group_id, service_id) SELECT group_id,id FROM services;
+
+Remove column:
+
+  services.group_id
+
+UPGRADE TO 0.7.0:
+¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+SFLvault's backend has been ported from Pylons to Pyramid 1.1 and as a result
+the project's dependencies has changed considerably.
+
+You can update your environment by issuing the following command:
+    $ pip install -r requirements.freeze
+
+The database has not been modified.
