@@ -994,7 +994,7 @@ class SFLvaultAccess(object):
             return vaultMsg(True, "No such customer: c#%s" % customer_id)
 
         # Get all the services that will be deleted
-        servs = query(model.Service).join(['machine', 'customer']) \
+        servs = query(model.Service).join('machine', 'customer') \
                      .filter(model.Customer.id == customer_id) \
                      .all()
         servs_ids = [s.id for s in servs]
@@ -1017,21 +1017,21 @@ class SFLvaultAccess(object):
                             {'childs': retval})
 
         # Delete all related groupciphers
-        query(model.ServiceGroup).filter(model.ServiceGroup.service_id.in_(servs_ids)).delete()
+        query(model.ServiceGroup).filter(model.ServiceGroup.service_id.in_(servs_ids)).delete(synchronize_session=False)
         # Delete the services related to customer_id's machines
 #        d2 = sql.delete(model.services_table) \
 #                .where(model.services_table.c.id.in_(servs_ids))
-        query(Service).filter(model.Service.id.in_(servs_ids)).delete()
+        query(Service).filter(model.Service.id.in_(servs_ids)).delete(synchronize_session=False)
         # Delete the machines related to customer_id
         mach_ids = [m.id for m in cust.machines]
 #        d3 = sql.delete(model.machines_table) \
 #                .where(model.machines_table.c.id.in_(mach_ids))
-        query(model.Machine).filter(model.Machine.id.in_(mach_ids)).delete()
+        query(model.Machine).filter(model.Machine.id.in_(mach_ids)).delete(synchronize_session=False)
         # Delete the customer
 #        d4 = sql.delete(model.customers_table) \
 #                .where(model.customers_table.c.id == customer_id)
 #                
-        query(model.Customer).filter(model.Customer.id==customer_id).delete()
+        query(model.Customer).filter(model.Customer.id==customer_id).delete(synchronize_session=False)
 #        meta.Session.execute(d)
 #        meta.Session.execute(d2)
 #        meta.Session.execute(d3)
@@ -1073,9 +1073,9 @@ class SFLvaultAccess(object):
                 
             return vaultMsg(False, "Services still child of this machine's services",
                             {'childs': retval})
-        query(model.ServiceGroup).filter(model.ServiceGroup.service_id.in_(servs_ids)).delete()
-        query(model.Service).filter(model.Service.id.in_(servs_ids)).delete()
-        query(model.Machine).filter(model.Machine.id==machine_id).delete()
+        query(model.ServiceGroup).filter(model.ServiceGroup.service_id.in_(servs_ids)).delete(synchronize_session=False)
+        query(model.Service).filter(model.Service.id.in_(servs_ids)).delete(synchronize_session=False)
+        query(model.Machine).filter(model.Machine.id==machine_id).delete(synchronize_session=False)
         # Delete all related groupciphers
 #        raise Exception
 #        d = sql.delete(model.servicegroups_table) \
@@ -1122,9 +1122,9 @@ class SFLvaultAccess(object):
         #  service is in, otherwise, disallow.
         
         # Delete all related user-ciphers
-        query(model.ServiceGroup).filter(model.ServiceGroup.service_id == service_id).delete()
+        query(model.ServiceGroup).filter(model.ServiceGroup.service_id == service_id).delete(synchronize_session=False)
         # Delete the service
-        query(Service).filter(model.Service.id==service_id).delete()
+        query(Service).filter(model.Service.id==service_id).delete(synchronize_session=False)
         transaction.commit()
 
         return vaultMsg(True, 'Deleted service s#%s successfully' % service_id)
