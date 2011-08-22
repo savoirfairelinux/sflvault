@@ -46,7 +46,8 @@ server/host.cert
 server/host.key
 server/host.pem
 
-
+#ignore vim swap files
+*.sql
 # Debian generated files
 /sflvault-*.deb
 /sflvault-*.changes

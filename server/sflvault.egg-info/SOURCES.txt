@@ -5,7 +5,7 @@ development.ini
 production.ini
 setup.cfg
 setup.py
-sflvault/TestVault.py
+test.ini
 sflvault/__init__.py
 sflvault/models.py
 sflvault/views.py

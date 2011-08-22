@@ -3,7 +3,6 @@ import logging
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
 #from controller.xmlrpc import SflVaultController
-from pyramid_beaker import session_factory_from_settings
 from sflvault.model import *
 from datetime import datetime, timedelta
 from pyramid_rpc.xmlrpc import xmlrpc_endpoint
@@ -21,8 +20,8 @@ def main(global_config, **settings):
     config.add_route('RPC2', '/vault/rpc', view='pyramid_rpc.xmlrpc_endpoint')
     config.scan('sflvault.views')
 #    config.add_view(SflVaultController,  route_name='xmlrpcvault')
-    session_factory = session_factory_from_settings(settings)
-    config.set_session_factory(session_factory)
+#    session_factory = session_factory_from_settings(settings)
+#    config.set_session_factory(session_factory)
 
     init_model(engine)
     model.meta.metadata.create_all(engine)
