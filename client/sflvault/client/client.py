@@ -584,14 +584,14 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def machine_add(self, customer_id, name, fqdn, ip, location, notes):
+    def machine_add(self, customer_id, name='', fqdn='', ip='', location='', notes=''):
         """Add a machine to the database."""
         # customer_id REQUIRED
         retval = vaultReply(self.vault.machine_add(self.authtok,
                                                    int(customer_id),
-                                                   name or '', fqdn or '',
-                                                   ip or '', location or '',
-                                                   notes or ''),
+                                                   name, fqdn,
+                                                   ip, location,
+                                                   notes),
                             "Error adding machine")
         print "Success: %s" % retval['message']
         print "New machine ID: m#%d" % int(retval['machine_id'])
@@ -600,7 +600,7 @@ class SFLvaultClient(object):
 
     @authenticate()
     def service_add(self, machine_id, parent_service_id, url, group_ids, secret,
-                    notes, metadata=None):
+                    notes='', metadata=None):
         """Add a service to the Vault's database.
 
         machine_id - A m#id machine identifier.
@@ -621,7 +621,7 @@ class SFLvaultClient(object):
                                                   int(machine_id),
                                                   psi, url,
                                                   group_ids, secret,
-                                                  notes or '',
+                                                  notes,
                                                   metadata),
                             "Error adding service")
 
@@ -735,6 +735,7 @@ class SFLvaultClient(object):
 
         print "Saving settings..."
         self.cfg.config_write()
+        return True
 
 
     @authenticate()
@@ -1116,6 +1117,7 @@ class SFLvaultClient(object):
                             "Error removing user from group")
 
         print "Success: %s" % retval['message']
+        return retval
     
     @authenticate()
     def group_add(self, group_name):
@@ -1140,6 +1142,7 @@ class SFLvaultClient(object):
                             "Error removing group")
 
         print "Success: %s" % retval['message']
+        return retval
 
     @authenticate()
     def group_list(self, quiet=False):
