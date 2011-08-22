@@ -19,9 +19,12 @@ requires = [
 if sys.version_info[:3] < (2,5,0):
     requires.append('pysqlite')
 
-setup(name='sflvault',
-      version='0.0',
-      description='sflvault',
+setup(name='SFLvault-server',
+      version='0.8.0.0',
+      description='Networked credentials store and authentification manager - Server',
+      author='Alexandre Bourget',
+      author_email='alexandre.bourget@savoirfairelinux.com',
+      url='http://www.sflvault.org',
       long_description=README + '\n\n' +  CHANGES,
       classifiers=[
         "Programming Language :: Python",
@@ -29,9 +32,6 @@ setup(name='sflvault',
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
         ],
-      author='',
-      author_email='',
-      url='',
       keywords='web wsgi bfg pylons pyramid',
       packages=find_packages(),
       include_package_data=True,
