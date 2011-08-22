@@ -1122,14 +1122,9 @@ class SFLvaultAccess(object):
         #  service is in, otherwise, disallow.
         
         # Delete all related user-ciphers
-        d = sql.delete(model.servicegroups_table) \
-               .where(model.servicegroups_table.c.service_id == service_id)
+        query(model.ServiceGroup).filter(model.ServiceGroup.service_id == service_id).delete()
         # Delete the service
-        d2 = sql.delete(services_table) \
-                .where(services_table.c.id == service_id)
-        
-        meta.Session.execute(d)
-        meta.Session.execute(d2)
+        query(Service).filter(model.Service.id==service_id).delete()
         transaction.commit()
 
         return vaultMsg(True, 'Deleted service s#%s successfully' % service_id)

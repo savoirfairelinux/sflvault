@@ -185,12 +185,16 @@ class TestVaultController(TestController):
                                       None)
         sres = self.vault.service_add(mres['machine_id'],
                                       0, 
-                                      u'ssh://marrakis@localhost',
+                                      u'ssh://service_del',
                                       [], 
                                       'test',
                                       '')
         sres = self.vault.service_del(sres['service_id'])
         self.assertTrue(sres is not None)
+
+        ## Search for service afterwards
+        search = self.vault.search('service_del')
+        self.assertTrue(len(search['results'].items()) == 0)
 
     def test_user_del(self):
         """testing delete a user from the vault"""
