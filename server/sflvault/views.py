@@ -142,8 +142,6 @@ def sflvault_login(request):
     rnd = randfunc(32)
     # 15 seconds to complete login/authenticate round-trip.
     u.logging_timeout = datetime.now() + timedelta(0, 15)
-    log.warn('\033[1;31mÉcriture du token!!!\033[0m')  # ]]
-    log.warn(u.logging_timeout)
     u.logging_token = b64encode(rnd)
     a = meta.Session.query(User).filter_by(username=username).one()
     e = u.elgamal()
