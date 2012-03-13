@@ -8,7 +8,7 @@ README = open(os.path.join(here, 'README.txt')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
-    'pyramid',
+    'pyramid==1.1.2',
     'SQLAlchemy',
     'transaction',
     'repoze.tm2>=1.0b1', # default_commit_veto
@@ -36,6 +36,8 @@ setup(name='SFLvault-server',
       packages=find_packages(),
       include_package_data=True,
       zip_safe=False,
+      #test_suite='nose.collector',
+      package_data={'sflvault': ['i18n/*/LC_MESSAGES/*.mo']},
       test_suite='sflvault',
       install_requires = requires,
       entry_points = """\

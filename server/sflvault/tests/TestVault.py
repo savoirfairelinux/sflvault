@@ -110,6 +110,7 @@ class TestVaultController(TestController):
         ures2 = tmp_vault.user_setup('testuser',
                                      'http://localhost:6555/vault/rpc',
                                      'passphrase')
+        log.warn(ures2)
         self.assertTrue(ures2 is not None)
     def test_group_add_user(self):
         """testing add a user to a group to the vault"""

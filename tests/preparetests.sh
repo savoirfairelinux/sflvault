@@ -18,9 +18,12 @@ echo OLD REQS HASH AND NEW REQS HASH: $OLDHASH $HASH
 if [ "$OLDHASH" != "$HASH" ]; then
   echo "ENVIRONMENT SPECS CHANGED - CREATING A NEW ENVIRONMENT"
   virtualenv --distribute env
+  #virtualenv env
   . env/bin/activate
-  pip install pip==0.8
+  #pip install pip
   pip install -r requirements.freeze
+  pip install -r requirements.tests.freeze
+
   rm -rf ../last_env
   cp -ar env ../last_env
 else
@@ -29,6 +32,9 @@ else
   . env/bin/activate
 fi;
 
-pip install -e common
-pip install -e client
-pip install -e server
+#pip install -e common
+#pip install -e client
+#pip install -e server
+#cd common && python setup.py develop && cd ..
+#cd client && python setup.py develop && cd ..
+cd server && python setup.py develop && cd ..

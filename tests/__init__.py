@@ -21,7 +21,7 @@ from ConfigParser import ConfigParser
 from paste.httpserver import serve
 import threading
 
-from pylons import config
+from pyramid import config
 from sflvault.client import SFLvaultClient
 from sflvault.lib.vault import SFLvaultAccess
 

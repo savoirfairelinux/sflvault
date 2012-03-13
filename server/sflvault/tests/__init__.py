@@ -31,7 +31,7 @@ pkg_resources.working_set.add_entry(conf_dir)
 pkg_resources.require('Paste')
 pkg_resources.require('PasteScript')
 
-dbfile = os.path.join(conf_dir, 'sflvault-test.db')
+dbfile = os.path.join(conf_dir, 'test-database.db')
 confile = os.path.join(conf_dir, 'test-config')
 userconfile = os.path.join(conf_dir, 'test-config-user')
 test_file = os.path.join(conf_dir, 'test.ini')

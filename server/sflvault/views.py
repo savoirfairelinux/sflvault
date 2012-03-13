@@ -101,7 +101,8 @@ def sflvault_authenticate(request):
 
     # str() necessary, to convert buffer to string.
     if cryptok != str(u.logging_token):
-        raise Exception
+        #TODO: Ask about this line.
+        #raise Exception
         return vaultMsg(False, 'Authentication failed')
     else:
         newtok = b64encode(randfunc(32))

@@ -7,6 +7,8 @@ cd `dirname $0`
 echo "Wiping test directory"
 rm -rf sandbox
 mkdir -p sandbox
+cp ../server/test.ini sandbox/test-server.ini
+cp ../server/development.ini sandbox/
 cd sandbox
 
 # SFLVault test mode
@@ -14,18 +16,20 @@ export SFLVAULT_IN_TEST=true
 
 # Setup the test config
 echo "Creating test config, certificate, etc.."
-paster make-config SFLvault-server test-server.ini
-sed -i "s/port = 5000/port = 5767/" test-server.ini
-paster setup-app test-server.ini
+# jgama - Pyramid doesn't work with make-config
+#paster make-config SFLvault-server test-server.ini
+sed -i "s/port = 5551/port = 5767/" test-server.ini
+# jgama - Pyramid doesn't work with setup-app
+# paster setup-app test-server.ini
 openssl genrsa 1024 > host.key ; chmod 400 host.key ; openssl req -new -x509 -config ../test-certif-config -nodes -sha1 -days 365 -key host.key > host.cert ; cat host.cert host.key > host.pem ; chmod 400 host.pem
 
 # Launch the server
 echo "Launching server..."
-coverage run --rcfile=../coverage.conf `which paster` serve --daemon --pid-file test-server.pid test-server.ini
+coverage run --rcfile=../coverage.conf `which paster` serve -v --daemon --pid-file test-server.pid test-server.ini
 sleep 3
 
 # Launch tests
-coverage run --rcfile=../coverage.conf `which nosetests` -w .. -s --with-xunit 
+coverage run --rcfile=../coverage.conf `which nosetests` -w .. -s  --with-xunit 
 
 # Kill the test server
 echo "Killing server..."

@@ -115,13 +115,21 @@ class TestVault(BaseTestCase):
         dres = self.vault.cfg.alias_del(alias)
         self.assertTrue(dres is not None)
 
-    def _test_user_del(self):
-        """testing delete a user from the vault"""
-        self.assertTrue(False)
+    ## def test_user_del(self):
+    ##     """testing delete a user from the vault"""
+    ##     ures = self.vault.user_del("test_username")
+    ##     self.assertTrue("User removed" in ures['message'])
+        #ures = self.vault.user_add("test_admin", True)
+        #self.assertTrue("Admin user added" in ures['message'])
+        
+        #self.assertTrue(False)
 
-    def _test_goup_del(self):
-        """testing delete a group from the vault"""
-        self.assertTrue(False)
+    ## def _test_goup_del(self):
+    ##     """testing delete a group from the vault"""
+    ##     gres = self.vault.group_del("test_group")
+    ##     print gres
+    ##     self.assertTrue(int(gres['group_id']) > 0)
+    ##     #self.assertTrue(False)
 
     def _test_goup_del_user(self):
         """testing delete a user from a group from the vault"""
