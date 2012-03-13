@@ -24,6 +24,9 @@ docs/*.html
 # Pip stufff
 pip-log.txt
 
+#log stuff
+*.log
+
 # virtualenv link (to be activated with . env/bin/activate)
 env
 
@@ -58,3 +61,9 @@ server/host.pem
 build-stamp
 /*/debian/sflvault-*
 /*/debian/files
+
+# Test stuff
+last_env*
+tests/sandbox
+tests/htmlcov
+test-config-user
