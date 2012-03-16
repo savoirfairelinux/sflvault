@@ -26,6 +26,7 @@ import getpass
 import sys
 import re
 import os
+import time
 
 from subprocess import Popen, PIPE
 
@@ -101,8 +102,7 @@ def authenticate(keep_privkey=False):
             if keep_privkey or self.shell_mode:
                 self.privkey = privkey
 
-
-        # Go for the login/authenticate roundtrip
+       # Go for the login/authenticate roundtrip
 
         # TODO: check also is the privkey (ElGamal obj) has been cached
         #       in self.privkey (when invoked with keep_privkey)
@@ -110,12 +110,13 @@ def authenticate(keep_privkey=False):
         self.authret = retval
         if not retval['error']:
             # decrypt token.
-
             cryptok = privkey.decrypt(unserial_elgamal_msg(retval['cryptok']))
             retval2 = self.vault.authenticate(username, b64encode(cryptok))
             self.authret = retval2
         
             if retval2['error']:
+                #print retval
+                #print retval2
                 raise AuthenticationError("Authentication failed: %s" % \
                                           retval2['message'])
             else:
