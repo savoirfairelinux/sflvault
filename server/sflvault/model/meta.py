@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-g"""SQLAlchemy Metadata and Session object"""
+"""SQLAlchemy Metadata and Session object"""
 from sqlalchemy import MetaData
 
 __all__ = ['engine', 'metadata', 'Session']
