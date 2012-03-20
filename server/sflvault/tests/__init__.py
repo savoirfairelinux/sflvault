@@ -84,7 +84,10 @@ def setUp():
     wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
     app = paste.fixture.TestApp(wsgiapp)
     server = serve(wsgiapp, 'localhost', '6555',
-                socket_timeout=1, start_loop=False)
+                   socket_timeout=1, start_loop=False,
+                   use_threadpool=True,
+                   threadpool_workers=40,
+                   )
     globs['server'] = server
     t = threading.Thread(target=server.serve_forever)
     t.setDaemon(True)
