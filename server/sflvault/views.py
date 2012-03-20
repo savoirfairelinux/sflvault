@@ -1,9 +1,30 @@
 # -*- coding: utf-8 -*-
+#
+# SFLvault - Secure networked password store and credentials manager.
+#
+# Copyright (C) 2008-2009  Savoir-faire Linux inc.
+#
+# Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 import transaction
 from pyramid_rpc import xmlrpc_view
 from pyramid.response import Response
+from pyramid.configuration import Configurator
+from pyramid.threadlocal import get_current_registry
 from sflvault.common.crypto import *
 from sflvault.lib.vault import SFLvaultAccess, vaultMsg
 from sflvault.model import *
@@ -53,10 +74,18 @@ def authenticated_user(func, self, *args, **kwargs):
 def _authenticated_user_first(self, *args, **kwargs):
     """DRYed authenticated_user to skip repetition in authenticated_admin"""
     cryptok = self.xmlrpc_args[0]
-    s = get_session(cryptok, self)
+    try:
+        s = get_session(cryptok, self)
+    except SessionNotFoundError:
+        s = None
+        error_msg = 'session not found'
+    except SessionExpiredError:
+        s = None
+        error_msg = 'session expired'
+
 
     if not s:
-        return vaultMsg(False, "Permission denied")
+        return vaultMsg(False, "Permission denied (%s)" % error_msg)
 
     sess = s
 
@@ -75,10 +104,14 @@ def authenticated_admin(func, self, *args, **kwargs):
     if ret:
         return ret
     cryptok = self.xmlrpc_args[0]
-    sess = get_session(cryptok, self)
+    try:
+        sess = get_session(cryptok, self)
+    except SessionNotFoundError:
+        sess = None
 
-    if not sess['userobj'].is_admin:
-        return vaultMsg(False, "Permission denied, admin priv. required")
+    if sess:
+        if not sess['userobj'].is_admin:
+            return vaultMsg(False, "Permission denied, admin priv. required")
 
     return func(self, *args, **kwargs)
 
@@ -87,8 +120,27 @@ def authenticated_admin(func, self, *args, **kwargs):
 def sflvault_authenticate(request):
     """Receive the *decrypted* cryptok, b64 encoded"""
     username, cryptok = request.xmlrpc_args
+    settings = get_current_registry().settings
+    u  = None
+    db = None
 
-    u = None
+    try:
+        if settings['sflvault.vault.session_trust']:
+            # If the session_trust parameter is true trust the session for the authentication.
+            try:
+                sess = get_session(cryptok, request)
+            except SessionNotFoundError:
+                sess = None
+                print "Session not found... "
+            except SessionExpiredError:
+                sess = None
+                print "Session expired... "
+
+            if sess:
+                return vaultMsg(True, 'Authentication successful (cached)', {'authtok': cryptok})
+    except KeyError:
+        pass
+    
     try:
         #u = meta.Session.query(User).filter_by(username=username).one()
         db = meta.Session()
@@ -107,7 +159,7 @@ def sflvault_authenticate(request):
     else:
         newtok = b64encode(randfunc(32))
         set_session(newtok, {'username': username,
-                                'timeout': datetime.now() + timedelta(0, 500),#int(config['sflvault.vault.session_timeout'])),
+                                'timeout': datetime.now() + timedelta(0, int(settings['sflvault.vault.session_timeout'])),
                                 'remote_addr': request.get('REMOTE_ADDR', None),
                                 'userobj': u,
                                 'user_id': u.id
@@ -134,7 +186,8 @@ def sflvault_login(request):
     # Save decoded version to user's db field.
     #transaction.begin()
     try:
-        u = query(User).filter_by(username=username).one()
+        #u = query(User).filter_by(username=username).one()
+        u = meta.Session.query(User).filter_by(username=username).one()
     except Exception, e:
         return vaultMsg(False, "User unknown: %s" % e.message)
     
@@ -144,11 +197,13 @@ def sflvault_login(request):
     # 15 seconds to complete login/authenticate round-trip.
     u.logging_timeout = datetime.now() + timedelta(0, 15)
     u.logging_token = b64encode(rnd)
-    a = meta.Session.query(User).filter_by(username=username).one()
+    
+    #a = meta.Session.query(User).filter_by(username=username).one()
     e = u.elgamal()
     cryptok = serial_elgamal_msg(e.encrypt(rnd, randfunc(32)))
-    meta.Session.flush()
+    
     transaction.commit()
+    #meta.Session.close()
     return vaultMsg(True, 'Authenticate please', {'cryptok': cryptok})
 
 @xmlrpc_view(method='sflvault.user_add')
@@ -423,8 +478,9 @@ def set_session(authtok, value):
 def get_session(authtok, request):
     """Return the values associated with a session"""
     #_setup_sessions();
-
+    
     if not vaultSessions.has_key(authtok):
+        raise SessionNotFoundError
         return None
 
     if not vaultSessions[authtok].has_key('timeout'):
@@ -432,10 +488,22 @@ def get_session(authtok, request):
 
     if vaultSessions[authtok]['timeout'] < datetime.now():
         del(vaultSessions[authtok])
+        raise SessionExpiredError
         return None
 
     if vaultSessions[authtok]['remote_addr'] != request.get('REMOTE_ADDR', 'gibberish'):
         del(vaultSessions[authtok])
+        SessionSourceAddressMismatchError
         return None
 
     return vaultSessions[authtok]
+
+class SessionNotFoundError(Exception):
+    pass
+
+class SessionExpiredError(Exception):
+    pass
+
+class SessionSourceAddressMismatchError(Exception):
+    pass
+
