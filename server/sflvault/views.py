@@ -125,7 +125,7 @@ def sflvault_authenticate(request):
     db = None
 
     try:
-        if settings['sflvault.vault.session_trust']:
+        if settings['sflvault.vault.session_trust'].lower() in ['1', 'true', 't']:
             # If the session_trust parameter is true trust the session for the authentication.
             try:
                 sess = get_session(cryptok, request)
