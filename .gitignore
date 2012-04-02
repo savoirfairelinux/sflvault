@@ -43,6 +43,10 @@ test-suite.xml
 server/test-config.bak
 tests/host.*
 tests/testconfig
+last_env*
+tests/sandbox
+tests/htmlcov
+test-config-user
 
 # SSL certs
 server/host.cert
@@ -61,9 +65,3 @@ server/host.pem
 build-stamp
 /*/debian/sflvault-*
 /*/debian/files
-
-# Test stuff
-last_env*
-tests/sandbox
-tests/htmlcov
-test-config-user
