@@ -117,7 +117,11 @@ class DialogDisplay(object):
                 while not keys: 
                     keys = self.ui.get_input()
                 for k in keys:
-                    if urwid.is_mouse_event(k):
+                    if urwid.VERSION < (1, 0, 0):
+                        check_mouse_event = urwid.is_mouse_event
+                    else:
+                        check_mouse_event = urwid.util.is_mouse_event
+                    if check_mouse_event(k):
                         event, button, col, row = k
                         self.view.mouse_event( size, 
                                 event, button, col, row,
