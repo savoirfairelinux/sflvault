@@ -770,7 +770,7 @@ class SFLvaultClient(object):
                  filters.get('groups') if filters else None, verbose, filters),
                             "Error searching database")
         print "Results:"
-        encode = lambda x: x.encode('utf-8') if isinstance(x, unicode) else x
+        encode = lambda x: x.encode('utf-8') if isinstance(x, str) else x
 
         # TODO: call the pager `less` when too long.
         level = 0
