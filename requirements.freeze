@@ -5,8 +5,8 @@ Paste==1.7.5.1
 PasteDeploy==1.5.0
 PasteScript==1.7.4.2
 Pygments==1.4
-SFLvault-client==0.7.8.2
-SFLvault-common==0.7.8.1
+#SFLvault-client==0.7.8.2
+#SFLvault-common==0.7.8.1
 #SFLvault-server==0.8.0.0
 SQLAlchemy==0.7.2
 Tempita==0.5.1

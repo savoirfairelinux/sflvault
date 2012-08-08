@@ -26,6 +26,7 @@ import getpass
 import sys
 import re
 import os
+import time
 
 from subprocess import Popen, PIPE
 
@@ -101,26 +102,34 @@ def authenticate(keep_privkey=False):
             if keep_privkey or self.shell_mode:
                 self.privkey = privkey
 
-
-        # Go for the login/authenticate roundtrip
+       # Go for the login/authenticate roundtrip
 
         # TODO: check also is the privkey (ElGamal obj) has been cached
         #       in self.privkey (when invoked with keep_privkey)
         retval = self.vault.login(username, pkgres.get_distribution('SFLvault_client').version)
         self.authret = retval
         if not retval['error']:
-            # decrypt token.
-
-            cryptok = privkey.decrypt(unserial_elgamal_msg(retval['cryptok']))
-            retval2 = self.vault.authenticate(username, b64encode(cryptok))
-            self.authret = retval2
-        
+            # try the last token
+            retval2 = self.vault.authenticate(username, self.authtok)
             if retval2['error']:
-                raise AuthenticationError("Authentication failed: %s" % \
-                                          retval2['message'])
+                print retval2['message']
+                # decrypt token.
+                cryptok = privkey.decrypt(unserial_elgamal_msg(retval['cryptok']))
+                retval3 = self.vault.authenticate(username, b64encode(cryptok))
+                self.authret = retval3
+
+                if retval3['error']:
+                    #print retval
+                    print retval3
+                    raise AuthenticationError("Authentication failed: %s" % \
+                                              retval3['message'])
+                else:
+                    self.authtok = retval3['authtok']
+                    print retval3['message']
+
             else:
                 self.authtok = retval2['authtok']
-                print "Authentication successful"
+                print retval2['message']
         else:
             raise AuthenticationError("Authentication failed: %s" % \
                                       retval['message'])
@@ -761,7 +770,7 @@ class SFLvaultClient(object):
                  filters.get('groups') if filters else None, verbose, filters),
                             "Error searching database")
         print "Results:"
-        encode = lambda x: x.encode('utf-8') if isinstance(x, unicode) else x
+        encode = lambda x: x.encode('utf-8') if isinstance(x, str) else x
 
         # TODO: call the pager `less` when too long.
         level = 0

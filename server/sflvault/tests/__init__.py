@@ -1,3 +1,25 @@
+# -=- encoding: utf-8 -=-
+#
+# SFLvault - Secure networked password store and credentials manager.
+#
+# Copyright (C) 2008-2009  Savoir-faire Linux inc.
+#
+# Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 """Pylons application test package
 
 When the test runner finds and executes tests within this directory,
@@ -62,7 +84,10 @@ def setUp():
     wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
     app = paste.fixture.TestApp(wsgiapp)
     server = serve(wsgiapp, 'localhost', '6555',
-                socket_timeout=1, start_loop=False)
+                   socket_timeout=1, start_loop=False,
+                   use_threadpool=True,
+                   threadpool_workers=40,
+                   )
     globs['server'] = server
     t = threading.Thread(target=server.serve_forever)
     t.setDaemon(True)

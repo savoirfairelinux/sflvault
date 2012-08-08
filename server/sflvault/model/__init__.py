@@ -42,7 +42,10 @@ from zope.sqlalchemy import ZopeTransactionExtension
 
 def init_model(engine):
     """Call me before using any of the tables or classes in the model."""
-    sm = sessionmaker(autoflush=True, bind=engine, extension=ZopeTransactionExtension())
+    sm = sessionmaker(autoflush=True,
+                      bind=engine,
+                      expire_on_commit=False,
+                      extension=ZopeTransactionExtension())
 
     meta.engine = engine
     meta.Session = scoped_session(sm)
