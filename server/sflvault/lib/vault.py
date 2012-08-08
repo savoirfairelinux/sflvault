@@ -94,7 +94,7 @@ class SFLvaultAccess(object):
             self.log_i('No such temporary user %(username)s, add it first',
                        {"username": username})
             return vaultMsg(False, 'No such temporary user %s, add it first' % username)
-        
+
         if u.setup_expired():
             self.log_i('Setup expired for user %(username)s',
                        {"username": username})
@@ -109,7 +109,7 @@ class SFLvaultAccess(object):
         # Ok, let's save the things and reset waiting_setup.
         u.waiting_setup = None
         u.pubkey = pubkey
-        
+
         # Save new informations
         meta.Session.add(u)
         transaction.commit()
@@ -134,7 +134,7 @@ class SFLvaultAccess(object):
 
             meta.Session.add(usr)
             meta.Session.flush()
-            
+
             self.log_i('User %(username)s added.', {"username": username})
             msg = 'added'
         elif usr.waiting_setup:
@@ -142,7 +142,7 @@ class SFLvaultAccess(object):
                 # Verify if it's a waiting_setup user that has expired.
                 usr.waiting_setup = datetime.now() + \
                                     timedelta(0, int(self.setup_timeout))
-            
+
                 self.log_i('updated (had setup timeout expired).', {})
                 msg = 'updated (had setup timeout expired)'
             else:
@@ -161,7 +161,7 @@ class SFLvaultAccess(object):
                               'to invoke a "user-setup" command' % \
                             ('Admin user' if is_admin else 'User',
                              msg, int(self.setup_timeout)), {'user_id': uid})
-        
+
 
     def user_del(self, user):
         transaction.begin()
@@ -170,7 +170,7 @@ class SFLvaultAccess(object):
         :param user: can be a user_id, or username
 
         This will remove the user and it's links to groups.
-        
+
         """
         try:
             usr = model.get_user(user)
@@ -181,7 +181,7 @@ class SFLvaultAccess(object):
 
         # TODO: prevent removing a user if it is the last link
         # to a group which holds some passwords.
-        
+
         t1 = model.usergroups_table
         meta.Session.execute(t1.delete(t1.c.user_id==usr.id))
         username = usr.username
@@ -209,7 +209,7 @@ class SFLvaultAccess(object):
                 stmp = xmlrpclib.DateTime(x.created_time)
             else:
                 stmp = 0
-                
+
             nx = {'id': x.id, 'username': x.username,
                   'created_stamp': stmp,
                   'is_admin': x.is_admin,
@@ -224,13 +224,13 @@ class SFLvaultAccess(object):
                              'name': ug.group.name,
                              'id': ug.group_id}
                     nx['groups'].append(nxgrp)
-                    
+
             out.append(nx)
 
         # Can use: datetime.fromtimestamp(x.created_stamp)
         # to get a datetime object back from the x.created_time
         return vaultMsg(True, "Here is the user list", {'list': out})
-        
+
 
     def service_get(self, service_id, group_id=None):
         """Get a single service's data.
@@ -243,7 +243,7 @@ class SFLvaultAccess(object):
             return vaultMsg(False, str(e))
 
         return vaultMsg(True, "Here is the service", {'service': out})
-    
+
 
     def service_put(self, service_id, data):
         """Put a single service's data back to the vault's database"""
@@ -304,7 +304,7 @@ class SFLvaultAccess(object):
         # Deal with group if specified..
         if group_id:
             req = req.where(ServiceGroup.group_id == group_id)
-        
+
         res = meta.Session.execute(req)
 
         # Take the first one
@@ -346,7 +346,7 @@ class SFLvaultAccess(object):
 
     def service_get_tree(self, service_id, with_groups=False):
         """Get a service tree, starting with service_id"""
-        
+
         out = []
         while True:
             try:
@@ -355,7 +355,7 @@ class SFLvaultAccess(object):
             except VaultError, e:
                 self.log_e('Show service: %(error)s', {"error": str(e)})
                 return vaultMsg(False, str(e))
-            
+
             out.append(data)
 
             if not data['parent_service_id']:
@@ -373,9 +373,9 @@ class SFLvaultAccess(object):
 
 
         self.log_i('Service shown: %(service_id)s', {"service_id": service_id})
-        return vaultMsg(True, "Here are the services", {'services': out})    
+        return vaultMsg(True, "Here are the services", {'services': out})
 
-    
+
     def show(self, service_id, with_groups=False):
         """Get the specified service ID and return the hierarchy to connect
         to it or to show it.
@@ -424,7 +424,7 @@ class SFLvaultAccess(object):
                 return
             out[str(c.customers_id)] = {'name': c.customers_name,
                                         'machines': {}}
-            
+
         def set_machine(subout, m):
             "Subfunc of search"
             if subout.has_key(str(m.machines_id)):
@@ -435,7 +435,7 @@ class SFLvaultAccess(object):
                             'location': m.machines_location or '',
                             'notes': m.machines_notes or '',
                             'services': {}}
-            
+
         def set_service(subsubout, s):
             "Subfunc of search"
             subsubout[str(s.services_id)] = {'url': s.services_url,
@@ -550,12 +550,12 @@ class SFLvaultAccess(object):
                'notes': m.notes or '',
                'customer_id': m.customer_id}
 
-        return vaultMsg(True, "Here is the machine", {'machine': out})  
+        return vaultMsg(True, "Here is the machine", {'machine': out})
 
 
     def machine_add(self, customer_id, name, fqdn, ip, location, notes):
         """Add a new machine to the database"""
-        
+
         nm = Machine()
         nm.customer_id = int(customer_id)
         nm.created_time = datetime.now()
@@ -571,7 +571,7 @@ class SFLvaultAccess(object):
         meta.Session.flush()
         nmid = nm.id
 
-        
+
         transaction.commit()
 
         self.log_i('Machine added: m#%(machine_id)s', {"machine_id": nmid})
@@ -586,7 +586,7 @@ class SFLvaultAccess(object):
                                                        return_objects=True)
         except ValueError, e:
             return vaultMsg(False, str(e))
-        
+
         # TODO: centralise the grant and users matching service resolution.
 
         # Make sure the parent service exists, if specified
@@ -615,11 +615,11 @@ class SFLvaultAccess(object):
         # Encrypt symkey for each group, using it's own ElGamal pubkey
         for g in groups:
             eg = g.elgamal()
-            
+
             nsg = ServiceGroup()
             nsg.group_id = g.id
             nsg.cryptsymkey = encrypt_longmsg(eg, seckey)
-            
+
             ns.groups_assoc.append(nsg)
 
         del(seckey)
@@ -653,7 +653,7 @@ class SFLvaultAccess(object):
 
         if ug:
             out['cryptgroupkey'] = ug.cryptgroupkey
-        
+
         return vaultMsg(True, "Here is the group", {'group': out})
 
 
@@ -672,7 +672,7 @@ class SFLvaultAccess(object):
 
         if 'name' in data:
             grp.name = data['name']
-            
+
         if 'hidden' in data:
             newhidden = bool(data['hidden'])
             # TODO: these checks must go in the XML-RPC controller.
@@ -693,10 +693,10 @@ class SFLvaultAccess(object):
         # Get my User, to get my pubkey.
         me = query(User).get(self.myself_id)
         myeg = me.elgamal()
-        
+
         # Generate keypair
         newkeys = generate_elgamal_keypair()
-        
+
         ng = Group()
         ng.name = group_name
         ng.hidden = hidden
@@ -735,7 +735,7 @@ class SFLvaultAccess(object):
 
         if grp is None:
             return vaultMsg(False, "Group not found: %s" % (group_id,))
-        
+
         if len(grp.services_assoc):
             return vaultMsg(False, "Group not empty, cannot delete")
 
@@ -761,7 +761,7 @@ class SFLvaultAccess(object):
         out = []
         for grp in groups:
             myug = [ug for ug in grp.users_assoc if ug.user_id == me.id]
-            
+
             res = {'id': grp.id,
                    'name': grp.name,
                    'member': me in grp.users,
@@ -779,7 +779,7 @@ class SFLvaultAccess(object):
                 res['cryptgroupkey'] = myug[0].cryptgroupkey
                 if myug[0].is_admin:
                     res['admin'] = True
-            
+
             res['members'] = [(u.user_id, u.user.username, u.is_admin)
                               for u in grp.users_assoc]
 
@@ -817,7 +817,7 @@ class SFLvaultAccess(object):
 
         meta.Session.add(nsg)
         transaction.commit()
-        
+
         return vaultMsg(True, "Added service to group successfully", {})
 
 
@@ -836,7 +836,7 @@ class SFLvaultAccess(object):
             return vaultMsg(False, "Service is not in group: %s" % str(e))
 
         sg = [sg for sg in sgs if grp.id == sg.group_id][0]
-            
+
         # Make sure we don't lose all of the service's crypted information.
         if len(sgs) < 2:
             return vaultMsg(False, "This is the last group this service is in. Either delete the service, or add it to another group first")
@@ -887,7 +887,7 @@ class SFLvaultAccess(object):
         if query(UserGroup).filter_by(group_id=group_id,
                                   user_id=usr.id).first():
             return vaultMsg(False, "User %s is already in that group" % user)
-        
+
         if not cryptgroupkey:
             # Return the required information for a second call to work.
             ret = {'user_id': int(usr.id),
@@ -895,7 +895,7 @@ class SFLvaultAccess(object):
                    'userpubkey': usr.pubkey,
                    'cryptgroupkey': ug.cryptgroupkey}
             return vaultMsg(True, "Continue, send the cryptgroupkey back, encrypted by the userpubkey provided", ret)
-        
+
         nug = UserGroup()
         nug.user_id = usr.id
         nug.group_id = group_id
@@ -909,7 +909,7 @@ class SFLvaultAccess(object):
 
         meta.Session.add(nug)
         transaction.commit()
-        
+
         return vaultMsg(True, "Added user to group successfully")
 
 
@@ -980,7 +980,7 @@ class SFLvaultAccess(object):
         transaction.commit()
 
         return vaultMsg(True, "Removed user from group successfully" + ohoh, {})
-        
+
 
     def customer_del(self, customer_id):
         """Delete a customer from database, bringing along all it's machines
@@ -1012,7 +1012,7 @@ class SFLvaultAccess(object):
             retval = []
             for x in remnants:
                 retval.append({'id': x.id, 'url': x.url})
-                
+
             return vaultMsg(False, "Services still child of this customer's machine's services",
                             {'childs': retval})
 
@@ -1030,13 +1030,13 @@ class SFLvaultAccess(object):
         # Delete the customer
 #        d4 = sql.delete(model.customers_table) \
 #                .where(model.customers_table.c.id == customer_id)
-#                
+#
         query(model.Customer).filter(model.Customer.id==customer_id).delete(synchronize_session=False)
 #        meta.Session.execute(d)
 #        meta.Session.execute(d2)
 #        meta.Session.execute(d3)
 #        meta.Session.execute(d4)
-        
+
         transaction.commit()
 
         return vaultMsg(True,
@@ -1045,7 +1045,7 @@ class SFLvaultAccess(object):
 
     def machine_del(self, machine_id):
         """Delete a machine from database, bringing on all child services."""
-        transaction.begin() 
+        transaction.begin()
         # Get machine
         machine = query(model.Machine).get(int(machine_id))
 
@@ -1070,7 +1070,7 @@ class SFLvaultAccess(object):
             retval = []
             for x in remnants:
                 retval.append({'id': x.id, 'url': x.url})
-                
+
             return vaultMsg(False, "Services still child of this machine's services",
                             {'childs': retval})
         query(model.ServiceGroup).filter(model.ServiceGroup.service_id.in_(servs_ids)).delete(synchronize_session=False)
@@ -1090,7 +1090,7 @@ class SFLvaultAccess(object):
  #       meta.Session.execute(d)
  #       meta.Session.execute(d2)
  #       meta.Session.execute(d3)
-        
+
         transaction.commit()
 
         return vaultMsg(True, 'Deleted machine m#%s successfully' % machine_id)
@@ -1113,14 +1113,14 @@ class SFLvaultAccess(object):
             retval = []
             for x in childs:
                 retval.append({'id': x.id, 'url': x.url})
-                
+
             return vaultMsg(False, 'Services still child of this service',
                             {'childs': retval})
 
         # TODO: verify permissions:
         #  if either user is global admin, or is admin of all groups in which this
         #  service is in, otherwise, disallow.
-        
+
         # Delete all related user-ciphers
         query(model.ServiceGroup).filter(model.ServiceGroup.service_id == service_id).delete(synchronize_session=False)
         # Delete the service
@@ -1144,7 +1144,7 @@ class SFLvaultAccess(object):
 
 
     def machine_list(self, customer_id=None):
-        """Return a simple list of the machines"""    
+        """Return a simple list of the machines"""
         sel = sql.join(customers_table, machines_table) \
                  .select(use_labels=True) \
                  .order_by(Customer.id)
@@ -1152,7 +1152,7 @@ class SFLvaultAccess(object):
         # Filter also..
         if customer_id:
             sel = sel.where(Customer.id==customer_id)
-        
+
         lst = meta.Session.execute(sel)
 
         out = [{'id': x.machines_id, 'name': x.machines_name,
@@ -1163,7 +1163,7 @@ class SFLvaultAccess(object):
                for x in lst]
 
         return vaultMsg(True, "Here is the machines list", {'list': out})
-    
+
 
     def service_list(self, machine_id=None, customer_id=None):
         """Return a simple list of the services"""
@@ -1199,13 +1199,13 @@ class SFLvaultAccess(object):
         (seckey, ciphertext) = encrypt_secret(newsecret)
         serv.secret = ciphertext
         serv.secret_last_modified = datetime.now()
-        
+
         # TODO absolutely:  verify this requesting user has access to the
         # password first.  YES, he can add a new password, but not modify
         # something he doesn't have access to, first.
 
         # TODO: for traceability, mark the date we changed the password.
-        #       
+        #
 
         for sg in serv.groups_assoc:
             eg = [g for g in groups if g.id == sg.group_id][0].elgamal()
@@ -1214,6 +1214,6 @@ class SFLvaultAccess(object):
         grouplist = [g.name for g in groups]
         transaction.commit()
 
-        
+
         return vaultMsg(True, "Password updated for service.", {'service_id': service_id,
                                                  'encrypted_for': grouplist})
