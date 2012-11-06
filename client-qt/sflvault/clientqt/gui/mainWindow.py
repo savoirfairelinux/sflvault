@@ -212,6 +212,8 @@ class MainWindow(QtGui.QMainWindow):
                 return None
             index = index.indexes()[0]
         # Get Id colunm
+        if len(self.tree.selectedIndexes()) < 2:
+            return None 
         indexId = self.tree.selectedIndexes()[1]
 
         # Check if selected item is an customer, machine or service
