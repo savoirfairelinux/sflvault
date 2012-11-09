@@ -1,4 +1,24 @@
 #!/bin/bash
+#
+# SFLvault - Secure networked password store and credentials manager.
+#
+# Copyright (C) 2008-2009  Savoir-faire Linux inc.
+#
+# Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 # Check if the reqs changed
 # If the reqs match the previous, copy the previous environment
@@ -18,9 +38,12 @@ echo OLD REQS HASH AND NEW REQS HASH: $OLDHASH $HASH
 if [ "$OLDHASH" != "$HASH" ]; then
   echo "ENVIRONMENT SPECS CHANGED - CREATING A NEW ENVIRONMENT"
   virtualenv --distribute env
+  #virtualenv env
   . env/bin/activate
-  pip install pip==0.8
+  #pip install pip
   pip install -r requirements.freeze
+  pip install -r requirements.tests.freeze
+
   rm -rf ../last_env
   cp -ar env ../last_env
 else
@@ -29,6 +52,9 @@ else
   . env/bin/activate
 fi;
 
-pip install -e common
-pip install -e client
-pip install -e server
+#pip install -e common
+#pip install -e client
+#pip install -e server
+#cd common && python setup.py develop && cd ..
+#cd client && python setup.py develop && cd ..
+cd server && python setup.py develop && cd ..

@@ -35,18 +35,20 @@ from sflvault.model import meta
 from sflvault.model.meta import Session, metadata
 from sflvault.model.custom_types import JSONEncodedDict
 from sflvault.common.crypto import *
-
+from zope.sqlalchemy import ZopeTransactionExtension
 
 # TODO: add an __all__ statement here, to speed up loading...
 
 
 def init_model(engine):
     """Call me before using any of the tables or classes in the model."""
-    sm = sessionmaker(autoflush=True, transactional=True, bind=engine)
+    sm = sessionmaker(autoflush=True,
+                      bind=engine,
+                      expire_on_commit=False,
+                      extension=ZopeTransactionExtension())
 
     meta.engine = engine
     meta.Session = scoped_session(sm)
-
 
 
 users_table = Table("users", metadata,

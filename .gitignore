@@ -6,7 +6,7 @@
 # Database
 server/sflvault.sqlite*
 sflvault.sqlite
-
+*.db
 # Ignore eggs
 build
 dist
@@ -24,6 +24,9 @@ docs/*.html
 # Pip stufff
 pip-log.txt
 
+#log stuff
+*.log
+
 # virtualenv link (to be activated with . env/bin/activate)
 env
 
@@ -40,13 +43,18 @@ test-suite.xml
 server/test-config.bak
 tests/host.*
 tests/testconfig
+last_env*
+tests/sandbox
+tests/htmlcov
+test-config-user
 
 # SSL certs
 server/host.cert
 server/host.key
 server/host.pem
 
-
+#ignore vim swap files
+*.sql
 # Debian generated files
 /sflvault-*.deb
 /sflvault-*.changes

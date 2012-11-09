@@ -1,0 +1,7 @@
+setuptools
+SQLAlchemy>=0.5.1
+transaction
+zope.interface
+
+[test]
+pysqlite
