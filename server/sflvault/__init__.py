@@ -32,7 +32,8 @@ def main(global_config, **settings):
     from pyramid.config import Configurator
     from sqlalchemy import engine_from_config
     #from controller.xmlrpc import SflVaultController
-    from sflvault.model import init_model, model
+    from sflvault import model
+    from sflvault.model import init_model
     from datetime import datetime, timedelta
     from pyramid_rpc.xmlrpc import xmlrpc_endpoint
     import transaction

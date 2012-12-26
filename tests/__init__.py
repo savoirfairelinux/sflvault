@@ -70,9 +70,6 @@ def setUp():
 class BaseTestCase(TestCase):
     url = 'https://localhost:5767/vault/rpc'
 
-    def __init__(self, *args, **kwargs):
-        TestCase.__init__(self, *args, **kwargs)
-
     def getVault(self):
         """Get the SFLVault server vault"""
         global vault
