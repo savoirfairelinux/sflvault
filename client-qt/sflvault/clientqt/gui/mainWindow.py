@@ -378,11 +378,12 @@ class MainWindow(QtGui.QMainWindow):
             command = unicode(self.settings.value("protocols/" + protocol + "/command").toString())
             args = args % options
             print " ".join([command, args])
-            args = [QtCore.QString(arg) for arg in args.split(" ")]
+            args = [QtCore.QString(arg) for arg in shlex.split(args)]
             args_list = QtCore.QStringList(args)
-             
+            
             # Exit if command is empty (to prevent segfault. See bug #4)
-            if command.strip() == "": return
+            if command.strip() == "":
+                return
             # Launch process
             self.procxterm = QtCore.QProcess()
             self.procxterm.start(command, args_list)
