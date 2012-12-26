@@ -23,8 +23,8 @@
 
 from Crypto.PublicKey import ElGamal
 from Crypto.Cipher import AES, Blowfish
-from Crypto.Util import randpool
 from Crypto.Util.number import long_to_bytes, bytes_to_long
+from Crypto import Random
 from base64 import b64decode, b64encode
 import random
 import os
@@ -33,10 +33,8 @@ from zlib import crc32 # Also available in binascii
 #
 # Random number generators setup
 #
-pool = randpool.RandomPool()
-pool.stir()
-pool.randomize()
-randfunc = pool.get_bytes # We'll use this func for most of the random stuff
+pool = Random.new()
+randfunc = pool.read # We'll use this func for most of the random stuff
 
 
 #
