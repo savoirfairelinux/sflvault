@@ -21,18 +21,21 @@
 
 __import__('pkg_resources').declare_namespace(__name__)
 import logging
-from pyramid.config import Configurator
-from sqlalchemy import engine_from_config
-#from controller.xmlrpc import SflVaultController
-from sflvault.model import *
-from datetime import datetime, timedelta
-from pyramid_rpc.xmlrpc import xmlrpc_endpoint
-import transaction
 log = logging.getLogger(__name__)
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
+    # We import in the main() function to avoid messing with namespace mechanism. We have to avoid
+    # any code/import other than the declare_namespace() in a namespace pkg's init. See
+    # http://packages.python.org/distribute/setuptools.html#namespace-packages
+    from pyramid.config import Configurator
+    from sqlalchemy import engine_from_config
+    #from controller.xmlrpc import SflVaultController
+    from sflvault.model import init_model, model
+    from datetime import datetime, timedelta
+    from pyramid_rpc.xmlrpc import xmlrpc_endpoint
+    import transaction
     print "Global config: %s " % global_config
     print "settings: %s" % settings
     engine = engine_from_config(settings, 'sqlalchemy.')

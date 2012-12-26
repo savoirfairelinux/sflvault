@@ -44,7 +44,8 @@ setup(
                      ([] if platform.system() == 'Windows'
                          else ["urwid>=0.9.8.1",
                                "pexpect>=2.3"]),
-    packages=find_packages(exclude=['ez_setup']),
+    packages=find_packages(),
+    namespace_packages=['sflvault'],
     include_package_data=True,
     test_suite='nose.collector',
     package_data={'sflvault': ['i18n/*/LC_MESSAGES/*.mo']},

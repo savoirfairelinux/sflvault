@@ -37,7 +37,8 @@ setup(
     license='GPLv3',
     install_requires=["pycrypto",
                       ],
-    packages=find_packages(exclude=['ez_setup']),
+    packages=find_packages(),
+    namespace_packages=['sflvault'],
     test_suite='nose.collector',
     entry_points=""" """,
 )
