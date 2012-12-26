@@ -58,9 +58,6 @@ confile = os.path.join(conf_dir, 'test-config')
 userconfile = os.path.join(conf_dir, 'test-config-user')
 test_file = os.path.join(conf_dir, 'test.ini')
 globs = {}
-vault = None
-
-
 
 def tearDown():
     """Close the SFLVault server"""
@@ -74,20 +71,18 @@ def getConfFileAdmin():
 
 
 def setUp():
+    """Setup the temporary SFLvault server"""
     # Remove the test database on each run.
     if os.path.exists(dbfile):
         os.unlink(dbfile)
     # Remove the test config on each run
     if os.path.exists(confile):
         os.unlink(confile)
-    """Setup the temporary SFLvault server"""
+    os.environ['SFLVAULT_IN_TEST'] = 'true'
     wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
     app = paste.fixture.TestApp(wsgiapp)
-    server = serve(wsgiapp, 'localhost', '6555',
-                   socket_timeout=1, start_loop=False,
-                   use_threadpool=True,
-                   threadpool_workers=40,
-                   )
+    server = serve(wsgiapp, 'localhost', '6555', socket_timeout=1, start_loop=False,
+        use_threadpool=True, threadpool_workers=40)
     globs['server'] = server
     t = threading.Thread(target=server.serve_forever)
     t.setDaemon(True)
@@ -106,8 +101,8 @@ class TestController(TestCase):
         
 
     def getVault(self):
-        if not globs.has_key('vault'):
-
+        """Get the SFLVault server vault"""
+        if 'vault' not in globs:
             globs['vault'] = SFLvaultClient(getConfFileAdmin(), shell=True)
             passphrase = u'test'
             username = u'admin'    
@@ -116,11 +111,9 @@ class TestController(TestCase):
                 return passphrase        
             globs['vault'].set_getpassfunc(givepass)
             log.warn("testing user setup")
-            globs['vault'].user_setup(username, 
-                                            'http://localhost:6555/vault/rpc', 
-                                            passphrase)
+            globs['vault'].user_setup(username,
+                'http://localhost:6555/vault/rpc', passphrase)
             globs['cfg'] = globs['vault'].cfg
-        """Get the SFLVault server vault"""
         return globs['vault']
 
     
