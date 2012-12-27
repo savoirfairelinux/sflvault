@@ -438,11 +438,12 @@ class SFLvaultAccess(object):
 
         def set_service(subsubout, s):
             "Subfunc of search"
-            subsubout[str(s.services_id)] = {'url': s.services_url,
-                         'parent_service_id': s.services_parent_service_id \
-                                              or '',
-                         'metadata': s.services_metadata or '',
-                         'notes': s.services_notes or ''}
+            subsubout[str(s.services_id)] = {
+                'url': s.services_url or '',
+                'parent_service_id': s.services_parent_service_id or '',
+                'metadata': s.services_metadata or '',
+                'notes': s.services_notes or '',
+            }
 
         out = {}
         # Loop services, setup machines and customers first.

@@ -29,16 +29,13 @@ README = open(os.path.join(here, 'README.txt')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
-    'pyramid==1.1.2',
+    'pyramid==1.2.7',
     'SQLAlchemy',
     'transaction',
     'repoze.tm2>=1.0b1', # default_commit_veto
     'zope.sqlalchemy',
     'WebError',
     ]
-
-if sys.version_info[:3] < (2,5,0):
-    requires.append('pysqlite')
 
 setup(name='SFLvault-server',
       version='0.8.0.0',
@@ -58,7 +55,6 @@ setup(name='SFLvault-server',
       namespace_packages=['sflvault'],
       include_package_data=True,
       zip_safe=False,
-      #test_suite='nose.collector',
       package_data={'sflvault': ['i18n/*/LC_MESSAGES/*.mo']},
       test_suite='sflvault',
       install_requires = requires,
@@ -67,5 +63,5 @@ setup(name='SFLvault-server',
       main = sflvault:main
       """,
       paster_plugins=['pyramid'],
-      )
+)
 

@@ -76,8 +76,8 @@ class BaseTestCase(TestCase):
         if vault is None:
             vault = SFLvaultClient(os.environ['SFLVAULT_CONFIG'],
                                                   shell=True)
-            vault.passphrase = 'test'
-            vault.username = 'admin'    
+            vault.passphrase = u'test'
+            vault.username = u'admin'    
 
             def givepass():
                 return vault.passphrase        
