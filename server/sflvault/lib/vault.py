@@ -1001,14 +1001,17 @@ class SFLvaultAccess(object):
         servs_ids = [s.id for s in servs]
 
         # Make sure no service is child of this one
-        childs = query(model.Service) \
-                     .filter(model.Service.parent_service_id.in_(servs_ids))\
-                     .all()
+        if servs_ids:
+            childs = query(model.Service) \
+                .filter(model.Service.parent_service_id.in_(servs_ids))\
+                .all()
+        else:
+            childs = []
 
         # Don't bother for parents/childs if we're going to delete it anyway.
         remnants = list(set(childs).difference(set(servs)))
 
-        if len(remnants):
+        if remnants:
             # There are still some childs left, we can't delete this one.
             retval = []
             for x in remnants:
@@ -1018,25 +1021,31 @@ class SFLvaultAccess(object):
                             {'childs': retval})
 
         # Delete all related groupciphers
-        query(model.ServiceGroup).filter(model.ServiceGroup.service_id.in_(servs_ids)).delete(synchronize_session=False)
+        if servs_ids:
+            query(model.ServiceGroup)\
+                .filter(model.ServiceGroup.service_id.in_(servs_ids))\
+                .delete(synchronize_session=False)
         # Delete the services related to customer_id's machines
-#        d2 = sql.delete(model.services_table) \
-#                .where(model.services_table.c.id.in_(servs_ids))
-        query(Service).filter(model.Service.id.in_(servs_ids)).delete(synchronize_session=False)
+        # d2 = sql.delete(model.services_table) \
+        #        .where(model.services_table.c.id.in_(servs_ids))
+        # query(Service).filter(model.Service.id.in_(servs_ids)).delete(synchronize_session=False)
         # Delete the machines related to customer_id
         mach_ids = [m.id for m in cust.machines]
-#        d3 = sql.delete(model.machines_table) \
-#                .where(model.machines_table.c.id.in_(mach_ids))
-        query(model.Machine).filter(model.Machine.id.in_(mach_ids)).delete(synchronize_session=False)
+        # d3 = sql.delete(model.machines_table) \
+        #        .where(model.machines_table.c.id.in_(mach_ids))
+        if mach_ids:
+            query(model.Machine)\
+                .filter(model.Machine.id.in_(mach_ids))\
+                .delete(synchronize_session=False)
         # Delete the customer
-#        d4 = sql.delete(model.customers_table) \
-#                .where(model.customers_table.c.id == customer_id)
-#
+        # d4 = sql.delete(model.customers_table) \
+        #        .where(model.customers_table.c.id == customer_id)
+
         query(model.Customer).filter(model.Customer.id==customer_id).delete(synchronize_session=False)
-#        meta.Session.execute(d)
-#        meta.Session.execute(d2)
-#        meta.Session.execute(d3)
-#        meta.Session.execute(d4)
+        # meta.Session.execute(d)
+        # meta.Session.execute(d2)
+        # meta.Session.execute(d3)
+        # meta.Session.execute(d4)
 
         transaction.commit()
 
@@ -1059,9 +1068,12 @@ class SFLvaultAccess(object):
         servs_ids = [s.id for s in servs]
 
         # Make sure no service is child of this one
-        childs = query(model.Service) \
-                     .filter(model.Service.parent_service_id.in_(servs_ids))\
-                     .all()
+        if servs_ids:
+            childs = query(model.Service) \
+                .filter(model.Service.parent_service_id.in_(servs_ids))\
+                .all()
+        else:
+            childs = []
 
         # Don't bother for parents/childs if we're going to delete it anyway.
         remnants = list(set(childs).difference(set(servs)))
@@ -1074,8 +1086,14 @@ class SFLvaultAccess(object):
 
             return vaultMsg(False, "Services still child of this machine's services",
                             {'childs': retval})
-        query(model.ServiceGroup).filter(model.ServiceGroup.service_id.in_(servs_ids)).delete(synchronize_session=False)
-        query(model.Service).filter(model.Service.id.in_(servs_ids)).delete(synchronize_session=False)
+
+        if servs_ids:
+            query(model.ServiceGroup)\
+                .filter(model.ServiceGroup.service_id.in_(servs_ids))\
+                .delete(synchronize_session=False)
+            query(model.Service)\
+                .filter(model.Service.id.in_(servs_ids))\
+                .delete(synchronize_session=False)
         query(model.Machine).filter(model.Machine.id==machine_id).delete(synchronize_session=False)
         # Delete all related groupciphers
 #        raise Exception
