@@ -31,20 +31,11 @@ setup-app) with the project's test.ini configuration file.
 """
 import os
 import sys
-import time
 from unittest import TestCase
 
 import pkg_resources
-import paste.fixture
-import paste.script.appinstall
-from paste.deploy import loadapp
-from ConfigParser import ConfigParser
-from paste.httpserver import serve
-import threading
 
-from pyramid import config
 from sflvault.client import SFLvaultClient
-from sflvault.lib.vault import SFLvaultAccess
 
 __all__ = ['BaseTestCase', 'SFLvaultClient', 'vault']
 
