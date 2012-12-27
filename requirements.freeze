@@ -16,7 +16,6 @@ pycrypto==2.3
 pyramid==1.4
 repoze.lru==0.6
 repoze.tm2==1.0b2
-simplejson==2.1.6
 transaction==1.1.1
 translationstring==1.1
 urwid==0.9.9.2

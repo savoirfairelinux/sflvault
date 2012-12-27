@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import simplejson
+import json
 
 from sqlalchemy import types
 
@@ -36,11 +36,11 @@ class JSONEncodedDict(types.TypeDecorator):
 
     def process_bind_param(self, value, dialect):
         if value is not None:
-            value = simplejson.dumps(value)
+            value = json.dumps(value)
         return value
 
     def process_result_value(self, value, dialect):
-        return simplejson.loads(value) if value else {}
+        return json.loads(value) if value else {}
 
     def copy_value(self, value):
-        return simplejson.loads(simplejson.dumps(value))
+        return json.loads(simplejson.dumps(value))
