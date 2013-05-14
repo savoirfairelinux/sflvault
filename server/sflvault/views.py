@@ -351,8 +351,9 @@ def sflvault_group_add(request, authtok, group_name):
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_del')
 @authenticated_admin
-def sflvault_group_del(request, authtok, group_id):
-    return vault.group_del(group_id)
+def sflvault_group_del(request, authtok, group_id, delete_cascade):
+    return vault.group_del(group_id,
+                           delete_cascade=delete_cascade)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_add_service')
 @authenticated_user

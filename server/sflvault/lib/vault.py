@@ -728,9 +728,13 @@ class SFLvaultAccess(object):
                         {'name': name, 'group_id': int(gid),
                          'cryptgroupkey': key})
 
-    def group_del(self, group_id):
+    def group_del(self, group_id, delete_cascade=True):
         """Remove a group from the vault. Only if no services are associated
-        with it anymore."""
+        with it anymore.
+
+        :force_delete deletes a group even if it has services associated
+
+        """
         transaction.begin()
         grp = query(Group).options(eagerload('services_assoc')).filter_by(id=int(group_id)).first()
 
@@ -738,7 +742,11 @@ class SFLvaultAccess(object):
             return vaultMsg(False, "Group not found: %s" % (group_id,))
 
         if len(grp.services_assoc):
-            return vaultMsg(False, "Group not empty, cannot delete")
+            if not delete_cascade:
+                return vaultMsg(False, "Group not empty, cannot delete")
+            else:
+                for service in grp.services_assoc:
+                    self.service_del(service.id)
 
         # Delete UserGroup elements...
         q1 = usergroups_table.delete(UserGroup.group_id==grp.id)

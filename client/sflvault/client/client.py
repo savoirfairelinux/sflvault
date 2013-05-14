@@ -1144,10 +1144,10 @@ class SFLvaultClient(object):
 
 
     @authenticate()
-    def group_del(self, group_id):
+    def group_del(self, group_id, delete_cascade=False):
         """Remove a group from the Vault, making sure no services are left
         behind."""
-        retval = vaultReply(self.vault.group_del(self.authtok, group_id),
+        retval = vaultReply(self.vault.group_del(self.authtok, group_id, delete_cascade),
                             "Error removing group")
 
         print "Success: %s" % retval['message']
