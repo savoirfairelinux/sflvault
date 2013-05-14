@@ -20,9 +20,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from sflvault.tests import TestController
+
 from sflvault.common.crypto import *
+from sflvault.common import VaultError
+
 from sflvault.client.client import authenticate
 from sflvault.client.client import SFLvaultConfig, SFLvaultClient
+
 import logging
 import random
 
@@ -120,6 +124,25 @@ class TestVaultController(TestController):
         """testing add a new group to the vault"""
         gres = self.vault.group_add("test_group")
         self.assertTrue(int(gres['group_id']) > 0)
+
+    def test_group_put_invalid(self):
+        try:
+            response = self.vault.group_put("invalid id", {'name': 'invalid param' })
+        except VaultError, e:
+            ## Should extract messages to be able to test them
+            self.assertTrue(True)
+
+    def test_group_put_name(self):
+        response = self.vault.group_add("other_test_group")
+        group_id = response['group_id']
+        response2 = self.vault.group_put(group_id, {'name': 'other_test_group_changed'})
+        self.assertFalse(response2['error'])
+
+    def test_group_put_hidden(self):
+        response = self.vault.group_add("other_test_group")
+        group_id = response['group_id']
+        response2 = self.vault.group_put(group_id, {'hidden': True})
+        self.assertFalse(response2['error'])
 
     def test_add_user_and_user_setup(self):
         """testing add a user to the vault and setup passphrase"""
