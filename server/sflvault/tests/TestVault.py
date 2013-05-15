@@ -138,6 +138,9 @@ class TestVaultController(TestController):
         response2 = self.vault.group_put(group_id, {'name': 'other_test_group_changed'})
         self.assertFalse(response2['error'])
 
+        response3 = self.vault.group_get(group_id)
+        self.assertEquals(response3['name'], 'other_test_group_changed')
+
     def test_group_put_hidden(self):
         response = self.vault.group_add("other_test_group")
         group_id = response['group_id']
