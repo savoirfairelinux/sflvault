@@ -311,6 +311,22 @@ class TestVaultController(TestController):
         udres = self.vault.group_del_user(gcres['group_id'], 'testuser2')
         self.assertTrue("Removed user from group successfully" in udres['message'])
 
+    def test_user_list(self):
+        response = self.vault.user_list()
+        self.assertFalse(response['error'])
+        self.assertTrue(len(response['list']) == 1)
+        
+        admin = response['list'][0]
+        self.assertEquals(admin['username'], 'admin')
+        self.assertFalse(admin['setup_expired'])
+        self.assertFalse(admin['waiting_setup'])
+        self.assertTrue('created_stamp' in admin)
+        self.assertTrue(admin['is_admin'])
+        self.assertEquals(admin['id'], 1)
+
+        
+
+
 #    def test_group_del_service(self):
 #        """testing delete a service from a group from the vault"""
 #        self.assertTrue(False)
