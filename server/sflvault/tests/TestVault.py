@@ -360,12 +360,23 @@ class TestVaultController(TestController):
 
         #self.assertRaises(VaultError, self.vault.service_get(response2['service_id'],
         #                                                     group_id='invalid'))
-            
+
         
-    
-            
+    def test_service_put(self):
+        response = self._add_new_service()
+        my_note = 'new notes'
+        my_url = 'http://sflphone.org'
+        service_data = {'notes': my_note,
+                        'url': my_url }
 
+        response2 = self.vault.service_put(response['service_id'],
+                                           service_data)
+        self.assertFalse(response2['error'])
 
-#    def test_group_del_service(self):
-#        """testing delete a service from a group from the vault"""
-#        self.assertTrue(False)
+        response3 = self.vault.service_get(response['service_id'])
+
+        self.assertEquals(response3['notes'], my_note)
+        self.assertEquals(response3['url'], my_url)
+        self.assertEquals(response3['id'], response['service_id'])
+        
+
