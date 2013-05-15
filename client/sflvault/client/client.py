@@ -854,10 +854,16 @@ class SFLvaultClient(object):
 
 
     @authenticate(True)
-    def service_get(self, service_id, decrypt=True):
+    def service_get(self, service_id, decrypt=True, group_id=None):
         """Get information to be edited"""
-        retval = vaultReply(self.vault.service_get(self.authtok, service_id),
-                            "Error fetching data for service %s" % service_id)
+        if group_id:
+            retval = vaultReply(self.vault.service_get(self.authtok,
+                                                       service_id,
+                                                       group_id),
+                                "Error fetching data for service %s" % service_id)
+        else:
+            retval = vaultReply(self.vault.service_get(self.authtok, service_id),
+                                "Error fetching data for service %s" % service_id)
 
         serv = retval['service']
         # Decrypt secret
