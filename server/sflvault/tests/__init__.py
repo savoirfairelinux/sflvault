@@ -105,6 +105,19 @@ def delete_all_users(self):
             print "*** Deleting user: %s" % user['id']
             self.user_del(user['username'])
 
+def delete_all_machines(self):
+    vault_response = self.machine_list()
+    for machine in vault_response['list']:
+        print "*** Deleting machine: %s" % machine['id']
+        self.machine_del(machine['id'])
+
+def delete_all_customers(self):
+    vault_response = self.customer_list()
+    for customer in vault_response['list']:
+        print "*** Deleting customer: %s" % customer['id']
+        self.customer_del(customer['id'])
+
+
 class TestController(TestCase):
 
     def __init__(self, *args, **kwargs):
@@ -118,12 +131,16 @@ class TestController(TestCase):
     def tearDown(self):
         globs['vault'].delete_all_groups()
         globs['vault'].delete_all_users()
+        globs['vault'].delete_all_machines()
+        globs['vault'].delete_all_customers()
 
     def getVault(self):
         """Get the SFLVault server vault"""
         if 'vault' not in globs:
             SFLvaultClient.delete_all_groups = delete_all_groups
             SFLvaultClient.delete_all_users = delete_all_users
+            SFLvaultClient.delete_all_machines = delete_all_machines
+            SFLvaultClient.delete_all_customers = delete_all_customers
 
             vault =  SFLvaultClient(getConfFileAdmin(), shell=True)
 
