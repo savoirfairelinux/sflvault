@@ -411,6 +411,7 @@ def get_session(authtok, request):
         raise SessionNotFoundError
         return None
 
+    # XXX: where does the SESSION_TIMEOUT come from?
     if not vaultSessions[authtok].has_key('timeout'):
         vaultSessions[authtok]['timeout'] = datetime.now() + timedelta(0, SESSION_TIMEOUT)
 
