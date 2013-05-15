@@ -364,7 +364,39 @@ class TestVaultController(TestController):
         #self.assertRaises(VaultError, self.vault.service_get(response2['service_id'],
         #                                                     group_id='invalid'))
 
+    def test_customer_put_and_get(self):
+        response = self._add_new_customer()
+        response2 = self.vault.customer_put(response['customer_id'],
+                                      {'name': 'dcormier' })
+        response3 = self.vault.customer_get(response['customer_id'])
+
+        self.assertEquals(response3['id'],
+                          response['customer_id'])
+
+        self.assertEquals(response3['name'],
+                          'dcormier')
+
+
+    def test_machine_put_and_get(self):
+        response = self._add_new_machine()
+        self.assertFalse(response['error'])
         
+        machine_data = { 'ip': '127.0.0.1',
+                         'name': 'sflvault',
+                         'fqdn': 'sflvault',
+                         'location': 'sfl',
+                         'notes': 'super machine' }
+
+        response2 = self.vault.machine_put(response['machine_id'],
+                                           machine_data)
+
+        machine = self.vault.machine_get(response['machine_id'])
+        self.assertEquals(machine['ip'], '127.0.0.1')
+        self.assertEquals(machine['name'], 'sflvault')
+        self.assertEquals(machine['fqdn'], 'sflvault')
+        self.assertEquals(machine['location'], 'sfl')
+        self.assertEquals(machine['notes'], 'super machine')
+    
     def test_service_put(self):
         response = self._add_new_service()
         my_note = 'new notes'
@@ -382,4 +414,5 @@ class TestVaultController(TestController):
         self.assertEquals(response3['url'], my_url)
         self.assertEquals(response3['id'], response['service_id'])
         
+
 
