@@ -324,7 +324,32 @@ class TestVaultController(TestController):
         self.assertTrue(admin['is_admin'])
         self.assertEquals(admin['id'], 1)
 
+    def test_service_get_invalid_service(self):
+        # Try to get a service that we are sure doesn't
+        # exist
+        from sflvault.common import VaultError
+
+        try:
+            response = self.vault.service_get(100)
+        except Exception, e:
+            self.assertTrue(True)
+
+        # Adds a service and retrieves it
+        response2 = self._add_new_service()
+        response3 = self.vault.service_get(response2['service_id'])
+        self.assertEquals(response3['id'], 1)
         
+        # We shouldn't be able to retrieve this service
+        # for a group it is not tied to.
+
+        # FIXME: there is no way to pass group_id in vault.py
+
+        #self.assertRaises(VaultError, self.vault.service_get(response2['service_id'],
+        #                                                     group_id='invalid'))
+            
+        
+    
+            
 
 
 #    def test_group_del_service(self):
