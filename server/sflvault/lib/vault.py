@@ -41,6 +41,9 @@ from sqlalchemy.orm import eagerload_all
 
 from sflvault import model
 from sflvault.model import *
+from sflvault.common import VaultError
+
+
 from datetime import timedelta
 import logging
 import transaction
