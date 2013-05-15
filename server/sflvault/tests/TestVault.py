@@ -324,6 +324,20 @@ class TestVaultController(TestController):
         self.assertTrue(admin['is_admin'])
         self.assertEquals(admin['id'], 1)
 
+        # there is initially only one user
+        response = self.vault.user_list()
+        self.assertFalse(response['error'])
+        self.assertEquals(len(response['list']), 1)
+
+        response2 = self.vault.user_add('dcormier')
+        self.assertFalse(response2['error'])
+
+        # there should now be two users        
+        response3 = self.vault.user_list()
+        self.assertFalse(response3['error'])
+        self.assertEquals(len(response3['list']), 2)
+
+
     def test_service_get_invalid_service(self):
         # Try to get a service that we are sure doesn't
         # exist
@@ -337,7 +351,7 @@ class TestVaultController(TestController):
         # Adds a service and retrieves it
         response2 = self._add_new_service()
         response3 = self.vault.service_get(response2['service_id'])
-        self.assertEquals(response3['id'], 1)
+        self.assertEquals(response3['id'], response2['service_id'])
         
         # We shouldn't be able to retrieve this service
         # for a group it is not tied to.
