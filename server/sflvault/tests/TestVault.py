@@ -115,7 +115,7 @@ class TestVaultController(TestController):
 
     def test_user_add(self):
         """testing add a new user to the vault"""
-        ures = self.vault.user_add("test_username")
+        ures = self.vault.user_add("test_username", False)
         self.assertTrue("User added" in ures['message'])
         ures = self.vault.user_add("test_admin", True)
         self.assertTrue("Admin user added" in ures['message'])
@@ -148,7 +148,7 @@ class TestVaultController(TestController):
         """testing add a user to the vault and setup passphrase"""
         def givepass():
                 return 'passphrase'
-        ures1 = self.vault.user_add('testuser')
+        ures1 = self.vault.user_add('testuser', False)
         self.assertTrue(ures1 is not None)
         tmp_vault = SFLvaultClient(self.getConfFileUser(), shell=True)
         ures2 = tmp_vault.user_setup('testuser',
@@ -178,6 +178,18 @@ class TestVaultController(TestController):
 
         self.assertTrue("Added user to group successfully" in gares1['message'])
         self.assertFalse("Error adding user to group" in gares2['message'])
+    
+    def test_group_list(self):
+        response = self.vault.group_list()
+        self.assertTrue(len(response['list']) == 0)
+        self.vault.group_add('test')
+        response2 = self.vault.group_list()
+        group_list = response2['list']
+        self.assertTrue(len(group_list) == 1)
+        self.assertTrue(group_list[0]['id'] == 1)
+        self.assertTrue(group_list[0]['name'] == 'test')
+
+        self.assertFalse(response['error'])
 
     def test_group_add_service(self):
         """testing add a service to a group to the vault"""

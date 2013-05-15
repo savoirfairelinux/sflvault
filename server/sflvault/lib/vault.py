@@ -747,6 +747,7 @@ class SFLvaultAccess(object):
             else:
                 for service in grp.services_assoc:
                     self.service_del(service.id)
+                    
 
         # Delete UserGroup elements...
         q1 = usergroups_table.delete(UserGroup.group_id==grp.id)
@@ -764,6 +765,9 @@ class SFLvaultAccess(object):
 
     def group_list(self, show_hidden=False, list_users=False):
         """Return a simple list of the available groups"""
+        # FIXME: list_users is not used
+        # FIXME: show_hidden is not used
+
         groups = query(Group).options(eagerload_all('users_assoc.user')).all()
         me = query(User).get(self.myself_id)
 
