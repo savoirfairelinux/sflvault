@@ -459,8 +459,6 @@ class TestVaultController(TestController):
         self.assertEquals(len(customer_list), 2)
         self.assertEquals(customer_list[0]['name'], 'dcormier')
         self.assertEquals(customer_list[1]['name'], 'dcormier2')
-        
-
     def test_machine_list(self):
         machine1 = self._add_new_machine()
         machine2 = self._add_new_machine()
