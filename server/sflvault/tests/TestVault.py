@@ -414,5 +414,98 @@ class TestVaultController(TestController):
         self.assertEquals(response3['url'], my_url)
         self.assertEquals(response3['id'], response['service_id'])
         
+    def test_group_del_service(self):
+        group = self._add_new_group()
+        service = self._add_new_service()
+        
+        # there should not be any association between the group and the
+        # service
+        service_get = self.vault.service_get(service['service_id'],
+                                             group_id=group['group_id'])
 
+
+        self.assertTrue(service_get['group_id'] == '')
+
+
+        # We add the service to the group
+        group_add_service = self.vault.group_add_service(group['group_id'],
+                                                         service['service_id'])
+        self.assertFalse(group_add_service['error'])
+
+        # The service should now be part of the group
+        service_get2 = self.vault.service_get(service['service_id'])
+
+        
+
+        self.assertTrue(group['group_id'] == service_get2['group_id'])
+
+        # And then we remove it
+        service_del = self.vault.group_del_service(group['group_id'],
+                                                   service['service_id'])
+
+        # It should not be there anymore
+        service_get3 = self.vault.service_get(service['service_id'])
+        self.assertTrue(service_get['group_id'] == '')
+
+
+    def test_customer_list(self):
+        # FIXME: remove customer_id from client.py
+
+        customer_add = self.vault.customer_add('dcormier')
+        customer_add2 = self.vault.customer_add('dcormier2')
+        self.assertFalse(customer_add['error'] or customer_add2['error'])
+
+        customer_list = self.vault.customer_list()['list']
+        self.assertEquals(len(customer_list), 2)
+        self.assertEquals(customer_list[0]['name'], 'dcormier')
+        self.assertEquals(customer_list[1]['name'], 'dcormier2')
+        
+
+    def test_machine_list(self):
+        machine1 = self._add_new_machine()
+        machine2 = self._add_new_machine()
+        
+        machine_list_response = self.vault.machine_list()
+        self.assertFalse(machine_list_response['error'])
+        
+        machine_list = machine_list_response['list']
+        self.assertEquals(len(machine_list), 2)
+
+
+    def test_machine_list_of_customer(self):
+
+        # adds a customer and a machine
+        customer = self.vault.customer_add('dcormier')
+        machine1 = self._add_new_machine()
+
+        # customer should not have any machine
+        machine_list_response = self.vault.machine_list(customer_id=customer['customer_id'])
+        machine_list = machine_list_response['list']
+        self.assertEquals(len(machine_list), 0)
+
+        # changes the owner of the machine to the previously added customer
+        machine_put = self.vault.machine_put(machine1['machine_id'],
+                                             {'customer_id': customer['customer_id']})
+
+        self.assertFalse(machine_put['error'])
+        
+        # customer should now have one machine
+        machine_list_response2 = self.vault.machine_list(customer_id=customer['customer_id'])
+        machine_list2 = machine_list_response2['list']
+        self.assertEquals(len(machine_list2), 1)
+        self.assertEquals(machine_list2[0]['customer_id'],
+                          customer['customer_id'])
+
+        # let's change the owner again to an invalid customer
+        machine_put2 = self.vault.machine_put(machine1['machine_id'],
+                                              {'customer_id': 37})
+
+        self.assertFalse(machine_put2['error'])
+
+        # our previous customer should not have any machine
+        machine_list_response3 = self.vault.machine_list(
+            customer_id=customer['customer_id'])
+
+        machine_list3 = machine_list_response3['list']
+        self.assertEquals(len(machine_list3), 0)
 
