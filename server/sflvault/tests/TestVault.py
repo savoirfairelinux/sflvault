@@ -268,6 +268,34 @@ class TestVaultController(TestController):
         dres = self.vault.group_del(cres['group_id'])
         self.assertTrue(dres is not None)
 
+    def test_group_del_cascade(self):
+        """ Tests deleting a group and all it's services """
+        response = self.vault.group_add('test group')
+        self.assertFalse(response['error'])
+        response2 = self._add_new_service()
+        self.assertFalse(response2['error'])
+        response3 = self.vault.group_add_service(response['group_id'], 
+                                                 response2['service_id'])
+        self.assertFalse(response3['error'])
+        response4 = self.vault.group_del(response['group_id'],
+                                         delete_cascade=True)
+        self.assertFalse(response4['error'])
+        try:
+            self.vault.service_get(response2['service_id'])
+        except Exception, e:
+            self.assertTrue(True)
+
+    def test_group_del_cascade_error(self):
+        response = self.vault.group_add('test group')
+        response2 = self._add_new_service()
+        self.assertFalse(response['error'] or response2['error'])
+        response3 = self.vault.group_add_service(response['group_id'],
+                                                 response2['service_id'])
+        try:
+            response4 = self.vault.group_del(response['group_id'])
+        except Exception, e:
+            self.assertTrue(True)
+
     def test_group_del_user(self):
         """testing delete a user from a group from the vault"""
         #Add test user
