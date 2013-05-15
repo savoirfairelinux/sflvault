@@ -97,6 +97,13 @@ def delete_all_groups(self):
         delete_cascade = True
         self.group_del(group['id'], delete_cascade=True)
 
+def delete_all_users(self):
+    vault_response = self.user_list()
+    for user in vault_response['list']:
+
+        if not (user['username'] == 'admin'):
+            print "*** Deleting user: %s" % user['id']
+            self.user_del(user['username'])
 
 class TestController(TestCase):
 
@@ -110,11 +117,14 @@ class TestController(TestCase):
 
     def tearDown(self):
         globs['vault'].delete_all_groups()
+        globs['vault'].delete_all_users()
 
     def getVault(self):
         """Get the SFLVault server vault"""
         if 'vault' not in globs:
             SFLvaultClient.delete_all_groups = delete_all_groups
+            SFLvaultClient.delete_all_users = delete_all_users
+
             vault =  SFLvaultClient(getConfFileAdmin(), shell=True)
 
             globs['vault'] = vault
