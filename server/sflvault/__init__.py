@@ -20,7 +20,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __import__('pkg_resources').declare_namespace(__name__)
+
+import xmlrpclib
+import functools
 import logging
+
 log = logging.getLogger(__name__)
 
 def main(global_config, **settings):
@@ -29,6 +33,16 @@ def main(global_config, **settings):
     # We import in the main() function to avoid messing with namespace mechanism. We have to avoid
     # any code/import other than the declare_namespace() in a namespace pkg's init. See
     # http://packages.python.org/distribute/setuptools.html#namespace-packages
+
+    # Monkeypatches the xmlrpclib to set partial application of allow_none
+    #
+    # sflvault relies on a behaviour provided by an older version of pylons_xmlrpc
+    # that set the allow_none parameter by default. However, pyramid uses 
+    # the new pyramid_rpc module that doesn't set this parameter and does not provide
+    # any way of setting it manually.
+    #
+    xmlrpclib.dumps = functools.partial(xmlrpclib.dumps, allow_none=True)
+
     from pyramid.config import Configurator
     from sqlalchemy import engine_from_config
     #from controller.xmlrpc import SflVaultController
@@ -38,6 +52,7 @@ def main(global_config, **settings):
     import transaction
     print "Global config: %s " % global_config
     print "settings: %s" % settings
+
     engine = engine_from_config(settings, 'sqlalchemy.')
 #    initialize_sql(engine)
     config = Configurator(settings=settings)
