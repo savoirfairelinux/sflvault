@@ -160,6 +160,29 @@ class TestVaultController(TestController):
 
         self.assertTrue(ures2 is not None)
         
+
+    def test_user_setup_no_user(self):
+        tmp_vault = SFLvaultClient(self.getConfFileUser(), shell=True)
+
+        with self.assertRaises(VaultError):
+            tmp_vault.user_setup('invalid user',
+                                 'http://localhost:6555/vault/rpc',
+                                 'passphrase')
+   
+    def test_user_setup_expired(self):
+        import time
+
+        tmp_vault = SFLvaultClient(self.getConfFileUser(), shell=True)
+
+        self.vault.user_add('testuser', False)
+        time.sleep(5)
+
+        with self.assertRaises(VaultError):
+            tmp_vault.user_setup('testuser',
+                                 'http://localhost:6555/vault/rpc',
+                                 'passphrase')
+                                  
+
     def test_group_add_user(self):
         """testing add a user to a group to the vault"""
         ures1 = self.vault.user_add('test_add_user_group_vault')
