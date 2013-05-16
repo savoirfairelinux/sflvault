@@ -126,11 +126,11 @@ class TestVaultController(TestController):
         self.assertTrue(int(gres['group_id']) > 0)
 
     def test_group_put_invalid(self):
-        try:
-            response = self.vault.group_put("invalid id", {'name': 'invalid param' })
-        except VaultError, e:
-            ## Should extract messages to be able to test them
-            self.assertTrue(True)
+        self.assertRaises(VaultError,
+                          self.vault.group_put,
+                          "invalid id",
+                          {'name': 'invalid param' })
+
 
     def test_group_put_name(self):
         response = self.vault.group_add("other_test_group")
@@ -164,10 +164,11 @@ class TestVaultController(TestController):
     def test_user_setup_no_user(self):
         tmp_vault = SFLvaultClient(self.getConfFileUser(), shell=True)
 
-        with self.assertRaises(VaultError):
-            tmp_vault.user_setup('invalid user',
-                                 'http://localhost:6555/vault/rpc',
-                                 'passphrase')
+        self.assertRaises(VaultError,
+                          tmp_vault.user_setup,
+                          'invalid user',
+                          'http://localhost:6555/vault/rpc',
+                          'passphrase')
    
     def test_user_setup_expired(self):
         import time
@@ -177,11 +178,12 @@ class TestVaultController(TestController):
         self.vault.user_add('testuser', False)
         time.sleep(5)
 
-        with self.assertRaises(VaultError):
-            tmp_vault.user_setup('testuser',
-                                 'http://localhost:6555/vault/rpc',
-                                 'passphrase')
-                                  
+        self.assertRaises(VaultError,
+                          tmp_vault.user_setup,
+                          'testuser',
+                          'http://localhost:6555/vault/rpc',
+                          'passphrase')
+                                 
 
     def test_group_add_user(self):
         """testing add a user to a group to the vault"""
@@ -296,20 +298,26 @@ class TestVaultController(TestController):
 
     def test_group_del_cascade(self):
         """ Tests deleting a group and all it's services """
+
+        machine = self._add_new_machine()
         response = self.vault.group_add('test group')
         self.assertFalse(response['error'])
-        response2 = self._add_new_service()
+
+        response2 = self.vault.service_add(machine['machine_id'],
+                                          0,
+                                          'ssh://sflvault.org',
+                                          [response['group_id']],
+                                          'secret') 
+                                           
         self.assertFalse(response2['error'])
-        response3 = self.vault.group_add_service(response['group_id'], 
-                                                 response2['service_id'])
-        self.assertFalse(response3['error'])
+
         response4 = self.vault.group_del(response['group_id'],
                                          delete_cascade=True)
         self.assertFalse(response4['error'])
-        try:
-            self.vault.service_get(response2['service_id'])
-        except Exception, e:
-            self.assertTrue(True)
+
+        self.assertRaises(VaultError,
+                          self.vault.service_get,
+                          response2['service_id'])
 
     def test_group_del_cascade_error(self):
         response = self.vault.group_add('test group')
@@ -317,10 +325,10 @@ class TestVaultController(TestController):
         self.assertFalse(response['error'] or response2['error'])
         response3 = self.vault.group_add_service(response['group_id'],
                                                  response2['service_id'])
-        try:
-            response4 = self.vault.group_del(response['group_id'])
-        except Exception, e:
-            self.assertTrue(True)
+
+        self.assertRaises(VaultError,
+                          self.vault.group_del,
+                          response['group_id'])
 
     def test_group_del_user(self):
         """testing delete a user from a group from the vault"""
@@ -369,10 +377,9 @@ class TestVaultController(TestController):
         # exist
         from sflvault.common import VaultError
 
-        try:
-            response = self.vault.service_get(100)
-        except Exception, e:
-            self.assertTrue(True)
+        self.assertRaises(VaultError,
+                          self.vault.service_get,
+                          100)
 
         # Adds a service and retrieves it
         response2 = self._add_new_service()
