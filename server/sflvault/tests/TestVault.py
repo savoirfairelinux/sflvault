@@ -120,6 +120,33 @@ class TestVaultController(TestController):
         ures = self.vault.user_add("test_admin", True)
         self.assertTrue("Admin user added" in ures['message'])
 
+    def test_user_add_extend_expired_setup(self):
+        """ If a user is added, and setup_timeout expires, 
+        adding it again should extend the setup period"""
+
+        ures = self.vault.user_add("test_username", False)
+        self.assertTrue("User added" in ures['message'])
+        
+        # timeout
+        import time; time.sleep(2)
+
+        ures = self.vault.user_add("test_username", False)
+        self.assertTrue("had setup timeout expired" in ures['message'])
+
+        
+    def test_cannot_readd_user_before_expire(self):
+        """ If a user is added, user_add cannot be called agin
+        before the setup time expires """
+
+        ures = self.vault.user_add("test_username", False)
+        self.assertTrue("User added" in ures['message'])
+
+        self.assertRaises(VaultError,
+                          self.vault.user_add,
+                          "test_username",
+                          False)
+
+
     def test_group_add(self):
         """testing add a new group to the vault"""
         gres = self.vault.group_add("test_group")
