@@ -48,20 +48,27 @@ def main(global_config, **settings):
     #from controller.xmlrpc import SflVaultController
     from sflvault import model
     from sflvault.model import init_model
+    from sflvault.lib.vault import SFLvaultAccess
+
     from datetime import datetime, timedelta
     import transaction
     print "Global config: %s " % global_config
     print "settings: %s" % settings
 
+    # Configure the Pyramid app and SQL engine
     engine = engine_from_config(settings, 'sqlalchemy.')
-#    initialize_sql(engine)
     config = Configurator(settings=settings)
     config.include('pyramid_rpc.xmlrpc')
     config.add_xmlrpc_endpoint('sflvault', '/vault/rpc')
     config.scan('sflvault.views')
-#    config.add_view(SflVaultController,  route_name='xmlrpcvault')
-#    session_factory = session_factory_from_settings(settings)
-#    config.set_session_factory(session_factory)
+
+    # Configures the vault
+    if 'sflvault.vault.session_timeout' in settings:
+        SFLvaultAccess.session_timeout = settings['sflvault.vault.session_timeout']
+
+    if 'sflvault.vault.setup_timeout' in settings:
+        SFLvaultAccess.setup_timeout = settings['sflvault.vault.setup_timeout']
+
 
     init_model(engine)
     model.meta.metadata.create_all(engine)

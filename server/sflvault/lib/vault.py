@@ -69,8 +69,6 @@ class SFLvaultAccess(object):
         # using the Vault
         self.myself_username = None
 
-        self.setup_timeout = 300
-
     def _log_any(self, log_func, msg, data):
         # Need to do that for user-setup
         if self.myself_username == None and self.myself_id == None:
@@ -130,7 +128,7 @@ class SFLvaultAccess(object):
         if usr is None:
             # New user
             usr = User()
-            usr.waiting_setup =  datetime.now() + timedelta(0, int(self.setup_timeout))
+            usr.waiting_setup =  datetime.now() + timedelta(0, int(SFLvaultAccess.setup_timeout))
             usr.username = username
             usr.is_admin = bool(is_admin)
             usr.created_time = datetime.now()
