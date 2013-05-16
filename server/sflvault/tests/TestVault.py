@@ -334,6 +334,15 @@ class TestVaultController(TestController):
         dres = self.vault.user_del(u"Utilisateur de test")
         self.assertTrue(dres is not None)
 
+    def test_cannot_user_del_twice(self):
+        """ Cannot delete a user twice from the vault """
+        cres = self.vault.user_add(u"Utilisateur de test")
+        self.assertTrue(cres is not None)
+        dres = self.vault.user_del(u"Utilisateur de test")
+        self.assertRaises(VaultError,
+                          self.vault.user_del,
+                          u"Utilisateur de test")
+
     def test_group_del(self):
         """testing delete a group from the vault"""
         cres = self.vault.group_add('test group')
