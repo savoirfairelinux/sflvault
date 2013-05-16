@@ -540,6 +540,40 @@ class TestVaultController(TestController):
         service_get3 = self.vault.service_get(service['service_id'])
         self.assertTrue(service_get['group_id'] == '')
 
+    def test_service_get_tree(self):
+        """ tests that we can get a service and it's tree of parent / sub services"""
+        response = self._add_new_service()
+        response2 = self.vault.service_get_tree(response['service_id'])
+        self.assertEquals(len(response2), 1)
+
+
+    def test_service_get_tree_circular_reference_fail(self):
+        """ If there are circular references in service definitions,
+        service_get_tree should fail """
+        response = self._add_new_service()
+        response2 = self._add_new_service()
+
+        service_data = { 'parent_service_id': response2['service_id'] }
+        service2_data = { 'parent_service_id': response['service_id'] }
+
+        sput = self.vault.service_put(response['service_id'],
+                                      service_data)
+
+        sput2 = self.vault.service_put(response2['service_id'],
+                                      service2_data)
+
+        self.assertFalse(sput['error'] or sput2['error'])
+
+        # Now both services should get an error when we try to get them
+        self.assertRaises(VaultError,
+                          self.vault.service_get_tree,
+                          response['service_id'])
+
+        self.assertRaises(VaultError,
+                          self.vault.service_get_tree,
+                          response2['service_id'])
+                          
+
 
     def test_customer_list(self):
         # FIXME: remove customer_id from client.py
