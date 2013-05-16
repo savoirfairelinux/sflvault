@@ -498,6 +498,15 @@ class TestVaultController(TestController):
         self.assertEquals(response3['url'], my_url)
         self.assertEquals(response3['id'], response['service_id'])
         
+    def test_cannot_put_on_nonexistent_service(self):
+        """ Asserts that we cannot call service_put on 
+        a nonexistent service """
+        self.assertRaises(VaultError,
+                          self.vault.service_put,
+                          1,
+                          {'notes': 'my notes'})
+                          
+
     def test_group_del_service(self):
         group = self._add_new_group()
         service = self._add_new_service()
