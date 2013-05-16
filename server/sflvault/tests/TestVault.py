@@ -196,6 +196,24 @@ class TestVaultController(TestController):
                           'invalid user',
                           'http://localhost:6555/vault/rpc',
                           'passphrase')
+
+    def test_user_setup_already_has_public_key(self):
+        """ A user cannot do his setup twice """
+        ures1 = self.vault.user_add('testuser', False)
+        self.assertTrue(ures1 is not None)
+        tmp_vault = SFLvaultClient(self.getConfFileUser(), shell=True)
+        ures2 = tmp_vault.user_setup('testuser',
+                                     'http://localhost:6555/vault/rpc',
+                                     'passphrase')
+
+        self.assertTrue(ures2 is not None)
+
+        tmp_vault = SFLvaultClient(self.getConfFileUser(), shell=True)
+        self.assertRaises(VaultError,
+                          tmp_vault.user_setup,
+                          'testuser',
+                          'http://localhost:6555/vault/rpc',
+                          'passphrase')
    
     def test_user_setup_expired(self):
         import time
