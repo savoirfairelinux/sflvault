@@ -1197,26 +1197,32 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Here is the machines list", {'list': out})
 
 
-    def service_list(self, machine_id=None, customer_id=None):
-        """Return a simple list of the services"""
-        services = query(Service).join('machine')
+    # Service_list is disabled, at least for now.
+    # 
+    # 1. The code is not used anywhere in the client code;
+    # 2. It doesn't seem sound to provide such a method knowing
+    #    that search methods exists.
+    #
+    # def service_list(self, machine_id=None, customer_id=None):
+    #    """Return a simple list of the services"""
+    #    services = query(Service).join('machine')
 
         # Filter also..
-        if machine_id:
-            services = services.filter(Service.machine_id==int(machine_id))
-        if customer_id:
-            services = services.filter(Machine.customer_id==int(customer_id))
+    #    if machine_id:
+    #        services = services.filter(Service.machine_id==int(machine_id))
+    #    if customer_id:
+    #        services = services.filter(Machine.customer_id==int(customer_id))
 
-        out = [{'id': s.id, 'url': s.url,
-                   'parent_service_id': s.parent_service_id,
-                   'metadata': s.metadata, 'notes': s.notes,
-                   'machine_id': s.machine_id,
-                   'secret': s.secret,
-                   'secret_last_modified': s.secret_last_modified,
-                }
-               for s in services]
+    #    out = [{'id': s.id, 'url': s.url,
+    #               'parent_service_id': s.parent_service_id,
+    #               'metadata': s.metadata, 'notes': s.notes,
+    #               'machine_id': s.machine_id,
+    #               'secret': s.secret,
+    #               'secret_last_modified': s.secret_last_modified,
+    #            }
+    #           for s in services]
 
-        return vaultMsg(True, "Here is the machines list", {'list': out})
+    #    return vaultMsg(True, "Here is the machines list", {'list': out})
 
 
     def service_passwd(self, service_id, newsecret):
