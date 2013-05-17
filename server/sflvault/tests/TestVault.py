@@ -327,6 +327,112 @@ class TestVaultController(TestController):
         search = self.vault.search('service_del')
         self.assertTrue(len(search['results'].items()) == 0)
 
+    def test_search_invalid_filter_type(self):
+        """ A search that uses an invalid filter format should fail
+        with a vaultError. However, there is no way to test this 
+        behaviour using the client, as it will try to turn any query
+        in a dictionary and fail premptively """
+        #self.assertRaises(VaultError, 
+        #                  self.vault.search,
+        #                  'service_del',
+        #                  filters=['invalid',])
+        pass 
+
+    def test_search_skip_unspecified_and_none_filters(self):
+        """ Unspecified filters should be skipped, and they
+        should not affect the search"""
+        cres = self.vault.customer_add(u"Testing é les autres")
+        mres = self.vault.machine_add(str(cres['customer_id']), 
+                                      "Machine name 3",
+                                      "domain1.example2.com", 
+                                      '4.3.2.1',
+                                      None, 
+                                      None)
+        sres = self.vault.service_add(mres['machine_id'],
+                                      0, 
+                                      u'ssh://service_del',
+                                      [], 
+                                      'test',
+                                      '')
+        ## Search for service afterwards
+        search = self.vault.search('service_del')
+        self.assertTrue(len(search['results'].items()) ==1)
+
+        # Adds all sort of crazy filters!
+        search2 = self.vault.search('service_del',
+                          filters={
+                              # Unspecified filters
+                              'color': 'red',
+                              'height': '2 meters',
+                              'bogomips': 5.5,
+                              'anxiety': None,
+                              # None values for specified filters
+                              'groups': None,
+                              'machines': None,
+                              'customers': None
+                          })
+
+        self.assertTrue(len(search2['results'].items()) ==1)        
+                              
+    def test_search_fail_on_invalid_filters(self):
+        """ When an invalid filter value is specified, it should fail """
+        self.assertRaises(VaultError,
+                          self.vault.search,
+                          'service_del',
+                          filters={'machines': ['invalid', 'filter', 'value'] })
+
+    def test_search_filters_narrow_results(self):
+        """ Search can be filtered by machine, groups and customers """
+        # Adds three services. Each one has a different customer
+        # a different machine and a different group.
+
+        service1 = self._add_new_service()
+        service2 = self._add_new_service()
+        service3 = self._add_new_service()
+
+        self.assertFalse(service1['error'] or
+                         service2['error'] or
+                         service3['error'])
+
+        # however, they're all for sflvault.org so searching for that
+        # should return all three.
+        
+        search = self.vault.search('sflvault.org')
+        self.assertEquals(len(search['results']), 3)
+
+        # Now let's tailor the search to match one of the services
+        response = self.vault.service_get(service1['service_id'])
+        response2 = self.vault.machine_get(response['machine_id'])
+
+        response3 = self.vault.service_get(service2['service_id'])
+        response4 = self.vault.machine_get(response3['machine_id'])
+
+        search2 = self.vault.search('sflvault.org',
+                                    filters={
+                                        'machines': [response['machine_id']],
+                                        'groups': [response['group_id']],
+                                        'customers': [response2['customer_id']],
+                                    })
+
+        self.assertEquals(len(search2['results']), 1)
+
+
+        # Multiple search criteria creates the union of the results
+
+        machines = [response['machine_id'], response3['machine_id']]
+        groups = [response['group_id'], response3['group_id']]
+        customers = [response2['customer_id'], response4['customer_id']]
+
+        search2 = self.vault.search('sflvault.org',
+                                    filters={
+                                        'machines': machines,
+                                        'groups': groups,
+                                        'customers': customers
+                                    })
+
+        self.assertEquals(len(search2['results']), 2)
+
+
     def test_user_del(self):
         """testing delete a user from the vault"""
         cres = self.vault.user_add(u"Utilisateur de test")
