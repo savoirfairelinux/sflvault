@@ -412,7 +412,7 @@ class SFLvaultAccess(object):
                 try:
                     newfilters[flt] = model.get_objects_ids(filters[flt], flt)
                 except ValueError, e:
-                    self.log_e('Search error: %(error)s' % {"error": str(e)})
+                    self.log_e('Search error: %(error)s', {"error": str(e)})
                     return vaultMsg(False, str(e))
 
         search = model.search_query(search_query, newfilters, verbose)
