@@ -22,14 +22,30 @@
 __import__('pkg_resources').declare_namespace(__name__)
 
 import xmlrpclib
+from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
+
 import functools
 import logging
+import logging.config
 
+import os
 import sys
 
-log = logging.getLogger(__name__)
+interpolation = { 'here': os.getcwd() }
 
-def main(file_name):
+def config_section_to_dict(config, section):
+    my_dict = {}
+    for key in config._sections[section].keys():
+        my_dict[key] = config.get(section, key, 0, interpolation)
+    return my_dict
+
+class SFLvaultRequestHandler(SimpleXMLRPCRequestHandler):
+    rpc_paths = ('/vault', '/vault/rpc', '/',)
+
+def main(config_file):
+
+    logging.config.fileConfig(config_file)
+    log = logging.getLogger(__name__)
 
     # We import in the main() function to avoid messing with namespace mechanism. We have to avoid
     # any code/import other than the declare_namespace() in a namespace pkg's init. See
@@ -52,27 +68,36 @@ def main(file_name):
     from sflvault.model import init_model
     from sflvault.lib.vault import SFLvaultAccess
 
+
     from datetime import datetime, timedelta
     import transaction
-    print "Global config: %s " % global_config
-    print "settings: %s" % settings
+
+    import ConfigParser
+    config = ConfigParser.ConfigParser({
+        'sflvault.vault.session_timeout': 15,
+        'sflvault.vault.setup_timeout': 300,
+    })
+
+    config.read(config_file)
 
     # Configure the Pyramid app and SQL engine
 
-    config = Configurator(settings=settings)
-    config.include('pyramid_rpc.xmlrpc')
-    config.add_xmlrpc_endpoint('sflvault', '/vault/rpc')
-    config.scan('sflvault.views')
+    #config = Configurator(config=config)
+    #config.include('pyramid_rpc.xmlrpc')
+    # 
 
     # Configures the vault
-    if 'sflvault.vault.session_timeout' in settings:
-        SFLvaultAccess.session_timeout = settings['sflvault.vault.session_timeout']
 
-    if 'sflvault.vault.setup_timeout' in settings:
-        SFLvaultAccess.setup_timeout = settings['sflvault.vault.setup_timeout']
+    SFLvaultAccess.session_timeout = config.get('sflvault', 
+                                                'sflvault.vault.session_timeout')
+
+
+    SFLvaultAccess.setup_timeout = config.get('sflvault',
+                                              'sflvault.vault.setup_timeout')
 
     # Configure sqlalchemy
-    engine = engine_from_config(settings, 'sqlalchemy.')
+    engine = engine_from_config(config_section_to_dict(config, 'sflvault')
+                                , 'sqlalchemy.')
     init_model(engine)
 
     model.meta.metadata.create_all(engine)
@@ -89,10 +114,17 @@ def main(file_name):
         model.meta.Session.add(u)
         transaction.commit()
         log.info("Added 'admin' user, you have 15 minutes to setup from your client")
-    return config.make_wsgi_app()
+
+    server = SimpleXMLRPCServer(("localhost", 8000),
+                                requestHandler=SFLvaultRequestHandler)
+
+    server.register_introspection_functions()
+    server.register_instance(SFLvaultAccess())
+    server.serve_forever()
 
 if __name__ == '__main__':
-    import ipdb; ipdb.set_trace()
-    print sys.args
-    if sys.argv:
-        config_file = sys.argv[0]
+
+    # FIXME: replace with argparse
+    if len(sys.argv) == 2:
+        config_file = sys.argv[1]
+        main(config_file)

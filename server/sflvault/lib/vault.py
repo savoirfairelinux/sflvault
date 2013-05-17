@@ -59,6 +59,14 @@ def vaultMsg(success, message, dict=None):
     return ret
 
 class SFLvaultAccess(object):
+
+    def _dispatch(self, method, params):
+        import ipdb; ipdb.set_trace()
+        method_name = method.replace('sflvault.', '')
+        method = getattr(self, method_name)
+        if method:
+            return method(*params)
+
     def __init__(self):
         """Init obj."""
 
@@ -89,6 +97,7 @@ class SFLvaultAccess(object):
 
     def user_setup(self, username, pubkey):
         """Setup the user's account"""
+
         u = query(User).filter_by(username=username).first()
 
         if u is None:

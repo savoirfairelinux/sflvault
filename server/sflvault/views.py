@@ -55,6 +55,18 @@ def test_group_admin(request, group_id):
     if not ug or (not ug.is_admin and not me.is_admin):
         return vaultMsg(False, "You are not admin on that group (nor global admin)")
 
+
+class XMLRPCDispatcher(object):
+
+    def _dispatch(self):
+        pass
+
+    def __init__(self):
+        pass
+
+    def scan(self, module):
+        pass
+
 @decorator
 def authenticated_user(func, request, *args, **kwargs):
     """Aborts if user isn't authenticated.
