@@ -21,7 +21,7 @@
 
 import logging
 import transaction
-from pyramid_rpc.xmlrpc import xmlrpc_method
+
 from pyramid.response import Response
 from pyramid.threadlocal import get_current_registry
 from sflvault.common.crypto import *
@@ -31,6 +31,9 @@ import datetime
 from decorator import decorator
 from datetime import datetime, timedelta
 from distutils.version import LooseVersion
+import venusian
+
+import sys
 
 log = logging.getLogger(__name__)
 
@@ -58,14 +61,59 @@ def test_group_admin(request, group_id):
 
 class XMLRPCDispatcher(object):
 
-    def _dispatch(self):
-        pass
+    def _dispatch(self, method, params):
+        method_name = method.replace('sflvault.', 'sflvault_')
+        import ipdb; ipdb.set_trace()
+        if method_name in self.registry:
+            self.registry[method_name](*params)
 
     def __init__(self):
-        pass
+        self.registry = {}
+        self.scan(sys.modules[__name__])
 
     def scan(self, module):
-        pass
+        scanner = venusian.Scanner(registry=self.registry)
+        scanner.scan(module)
+
+
+class xmlrpc_method(object):
+    """This decorator may be used with pyramid view callables to enable
+    them to respond to XML-RPC method calls.
+
+    If ``method`` is not supplied, then the callable name will be used
+    for the method name.
+
+    ``_depth`` may be specified when wrapping ``xmlrpc_method`` in another
+    decorator. The value should reflect how many stack frames are between
+    the wrapped target and ``xmlrpc_method``. Thus a decorator one level deep
+    would pass in ``_depth=1``.
+
+    This is the lazy analog to the
+    :func:`~pyramid_rpc.xmlrpc.add_xmlrpc_method`` and accepts all of
+    the same arguments.
+
+    """
+    def __init__(self, method=None, **kw):
+        self.method = method
+        self.kw = kw
+
+    def __call__(self, wrapped):
+        kw = self.kw.copy()
+        kw['method'] = self.method or wrapped.__name__
+
+        def callback(scanner, name, ob):
+            scanner.registry[name] = ob
+#            config = context.config.with_package(info.module)
+ #           config.add_xmlrpc_method(view=ob, **kw)
+
+        info = venusian.attach(wrapped, callback, category='pyramid')
+        if info.scope == 'class':
+            # ensure that attr is set if decorating a class method
+            kw.setdefault('attr', wrapped.__name__)
+
+        kw['_info'] = info.codeinfo # fbo action_method
+        return wrapped
+
 
 @decorator
 def authenticated_user(func, request, *args, **kwargs):

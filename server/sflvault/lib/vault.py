@@ -61,7 +61,7 @@ def vaultMsg(success, message, dict=None):
 class SFLvaultAccess(object):
 
     def _dispatch(self, method, params):
-        import ipdb; ipdb.set_trace()
+
         method_name = method.replace('sflvault.', '')
         method = getattr(self, method_name)
         if method:
