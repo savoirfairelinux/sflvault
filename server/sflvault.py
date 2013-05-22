@@ -100,6 +100,11 @@ def main(config_file):
                                 , 'sqlalchemy.')
     init_model(engine)
 
+    import sflvault.views
+    from sflvault.views import XMLRPCDispatcher
+    dispatcher = XMLRPCDispatcher()
+    dispatcher.scan(sflvault.views)
+
     model.meta.metadata.create_all(engine)
     #Add admin user if not present
     if not model.query(model.User).filter_by(username='admin').first():
@@ -119,7 +124,7 @@ def main(config_file):
                                 requestHandler=SFLvaultRequestHandler)
 
     server.register_introspection_functions()
-    server.register_instance(SFLvaultAccess())
+    server.register_instance(dispatcher)
     server.serve_forever()
 
 if __name__ == '__main__':
