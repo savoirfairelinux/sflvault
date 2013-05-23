@@ -54,7 +54,6 @@ def main(file_name):
 
     from datetime import datetime, timedelta
     import transaction
-    print "Global config: %s " % global_config
     print "settings: %s" % settings
 
     # Configure the Pyramid app and SQL engine
