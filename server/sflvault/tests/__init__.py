@@ -58,8 +58,8 @@ globs = {}
 
 def tearDown():
     """Close the SFLVault server"""
-    globs['server'].server_close()
-
+    #globs['server'].server_close()
+    pass
 
 def getConfFileAdmin():
     if (os.path.exists(confile)):
@@ -95,9 +95,9 @@ def delete_all_groups(self):
         self.group_del(group['id'], delete_cascade=True)
 
 def delete_all_users(self):
+
     vault_response = self.user_list()
     for user in vault_response['list']:
-
         if not (user['username'] == 'admin'):
             print "*** Deleting user: %s" % user['id']
             self.user_del(user['username'])

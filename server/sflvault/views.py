@@ -265,7 +265,7 @@ def user_add(request, authtok, username, is_admin):
         setup_timeout = request['settings']['sflvault.vault.setup_timeout']
     except KeyError, e:
         setup_timeout = 300
-    return vault.user_add(username, is_admin, setup_timeout=300)
+    return vault.user_add(username, is_admin, setup_timeout=setup_timeout)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.user_setup')
 def user_setup(request, username, pubkey):
