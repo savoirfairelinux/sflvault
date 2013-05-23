@@ -411,7 +411,6 @@ def sflvault_group_put(request, authtok, group_id, data):
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_add')
 @authenticated_user
 def sflvault_group_add(request, authtok, group_name):
-    import ipdb; ipdb.set_trace()
     return vault.group_add(group_name)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_del')

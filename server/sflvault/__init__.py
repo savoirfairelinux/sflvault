@@ -91,7 +91,6 @@ def main(file_name):
     return config.make_wsgi_app()
 
 if __name__ == '__main__':
-    import ipdb; ipdb.set_trace()
     print sys.args
     if sys.argv:
         config_file = sys.argv[0]

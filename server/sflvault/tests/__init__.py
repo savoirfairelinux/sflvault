@@ -33,14 +33,13 @@ setup-app) with the project's test.ini configuration file.
 import os
 import sys
 from unittest import TestCase
-from pyramid import testing
-import pkg_resources
+
+
 import threading
-import paste.fixture
-from paste.deploy import loadapp
-from paste.httpserver import serve
+
 from sflvault.client import SFLvaultClient
 from sflvault.lib.vault import SFLvaultAccess
+from sflvault.server import SFLvaultServer
 import logging
 log = logging.getLogger(__name__)
 __all__ = ['url_for', 'TestController', 'setUp', 'tearDown']
@@ -49,9 +48,7 @@ here_dir = os.path.dirname(os.path.abspath(__file__))
 conf_dir = os.path.dirname(os.path.dirname(here_dir))
 
 sys.path.insert(0, conf_dir)
-pkg_resources.working_set.add_entry(conf_dir)
-pkg_resources.require('Paste')
-pkg_resources.require('PasteScript')
+
 
 dbfile = os.path.join(conf_dir, 'test-database.db')
 confile = os.path.join(conf_dir, 'test-config')
@@ -78,13 +75,13 @@ def setUp():
     # Remove the test config on each run
     if os.path.exists(confile):
         os.unlink(confile)
+
     os.environ['SFLVAULT_IN_TEST'] = 'true'
-    wsgiapp = loadapp('config:test.ini', relative_to=conf_dir)
-    app = paste.fixture.TestApp(wsgiapp)
-    server = serve(wsgiapp, 'localhost', '6555', socket_timeout=1, start_loop=False,
-        use_threadpool=True, threadpool_workers=40)
-    globs['server'] = server
-    t = threading.Thread(target=server.serve_forever)
+
+ 
+    server = SFLvaultServer('xtest.ini')
+
+    t = threading.Thread(target=server.start_server)
     t.setDaemon(True)
     t.start()
 
