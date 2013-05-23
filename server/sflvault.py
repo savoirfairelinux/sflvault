@@ -33,11 +33,11 @@ import sys
 
 interpolation = { 'here': os.getcwd() }
 
-def config_section_to_dict(config, section):
-    my_dict = {}
+settings = {}
+
+def update_with_config_section(my_dict, config, section):
     for key in config._sections[section].keys():
         my_dict[key] = config.get(section, key, 0, interpolation)
-    return my_dict
 
 
 class SFLvaultRequestHandler(SimpleXMLRPCRequestHandler):

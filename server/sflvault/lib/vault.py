@@ -129,7 +129,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, 'User setup complete for %s' % username)
 
 
-    def user_add(self, username, is_admin):
+    def user_add(self, username, is_admin, setup_timeout=300):
         usr = query(User).filter_by(username=username).first()
 
         msg = ''
@@ -137,7 +137,7 @@ class SFLvaultAccess(object):
         if usr is None:
             # New user
             usr = User()
-            usr.waiting_setup =  datetime.now() + timedelta(0, int(SFLvaultAccess.setup_timeout))
+            usr.waiting_setup =  datetime.now() + timedelta(0, int(setup_timeout))
             usr.username = username
             usr.is_admin = bool(is_admin)
             usr.created_time = datetime.now()
@@ -151,7 +151,7 @@ class SFLvaultAccess(object):
             if usr.waiting_setup < datetime.now():
                 # Verify if it's a waiting_setup user that has expired.
                 usr.waiting_setup = datetime.now() + \
-                                    timedelta(0, int(self.setup_timeout))
+                                    timedelta(0, int(setup_timeout))
 
                 self.log_i('updated (had setup timeout expired).', {})
                 msg = 'updated (had setup timeout expired)'
@@ -170,7 +170,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, '%s %s. User has a delay of %d seconds '
                               'to invoke a "user-setup" command' % \
                             ('Admin user' if is_admin else 'User',
-                             msg, int(self.setup_timeout)), {'user_id': uid})
+                             msg, int(setup_timeout)), {'user_id': uid})
 
 
     def user_del(self, user):

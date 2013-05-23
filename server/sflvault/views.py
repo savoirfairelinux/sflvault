@@ -179,12 +179,12 @@ def authenticated_admin(func, request, *args, **kwargs):
 @xmlrpc_method(endpoint='sflvault', method='sflvault.authenticate')
 def sflvault_authenticate(request, username, cryptok):
     """Receive the *decrypted* cryptok, b64 encoded"""
-    settings = get_current_registry().settings
+    settings = request['settings']
     u  = None
     db = None
 
     try:
-        if False:#settings['sflvault.vault.session_trust'].lower() in ['1', 'true', 't']:
+        if settings['sflvault.vault.session_trust'].lower() in ['1', 'true', 't']:
             # If the session_trust parameter is true trust the session for the authentication.
             try:
                 sess = get_session(cryptok, request)
@@ -218,7 +218,7 @@ def sflvault_authenticate(request, username, cryptok):
     else:
         newtok = b64encode(randfunc(32))
         set_session(newtok, {'username': username,
-                                'timeout': datetime.now() + timedelta(0, 200),#int(settings['sflvault.vault.session_timeout'])),
+                                'timeout': datetime.now() + timedelta(0, int(settings['sflvault.vault.session_timeout'])),
                                 'remote_addr': request.get('REMOTE_ADDR', None),
                                 'userobj': u,
                                 'user_id': u.id
@@ -262,7 +262,11 @@ def sflvault_login(request, username, version):
 @xmlrpc_method(endpoint='sflvault', method='sflvault.user_add')
 @authenticated_admin
 def user_add(request, authtok, username, is_admin):
-    return vault.user_add(username, is_admin)
+    try:
+        setup_timeout = request['settings']['sflvault.vault.setup_timeout']
+    except KeyError, e:
+        setup_timeout = 300
+    return vault.user_add(username, is_admin, setup_timeout=300)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.user_setup')
 def user_setup(request, username, pubkey):
