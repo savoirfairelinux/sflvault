@@ -22,8 +22,6 @@
 import logging
 import transaction
 
-from pyramid.response import Response
-from pyramid.threadlocal import get_current_registry
 from sflvault.common.crypto import *
 from sflvault.lib.vault import SFLvaultAccess, vaultMsg
 from sflvault.model import *
@@ -230,10 +228,11 @@ def sflvault_authenticate(request, username, cryptok):
 def sflvault_login(request, username, version):
     # Require minimal client version.        
     user_version = LooseVersion(version)
+
     if not version or user_version < MINIMAL_CLIENT_VERSION:
-        return Response(body=vaultMsg(False, "Minimal client version required: '%s'. "\
+        return vaultMsg(False, "Minimal client version required: '%s'. "\
                         "You announced yourself as version '%s'" % \
-                        (MINIMAL_CLIENT_VERSION.vstring, version)))
+                        (MINIMAL_CLIENT_VERSION.vstring, version))
 
     # Return 'cryptok', encrypted with pubkey.
     # Save decoded version to user's db field.

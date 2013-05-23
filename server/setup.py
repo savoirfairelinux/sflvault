@@ -29,7 +29,6 @@ README = open(os.path.join(here, 'README.txt')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
-    'pyramid==1.4',
     'SQLAlchemy',
     'transaction',
     'repoze.tm2>=1.0b1', # default_commit_veto
@@ -50,7 +49,7 @@ setup(name='SFLvault-server',
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
         ],
-      keywords='web wsgi bfg pylons pyramid',
+      keywords='web wsgi bfg pylons',
       packages=find_packages(),
       namespace_packages=['sflvault'],
       include_package_data=True,
@@ -62,6 +61,5 @@ setup(name='SFLvault-server',
       [paste.app_factory]
       main = sflvault:main
       """,
-      paster_plugins=['pyramid'],
 )
 

@@ -48,14 +48,16 @@ class SFLvaultRequestHandler(SimpleXMLRPCRequestHandler):
 
     def _dispatch(self, method, params):
         address = self.client_address
+
         request = {
             'REMOTE_ADDR': address[0],
             'PORT': address[1],
             'rpc_args': params,
+            'settings': settings,
         }
 
-
         return self.server.instance._dispatch(request, method, params)
+
     rpc_paths = ('/vault', '/vault/rpc', '/',)
 
 def main(config_file):
@@ -63,20 +65,6 @@ def main(config_file):
     logging.config.fileConfig(config_file)
     log = logging.getLogger(__name__)
 
-    # We import in the main() function to avoid messing with namespace mechanism. We have to avoid
-    # any code/import other than the declare_namespace() in a namespace pkg's init. See
-    # http://packages.python.org/distribute/setuptools.html#namespace-packages
-
-    # Monkeypatches the xmlrpclib to set partial application of allow_none
-    #
-    # sflvault relies on a behaviour provided by an older version of pylons_xmlrpc
-    # that set the allow_none parameter by default. However, pyramid uses 
-    # the new pyramid_rpc module that doesn't set this parameter and does not provide
-    # any way of setting it manually.
-    #
-    xmlrpclib.dumps = functools.partial(xmlrpclib.dumps, allow_none=True)
-
-    #from pyramid.config import Configurator
     from sqlalchemy import engine_from_config
     #from controller.xmlrpc import SflVaultController
 
@@ -96,14 +84,6 @@ def main(config_file):
 
     config.read(config_file)
 
-    # Configure the Pyramid app and SQL engine
-
-    #config = Configurator(config=config)
-    #config.include('pyramid_rpc.xmlrpc')
-    # 
-
-    # Configures the vault
-
     session_timeout = config.get('sflvault', 
                                  'sflvault.vault.session_timeout')
 
@@ -112,8 +92,9 @@ def main(config_file):
                                'sflvault.vault.setup_timeout')
 
     # Configure sqlalchemy
-    engine = engine_from_config(config_section_to_dict(config, 'sflvault')
-                                , 'sqlalchemy.')
+    update_with_config_section(settings, config, 'sflvault')
+    engine = engine_from_config(settings,
+                                'sqlalchemy.')
     init_model(engine)
 
     import sflvault.views
