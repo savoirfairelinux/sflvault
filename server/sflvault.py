@@ -39,7 +39,23 @@ def config_section_to_dict(config, section):
         my_dict[key] = config.get(section, key, 0, interpolation)
     return my_dict
 
+
 class SFLvaultRequestHandler(SimpleXMLRPCRequestHandler):
+
+    def __init__(self, request, client_address, server):
+        self.client_address = client_address
+        SimpleXMLRPCRequestHandler.__init__(self, request, client_address, server)
+
+    def _dispatch(self, method, params):
+        address = self.client_address
+        request = {
+            'REMOTE_ADDR': address[0],
+            'PORT': address[1],
+            'rpc_args': params,
+        }
+
+
+        return self.server.instance._dispatch(request, method, params)
     rpc_paths = ('/vault', '/vault/rpc', '/',)
 
 def main(config_file):
@@ -88,12 +104,12 @@ def main(config_file):
 
     # Configures the vault
 
-    SFLvaultAccess.session_timeout = config.get('sflvault', 
-                                                'sflvault.vault.session_timeout')
+    session_timeout = config.get('sflvault', 
+                                 'sflvault.vault.session_timeout')
 
 
-    SFLvaultAccess.setup_timeout = config.get('sflvault',
-                                              'sflvault.vault.setup_timeout')
+    setup_timeout = config.get('sflvault',
+                               'sflvault.vault.setup_timeout')
 
     # Configure sqlalchemy
     engine = engine_from_config(config_section_to_dict(config, 'sflvault')
@@ -121,7 +137,8 @@ def main(config_file):
         log.info("Added 'admin' user, you have 15 minutes to setup from your client")
 
     server = SimpleXMLRPCServer(("localhost", 8000),
-                                requestHandler=SFLvaultRequestHandler)
+                                requestHandler=SFLvaultRequestHandler,
+                                allow_none=True)
 
     server.register_introspection_functions()
     server.register_instance(dispatcher)

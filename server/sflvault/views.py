@@ -43,11 +43,12 @@ MINIMAL_CLIENT_VERSION = LooseVersion('0.7.6')
 
 vaultSessions = {}
 vault = SFLvaultAccess()
+
 def test_group_admin(request, group_id):
     if not query(Group).filter_by(id=group_id).first():
         return vaultMsg(False, "Group not found: %s" % str(e))
     
-    sess = get_session(request.rpc_args[0], request)
+    sess = get_session(request['rpc_args'][0], request)
 
     # Verify if I'm is_admin on that group
     ug = query(UserGroup).filter_by(group_id=group_id,
@@ -61,11 +62,12 @@ def test_group_admin(request, group_id):
 
 class XMLRPCDispatcher(object):
 
-    def _dispatch(self, method, params):
-        method_name = method.replace('sflvault.', 'sflvault_')
-        import ipdb; ipdb.set_trace()
-        if method_name in self.registry:
-            self.registry[method_name](*params)
+    def _dispatch(self, request, method, params):
+
+        params = (request, ) + params
+
+        if method in self.registry:
+            return self.registry[method](*params)
 
     def __init__(self):
         self.registry = {}
@@ -102,9 +104,8 @@ class xmlrpc_method(object):
         kw['method'] = self.method or wrapped.__name__
 
         def callback(scanner, name, ob):
-            scanner.registry[name] = ob
-#            config = context.config.with_package(info.module)
- #           config.add_xmlrpc_method(view=ob, **kw)
+            scanner.registry[kw['method']] = ob
+
 
         info = venusian.attach(wrapped, callback, category='pyramid')
         if info.scope == 'class':
@@ -124,7 +125,7 @@ def authenticated_user(func, request, *args, **kwargs):
     WARNING: authenticated_user READ the FIRST non-keyword argument
              (should be authtok)
     """
-    cryptok = request.rpc_args[0]
+    cryptok = request['rpc_args'][0]
     ret = _authenticated_user_first(request, cryptok)
     if ret:
         return ret
@@ -159,7 +160,7 @@ def authenticated_admin(func, request, *args, **kwargs):
 
     Check authenticated_user , everything written then applies here as well.
     """
-    cryptok = request.rpc_args[0]
+    cryptok = request['rpc_args'][0]
     ret = _authenticated_user_first(request, cryptok)
     if ret:
         return ret
@@ -183,7 +184,7 @@ def sflvault_authenticate(request, username, cryptok):
     db = None
 
     try:
-        if settings['sflvault.vault.session_trust'].lower() in ['1', 'true', 't']:
+        if False:#settings['sflvault.vault.session_trust'].lower() in ['1', 'true', 't']:
             # If the session_trust parameter is true trust the session for the authentication.
             try:
                 sess = get_session(cryptok, request)
@@ -217,7 +218,7 @@ def sflvault_authenticate(request, username, cryptok):
     else:
         newtok = b64encode(randfunc(32))
         set_session(newtok, {'username': username,
-                                'timeout': datetime.now() + timedelta(0, int(settings['sflvault.vault.session_timeout'])),
+                                'timeout': datetime.now() + timedelta(0, 200),#int(settings['sflvault.vault.session_timeout'])),
                                 'remote_addr': request.get('REMOTE_ADDR', None),
                                 'userobj': u,
                                 'user_id': u.id
@@ -407,6 +408,7 @@ def sflvault_group_put(request, authtok, group_id, data):
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_add')
 @authenticated_user
 def sflvault_group_add(request, authtok, group_name):
+    import ipdb; ipdb.set_trace()
     return vault.group_add(group_name)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_del')
