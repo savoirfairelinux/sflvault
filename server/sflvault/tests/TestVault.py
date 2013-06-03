@@ -51,6 +51,8 @@ class TestVaultController(TestController):
         cid = self._add_new_customer()
         mid = self.vault.machine_add(cid['customer_id'], self._rand_name())
         return mid
+
+
     def _add_new_service(self):
         mid = self._add_new_machine()
         gid = self._add_new_group()
@@ -71,6 +73,7 @@ class TestVaultController(TestController):
         self.assertTrue(cid1, 1)
         self.assertEqual(res['message'], 'Customer added')
 
+
     def test_machine_add(self):
         """testing add a new machine to the vault"""
         res = self.vault.customer_add(u"Testing é les autres")
@@ -83,6 +86,7 @@ class TestVaultController(TestController):
                                      None, 
                                      None)
         self.assertFalse("Error adding machine" in res['message'])
+
 
     def test_service_add(self):
         """testing add a new service to the vault"""
@@ -626,7 +630,7 @@ class TestVaultController(TestController):
         self.assertTrue(service_get['group_id'] == '')
 
 
-        # We add the service to the group
+        # We add the service to the new group
         group_add_service = self.vault.group_add_service(group['group_id'],
                                                          service['service_id'])
         self.assertFalse(group_add_service['error'])
@@ -645,6 +649,36 @@ class TestVaultController(TestController):
         # It should not be there anymore
         service_get3 = self.vault.service_get(service['service_id'])
         self.assertTrue(service_get['group_id'] == '')
+
+
+    def test_group_del_service_from_original_group(self):
+        machine = self._add_new_machine()
+        original_group = self._add_new_group()
+
+        # if we create a service and add it to an original group
+        service = self.vault.service_add(machine['machine_id'],
+                                      0,
+                                      'ssh://sflvault.org',
+                                      [original_group['group_id']],
+                                      'secret') 
+
+        # if we try to remove it from this group, there should be an error
+        self.assertRaises(VaultError,
+                          self.vault.group_del_service,
+                          original_group['group_id'],
+                          service['service_id'])
+
+        # however, if we add it to another group...
+        new_group = self._add_new_group()
+        group_add_service = self.vault.group_add_service(new_group['group_id'],
+                                                         service['service_id'])
+        self.assertFalse(group_add_service['error'])
+
+        # we should be able to remove it from the original group!
+        response = self.vault.group_del_service(original_group['group_id'],
+                                                service['service_id'])
+        self.assertFalse(response['error'])
+        
 
     def test_service_get_tree(self):
         """ tests that we can get a service and it's tree of parent / sub services"""
