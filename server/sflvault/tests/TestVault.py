@@ -71,6 +71,7 @@ class TestVaultController(TestController):
         res = self.vault.customer_add('testing customer 1 2 3')
         cid1 = res['customer_id']
         self.assertTrue(cid1, 1)
+        self.assertTrue(False)
         self.assertEqual(res['message'], 'Customer added')
 
 
