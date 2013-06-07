@@ -30,6 +30,11 @@ pkg_resources, in case the project hasn't been installed with
 setuptools. It also initializes the application via websetup (paster
 setup-app) with the project's test.ini configuration file.
 """
+
+# WARNING: For the moment, running the tests only works if you installed all sflvault packages
+# (common, client, server) in "developer mode". If you don't, you'll have problems with namespace
+# packaging and imports won't work.
+
 import os
 import sys
 from unittest import TestCase
@@ -79,7 +84,7 @@ def setUp():
     os.environ['SFLVAULT_IN_TEST'] = 'true'
 
  
-    server = SFLvaultServer('xtest.ini')
+    server = SFLvaultServer(test_file)
 
     t = threading.Thread(target=server.start_server)
     t.setDaemon(True)
