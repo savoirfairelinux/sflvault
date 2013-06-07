@@ -26,6 +26,9 @@ except ImportError:
     use_setuptools()
     from setuptools import setup, find_packages
 
+requires = [
+    'pycrypto',
+]
 
 setup(
     name='SFLvault-common',
@@ -35,8 +38,7 @@ setup(
     author_email='alexandre.bourget@savoirfairelinux.com',
     url='http://www.sflvault.org',
     license='GPLv3',
-    install_requires=["pycrypto",
-                      ],
+    install_requires=requires,
     packages=find_packages(),
     namespace_packages=['sflvault'],
     test_suite='nose.collector',

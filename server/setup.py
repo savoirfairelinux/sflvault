@@ -30,36 +30,30 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
     'SQLAlchemy',
-    'transaction',
-    'repoze.tm2>=1.0b1', # default_commit_veto
+    'venusian',
     'zope.sqlalchemy',
-    'WebError',
-    ]
+    'decorator',
+]
 
-setup(name='SFLvault-server',
-      version='0.8.0.0',
-      description='Networked credentials store and authentification manager - Server',
-      author='Alexandre Bourget',
-      author_email='alexandre.bourget@savoirfairelinux.com',
-      url='http://www.sflvault.org',
-      long_description=README + '\n\n' +  CHANGES,
-      classifiers=[
+setup(
+    name='SFLvault-server',
+    version='0.8.0.0',
+    description='Networked credentials store and authentification manager - Server',
+    author='Alexandre Bourget',
+    author_email='alexandre.bourget@savoirfairelinux.com',
+    url='http://www.sflvault.org',
+    long_description=README + '\n\n' +  CHANGES,
+    classifiers=[
         "Programming Language :: Python",
         "Framework :: Pylons",
         "Topic :: Internet :: WWW/HTTP",
-        "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
-        ],
-      keywords='web wsgi bfg pylons',
-      packages=find_packages(),
-      namespace_packages=['sflvault'],
-      include_package_data=True,
-      zip_safe=False,
-      package_data={'sflvault': ['i18n/*/LC_MESSAGES/*.mo']},
-      test_suite='sflvault',
-      install_requires = requires,
-      entry_points = """\
-      [paste.app_factory]
-      main = sflvault:main
-      """,
+    ],
+    packages=find_packages(),
+    namespace_packages=['sflvault'],
+    include_package_data=True,
+    zip_safe=False,
+    package_data={'sflvault': ['i18n/*/LC_MESSAGES/*.mo']},
+    test_suite='sflvault',
+    install_requires = requires,
 )
 

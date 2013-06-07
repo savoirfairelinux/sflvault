@@ -44,8 +44,6 @@ conf_dir = os.path.dirname(os.path.dirname(here_dir))
 
 sys.path.insert(0, conf_dir)
 pkg_resources.working_set.add_entry(conf_dir)
-pkg_resources.require('Paste')
-pkg_resources.require('PasteScript')
 
 vault = None
 
