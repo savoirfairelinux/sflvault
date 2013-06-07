@@ -76,7 +76,7 @@ class TestVaultController(TestController):
 
     def test_machine_add(self):
         """testing add a new machine to the vault"""
-        res = self.vault.customer_add(u"Testing é les autres")
+        res = self.vault.customer_add(u"Testing les autres")
         cid2 = res['customer_id']
         self.assertEqual(res['message'], 'Customer added')    
         res = self.vault.machine_add(str(cid2), 
@@ -90,7 +90,7 @@ class TestVaultController(TestController):
 
     def test_service_add(self):
         """testing add a new service to the vault"""
-        cres = self.vault.customer_add(u"Testing é les autres")
+        cres = self.vault.customer_add(u"Testing les autres")
         mres = self.vault.machine_add(str(cres['customer_id']), 
                                       "Machine name 3",
                                       "domain1.example2.com", 
@@ -107,7 +107,7 @@ class TestVaultController(TestController):
 
     def test_alias_add(self):
         """testing add a new alias to the vault"""
-        cres = self.vault.customer_add(u"Testing é les autres")
+        cres = self.vault.customer_add(u"Testing les autres")
         ares = self.vault.cfg.alias_add("customer#%s"%cres['customer_id'], "c#%s" % cres['customer_id'])
         self.assertTrue(ares)
 
@@ -271,7 +271,7 @@ class TestVaultController(TestController):
     def test_group_add_service(self):
         """testing add a service to a group to the vault"""
         gres3 = self.vault.group_add("test_group3_user")
-        cres = self.vault.customer_add(u"Testing é les autres")
+        cres = self.vault.customer_add(u"Testing les autres")
         mres = self.vault.machine_add(str(cres['customer_id']), 
                                       "Machine name 3",
                                       "domain1.example2.com", 
@@ -290,7 +290,7 @@ class TestVaultController(TestController):
 
     def test_customer_del(self):
         """testing delete a new customer from the vault"""
-        cres = self.vault.customer_add(u"Testing é les autres")
+        cres = self.vault.customer_add(u"Testing les autres")
         dres = self.vault.customer_del(cres['customer_id'])
         self.assertTrue("Deleted customer c#%s successfully" % cres['customer_id'] in dres['message'])
 
@@ -302,7 +302,7 @@ class TestVaultController(TestController):
 
     def test_machine_del(self):
         """testing delete a machine from the vault"""
-        cres = self.vault.customer_add(u"Testing é les autres")
+        cres = self.vault.customer_add(u"Testing les autres")
         mres = self.vault.machine_add(str(cres['customer_id']), "Machine name 3",
                                       "domain1.example2.com", '4.3.2.1',
                                       None, None)
@@ -311,7 +311,7 @@ class TestVaultController(TestController):
 
     def test_service_del(self):
         """testing delete a service from the vault"""
-        cres = self.vault.customer_add(u"Testing é les autres")
+        cres = self.vault.customer_add(u"Testing les autres")
         mres = self.vault.machine_add(str(cres['customer_id']), 
                                       "Machine name 3",
                                       "domain1.example2.com", 
@@ -345,7 +345,7 @@ class TestVaultController(TestController):
     def test_search_skip_unspecified_and_none_filters(self):
         """ Unspecified filters should be skipped, and they
         should not affect the search"""
-        cres = self.vault.customer_add(u"Testing é les autres")
+        cres = self.vault.customer_add(u"Testing les autres")
         mres = self.vault.machine_add(str(cres['customer_id']), 
                                       "Machine name 3",
                                       "domain1.example2.com", 
@@ -652,6 +652,7 @@ class TestVaultController(TestController):
 
 
     def test_group_del_service_from_original_group(self):
+        # Tests fix for #950
         machine = self._add_new_machine()
         original_group = self._add_new_group()
 
