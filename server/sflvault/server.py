@@ -50,7 +50,7 @@ class SFLvaultServer(object):
         result = {
             'sflvault.vault.session_timeout': '15',
             'sflvault.vault.setup_timeout': '300',
-            'sflvault.port': '5001',
+            'sflvault.port': '5000',
             'sqlalchemy.url': 'sqlite:///%s/sflvault.db' % os.getcwd()
         }
         if config_file_name:
