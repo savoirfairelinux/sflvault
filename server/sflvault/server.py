@@ -4,6 +4,8 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 import os
 import sys
 import logging
+import logging.config
+import argparse
 
 import transaction
 from sqlalchemy import engine_from_config
@@ -44,14 +46,18 @@ class SFLvaultServer(object):
         self.create_admin_if_necessary()
         self.initialize_server()
         
-    def get_settings(self, config_file_name):
-        config = ConfigParser.ConfigParser({
-            'sflvault.vault.session_timeout': 15,
-            'sflvault.vault.setup_timeout': 300,
-            'sflvault.port': 5001,
-        })
-        config.read(config_file_name)
-        return self.get_dict_for_config_section(config, 'sflvault')
+    def get_settings(self, config_file_name=None):
+        result = {
+            'sflvault.vault.session_timeout': '15',
+            'sflvault.vault.setup_timeout': '300',
+            'sflvault.port': '5001',
+            'sqlalchemy.url': 'sqlite:///%s/sflvault.db' % os.getcwd()
+        }
+        if config_file_name:
+            config = ConfigParser.ConfigParser()
+            config.read(config_file_name)
+            result.update(self.get_dict_for_config_section(config, 'sflvault'))
+        return result
 
     def start_sqlalchemy(self):
         self.engine = engine_from_config(SFLvaultServer.settings,
@@ -79,6 +85,7 @@ class SFLvaultServer(object):
         self.server = SimpleXMLRPCServer(("localhost",
                                           int(SFLvaultServer.settings['sflvault.port'])),
                                     requestHandler=SFLvaultRequestHandler,
+                                    logRequests=False,
                                     allow_none=True)
         self.server.register_introspection_functions()
         self.server.register_instance(dispatcher)
@@ -97,3 +104,16 @@ class SFLvaultServer(object):
             my_dict[key] = config.get(section, key, 0,
                                       {'here': os.getcwd()})
         return my_dict
+
+def main():
+    parser = argparse.ArgumentParser(description="Launch the SFLVault server")
+    parser.add_argument('config_file', nargs='?', default=None,
+        help="INI config file")
+    args = parser.parse_args()
+    if args.config_file:
+        logging.config.fileConfig(args.config_file)
+    server = SFLvaultServer(args.config_file)
+    server.start_server()
+
+if __name__ == '__main__':
+    main()
