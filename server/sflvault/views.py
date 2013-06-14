@@ -249,6 +249,8 @@ def sflvault_login(request, username, version):
     # 15 seconds to complete login/authenticate round-trip.
     u.logging_timeout = datetime.now() + timedelta(0, 15)
     u.logging_token = b64encode(rnd)
+    if not u.pubkey:
+        return vaultMsg(False, "User %s is not set up. Run user-setup first!" % username)
     
     #a = meta.Session.query(User).filter_by(username=username).one()
     e = u.elgamal()
