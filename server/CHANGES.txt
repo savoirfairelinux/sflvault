@@ -1,4 +1,7 @@
-0.0
----
+0.8.0
+-----
 
--  Initial version
+* Dropped Pylons and use Python's XMLRPC library to power the server.
+* Added authentication caching. (#9440)
+* Replaced usage of obsolete crypto function. (#17444)
+* Improved unit test reliability.
