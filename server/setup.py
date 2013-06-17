@@ -45,7 +45,6 @@ setup(
     long_description=README + '\n\n' +  CHANGES,
     classifiers=[
         "Programming Language :: Python",
-        "Framework :: Pylons",
         "Topic :: Internet :: WWW/HTTP",
     ],
     packages=find_packages(),
