@@ -1,0 +1,9 @@
+0.7.9 - 28-06-2013
+------------------
+
+* Add support for group_id optional argument.
+* Fix long-standing bug when the Gnome keyring is off-sync or when migrating. (#5236)
+* Fix bug with machine-edit when Unicode was saved inside. (#923)
+* Fix unicode conversion bug. (#7823)
+* Fix urwid 1.0 compatibility. (#7321)
+* Fix namespace packaging issue.
