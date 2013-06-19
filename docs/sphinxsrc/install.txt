@@ -1,0 +1,223 @@
+=========================
+Installation instructions
+=========================
+
+.. warning::
+
+    Before you start, you should install the client on some computer from where you're going to connect to the SFLvault server. This is because the client must be ready for when the server is setup: you have 15 minutes to set up the admin account after a certain point.
+
+---------------------------------------------------
+Installing from your distribution's package manager
+---------------------------------------------------
+
+Ubuntu
+======
+
+.. warning::
+
+   TODO
+
+----------------------
+Installing from PyPI
+----------------------
+
+.. _install-dependencies:
+
+Install system dependencies
+============================
+
+.. note::
+   These instructions assume you are installing on Ubuntu 10.04 or newer. Specific package manager related commands and package names may vary.
+
+SFLvault requires the python headers to compile the crypto libraries. These instructions assume
+you are installing SFLvault inside a virtual environment.
+
+::
+
+   $ sudo apt-get install python-virtualenv python-dev
+
+Make a directory where the application will live::
+
+   $ mkdir SFLvault
+   $ cd SFLvault
+
+.. note::
+
+  If you want this installation to become production installation, make sure you create a user and a group for that purpose, and that you issues those commands as that user.
+
+.. _configure-venv:
+
+Configure your virtual environment
+----------------------------------
+
+.. code::
+
+   $ virtualenv --distribute env
+   $ . env/bin/activate
+   (env)$ pip install -r requirements.freeze
+
+Install SFLvault
+----------------
+
+.. code::
+
+  (env)$ pip install SFLvault-common
+  (env)$ pip install SFLvault-server
+
+.. note::
+
+ If you get some permission denied, make sure you have activated your environment with :code:`. env/bin/activate` (do not forget the dot!)
+
+.. _run-sflvault:
+
+Run SFLvault
+------------
+
+At this point it is possible to run SFLvault with the default configuration:
+
+.. code::
+   
+   python -m sflvault.server
+
+If you want to configure your server, you can base yourself on one of the example "ini" files in the ``server`` folder and then run the server with:
+
+.. code::
+
+   python -m sflvault.server /path/to/config
+
+The first time you run the server, it will initialize a new database with a new 'admin' user. From this moment, you have 15 minutes to setup your admin account.
+
+.. _create-admin-account:
+
+Create the admin account
+========================
+
+.. warning::
+
+  If you're too late, and you notice that you've expired the timer, don't worry! Please go to :ref:`recreating-admin-account`
+
+
+On your other computer (or on the same), run:
+
+.. code ::
+
+   $ sflvault user-setup admin https://localhost:5000/vault/rpc
+
+This will generate a new keypair, and store the public key in the vault. The admin account is setup, and you may start using the vault.
+
+
+You should see something like:
+
+.. code::
+
+   ...
+   Enter passphrase (to secure your private key):
+   Enter passphrase again:
+   Vault says: User setup complete for admin
+   Saving settings...
+   </pre>
+
+---------------
+Developer setup
+---------------
+
+Installing from source
+======================
+
+Get the latest version from git::
+
+  $ git clone http://git.sflvault.org/sflvault.git SFLvault
+
+This will create a SFLvault directory where the application will live.
+
+Before continuing, make sure to :ref:`install-dependencies` and :ref:`configure-venv`
+
+You can now install the required SFLvault packages::
+
+  $ cd common
+  $ python setup.py develop
+  $ cd ../server
+  $ python setup.py develop
+  $ cd ../client
+  $ python setup.py develop
+
+At this point you can :ref:`run-sflvault` and :ref:`create-admin-account`!
+
+Run the tests
+-------------
+To run the tests you need to install further dependencies:
+
+.. code::
+
+   $ pip install -r requirements.tests.freeze
+
+Which will let you run the vault's test suite:
+
+.. code::
+
+   $ nosetests -w server --cover-package=sflvault.server
+
+.. _recreating-admin-account:
+
+----------------------------
+Recreating the admin account
+----------------------------
+
+If you get an error from the Vault because you waited more than 15 minutes between the ``setup-app`` and the call to ``user-setup``, then you need to start with a new vault:
+
+1. Stop your server.
+2. Delete your database.
+3. Start your server.
+
+-----------
+SSL support
+-----------
+
+There's no built-in SSL support in SFLVault. While passwords and other secrets are never sent unencrypted over the network, it is still possible to see the requests to the vault in clear. If you prefer using SSL, then we recommend using a HTTP proxy to do so.
+
+------------------------------
+Make SFLvault a system service
+------------------------------
+
+To run as a server, you'll need to have an ``eggcache`` directory, so go to where you created the config file:
+
+.. code ::
+
+   $ cd SFLvault
+   $ mkdir eggcache
+
+and install this file in ``/etc/init.d/sflvault`` (tweak as needed):
+
+.. code::
+
+   #!/bin/sh -e
+
+   APPDIR="/home/MyUser/SFLvault"
+   cd $APPDIR
+   export PYTHON_EGG_CACHE="$APPDIR/eggcache"
+   PIDFILE="$APPDIR/paster.pid"
+   LOGFILE="$APPDIR/paster.log"
+   COMMAND="$APPDIR/env/bin/python -m sflvault.server /path/to/configuration --user=MyUser --group=MyUser --pid-file=$PIDFILE --log-file=$LOGFILE"
+
+  case "$1" in
+    start)
+      $COMMAND start
+      ;;
+    stop)
+      $COMMAND stop
+      ;;
+    restart)
+      $COMMAND restart
+      ;;
+    *)
+      echo $"Usage: $0 {start|stop|restart}"
+      exit 1
+  esac
+
+  exit 0
+
+Then run:
+
+.. code ::
+
+   chmod +x /etc/init.d/sflvault
