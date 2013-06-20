@@ -13,13 +13,7 @@ Production setup
 Installing from your distribution's package manager
 ===================================================
 
-Ubuntu
-------
-
-.. warning::
-
-   TODO
-
+This section will be added soon. In the meantime the preferred way to install SFLvault is from PyPI.
 
 Installing from PyPI
 ====================
