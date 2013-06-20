@@ -9,12 +9,12 @@ Welcome to SFLvault!
 
 .. image:: img/sflvault-logo-tagline.png
 
-SFLvault is a **Networked credentials store and authentication manager.** developped and maintained by `Savoir-faire Linux
+SFLvault is a **Networked credentials store and authentication manager** developed and maintained by `Savoir-faire Linux
 <http://www.savoirfairelinux.com/>`_.
 
-It has a client/vault (server) architecture allowing to cryptographically store and organise loads of passwords for different machines and services.
+It has a client/vault (server) architecture allowing encrypted storage and organization of a multitude passwords for different machines and services.
 
-This website contains all the documentation about SFLvault. To follow it's development please follow us on:
+This website contains all the documentation for SFLvault. To keep track of its development please follow us on:
 
 * http://projects.savoirfairelinux.com/projects/sflvault
 * http://github.com/savoirfairelinux/sflvault
