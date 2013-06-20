@@ -6,3 +6,4 @@
 * Improved unit test reliability.
 * Save the date the secret was modified, for traceability.
 * Fix namespace packaging issue.
+* session_trust parameter now deprecated

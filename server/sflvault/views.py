@@ -181,6 +181,7 @@ def sflvault_authenticate(request, username, cryptok):
     u  = None
     db = None
 
+    # DEPRECATED: will be removed in 0.9
     try:
         if settings['sflvault.vault.session_trust'].lower() in ['1', 'true', 't']:
             # If the session_trust parameter is true trust the session for the authentication.

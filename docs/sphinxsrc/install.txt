@@ -6,28 +6,33 @@ Installation instructions
 
     Before you start, you should install the client on some computer from where you're going to connect to the SFLvault server. This is because the client must be ready for when the server is setup: you have 15 minutes to set up the admin account after a certain point.
 
----------------------------------------------------
+----------------
+Production setup
+----------------
+
 Installing from your distribution's package manager
----------------------------------------------------
+===================================================
 
 Ubuntu
-======
+------
 
 .. warning::
 
    TODO
 
-----------------------
+
 Installing from PyPI
-----------------------
+====================
 
 .. _install-dependencies:
 
 Install system dependencies
-============================
+---------------------------
 
 .. note::
    These instructions assume you are installing on Ubuntu 10.04 or newer. Specific package manager related commands and package names may vary.
+
+SFLvault requires Python 2.6 or higher.
 
 SFLvault requires the python headers to compile the crypto libraries. These instructions assume
 you are installing SFLvault inside a virtual environment.
@@ -79,7 +84,58 @@ At this point it is possible to run SFLvault with the default configuration:
    
    python -m sflvault.server
 
-If you want to configure your server, you can base yourself on one of the example "ini" files in the ``server`` folder and then run the server with:
+If you need to configure your server, paste the following into a new file and tweak to your needs. Arguments are explained in :ref:`configuration-file`
+
+.. code::
+
+   #
+   # SFLvault - Pylons development environment configuration
+   #
+   # The %(here)s variable will be replaced with the parent directory of this file
+   #
+   [sflvault]
+   sflvault.vault.session_timeout = 90
+   sflvault.vault.setup_timeout = 300
+   sflvault.vault.session_trust = true
+   sqlalchemy.url = sqlite:///%(here)s/sflvault.sqlite
+
+   # Logging configuration
+   [loggers]
+   keys = root, sflvault, sqlalchemy
+   
+   [handlers]
+   keys = console
+   
+   [formatters]
+   keys = generic
+   
+   [logger_root]
+   level = INFO
+   handlers = console
+
+   [logger_sflvault]
+   level = DEBUG
+   handlers = console
+   qualname = sflvault
+   
+   # SQLAlchemy logging from within paster shell
+   [logger_sqlalchemy]
+   # INFO or DEBUG for all SQL statements.
+   level = INFO
+   handlers =
+   qualname = sqlalchemy.engine
+
+   [handler_console]
+   class = StreamHandler
+   args = (sys.stderr,)
+   level = NOTSET
+   formatter = generic
+   
+   [formatter_generic]
+   format = %(asctime)s,%(msecs)03d %(levelname)-5.5s [%(name)s] %(message)s
+   datefmt = %H:%M:%S
+
+Once you have created your configuration file, you can run tell SFLvault to use it by calling the following: 
 
 .. code::
 
@@ -90,7 +146,7 @@ The first time you run the server, it will initialize a new database with a new 
 .. _create-admin-account:
 
 Create the admin account
-========================
+------------------------
 
 .. warning::
 
@@ -115,11 +171,14 @@ You should see something like:
    Enter passphrase again:
    Vault says: User setup complete for admin
    Saving settings...
-   </pre>
 
----------------
-Developer setup
----------------
+Congratulations! You now have running instance of SFLvault! For information on how to use it, please refer to the :doc:`user manual </usermanual>`.
+
+.. _configuration-file:
+
+-----------------
+Development setup
+-----------------
 
 Installing from source
 ======================
@@ -157,11 +216,48 @@ Which will let you run the vault's test suite:
 
    $ nosetests -w server --cover-package=sflvault.server
 
+
+
+----------------------
+Additional information
+----------------------
+
+Configuration parameters
+========================
+
+Section sflvault
+----------------
+
+*sflvault.vault.session_timeout*
+  Determines how long the user can wait, in seconds,  before issuing two commands to SFLvault. 
+
+  Default value is 60 seconds.
+
+*sflvault.vault.setup_timeout*
+  Determines how long a user has, in seconds, to issue a `user-setup` command and configure his
+  account after it has been created.
+
+  Default value is 300 seconds.
+
+*sflvault.vault.session_trust*
+  Determines if a user's session can be cached and used for login later in time.
+  **This parameter is deprecated and will be removed in 0.9.0**
+
+  Default value is false.
+
+*sqlalchemy.url (default value: sqlite://%(here)s/sflvault.sqlite)*
+  Determines whe
+
+Section loggers, handlers and formatters
+----------------------------------------
+Logging in SFLvault is done with the standard logging module. For further information, please refer to the official python documentation:
+
+ * http://docs.python.org/2/library/logging.html
+
 .. _recreating-admin-account:
 
-----------------------------
 Recreating the admin account
-----------------------------
+============================
 
 If you get an error from the Vault because you waited more than 15 minutes between the ``setup-app`` and the call to ``user-setup``, then you need to start with a new vault:
 
@@ -169,15 +265,14 @@ If you get an error from the Vault because you waited more than 15 minutes betwe
 2. Delete your database.
 3. Start your server.
 
------------
 SSL support
------------
+===========
 
 There's no built-in SSL support in SFLVault. While passwords and other secrets are never sent unencrypted over the network, it is still possible to see the requests to the vault in clear. If you prefer using SSL, then we recommend using a HTTP proxy to do so.
 
-------------------------------
+
 Make SFLvault a system service
-------------------------------
+==============================
 
 To run as a server, you'll need to have an ``eggcache`` directory, so go to where you created the config file:
 
