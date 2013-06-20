@@ -1,0 +1,69 @@
+=================
+Api documentation
+=================
+
+.. toctree::
+   :maxdepth: 2
+   
+   client
+   server
+   vaultaccess
+   utils
+
+Before we start, here is a quick mapping of the elements::
+
+
+   SFLvault command line                            SQLite database
+       |                                                  |
+       |                                                  |
+  SFLvaultClient object ---> (direct access) ---> SFLvaultAccess object
+        \                                                /
+         \ (wraps)                                      /
+          \                                            /
+       XMLRPCClient  ---> (network) ----> XMLRPCController 
+
+
+The :class:`sflvault.client.SFLvaultClient` methods are called when you run
+``sflvault connect s#1`` or ``sflvault service-add ...``.
+Two other objects enter into composition when calling from the command line:
+:class:`sflvault.client.SFLvaultCommand` and
+:class:`sflvault.client.SFLvaultShell` (if you launched the shell
+with ``sflvault`` alone).
+
+The :class:`sflvault.client.SFLvaultCommand` object deals with all the options
+parsing, and calls methods on the underlying
+:class:`sflvault.client.SFLvaultClient` object.
+
+Communication to the Vault is done through XML-RPC via the server's XML-RPC
+controller, through the use of the client's xmlrpc library. This gives a quite
+direct access to the :class:`sflvault.lib.vault.SFLvaultAccess` object on the
+server-side, while wrapping calls when an authentication mechanism.
+
+Tutorial
+========
+
+Here is a sample program that uses the SFLvault library:
+
+.. code-block:: python
+
+   #!/usr/bin/python
+   from sflvault.client import SFLvaultClient
+   c = SFlvaultClient()
+
+   # Search the vault for anything
+   c.search('.')
+
+   # Show infos about service s#305, then connect to it
+   c.show(305)
+   c.connect(305)
+
+   # Make a port-forward to the remote location (even through multiple hops)
+   c.connect(123, command_line="-L 1234:localhost:80")
+
+You will be able to run this program once you've issued the
+``sflvault user-setup`` command and created a ``~/.sflvault/config`` file
+containing your encrypted private key and the vault's URL.
+
+See the documentation for all the :class:`sflvault.client.SFLvaultClient`
+commands.
+

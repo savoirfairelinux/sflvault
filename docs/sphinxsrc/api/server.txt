@@ -1,0 +1,16 @@
+
+SFLvaultClient object
+=====================
+
+This is was is called when you run ``sflvault connect s#1`` or other
+``sflvault ...`` commands.
+
+It wraps all the functionality of querying the remote vault, decrypting 
+and displaying the results.
+
+.. Commented imports
+
+   >>> import sflvault.server
+
+.. autoclass:: sflvault.lib.vault.SFLvaultAccess
+   :members:
