@@ -29,6 +29,8 @@ Contents
    install
    permissions
    api/api
+   client_changelog
+   server_changelog
 
 
 

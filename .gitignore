@@ -65,3 +65,7 @@ server/host.pem
 build-stamp
 /*/debian/sflvault-*
 /*/debian/files
+
+# symlinked changelogs in sphinx doc
+/docs/sphinxsrc/server_changelog.txt
+/docs/sphinxsrc/client_changelog.txt

@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys, os, os.path
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -199,3 +199,9 @@ latex_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
+
+HERE = os.path.dirname(__file__)
+if not os.path.exists(os.path.join(HERE, 'server_changelog.txt')):
+    os.link(os.path.join(HERE, '..', '..', 'server', 'CHANGES.txt'), os.path.join(HERE, 'server_changelog.txt'))
+if not os.path.exists(os.path.join(HERE, 'client_changelog.txt')):
+    os.link(os.path.join(HERE, '..', '..', 'client', 'CHANGES.txt'), os.path.join(HERE, 'client_changelog.txt'))
