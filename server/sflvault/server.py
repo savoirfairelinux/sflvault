@@ -1,25 +1,36 @@
 import ConfigParser
 from datetime import datetime, timedelta
-from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
+from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler, SimpleXMLRPCDispatcher
+import SocketServer
+from BaseHTTPServer import HTTPServer
 import os
 import sys
 import logging
 import logging.config
 import argparse
+import socket
 
 import transaction
 from sqlalchemy import engine_from_config
+from OpenSSL import SSL
 
 import sflvault.model
 from sflvault.views import XMLRPCDispatcher
 
 log = logging.getLogger(__name__)
 
+# SSL handling based on http://code.activestate.com/recipes/496786-simple-xml-rpc-server-over-https/
+
 class SFLvaultRequestHandler(SimpleXMLRPCRequestHandler):
 
     def __init__(self, request, client_address, server):
         self.client_address = client_address
         SimpleXMLRPCRequestHandler.__init__(self, request, client_address, server)
+
+    def setup(self):
+        self.connection = self.request
+        self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
+        self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
 
     def _dispatch(self, method, params):
         address = self.client_address
@@ -34,6 +45,34 @@ class SFLvaultRequestHandler(SimpleXMLRPCRequestHandler):
         return self.server.instance._dispatch(request, method, params)
 
     rpc_paths = ('/vault', '/vault/rpc', '/',)
+
+class SecureXMLRPCServer(HTTPServer, SimpleXMLRPCDispatcher):
+    def __init__(self, server_address, requestHandler, keyfile, certfile, logRequests=True, allow_none=False):
+        """Secure XML-RPC server.
+
+        It it very similar to SimpleXMLRPCServer but it uses HTTPS for transporting XML data.
+        """
+        self.logRequests = logRequests
+
+        SimpleXMLRPCDispatcher.__init__(self, allow_none=allow_none)
+        SocketServer.BaseServer.__init__(self, server_address, requestHandler)
+        ctx = SSL.Context(SSL.SSLv23_METHOD)
+        ctx.use_privatekey_file(keyfile)
+        ctx.use_certificate_file(certfile)
+        self.socket = SSL.Connection(ctx, socket.socket(self.address_family, self.socket_type))
+        self.server_bind()
+        self.server_activate()
+
+    def shutdown_request(self, request):
+        # Our SSL connection doesn't take an argument on shutdown so we have to override the method
+        # that calls it.
+        try:
+            #explicitly shutdown.  socket.close() merely releases
+            #the socket and waits for GC to perform the actual close.
+            request.shutdown()
+        except socket.error:
+            pass #some platforms may raise ENOTCONN here
+        self.close_request(request)
 
 class SFLvaultServer(object):
 
@@ -82,11 +121,28 @@ class SFLvaultServer(object):
 
     def initialize_server(self):
         dispatcher = self._create_request_dispatcher()
-        self.server = SimpleXMLRPCServer(("localhost",
-                                          int(SFLvaultServer.settings['sflvault.port'])),
-                                    requestHandler=SFLvaultRequestHandler,
-                                    logRequests=False,
-                                    allow_none=True)
+        port = int(SFLvaultServer.settings['sflvault.port'])
+        address = ("localhost", port)
+        keyfile = SFLvaultServer.settings.get('sflvault.keyfile')
+        certfile = SFLvaultServer.settings.get('sflvault.certfile')
+        if keyfile and certfile:
+            log.info("Starting in SSL mode")
+            self.server = SecureXMLRPCServer(
+                address,
+                requestHandler=SFLvaultRequestHandler,
+                keyfile=keyfile,
+                certfile=certfile,
+                logRequests=False,
+                allow_none=True,
+            )
+        else:
+            log.info("Starting in insecure mode")
+            self.server = SimpleXMLRPCServer(
+                address,
+                requestHandler=SFLvaultRequestHandler,
+                logRequests=False,
+                allow_none=True,
+            )
         self.server.register_introspection_functions()
         self.server.register_instance(dispatcher)
 

@@ -9,3 +9,4 @@ venusian==1.0a8
 wsgiref==0.1.2
 zope.interface==4.0.5
 zope.sqlalchemy==0.7.2
+pyOpenSSL==0.13

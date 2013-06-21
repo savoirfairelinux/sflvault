@@ -33,6 +33,7 @@ requires = [
     'venusian',
     'zope.sqlalchemy',
     'decorator',
+    'pyOpenSSL',
 ]
 
 setup(
