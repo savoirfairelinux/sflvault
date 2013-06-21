@@ -28,6 +28,7 @@ Contents
 
    features
    install
+   architecture
    permissions
    api/api
    client_changelog
