@@ -55,12 +55,19 @@ Configure your virtual environment
    $ . env/bin/activate
    (env)$ pip install -r requirements.freeze
 
+Client installation first
+-------------------------
+
+To properly setup your server (with ``user-setup``), you'll need SFLVault's client installed. It has
+the same dependencies as the server, so once you have them, you can install a client with a simple::
+
+  (env)$ pip install SFLVault-client
+
 Install SFLvault
 ----------------
 
 .. code::
 
-  (env)$ pip install SFLvault-common
   (env)$ pip install SFLvault-server
 
 .. note::
