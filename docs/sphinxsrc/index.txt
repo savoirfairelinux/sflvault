@@ -26,6 +26,7 @@ Contents
    :maxdepth: 2
    :glob:
 
+   features
    install
    permissions
    api/api
