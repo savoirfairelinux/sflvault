@@ -247,7 +247,8 @@ Section sflvault
   Default value is false.
 
 *sqlalchemy.url (default value: sqlite://%(here)s/sflvault.sqlite)*
-  Determines whe
+  Where SFLVault's database is. It's a SQLAlchemy URL, about which you can have more information at
+  http://docs.sqlalchemy.org/en/rel_0_8/core/engines.html
 
 Section loggers, handlers and formatters
 ----------------------------------------
