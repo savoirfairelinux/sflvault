@@ -29,7 +29,7 @@ if platform.system() != 'Windows':
     import readline
 
 
-__all__ = ['shred', 'urlparse', 'AuthenticationError', 'PermissionError',
+__all__ = ['urlparse', 'AuthenticationError', 'PermissionError',
            'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
            'ServiceRequireError', 'ServiceExpectError', 'sflvault_escape_chr',
            'ask_for_service_password', 'services_entry_points',
@@ -51,22 +51,6 @@ urlparse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
 
 # Issue: Ctrl+Alt+;
 sflvault_escape_chr = chr(30)
-
-
-# TO REMOVE: This shred function is useless in python, because of the way
-# it manages memory (especially strings)
-def shred(var):
-    """Tries to wipe out from memory certain variables
-
-    Apparently, Python can't do that, or it depends on the implementation.
-    We should find a way to do that"""
-    l = len(var)
-    var = 'x' * l
-    return var
-
-
-
-
 
 def ask_for_service_password(edit=False, url=None):
     # Use the module's ask_password if it supports one...
