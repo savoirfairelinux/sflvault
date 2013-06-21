@@ -827,9 +827,11 @@ class SFLvaultCommand(object):
 
         Call this after an admin has called `user-add` on the vault.
         
-        username  - the username used in the `user-add` call.
-        vault_url - the URL (http://example.org:port/vault/rpc) to the
-                    vault"""
+        Arguments:
+            username: the username used in the `user-add` call.
+        
+            vault_url: the URL (http://example.org:port/vault/rpc) to the vault.
+        """
         
         self.parser.set_usage("user-setup <username> <vault_url>")
         self._parse()

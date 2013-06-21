@@ -612,16 +612,22 @@ class SFLvaultClient(object):
                     notes='', metadata=None):
         """Add a service to the Vault's database.
 
-        machine_id - A m#id machine identifier.
-        parent_service_id - A s#id, parent service ID, to which you should
-                            connect before connecting to the service you're
-                            adding. Specify 0 or None if no parent exist.
-                            If you set this, machine_id is disregarded.
-        url - URL of the service, with username, port and path if required
-        group_ids - Multiple group IDs the service is part of. See `list-groups`
-        notes - Simple text field, with notes.
-        secret - Password for the service. Plain-text.
-        metadata - Dictionary with metadata for services (depends on service).
+        Arguments:
+            machine_id: A m#id machine identifier.
+        
+            parent_service_id: A s#id, parent service ID, to which you should connect before
+            connecting to the service you're adding. Specify 0 or None if no parent exist. If you
+            set this, machine_id is disregarded.
+        
+            url: URL of the service, with username, port and path if required
+        
+            group_ids: Multiple group IDs the service is part of. See `list-groups`
+        
+            notes: Simple text field, with notes.
+        
+            secret: Password for the service. Plain-text.
+        
+            metadata: Dictionary with metadata for services (depends on service).
         """
 
         # TODO: accept group_id as group_ids, accept list and send list.
@@ -751,15 +757,17 @@ class SFLvaultClient(object):
     def search(self, query, filters=None, verbose=True):
         """Search the database for query terms.
 
-        query - list of REGEXPs to be matched
-        filters - is a dict with keys in ['groups', 'machines', 'customers']
-                  that limits the records returned to those matching those
-                  constraints. The values can be either int or str
-                  (representing an int).
-        verbose - shows the notes and location attributes for services
-                  and machines.
+        Arguments:
+            query: list of REGEXPs to be matched.
+            
+            filters: dict with keys in ['groups', 'machines', 'customers'] that limits the records
+            returned to those matching those constraints. The values can be either int or str
+            (representing an int).
+            
+            verbose (bool): shows the notes and location attributes for services and machines.
 
-        Returns a hierarchical view of the results.
+        Returns:
+            Hierarchical view of the results.
         """
 
         # Remove empty filters:
@@ -1218,14 +1226,12 @@ class SFLvaultClient(object):
         """List customers in the vault and possibly corresponding to the needed id
         
         Keywords arguments:
-        customer_id -- Id of the needed customer to list
+            customer_id -- Id of the needed customer to list
 
-        Receive a list: 
-        [{'id': '%d',
-         'name': 'blah'},
-         {'id': '%d',
-         'name': 'blah2'}]
-         """
+        Returns a list of dicts:
+            [{'id': '%d','name': 'blah'}]
+
+        """
         retval = vaultReply(self.vault.customer_list(self.authtok),
                             "Error listing customers")
         print "Customer list:"
