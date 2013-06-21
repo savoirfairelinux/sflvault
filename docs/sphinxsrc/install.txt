@@ -250,7 +250,7 @@ Section sflvault
 
 *sflvault.certfile*
 
-  Paths to a key file and certificate file to use to SSL mode. When both configurations are set,
+  Paths to a key file and certificate file to use the SSL mode. When both configurations are set,
   the server is started in SSL mode, otherwise, it's started in plain HTTP mode.
 
 *sqlalchemy.url (default value: sqlite://%(here)s/sflvault.sqlite)*
