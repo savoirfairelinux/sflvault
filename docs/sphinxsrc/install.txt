@@ -18,6 +18,12 @@ This section will be added soon. In the meantime the preferred way to install SF
 Installing from PyPI
 ====================
 
+.. warning::
+
+   The instructions in this wiki are for the latest version of SFLvault (0.8) that has not yet been released on the Python package index. It will be updated shortly. In the meantime please refer to:
+
+    https://projects.savoirfairelinux.com/projects/sflvault/wiki/NewServerInstallation   
+
 .. _install-dependencies:
 
 Install system dependencies
