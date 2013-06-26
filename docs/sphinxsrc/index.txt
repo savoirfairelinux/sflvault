@@ -9,6 +9,7 @@ Welcome to SFLvault!
 
 .. image:: img/sflvault-logo-tagline.png
 
+
 SFLvault is a **Networked credentials store and authentication manager** developed and maintained by `Savoir-faire Linux
 <http://www.savoirfairelinux.com/>`_.
 
@@ -18,6 +19,55 @@ This website contains all the documentation for SFLvault. To keep track of its d
 
 * http://projects.savoirfairelinux.com/projects/sflvault
 * http://github.com/savoirfairelinux/sflvault
+
+
+
+Download the client
+-------------------
+Ubuntu
+^^^^^^
+SFLvault is provided by Savoir-faire Linux's PPA_
+
+.. _PPA: https://help.ubuntu.com/community/Repositories/Ubuntu#Adding_PPAs
+
+First make sure you have the required tools to manage PPAS::
+
+  $ sudo apt-get install python-software-properties
+
+Install the ppa::
+
+  $ sudo add-apt-repository ppa:savoirfairelinux/sflvault
+
+And run::
+
+  $ sudo apt-get update
+  $ sudo apt-get install sflvault-client
+
+If you would rather have the Qt client::
+
+  $ sudo apt-get update
+  $ sudo apt-get install sflvault-client-qt
+
+Fedora
+^^^^^^
+Install the repository::
+
+  $ sudo yum install https://yum.savoirfairelinux.com/sflvault/f19/x86_64/sflvault-release-1-1.noarch.rpm
+  $ sudo yum install sflvault-client
+
+You can also install the graphical client::
+
+  $ sudo yum install sflvault-client-qt
+Other
+^^^^^
+
+Install from the Python package index::
+
+  $ pip install SFlvault-client
+
+Install the server
+-------------------
+:ref:`production-setup`
 
 Contents
 ========

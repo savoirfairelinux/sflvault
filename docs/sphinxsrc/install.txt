@@ -6,6 +6,9 @@ Installation instructions
 
     Before you start, you should install the client on some computer from where you're going to connect to the SFLvault server. This is because the client must be ready for when the server is setup: you have 15 minutes to set up the admin account after a certain point.
 
+
+.. _production-setup:
+
 ----------------
 Production setup
 ----------------
@@ -61,6 +64,7 @@ Configure your virtual environment
    $ . env/bin/activate
    (env)$ pip install -r requirements.freeze
 
+.. _client-install::
 Client installation first
 -------------------------
 
