@@ -95,7 +95,11 @@ At this point it is possible to run SFLvault with the default configuration:
    
    python -m sflvault.server
 
-If you need to configure your server, paste the following into a new file and tweak to your needs. Arguments are explained in :ref:`configuration-file`
+.. warning::
+   
+   The default configuration does not enable SSL and is therefore insecure. It is recommended to generate a SSL key and certificate and configure SFLvault to use it. The following configuration file provides instructions to configure SSL on your installation.
+
+To provide a configuration file to your SFLvault instance, please use the following file. Options are detailed in the :ref:`configuration-file` section.
 
 .. code::
 
@@ -109,6 +113,8 @@ If you need to configure your server, paste the following into a new file and tw
    sflvault.vault.setup_timeout = 300
    sflvault.vault.session_trust = true
    sqlalchemy.url = sqlite:///%(here)s/sflvault.sqlite
+   sflvault.keyfile = /path/to/ssl/keyfile
+   sflvault.certfile = /path/to/ssl/certfile
 
    # Logging configuration
    [loggers]
@@ -145,6 +151,13 @@ If you need to configure your server, paste the following into a new file and tw
    [formatter_generic]
    format = %(asctime)s,%(msecs)03d %(levelname)-5.5s [%(name)s] %(message)s
    datefmt = %H:%M:%S
+
+sflvault.keyfile and sflvault.certfile are the paths to your keyfile and certfile. You can use OpenSSl to generate these:
+
+.. code::
+
+   openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days XXX
+
 
 Once you have created your configuration file, you can run tell SFLvault to use it by calling the following: 
 
@@ -185,7 +198,7 @@ You should see something like:
 
 Congratulations! You now have running instance of SFLvault! For information on how to use it, please refer to the :doc:`user manual </usermanual>`.
 
-.. _configuration-file:
+
 
 -----------------
 Development setup
@@ -235,6 +248,8 @@ Additional information
 
 Configuration parameters
 ========================
+
+.. _configuration-file:
 
 Section sflvault
 ----------------
