@@ -89,6 +89,7 @@ class SFLvaultServer(object):
         result = {
             'sflvault.vault.session_timeout': '15',
             'sflvault.vault.setup_timeout': '300',
+            'sflvault.host': 'localhost',
             'sflvault.port': '5000',
             'sqlalchemy.url': 'sqlite:///%s/sflvault.db' % os.getcwd()
         }
@@ -121,8 +122,9 @@ class SFLvaultServer(object):
 
     def initialize_server(self):
         dispatcher = self._create_request_dispatcher()
+        host = SFLvaultServer.settings['sflvault.host']
         port = int(SFLvaultServer.settings['sflvault.port'])
-        address = ("localhost", port)
+        address = (host, port)
         keyfile = SFLvaultServer.settings.get('sflvault.keyfile')
         certfile = SFLvaultServer.settings.get('sflvault.certfile')
         if keyfile and certfile:

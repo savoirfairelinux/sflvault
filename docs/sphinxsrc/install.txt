@@ -254,6 +254,13 @@ Configuration parameters
 Section sflvault
 ----------------
 
+*sflvault.host*
+  The address at which we host the server. ``localhost`` is the default and results in a local-only
+  server. If you want to serve externally, you can set this to ``0.0.0.0``.
+
+*sflvault.port*
+  The port to listen to. Default is ``5000``.
+
 *sflvault.vault.session_timeout*
   Determines how long the user can wait, in seconds,  before issuing two commands to SFLvault. 
 
