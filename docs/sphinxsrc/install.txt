@@ -42,7 +42,7 @@ you are installing SFLvault inside a virtual environment.
 
 ::
 
-   $ sudo apt-get install python-virtualenv python-dev
+   $ sudo apt-get install python-virtualenv python-pip python-dev autoconf
 
 Make a directory where the application will live::
 
