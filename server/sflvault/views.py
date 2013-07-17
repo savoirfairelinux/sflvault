@@ -285,6 +285,7 @@ def sflvault_user_list(request, authtok, groups):
     return vault.user_list(groups)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.machine_get')
+@xmlrpc_method(endpoint='sflvault', method='sflvault.machine.get')
 @authenticated_user
 def sflvault_machine_get(request, authtok, machine_id):
     return vault.machine_get(machine_id)
@@ -340,9 +341,7 @@ def sflvault_search(request, authtok, search_query, group_ids, verbose, filters)
         # Please don't do that, use filters instead.
         filters['groups'] = group_ids
 
-    result = vault.search(search_query, filters, verbose)
-    print 'foo', repr(result)
-    return result
+    return vault.search(search_query, filters, verbose)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_add')
 @authenticated_user
@@ -377,6 +376,7 @@ def sflvault_machine_list(request, authtok, customer_id=None):
     return vault.machine_list(customer_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.customer_get')
+@xmlrpc_method(endpoint='sflvault', method='sflvault.customer.get')
 @authenticated_user
 def sflvault_customer_get(request, authtok, customer_id):
     return vault.customer_get(customer_id)
@@ -449,6 +449,7 @@ def sflvault_group_del_user(request, authtok, group_id, user):
     return vault.group_del_user(group_id, user)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_list')
+@xmlrpc_method(endpoint='sflvault', method='sflvault.group.list')
 @authenticated_user
 def sflvault_group_list(request, authtok, list_users=False):
     return vault.group_list(False, list_users)
