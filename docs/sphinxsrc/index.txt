@@ -24,7 +24,7 @@ This website contains all the documentation for SFLvault. To keep track of its d
 
 Download the client
 -------------------
-Ubuntu
+Ubuntu until version 12.04
 ^^^^^^
 SFLvault is provided by Savoir-faire Linux's PPA_
 
@@ -47,6 +47,17 @@ If you would rather have the Qt client::
 
   $ sudo apt-get update
   $ sudo apt-get install sflvault-client-qt
+
+Ubuntu version 12.10 and upper
+^^^^^^
+
+First install pip::
+
+  $  sudo apt-get install python-pip python-dev build-essential 
+
+And run::
+
+  $  sudo pip install SFlvault-client
 
 Fedora
 ^^^^^^
