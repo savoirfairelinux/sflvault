@@ -109,7 +109,7 @@ def authenticate(keep_privkey=False):
         retval = self.vault.login(username, pkgres.get_distribution('SFLvault_client').version)
         self.authret = retval
         if not retval['error']:
-            # try the last token
+            # try the last token. This is to avoid needless decrypting. See #9440.
             retval2 = self.vault.authenticate(username, self.authtok)
             if retval2['error']:
                 print retval2['message']
