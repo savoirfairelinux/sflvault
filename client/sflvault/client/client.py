@@ -312,14 +312,26 @@ class SFLvaultConfig(object):
         self._check_keyring()
         import keyring
 
+        def support_level(backend):
+            try:
+                priority = backend.priority
+            except AttributeError:
+                # python-keyring < 2.0
+                priority = backend.supported()
+            if priority < 0:
+                return "Not installed"
+            elif priority < 1:
+                return "Supported"
+            else:
+                return "Recommended"
+
         current = self.wallet_get()
         out = [('0', 'Manual', None, 'Disabled', current == None)]
-        ref = {1: "Recommended", 0: "Supported", -1: "Not installed"} 
         for i, backend in enumerate(keyring.backend.get_all_keyring()):
             out.append((str(i + 1),
                         backend.__class__.__name__,
                         backend,
-                        ref[backend.supported()],
+                        support_level(backend),
                         backend.__class__.__name__ == current,
                         ))
         return out
@@ -384,7 +396,12 @@ class SFLvaultConfig(object):
                  'KDEKWallet': 'python-keyring-kwallet',
                  'GnomeKeyring': 'python-keyring-gnome',
                  }
-        if backend.supported() == -1:
+        try:
+            priority = backend.priority
+        except AttributeError:
+            # python-keyring < 2.0
+            priority = backend.supported()
+        if priority < 0:
             if name in assoc:
                 add = ' To add support, please install the `%s` package.' % \
                     assoc[name]
