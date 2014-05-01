@@ -16,10 +16,9 @@ setup(
     url='http://www.sflvault.org',
     license='GPLv2',
     install_requires=[
-                    #"PyQt",
-                      "SFLvault-client==0.7.8.2",
-                      "SFLvault-common==0.7.8.1",
-                      ],
+        "SFLvault-client==0.7.8.2",
+        "SFLvault-common==0.7.8.1",
+    ],
     include_package_data=True,
     packages=find_packages(exclude=['ez_setup']),
     test_suite='nose.collector',
@@ -32,5 +31,3 @@ setup(
     sflvault-client-qt = sflvault.clientqt:main
     """,
 )
-
-

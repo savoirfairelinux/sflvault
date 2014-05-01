@@ -51,6 +51,7 @@ class demo(ShellService):
 
     def prework(self):
         print "TESTING123"
+        
         class expect_linux_version(ExpectClass):
             """Shortcut pexpect operations.
 
@@ -91,4 +92,3 @@ class demo(ShellService):
         self.parent.interact()
 
     # interact() and postwork() inherited
-

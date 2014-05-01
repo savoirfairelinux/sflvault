@@ -64,8 +64,10 @@ class AliasDock(QtGui.QDockWidget):
         """
             Define tree shortcuts
         """
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Delete),
-                self.alias.alias_list, self.alias.model.delAlias)
+        QtGui.QShortcut(
+            QtGui.QKeySequence(QtCore.Qt.Key_Delete),
+            self.alias.alias_list, self.alias.model.delAlias
+        )
 #        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_F2),
 #                self.alias.alias_list, self.alias.model.editAlias)
 
@@ -132,7 +134,7 @@ class AliasModel(QtGui.QStandardItemModel):
                 return False
             # Get id of the selected service
             id_index = self.tree.selectedIndexes()[1]
-            id  = self.tree.model().data(id_index).toString()
+            id = self.tree.model().data(id_index).toString()
 
         # Insert the new row 
         self.insertRow(rowNumber)
@@ -175,7 +177,7 @@ class AliasModel(QtGui.QStandardItemModel):
             Edit alias from context menu
         """
         if not id and not alias:
-             # if not get secleted indexes
+            # if not get secleted indexes
             selected_row = self.parent.alias_list.selectedIndexes()
             # Test if there are selected indexes
             if not selected_row:

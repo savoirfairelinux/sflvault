@@ -36,7 +36,7 @@ class TestVaultController(TestController):
     
 
     def _rand_name(self):
-        return '%s' % str(random.randint(0,1000))
+        return '%s' % str(random.randint(0, 1000))
 
     def _add_new_group(self):
         """Adds a new group with a random name"""
@@ -56,11 +56,13 @@ class TestVaultController(TestController):
     def _add_new_service(self):
         mid = self._add_new_machine()
         gid = self._add_new_group()
-        return self.vault.service_add(mid['machine_id'],
-                               0,
-                               'ssh://sflvault.org',
-                               [gid['group_id']],
-                               'secret') 
+        return self.vault.service_add(
+            mid['machine_id'],
+            0,
+            'ssh://sflvault.org',
+            [gid['group_id']],
+            'secret'
+        )
         
 
     def setUp(self):
@@ -108,7 +110,10 @@ class TestVaultController(TestController):
     def test_alias_add(self):
         """testing add a new alias to the vault"""
         cres = self.vault.customer_add(u"Testing é les autres")
-        ares = self.vault.cfg.alias_add("customer#%s"%cres['customer_id'], "c#%s" % cres['customer_id'])
+        ares = self.vault.cfg.alias_add(
+            "customer#%s" % cres['customer_id'],
+            "c#%s" % cres['customer_id']
+        )
         self.assertTrue(ares)
 
     def test_alias_del(self):
@@ -132,7 +137,8 @@ class TestVaultController(TestController):
         self.assertTrue("User added" in ures['message'])
         
         # timeout
-        import time; time.sleep(2)
+        import time
+        time.sleep(2)
 
         ures = self.vault.user_add("test_username", False)
         self.assertTrue("had setup timeout expired" in ures['message'])
@@ -160,7 +166,7 @@ class TestVaultController(TestController):
         self.assertRaises(VaultError,
                           self.vault.group_put,
                           "invalid id",
-                          {'name': 'invalid param' })
+                          {'name': 'invalid param'})
 
 
     def test_group_put_name(self):
@@ -284,7 +290,7 @@ class TestVaultController(TestController):
                                      [gres3['group_id']], 
                                      'test',
                                      '')
-       # gares3 = self.vault.group_add_service(gres3['group_id'], res['service_id'])
+        # gares3 = self.vault.group_add_service(gres3['group_id'], res['service_id'])
 
         self.assertTrue(res is not None)
 
@@ -360,30 +366,29 @@ class TestVaultController(TestController):
                                       '')
         ## Search for service afterwards
         search = self.vault.search('service_del')
-        self.assertTrue(len(search['results'].items()) ==1)
+        self.assertTrue(len(search['results'].items()) == 1)
 
         # Adds all sort of crazy filters!
-        search2 = self.vault.search('service_del',
-                          filters={
-                              # Unspecified filters
-                              'color': 'red',
-                              'height': '2 meters',
-                              'bogomips': 5.5,
-                              'anxiety': None,
-                              # None values for specified filters
-                              'groups': None,
-                              'machines': None,
-                              'customers': None
-                          })
+        search2 = self.vault.search('service_del', filters={
+            # Unspecified filters
+            'color': 'red',
+            'height': '2 meters',
+            'bogomips': 5.5,
+            'anxiety': None,
+            # None values for specified filters
+            'groups': None,
+            'machines': None,
+            'customers': None
+        })
 
-        self.assertTrue(len(search2['results'].items()) ==1)        
+        self.assertTrue(len(search2['results'].items()) == 1)        
                               
     def test_search_fail_on_invalid_filters(self):
         """ When an invalid filter value is specified, it should fail """
         self.assertRaises(VaultError,
                           self.vault.search,
                           'service_del',
-                          filters={'machines': ['invalid', 'filter', 'value'] })
+                          filters={'machines': ['invalid', 'filter', 'value']})
 
     def test_search_filters_narrow_results(self):
         """ Search can be filtered by machine, groups and customers """
@@ -467,11 +472,13 @@ class TestVaultController(TestController):
         response = self.vault.group_add('test group')
         self.assertFalse(response['error'])
 
-        response2 = self.vault.service_add(machine['machine_id'],
-                                          0,
-                                          'ssh://sflvault.org',
-                                          [response['group_id']],
-                                          'secret') 
+        response2 = self.vault.service_add(
+            machine['machine_id'],
+            0,
+            'ssh://sflvault.org',
+            [response['group_id']],
+            'secret'
+        )
                                            
         self.assertFalse(response2['error'])
 
@@ -560,8 +567,7 @@ class TestVaultController(TestController):
 
     def test_customer_put_and_get(self):
         response = self._add_new_customer()
-        response2 = self.vault.customer_put(response['customer_id'],
-                                      {'name': 'dcormier' })
+        response2 = self.vault.customer_put(response['customer_id'], {'name': 'dcormier'})
         response3 = self.vault.customer_get(response['customer_id'])
 
         self.assertEquals(response3['id'],
@@ -575,11 +581,13 @@ class TestVaultController(TestController):
         response = self._add_new_machine()
         self.assertFalse(response['error'])
         
-        machine_data = { 'ip': '127.0.0.1',
-                         'name': 'sflvault',
-                         'fqdn': 'sflvault',
-                         'location': 'sfl',
-                         'notes': 'super machine' }
+        machine_data = {
+            'ip': '127.0.0.1',
+            'name': 'sflvault',
+            'fqdn': 'sflvault',
+            'location': 'sfl',
+            'notes': 'super machine'
+        }
 
         response2 = self.vault.machine_put(response['machine_id'],
                                            machine_data)
@@ -595,8 +603,10 @@ class TestVaultController(TestController):
         response = self._add_new_service()
         my_note = 'new notes'
         my_url = 'http://sflphone.org'
-        service_data = {'notes': my_note,
-                        'url': my_url }
+        service_data = {
+            'notes': my_note,
+            'url': my_url
+        }
 
         response2 = self.vault.service_put(response['service_id'],
                                            service_data)
@@ -656,11 +666,13 @@ class TestVaultController(TestController):
         original_group = self._add_new_group()
 
         # if we create a service and add it to an original group
-        service = self.vault.service_add(machine['machine_id'],
-                                      0,
-                                      'ssh://sflvault.org',
-                                      [original_group['group_id']],
-                                      'secret') 
+        service = self.vault.service_add(
+            machine['machine_id'],
+            0,
+            'ssh://sflvault.org',
+            [original_group['group_id']],
+            'secret'
+        )
 
         # if we try to remove it from this group, there should be an error
         self.assertRaises(VaultError,
@@ -693,14 +705,13 @@ class TestVaultController(TestController):
         response = self._add_new_service()
         response2 = self._add_new_service()
 
-        service_data = { 'parent_service_id': response2['service_id'] }
-        service2_data = { 'parent_service_id': response['service_id'] }
+        service_data = {'parent_service_id': response2['service_id']}
+        service2_data = {'parent_service_id': response['service_id']}
 
         sput = self.vault.service_put(response['service_id'],
                                       service_data)
 
-        sput2 = self.vault.service_put(response2['service_id'],
-                                      service2_data)
+        sput2 = self.vault.service_put(response2['service_id'], service2_data)
 
         self.assertFalse(sput['error'] or sput2['error'])
 
@@ -726,6 +737,7 @@ class TestVaultController(TestController):
         self.assertEquals(len(customer_list), 2)
         self.assertEquals(customer_list[0]['name'], 'dcormier')
         self.assertEquals(customer_list[1]['name'], 'dcormier2')
+
     def test_machine_list(self):
         machine1 = self._add_new_machine()
         machine2 = self._add_new_machine()
@@ -773,4 +785,3 @@ class TestVaultController(TestController):
 
         machine_list3 = machine_list_response3['list']
         self.assertEquals(len(machine_list3), 0)
-

@@ -23,5 +23,3 @@ setup(
     demo = sflvault.plugins.demo:demo
     """,
 )
-
-

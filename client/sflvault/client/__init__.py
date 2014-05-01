@@ -22,4 +22,3 @@
 from sflvault.client.commands import SFLvaultCommand
 from sflvault.client.commands import SFLvaultShell
 from sflvault.client.client import SFLvaultClient
-

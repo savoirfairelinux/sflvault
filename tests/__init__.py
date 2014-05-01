@@ -63,8 +63,7 @@ class BaseTestCase(TestCase):
         """Get the SFLVault server vault"""
         global vault
         if vault is None:
-            vault = SFLvaultClient(os.environ['SFLVAULT_CONFIG'],
-                                                  shell=True)
+            vault = SFLvaultClient(os.environ['SFLVAULT_CONFIG'], shell=True)
             vault.passphrase = u'test'
             vault.username = u'admin'    
 
@@ -76,4 +75,3 @@ class BaseTestCase(TestCase):
                              vault.passphrase)
             self.cfg = vault.cfg
         return vault
-    

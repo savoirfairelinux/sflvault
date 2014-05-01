@@ -259,7 +259,7 @@ def encrypt_longmsg(eg, message):
     ptr = 0
     chunks = []
     while True:
-        chunk = message[ptr:ptr+CHUNK_MAX_SIZE]
+        chunk = message[ptr:ptr + CHUNK_MAX_SIZE]
         if len(chunk):
             chunks.append(chunk)
         if len(chunk) < CHUNK_MAX_SIZE:

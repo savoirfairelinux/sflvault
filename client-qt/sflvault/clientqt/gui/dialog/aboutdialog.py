@@ -142,4 +142,3 @@ class About_sflvaultqt_dialog(QtGui.QDialog):
 
     def close(self):
         self.accept()
-

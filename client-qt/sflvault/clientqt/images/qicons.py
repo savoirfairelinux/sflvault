@@ -60,7 +60,7 @@ def Qicons(icon_name, type=None):
 
     # Get service icons
     if type == "service":
-        if not icon_name in service_icons.keys():
+        if icon_name not in service_icons.keys():
             icon_name = "service"
         return QtGui.QIcon(os.path.join(this_dir, service_icons[icon_name]))
     # Return standard icons

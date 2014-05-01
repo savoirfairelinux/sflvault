@@ -82,11 +82,14 @@ class TreeModel(QtCore.QAbstractItemModel):
 
         if not self.research:
             self.research = "."
-        search_result = vaultSearch(self.research, 
-                                        {"groups": self.groups_ids,
-                                         "machines": [],
-                                         "customers": [],
-                                        })
+        search_result = vaultSearch(
+            self.research, 
+            {
+                "groups": self.groups_ids,
+                "machines": [],
+                "customers": [],
+            }
+        )
         for custoid, custo in search_result["results"].items():
             it = TreeItem([custo["name"],
                            "c#" + custoid],
@@ -133,7 +136,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         item = index.internalPointer()
 
         if role == QtCore.Qt.DecorationRole and index.column() == 0:
-            return  QtCore.QVariant(item.icon)
+            return QtCore.QVariant(item.icon)
 
         if role != QtCore.Qt.DisplayRole:
             return QtCore.QVariant()
@@ -177,7 +180,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         if parentItem == self.rootItem:
             return QtCore.QModelIndex()
 
-        if parentItem != None:
+        if parentItem is not None:
             return self.createIndex(parentItem.row(), 0, parentItem)
         else:
             return QtCore.QModelIndex()
@@ -220,9 +223,9 @@ class proxyVault(QtGui.QSortFilterProxyModel):
         """
         self.source_model = self.sourceModel()
         # By name
-        index_name = self.source_model.index(sourceRow,0,sourceParent)
+        index_name = self.source_model.index(sourceRow, 0, sourceParent)
         # By id
-        index_id = self.source_model.index(sourceRow,1,sourceParent)
+        index_id = self.source_model.index(sourceRow, 1, sourceParent)
         # Get pattern
         pattern = unicode(self.filterRegExp().pattern())
     
@@ -271,7 +274,7 @@ class proxyVault(QtGui.QSortFilterProxyModel):
                 return True
             # Show it if one a its little child match
             for subchild in child.childItems:
-                if unicode(subchild.data(0)).find(pattern) != -1 or unicode(subchild.data(1)).find(pattern) != -1 :
+                if unicode(subchild.data(0)).find(pattern) != -1 or unicode(subchild.data(1)).find(pattern) != -1:
                     # Add it in shown list
                     self.shown.add(index_name)
                     # remove it in match list if exist in
@@ -299,7 +302,7 @@ class TreeView(QtGui.QTreeView):
         # Set view properties
         self.setSortingEnabled(1)
         self.setModel(self.proxyModel)
-        self.sortByColumn(0,QtCore.Qt.AscendingOrder)
+        self.sortByColumn(0, QtCore.Qt.AscendingOrder)
         # Load context actions
         self.createActions()
         # Active mouse tracking
@@ -314,7 +317,7 @@ class TreeView(QtGui.QTreeView):
             out rows
         """
         self.timer.stop()
-        if hasattr(self,"web"):
+        if hasattr(self, "web"):
             self.web.close()
 
     def showWebPreview(self):
@@ -330,7 +333,7 @@ class TreeView(QtGui.QTreeView):
     def startTimer(self, index):
         """ Timer management
         """
-        if hasattr(self,"web"):
+        if hasattr(self, "web"):
             self.web.close()
         self.url = QtCore.QUrl(index.data().toString())
         if self.url.scheme().startsWith("http") and self.url.isValid():
@@ -348,7 +351,7 @@ class TreeView(QtGui.QTreeView):
         h = self.header()
         h.setResizeMode(0, QtGui.QHeaderView.Stretch)
         h.setStretchLastSection(0)
-        self.setColumnWidth(1,65)
+        self.setColumnWidth(1, 65)
 
     def search(self, research, groups_ids=None):
         # Get minimum number of caracters to search
@@ -365,7 +368,7 @@ class TreeView(QtGui.QTreeView):
         self.sourcemodel = TreeModel(research, groups_ids, self)
         # Load proxy
         self.proxyModel.setSourceModel(self.sourcemodel)
-        if research and not research == [u''] :
+        if research and not research == [u'']:
             self.expandAll()
         else:
             self.collapseAll()
@@ -449,7 +452,7 @@ class TreeView(QtGui.QTreeView):
         # Check if an item if selected
         if indexes:
             # Check if is a node
-            if indexes[0].child(0,0).isValid():
+            if indexes[0].child(0, 0).isValid():
                 if self.isExpanded(indexes[0]):
                     self.collapse(indexes[0])
                 else:
@@ -479,7 +482,7 @@ class TreeVault(QtGui.QWidget):
         self.filter = FilterBar(self) 
         self.filter.connect(self.filter.filter_input, QtCore.SIGNAL("textChanged(const QString&)"), self.tree.filter)
 
-        layout = QtGui.QVBoxLayout(self);
+        layout = QtGui.QVBoxLayout(self)
         layout.setSpacing(0)
         layout.setMargin(0)
 
@@ -495,8 +498,10 @@ class TreeVault(QtGui.QWidget):
         """
             Define tree shortcuts
         """
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Space),
-                self.tree, self.tree.expandCollapse, None, QtCore.Qt.WidgetShortcut)
+        QtGui.QShortcut(
+            QtGui.QKeySequence(QtCore.Qt.Key_Space),
+            self.tree, self.tree.expandCollapse, None, QtCore.Qt.WidgetShortcut
+        )
         # FIXME Disable cause QtCore.Qt.WidgetShortcut context doesn t work
 #        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Return),
 #                self.tree, self.tree.enterShortcut, None, QtCore.Qt.WidgetShortcut)

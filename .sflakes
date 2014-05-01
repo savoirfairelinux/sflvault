@@ -1,1 +1,6 @@
-type: python
+{
+    "type": "python",
+    "exclude_paths": ["env/*", ".git/*", "*/distribute_setup.py"],
+    "pep8_ignore": ["E302", "E261", "E265", "E501", "W291", "W293", "E303", "E502", "E401", "E241", "E127", "E126", "E231"],
+    "with_setup_py_check": false
+}

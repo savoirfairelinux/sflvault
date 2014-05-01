@@ -47,11 +47,12 @@ settings = Config()
 client_alias = SFLvaultClient(str(settings.fileName()))
 
 def manual_auth():
-    password, ok = QtGui.QInputDialog.getText( None,
-                                   "SFLvault password",
-                                   "Type your SFLvault password",
-                                   QtGui.QLineEdit.Password,
-                                    )
+    password, ok = QtGui.QInputDialog.getText(
+        None,
+        "SFLvault password",
+        "Type your SFLvault password",
+        QtGui.QLineEdit.Password,
+    )
     return str(password)
 
 def getSecret():
@@ -72,12 +73,13 @@ def setSecret(wallet_id, password=None):
         client.cfg.wallet_set(wallet_id, None)
         return True
     # Check if sflvault item exists
-    if getSecret() != False:
-        question = QtGui.QMessageBox(QtGui.QMessageBox.Question,
-                                    "Save password in your wallet",
-                                    "This password already exists."
-                                    "Do you want to replace it ?",
-                                    )
+    if getSecret() is not False:
+        question = QtGui.QMessageBox(
+            QtGui.QMessageBox.Question,
+            "Save password in your wallet",
+            "This password already exists."
+            "Do you want to replace it ?",
+        )
         question.addButton(QtGui.QMessageBox.Save)
         question.addButton(QtGui.QMessageBox.Cancel)
         # Ask to user if he wants to replace old password
@@ -111,14 +113,14 @@ def getAuth():
     client = SFLvaultClient(str(settings.fileName()))
 
     # Check if wallet is disabled
-    if client.cfg.wallet_list()[0][4] == True:
+    if client.cfg.wallet_list()[0][4] is True:
         client.getpassfunc = manual_auth
 
     try:
         # Search nothing, just to get a valid client
         status = client.search(["}{[a]"])
         # If password is bad ...
-        if status == False:
+        if status is False:
             e = Exception("ConnectionDenied")
             e.message = error_message.tr("Connection Denied")
             raise e
@@ -236,8 +238,10 @@ def getCustomer(id):
 @reauth
 def vaultSearch(pattern, filters={}):
     global client
-    result = client.vault.search(client.authtok, pattern,
-                                filters.get('groups'), False, filters)
+    result = client.vault.search(
+        client.authtok, pattern,
+        filters.get('groups'), False, filters
+    )
     return result
 
 @return_element("plaintext")

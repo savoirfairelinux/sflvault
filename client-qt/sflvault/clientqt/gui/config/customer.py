@@ -44,7 +44,7 @@ class DeleteCustomerWidget(QtGui.QMessageBox):
         self.custid = custid
         # Test if customer exist
         customer = getCustomer(custid)
-        if not "customer" in customer:
+        if "customer" not in customer:
             return False
         # Set windows
         self.setIcon(QtGui.QMessageBox.Question)
@@ -110,7 +110,7 @@ class EditCustomerWidget(QtGui.QDialog):
         self.show()
 
     def accept(self):
-        customer_info = {"name" : None}
+        customer_info = {"name": None}
         customer_info["name"] = unicode(self.name.text())
         if self.mode == "add":
             # Add new customer

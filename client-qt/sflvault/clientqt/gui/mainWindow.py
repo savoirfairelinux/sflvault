@@ -263,7 +263,7 @@ class MainWindow(QtGui.QMainWindow):
             Get selected item id in tree and launch connection
         """
         # Get Id colunm
-        if index == None:
+        if index is None:
             index = self.tree.selectedIndexes()[0]
         indexId = self.tree.selectedIndexes()[1]
         idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
@@ -299,7 +299,7 @@ class MainWindow(QtGui.QMainWindow):
         """ Get selected item id in tree and show password
         """
         # Get Id colunm
-        if index == None:
+        if index is None:
             index = self.tree.selectedIndexes()[0]
         indexId = self.tree.selectedIndexes()[1]
         idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
@@ -338,7 +338,7 @@ class MainWindow(QtGui.QMainWindow):
             url = QtCore.QUrl(service["services"][-1]["url"])
         protocol = unicode(url.scheme())
         port = unicode(url.port())
-        address  = unicode(url.host() + ":" + unicode(port) + url.path()) if port != "-1" else unicode(url.host() + url.path())
+        address = unicode(url.host() + ":" + unicode(port) + url.path()) if port != "-1" else unicode(url.host() + url.path())
         # Copy password to clipboard if checked in config
         clip, bool = self.settings.value("protocols/" + protocol + "/clip").toInt()
         if bool and clip == QtCore.Qt.Checked:
@@ -519,9 +519,9 @@ class MainWindow(QtGui.QMainWindow):
             Set shortcuts
         """
         QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_I),
-                        self, self.showHideFilterShort )
+                        self, self.showHideFilterShort)
         QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_F),
-                        self, self.searchShort )
+                        self, self.searchShort)
         QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_T),
                         self, self.focusOnTree)
 
@@ -579,7 +579,7 @@ class MainWindow(QtGui.QMainWindow):
             if ret.startswith("s#"):
                 id = ret.split("#")[1]
             if not id:
-            # Then it's an alias
+                # Then it's an alias
                 id = getAlias(ret)
                 if id:
                     id = id.split("#")[1]
@@ -695,13 +695,13 @@ class MainWindow(QtGui.QMainWindow):
         idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
         idserv = int(idserv.split("#")[1])
 
-        tunnel,bool = QtGui.QInputDialog().getText(
-                                    self,
-                                    "SSH Tunnel",
-                                    "Enter the ssh tunnel (ex: -L 5000:127.0.0.1:3306 )",
-                                    QtGui.QLineEdit.Normal,
-                                    "",
-                                    )
+        tunnel, bool = QtGui.QInputDialog().getText(
+            self,
+            "SSH Tunnel",
+            "Enter the ssh tunnel (ex: -L 5000:127.0.0.1:3306 )",
+            QtGui.QLineEdit.Normal,
+            "",
+        )
         if not bool or tunnel == "":
             return False
         self.connection(idserv, show_tooltip=False, tunnel=tunnel)

@@ -43,10 +43,10 @@ def services_entry_points():
 #
 # Add protocols to urlparse, for correct parsing of ssh and others.
 #
-urlparse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
-                             'bzr+ssh', 'vnc', 'mysql', 'sudo', 'su',
-                             'psql'] +
-                             [x.name for x in services_entry_points()])
+urlparse.uses_netloc.extend(
+    ['ssh', 'vlc', 'vpn', 'openvpn', 'git', 'bzr+ssh', 'vnc', 'mysql', 'sudo', 'su', 'psql'] + \
+    [x.name for x in services_entry_points()]
+)
 
 
 # Issue: Ctrl+Alt+;
@@ -209,7 +209,7 @@ class URLParser(object):
 
     def _show(self):
         for i in range(len(self.res.groups())):
-            print i+1, self.res.group(i+1)
+            print i + 1, self.res.group(i + 1)
 
     def gen_url(self, with_password=False):
         """Renders the URL, optionally without the password, based on

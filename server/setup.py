@@ -43,7 +43,7 @@ setup(
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
     url='http://www.sflvault.org',
-    long_description=README + '\n\n' +  CHANGES,
+    long_description=README + '\n\n' + CHANGES,
     classifiers=[
         "Programming Language :: Python",
         "Topic :: Internet :: WWW/HTTP",
@@ -54,6 +54,5 @@ setup(
     zip_safe=False,
     package_data={'sflvault': ['i18n/*/LC_MESSAGES/*.mo']},
     test_suite='sflvault',
-    install_requires = requires,
+    install_requires=requires,
 )
-

@@ -102,8 +102,7 @@ class SFLvaultShell(object):
                 except ExitParserException, e:
                     pass
                 
-                if hasattr(runcmd, 'next_command') \
-                          and platform.system() != 'Windows':
+                if hasattr(runcmd, 'next_command') and platform.system() != 'Windows':
                     print "[Added to shell history: %s]" % runcmd.next_command
                     readline.add_history(runcmd.next_command)
 
@@ -143,7 +142,7 @@ class SFLvaultCommand(object):
         """Run a certain command"""
         self.argv = argv     # Bump the first (command name)
         self.args = []       # Used after a call to _parse()
-        self.opts = object() #  idem.
+        self.opts = object() # idem.
 
         # Setup default action = help
         action = 'help'
@@ -254,13 +253,11 @@ class SFLvaultCommand(object):
                     else:
                         doc = '[n/a]'
                 
-                    print " %s%s%s" % (x.replace('_','-'),
-                                       (18 - len(x)) * ' ',
-                                       doc)
+                    print " %s%s%s" % (x.replace('_', '-'), (18 - len(x)) * ' ', doc)
             print "---------------------------------------------"
             print "Run: sflvault [command] --help for more details on each of those commands."
         elif not cmd.startswith('_') and callable(getattr(self, cmd)):
-            readcmd = cmd.replace('_','-')
+            readcmd = cmd.replace('_', '-')
 
             doc = getattr(self, cmd).__doc__
             if doc:
@@ -521,6 +518,7 @@ class SFLvaultCommand(object):
                              ui.ServiceEditDialogDisplay,
                              'service-edit aborted',
                              decrypt=False)
+
     def machine_edit(self):
         """Edit machine informations."""
         self._something_edit("machine-edit [machine_id]",
@@ -529,6 +527,7 @@ class SFLvaultCommand(object):
                              self.vault.machine_put,
                              ui.MachineEditDialogDisplay,
                              'machine-edit aborted')
+
     def customer_edit(self):
         """Edit customer informations."""
         self._something_edit("customer-edit [customer_id]",
@@ -537,6 +536,7 @@ class SFLvaultCommand(object):
                              self.vault.customer_put,
                              ui.CustomerEditDialogDisplay,
                              'customer-edit aborted')
+
     def group_edit(self):
         """Edit Group informations"""
         self._something_edit("group-edit [group_id]",
@@ -545,6 +545,7 @@ class SFLvaultCommand(object):
                              self.vault.group_put,
                              ui.GroupEditDialogDisplay,
                              'group-edit aborted')
+
     def _something_edit(self, usage, required_args, vault_id_type,
                         get_function, put_function, ui_class, abort_message,
                         **kwargs):
@@ -840,7 +841,7 @@ class SFLvaultCommand(object):
             raise SFLvaultParserError("Invalid number of arguments")
 
         username = self.args[0]
-        url      = self.args[1]
+        url = self.args[1]
 
         self.vault.user_setup(username, url)
 
@@ -1005,7 +1006,7 @@ class SFLvaultCompleter:
     def global_matches(self, text):
         matches = []
         for word in self.namespace:
-            if word.find(text,0,len(text)) == 0:
+            if word.find(text, 0, len(text)) == 0:
                 matches.append(word)
         return matches
 

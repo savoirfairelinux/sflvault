@@ -67,11 +67,11 @@ class SecureXMLRPCServer(HTTPServer, SimpleXMLRPCDispatcher):
         # Our SSL connection doesn't take an argument on shutdown so we have to override the method
         # that calls it.
         try:
-            #explicitly shutdown.  socket.close() merely releases
-            #the socket and waits for GC to perform the actual close.
+            # explicitly shutdown.  socket.close() merely releases
+            # the socket and waits for GC to perform the actual close.
             request.shutdown()
         except socket.error:
-            pass #some platforms may raise ENOTCONN here
+            pass # some platforms may raise ENOTCONN here
         self.close_request(request)
 
 class SFLvaultServer(object):
@@ -100,8 +100,7 @@ class SFLvaultServer(object):
         return result
 
     def start_sqlalchemy(self):
-        self.engine = engine_from_config(SFLvaultServer.settings,
-                                    'sqlalchemy.')
+        self.engine = engine_from_config(SFLvaultServer.settings, 'sqlalchemy.')
 
     def initialize_models(self):
         sflvault.model.init_model(self.engine)
@@ -109,10 +108,10 @@ class SFLvaultServer(object):
 
     def create_admin_if_necessary(self):
         if not sflvault.model.query(sflvault.model.User).filter_by(username='admin').first():
-            log.info ("It seems like you are using SFLvault for the first time. An\
+            log.info("It seems like you are using SFLvault for the first time. An\
                 'admin' user account will be added to the system.")
             u = sflvault.model.User()
-            u.waiting_setup = datetime.now() + timedelta(0,900)
+            u.waiting_setup = datetime.now() + timedelta(0, 900)
             u.username = u'admin'
             u.created_time = datetime.now()
             u.is_admin = True
@@ -165,8 +164,7 @@ class SFLvaultServer(object):
 
 def main():
     parser = argparse.ArgumentParser(description="Launch the SFLVault server")
-    parser.add_argument('config_file', nargs='?', default=None,
-        help="INI config file")
+    parser.add_argument('config_file', nargs='?', default=None, help="INI config file")
     args = parser.parse_args()
     if args.config_file:
         logging.config.fileConfig(args.config_file)

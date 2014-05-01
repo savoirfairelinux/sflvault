@@ -63,9 +63,10 @@ class TestVault(BaseTestCase):
         # I'm already added to that group, by default
         gres1 = self.vault.group_add("test_group1_user")
 
-        try: gares1 = self.vault.group_add_user(gres1['group_id'], 1)
-        except VaultError, e: self.assertTrue('already in' in str(e))
-
+        try:
+            gares1 = self.vault.group_add_user(gres1['group_id'], 1)
+        except VaultError, e:
+            self.assertTrue('already in' in str(e))
 
     def test_group_add_service(self):
         """testing add a service to a group to the vault & search"""
@@ -109,7 +110,6 @@ class TestVault(BaseTestCase):
 
         res = self.vault.search('.')
         self.assertFalse(res['error'])
-
 
     def test_customer_del(self):
         """testing delete a new customer from the vault"""

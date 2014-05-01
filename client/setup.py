@@ -28,6 +28,14 @@ except ImportError:
 
 import platform
 
+dependencies = [
+    "SFLvault-common==0.7.8.1",
+    "pycrypto",
+    "decorator",
+]
+
+if platform.system() != 'Windows':
+    dependencies += ["urwid>=0.9.8.1", "pexpect-u>=2.5"]
 
 setup(
     name='SFLvault-client',
@@ -37,13 +45,7 @@ setup(
     author_email='alexandre.bourget@savoirfairelinux.com',
     url='http://www.sflvault.org',
     license='GPLv3',
-    install_requires=["SFLvault-common==0.7.8.1",
-                      "pycrypto",
-                      "decorator",
-                      ] + \
-                     ([] if platform.system() == 'Windows'
-                         else ["urwid>=0.9.8.1",
-                               "pexpect-u>=2.5"]),
+    install_requires=dependencies,
     packages=find_packages(),
     namespace_packages=['sflvault'],
     include_package_data=True,
@@ -72,5 +74,3 @@ setup(
 
     """,
 )
-
-

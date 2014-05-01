@@ -44,7 +44,7 @@ class DeleteMachineWidget(QtGui.QMessageBox):
         self.machid = machid
         # Test if machine exist
         machine = getMachine(machid)
-        if not "machine" in machine:
+        if "machine" not in machine:
             return None
         # Set windows
         self.setIcon(QtGui.QMessageBox.Question)
@@ -125,7 +125,7 @@ class EditMachineWidget(QtGui.QDialog):
         # get customer lists
         customers = listCustomers()
         for customer in customers["list"]:
-            self.customer.addItem(customer['name'] +" - c#" + unicode(customer['id']) , QtCore.QVariant(customer['id']))
+            self.customer.addItem(customer['name'] + " - c#" + unicode(customer['id']), QtCore.QVariant(customer['id']))
 
         if self.machid:
             # Fill fields for edit mode
@@ -166,9 +166,11 @@ class EditMachineWidget(QtGui.QDialog):
         machine_info["notes"] = unicode(self.notes.text())
         if self.mode == "add":
             # Add a new machine
-            addMachine(machine_info["name"], machine_info["customer_id"],
-                    machine_info["fqdn"], machine_info["ip"],
-                    machine_info["location"], machine_info["notes"])
+            addMachine(
+                machine_info["name"], machine_info["customer_id"],
+                machine_info["fqdn"], machine_info["ip"],
+                machine_info["location"], machine_info["notes"]
+            )
         elif self.mode == "edit":
             # Edit a machine
             editMachine(self.machid, machine_info)
