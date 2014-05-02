@@ -19,30 +19,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-try:
-    from setuptools import setup, find_packages
-except ImportError:
-    from distribute_setup import use_setuptools
-    use_setuptools()
-    from setuptools import setup, find_packages
+from setuptools import setup, find_packages
 
 requires = [
-    'pycrypto',
+    "pycrypto",
 ]
 
 setup(
-    name='SFLvault-common',
-    version="0.7.8.1",
-    description='Networked credentials store and authentication manager - Common',
-    author='Alexandre Bourget',
-    author_email='alexandre.bourget@savoirfairelinux.com',
-    url='http://www.sflvault.org',
-    license='GPLv3',
-    install_requires=requires,
-    packages=find_packages(),
-    namespace_packages=['sflvault'],
-    test_suite='nose.collector',
-    entry_points=""" """,
+    name               = "sflvault-common",
+    version            = "0.8.0",
+    description        = "Networked credentials store and authentication manager - Common",
+    author             = "Alexandre Bourget",
+    author_email       = "alexandre.bourget@savoirfairelinux.com",
+    url                = "http://www.sflvault.org",
+    license            = "GPLv3",
+    packages           = find_packages(),
+    install_requires   = requires,
+    namespace_packages = ["sflvault"],
+    entry_points       = """ """
 )
-
 
