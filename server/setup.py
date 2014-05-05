@@ -19,14 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import sys
-
 from setuptools import setup, find_packages
-
-here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.txt')).read()
-CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
     'SQLAlchemy',
@@ -37,23 +30,20 @@ requires = [
 ]
 
 setup(
-    name='SFLvault-server',
-    version='0.8.0.0',
-    description='Networked credentials store and authentification manager - Server',
-    author='Alexandre Bourget',
-    author_email='alexandre.bourget@savoirfairelinux.com',
-    url='http://www.sflvault.org',
-    long_description=README + '\n\n' +  CHANGES,
-    classifiers=[
+    name               = "sflvault-server",
+    version            = "0.8.0",
+    description        = "Networked credentials store and authentication manager - Server",
+    author             = "Alexandre Bourget",
+    author_email       = "alexandre.bourget@savoirfairelinux.com",
+    url                = "http://www.sflvault.org",
+    license            = "GPLv3",
+    packages           = find_packages(),
+    install_requires   = requires,
+    namespace_packages = ["sflvault"],
+    test_suite         = "sflvault",
+    classifiers        = [
         "Programming Language :: Python",
         "Topic :: Internet :: WWW/HTTP",
     ],
-    packages=find_packages(),
-    namespace_packages=['sflvault'],
-    include_package_data=True,
-    zip_safe=False,
-    package_data={'sflvault': ['i18n/*/LC_MESSAGES/*.mo']},
-    test_suite='sflvault',
-    install_requires = requires,
 )
 
