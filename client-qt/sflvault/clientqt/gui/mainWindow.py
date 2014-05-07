@@ -507,7 +507,8 @@ class MainWindow(QtGui.QMainWindow):
         """
         if self.settings.value("SFLvault-qt4/language").toString():
             lang = self.settings.value("SFLvault-qt4/language").toString()
-            bool = self.translator.load("sflvault-qt4_" + lang, "./i18n", "_", ".qm")
+            i18n_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'i18n')
+            bool = self.translator.load("sflvault-qt4_" + lang, i18n_dir, "_", ".qm")
             # If not language loaded, print message
             if not bool:
                 print self.tr("Warning : unable to load i18n/sflvault-qt4_" + lang)

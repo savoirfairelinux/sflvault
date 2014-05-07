@@ -190,8 +190,8 @@ class PreferencesWidget(QtGui.QDialog):
 
     def fillLanguage(self, value):
         self.language.clear()
-        i18n_dir = os.path.join(os.path.dirname(os.path.realpath(sflvault.clientqt.__file__)),
-                                'i18n')
+        i18n_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '..', 'i18n')
+
         for file in os.listdir(i18n_dir):
             filename, ext = os.path.splitext(file)
             if ext == ".qm":
