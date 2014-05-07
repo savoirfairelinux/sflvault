@@ -32,7 +32,7 @@ requires = [
 if platform.system() != "Windows":
     requires += [
         "urwid",
-        "pexpect-u"
+        "pexpect"
     ]
 
 setup(
