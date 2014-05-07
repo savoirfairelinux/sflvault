@@ -42,7 +42,7 @@ icons["information"] = os.path.join("images", "information.png")
 # Auto load all service icons in images/services/ folder
 service_icons = {}
 service_icons["service"] = os.path.join("images", "service.png")
-this_dir = os.path.dirname(os.path.dirname(__file__))
+this_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 services_dir = os.path.join(this_dir, "images", "services")
 for file in os.listdir(services_dir):
     service, ext = os.path.splitext(file)
