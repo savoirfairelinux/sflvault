@@ -1,0 +1,3 @@
+BuildRequires: python-setuptools
+Requires: python-setuptools
+Requires: python-crypto
