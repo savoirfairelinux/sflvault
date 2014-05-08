@@ -24,7 +24,9 @@ define package-rpm-src
 	cd $(1) && python setup.py sdist
 	mkdir -pv $(DIR_RPM)/$(PKG_PREFIX)$(1)
 	cp -vf $(1)/dist/$(PKG_PREFIX)$(1)*.tar.gz $(DIR_RPM)/$(PKG_PREFIX)$(1)/
-	cp -vf $(1)/dist/$(PKG_PREFIX)$(1).spec    $(DIR_RPM)/$(PKG_PREFIX)$(1)/
+	awk -f build-scripts/rpm-insert-to-specs.awk -v part=start $(1)/dist/$(PKG_PREFIX)$(1).spec  >$(DIR_RPM)/$(PKG_PREFIX)$(1)/$(PKG_PREFIX)$(1).spec
+	cat $(1)/specs.append                                                                       >>$(DIR_RPM)/$(PKG_PREFIX)$(1)/$(PKG_PREFIX)$(1).spec
+	awk -f build-scripts/rpm-insert-to-specs.awk -v part=end   $(1)/dist/$(PKG_PREFIX)$(1).spec >>$(DIR_RPM)/$(PKG_PREFIX)$(1)/$(PKG_PREFIX)$(1).spec
 endef
 
 define package-rpm-bin
