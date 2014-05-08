@@ -1,0 +1,6 @@
+BuildRequires: python-setuptools
+Requires: python-setuptools
+Requires: python-decorator
+Requires: python-sqlalchemy
+Requires: python-zope-sqlalchemy
+Requires: pyOpenSSL
