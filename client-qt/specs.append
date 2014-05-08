@@ -1,0 +1,4 @@
+BuildRequires: python-setuptools
+Requires: python-setuptools
+Requires: PyQt4
+Requires: sflvault-client
