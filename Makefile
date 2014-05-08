@@ -6,110 +6,71 @@ DIR_CLIENT=client
 DIR_CLIENT_QT=client-qt
 DIR_SERVER=server
 
+include build-scripts/functions.mk
+
 all: common-deb-pkg client-deb-pkg client-qt-deb-pkg server-deb-pkg
 	@echo
 	@echo "sflvault has been fully built"
 	@find $(DIR_DEB)
 
-clean: common-deb-clean client-deb-clean client-qt-deb-clean server-deb-clean
+all-src: all-deb-src
 
-common-deb-clean:
-	rm -rf $(DIR_COMMON)/deb_dist
-	rm -rf $(DIR_COMMON)/debian
-	rm -rf $(DIR_COMMON)/*.egg-info
-	rm -rf $(DIR_DEB)/$(PKG_PREFIX)$(DIR_COMMON)
+all-deb-src: common-deb-src client-deb-src client-qt-deb-src server-deb-src
 
-common-deb-src: common-deb-clean
-	mkdir $(DIR_COMMON)/debian
-	cp pydist-overrides $(DIR_COMMON)/debian/
-	cd $(DIR_COMMON) && python setup.py --command-packages=stdeb.command sdist_dsc
-	rm -rf $(DIR_COMMON)/debian
-	mkdir -pv $(DIR_DEB)/$(PKG_PREFIX)$(DIR_COMMON)
-	cp -vf $(DIR_COMMON)/deb_dist/$(PKG_PREFIX)$(DIR_COMMON)*.tar.gz $(DIR_DEB)/$(PKG_PREFIX)$(DIR_COMMON)/
-	cp -vf $(DIR_COMMON)/deb_dist/$(PKG_PREFIX)$(DIR_COMMON)*.dsc    $(DIR_DEB)/$(PKG_PREFIX)$(DIR_COMMON)/
+clean: common-clean client-clean client-qt-clean server-clean
 
-common-deb-pkg: common-deb-src
-	mkdir $(DIR_COMMON)/debian
-	cp pydist-overrides $(DIR_COMMON)/debian/
-	cd $(DIR_COMMON) && python setup.py --command-packages=stdeb.command bdist_deb
-	rm -rf $(DIR_COMMON)/debian
-	mkdir -pv $(DIR_DEB)/$(PKG_PREFIX)$(DIR_COMMON)
-	cp -vf $(DIR_COMMON)/deb_dist/$(PKG_PREFIX)$(DIR_COMMON)*.deb $(DIR_DEB)/$(PKG_PREFIX)$(DIR_COMMON)/
-	@echo
-	@find $(DIR_DEB)/$(PKG_PREFIX)$(DIR_COMMON)
+distclean: clean common-distclean client-distclean client-qt-distclean server-distclean
+	rm -rf $(DIR_DEB)
 
-client-deb-clean:
-	rm -rf $(DIR_CLIENT)/deb_dist
-	rm -rf $(DIR_CLIENT)/debian
-	rm -rf $(DIR_CLIENT)/*.egg-info
-	rm -rf $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT)
 
-client-deb-src: client-deb-clean
-	mkdir $(DIR_CLIENT)/debian
-	cp pydist-overrides $(DIR_CLIENT)/debian/
-	cd $(DIR_CLIENT) && python setup.py --command-packages=stdeb.command sdist_dsc
-	rm -rf $(DIR_CLIENT)/debian
-	mkdir -pv $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT)
-	cp -vf $(DIR_CLIENT)/deb_dist/$(PKG_PREFIX)$(DIR_CLIENT)*.tar.gz $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT)/
-	cp -vf $(DIR_CLIENT)/deb_dist/$(PKG_PREFIX)$(DIR_CLIENT)*.dsc    $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT)/
+common-clean:
+	$(call package-clean,common)
 
-client-deb-pkg: client-deb-src
-	mkdir $(DIR_CLIENT)/debian
-	cp pydist-overrides $(DIR_CLIENT)/debian/
-	cd $(DIR_CLIENT) && python setup.py --command-packages=stdeb.command bdist_deb
-	rm -rf $(DIR_CLIENT)/debian
-	mkdir -pv $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT)
-	cp -vf $(DIR_CLIENT)/deb_dist/$(PKG_PREFIX)$(DIR_CLIENT)*.deb $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT)/
-	@echo
-	@find $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT)
+common-distclean:
+	$(call package-distclean,common)
 
-client-qt-deb-clean:
-	rm -rf $(DIR_CLIENT_QT)/deb_dist
-	rm -rf $(DIR_CLIENT_QT)/debian
-	rm -rf $(DIR_CLIENT_QT)/*.egg-info
-	rm -rf $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT_QT)
+common-deb-src: common-clean
+	$(call package-deb-src,common)
 
-client-qt-deb-src: client-qt-deb-clean
-	mkdir $(DIR_CLIENT_QT)/debian
-	cp pydist-overrides $(DIR_CLIENT_QT)/debian/
-	cd $(DIR_CLIENT_QT) && python setup.py --command-packages=stdeb.command sdist_dsc
-	rm -rf $(DIR_CLIENT_QT)/debian
-	mkdir -pv $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT_QT)
-	cp -vf $(DIR_CLIENT_QT)/deb_dist/$(PKG_PREFIX)$(DIR_CLIENT_QT)*.tar.gz $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT_QT)/
-	cp -vf $(DIR_CLIENT_QT)/deb_dist/$(PKG_PREFIX)$(DIR_CLIENT_QT)*.dsc    $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT_QT)/
+common-deb-bin: common-deb-src
+	$(call package-deb-bin,common)
 
-client-qt-deb-pkg: client-qt-deb-src
-	mkdir $(DIR_CLIENT_QT)/debian
-	cp pydist-overrides $(DIR_CLIENT_QT)/debian/
-	cd $(DIR_CLIENT_QT) && python setup.py --command-packages=stdeb.command bdist_deb
-	rm -rf $(DIR_CLIENT_QT)/debian
-	mkdir -pv $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT_QT)
-	cp -vf $(DIR_CLIENT_QT)/deb_dist/$(PKG_PREFIX)$(DIR_CLIENT_QT)*.deb $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT_QT)/
-	@echo
-	@find $(DIR_DEB)/$(PKG_PREFIX)$(DIR_CLIENT_QT)
 
-server-deb-clean:
-	rm -rf $(DIR_SERVER)/deb_dist
-	rm -rf $(DIR_SERVER)/debian
-	rm -rf $(DIR_SERVER)/*.egg-info
-	rm -rf $(DIR_DEB)/$(PKG_PREFIX)$(DIR_SERVER)
+client-clean:
+	$(call package-clean,client)
 
-server-deb-src: server-deb-clean
-	mkdir $(DIR_SERVER)/debian
-	cp pydist-overrides $(DIR_SERVER)/debian/
-	cd $(DIR_SERVER) && python setup.py --command-packages=stdeb.command sdist_dsc
-	rm -rf $(DIR_SERVER)/debian
-	mkdir -pv $(DIR_DEB)/$(PKG_PREFIX)$(DIR_SERVER)
-	cp -vf $(DIR_SERVER)/deb_dist/$(PKG_PREFIX)$(DIR_SERVER)*.tar.gz $(DIR_DEB)/$(PKG_PREFIX)$(DIR_SERVER)/
-	cp -vf $(DIR_SERVER)/deb_dist/$(PKG_PREFIX)$(DIR_SERVER)*.dsc    $(DIR_DEB)/$(PKG_PREFIX)$(DIR_SERVER)/
+client-distclean:
+	$(call package-distclean,client)
 
-server-deb-pkg: server-deb-src
-	mkdir $(DIR_SERVER)/debian
-	cp pydist-overrides $(DIR_SERVER)/debian/
-	cd $(DIR_SERVER) && python setup.py --command-packages=stdeb.command bdist_deb
-	rm -rf $(DIR_SERVER)/debian
-	mkdir -pv $(DIR_DEB)/$(PKG_PREFIX)$(DIR_SERVER)
-	cp -vf $(DIR_SERVER)/deb_dist/$(PKG_PREFIX)$(DIR_SERVER)*.deb $(DIR_DEB)/$(PKG_PREFIX)$(DIR_SERVER)/
-	@echo
-	@find $(DIR_DEB)/$(PKG_PREFIX)$(DIR_SERVER)
+client-deb-src: client-clean
+	$(call package-deb-src,client)
+
+client-deb-bin: client-deb-src
+	$(call package-deb-bin,client)
+
+
+client-qt-clean:
+	$(call package-clean,client-qt)
+
+client-qt-distclean:
+	$(call package-distclean,client-qt)
+
+client-qt-deb-src: client-qt-clean
+	$(call package-deb-src,client-qt)
+
+client-qt-deb-bin: client-qt-deb-src
+	$(call package-deb-bin,client-qt)
+
+
+server-clean:
+	$(call package-clean,server)
+
+server-distclean:
+	$(call package-distclean,server)
+
+server-deb-src: server-clean
+	$(call package-deb-src,server)
+
+server-deb-bin: server-deb-src
+	$(call package-deb-bin,server)
 
