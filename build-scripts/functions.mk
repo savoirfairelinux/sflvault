@@ -11,7 +11,7 @@ endef
 
 define package-deb-src
 	mkdir -pv $(1)/debian
-	cp pydist-overrides $(1)/debian/
+	cp build-scripts/pydist-overrides $(1)/debian/
 	cd $(1) && python setup.py --command-packages=stdeb.command sdist_dsc
 	rm -rf $(1)/debian
 	mkdir -pv $(DIR_DEB)/$(PKG_PREFIX)$(1)
@@ -35,7 +35,7 @@ endef
 
 define package-deb-bin
 	mkdir $(1)/debian
-	cp pydist-overrides $(1)/debian/
+	cp build-scripts/pydist-overrides $(1)/debian/
 	cd $(1) && python setup.py --command-packages=stdeb.command bdist_deb
 	rm -rf $(1)/debian
 	mkdir -pv $(DIR_DEB)/$(PKG_PREFIX)$(1)
