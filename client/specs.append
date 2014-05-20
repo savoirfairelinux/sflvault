@@ -4,4 +4,3 @@ Requires: python-crypto
 Requires: python-decorator
 Requires: python-urwid
 Requires: pexpect
-Requires: sflvault-common
