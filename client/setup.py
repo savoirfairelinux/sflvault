@@ -32,7 +32,7 @@ dependencies = [
 ]
 
 if platform.system() != 'Windows':
-    dependencies += ["urwid>=0.9.8.1", "pexpect-u>=2.5"]
+    dependencies += ["urwid>=0.9.8.1", "pexpect>=3.0"]
 
 setup(
     name='SFLvault-client',
