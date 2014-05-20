@@ -36,7 +36,7 @@ if platform.system() != 'Windows':
 
 setup(
     name='SFLvault-client',
-    version="0.7.8.2",
+    version="0.8.0",
     description='Networked credentials store and authentication manager - Client',
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
