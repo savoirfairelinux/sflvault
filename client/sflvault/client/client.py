@@ -2,9 +2,7 @@
 #
 # SFLvault - Secure networked password store and credentials manager.
 #
-# Copyright (C) 2008-2009  Savoir-faire Linux inc.
-#
-# Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
+# Copyright (C) 2014 Savoir-faire Linux inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,11 +37,7 @@ from sflvault.client.utils import *
 from sflvault.client import remoting
 
 
-
-
-
 ### Setup variables and functions
-
 
 def vaultReply(rep, errmsg="Error"):
     """Tracks the Vault reply, and raise an Exception on error"""
@@ -102,14 +96,14 @@ def authenticate(keep_privkey=False):
             if keep_privkey or self.shell_mode:
                 self.privkey = privkey
 
-       # Go for the login/authenticate roundtrip
+        # Go for the login/authenticate roundtrip
 
         # TODO: check also is the privkey (ElGamal obj) has been cached
         #       in self.privkey (when invoked with keep_privkey)
         retval = self.vault.login(username, pkgres.get_distribution('SFLvault_client').version)
         self.authret = retval
         if not retval['error']:
-            # try the last token
+            # try the last token. This is to avoid needless decrypting. See #9440.
             retval2 = self.vault.authenticate(username, self.authtok)
             if retval2['error']:
                 print retval2['message']
@@ -121,8 +115,7 @@ def authenticate(keep_privkey=False):
                 if retval3['error']:
                     #print retval
                     print retval3
-                    raise AuthenticationError("Authentication failed: %s" % \
-                                              retval3['message'])
+                    raise AuthenticationError("Authentication failed: %s" % retval3['message'])
                 else:
                     self.authtok = retval3['authtok']
                     print retval3['message']
@@ -131,8 +124,7 @@ def authenticate(keep_privkey=False):
                 self.authtok = retval2['authtok']
                 print retval2['message']
         else:
-            raise AuthenticationError("Authentication failed: %s" % \
-                                      retval['message'])
+            raise AuthenticationError("Authentication failed: %s" % retval['message'])
 
         return func(self, *args, **kwargs)
 
@@ -198,8 +190,7 @@ class SFLvaultConfig(object):
         self.config_file = os.path.expanduser(config_file)
         self.config_check()
         self.config_read()
-        
-        
+
     def config_check(self):
         """Checks for ownership and modes for all paths and files, à-la SSH"""
         fullfile = self.config_file
@@ -252,8 +243,10 @@ class SFLvaultConfig(object):
     # Fake being the actual ConfigParser object
     def get(self, *args, **kwargs):
         return self.cfg.get(*args, **kwargs)
+
     def set(self, *args, **kwargs):
         return self.cfg.set(*args, **kwargs)
+
     def has_option(self, *args, **kwargs):
         return self.cfg.has_option(*args, **kwargs)
 
@@ -295,7 +288,6 @@ class SFLvaultConfig(object):
         else:
             return self.cfg.get('Aliases', alias)
 
-
     def _check_keyring(self):
         try:
             import keyring
@@ -312,14 +304,26 @@ class SFLvaultConfig(object):
         self._check_keyring()
         import keyring
 
+        def support_level(backend):
+            try:
+                priority = backend.priority
+            except AttributeError:
+                # python-keyring < 2.0
+                priority = backend.supported()
+            if priority < 0:
+                return "Not installed"
+            elif priority < 1:
+                return "Supported"
+            else:
+                return "Recommended"
+
         current = self.wallet_get()
-        out = [('0', 'Manual', None, 'Disabled', current == None)]
-        ref = {1: "Recommended", 0: "Supported", -1: "Not installed"} 
+        out = [('0', 'Manual', None, 'Disabled', current is None)]
         for i, backend in enumerate(keyring.backend.get_all_keyring()):
             out.append((str(i + 1),
                         backend.__class__.__name__,
                         backend,
-                        ref[backend.supported()],
+                        support_level(backend),
                         backend.__class__.__name__ == current,
                         ))
         return out
@@ -327,8 +331,7 @@ class SFLvaultConfig(object):
     @property
     def _wallet_key(self):
         """Standardizes the key to be stored in the keystore"""
-        return re.subn(r'\.+', '.', re.subn(r'[-_:\\ /]', '.',
-                                               self.config_file)[0].lower())[0]
+        return re.subn(r'\.+', '.', re.subn(r'[-_:\\ /]', '.', self.config_file)[0].lower())[0]
 
     def wallet_set(self, id, password):
         if id is None or id == '0':
@@ -384,7 +387,12 @@ class SFLvaultConfig(object):
                  'KDEKWallet': 'python-keyring-kwallet',
                  'GnomeKeyring': 'python-keyring-gnome',
                  }
-        if backend.supported() == -1:
+        try:
+            priority = backend.priority
+        except AttributeError:
+            # python-keyring < 2.0
+            priority = backend.supported()
+        if priority < 0:
             if name in assoc:
                 add = ' To add support, please install the `%s` package.' % \
                     assoc[name]
@@ -472,9 +480,9 @@ class SFLvaultClient(object):
         tid = re.match(r'(.)#(\d+)', vid)
         if tid:
             if tid.group(1) != prefix:
-                raise VaultIDSpecError("Bad prefix for VaultID, "\
-                                         "context requires '%s': %s"\
-                                         % (prefix, vid))
+                raise VaultIDSpecError(
+                    "Bad prefix for VaultID, context requires '%s': %s" % (prefix, vid)
+                )
             return int(tid.group(2))
 
         if check_alias:
@@ -487,10 +495,7 @@ class SFLvaultClient(object):
 
         raise VaultIDSpecError("Invalid VaultID format: %s" % vid)
 
-
-
     ### REMOTE ACCESS METHODS
-
 
     @authenticate()
     def user_add(self, username, admin=False):
@@ -505,7 +510,6 @@ class SFLvaultClient(object):
 
         return retval
 
-
     @authenticate()
     def user_del(self, username):
         retval = vaultReply(self.vault.user_del(self.authtok, username),
@@ -514,7 +518,6 @@ class SFLvaultClient(object):
         print "Success: %s" % retval['message']
 
         return retval
-
 
     def _services_returned(self, retval):
         """Helper function for customer_del, machine_del and service_del."""
@@ -532,7 +535,6 @@ class SFLvaultClient(object):
         else:
             print "Success: %s" % retval['message']
 
-
     @authenticate()
     def customer_del(self, customer_id):
         retval = self.vault.customer_del(self.authtok, customer_id)
@@ -540,7 +542,6 @@ class SFLvaultClient(object):
         self._services_returned(retval)
 
         return retval
-        
 
     @authenticate()
     def machine_del(self, machine_id):
@@ -549,7 +550,6 @@ class SFLvaultClient(object):
         self._services_returned(retval)
         
         return retval
-
 
     @authenticate(True)
     def customer_get(self, customer_id):
@@ -562,14 +562,14 @@ class SFLvaultClient(object):
     @authenticate(True)
     def customer_put(self, customer_id, data):
         """Save the (potentially modified) customer to the Vault"""
-        retval = vaultReply(self.vault.customer_put(self.authtok, customer_id,
-                                                   data),
-                            "Error saving data to vault, aborting.")
+        retval = vaultReply(
+            self.vault.customer_put(self.authtok, customer_id, data),
+            "Error saving data to vault, aborting."
+        )
 
         print "Success: %s " % retval['message']
 
         return retval
-        
 
     @authenticate()
     def service_del(self, service_id):
@@ -578,7 +578,6 @@ class SFLvaultClient(object):
         self._services_returned(retval)
 
         return retval
-
 
     @authenticate()
     def customer_add(self, customer_name):
@@ -590,7 +589,6 @@ class SFLvaultClient(object):
         print "New customer ID: c#%d" % retval['customer_id']
 
         return retval
-
 
     @authenticate()
     def machine_add(self, customer_id, name='', fqdn='', ip='', location='', notes=''):
@@ -632,13 +630,19 @@ class SFLvaultClient(object):
 
         # TODO: accept group_id as group_ids, accept list and send list.
         psi = int(parent_service_id) if parent_service_id else None
-        retval = vaultReply(self.vault.service_add(self.authtok,
-                                                  int(machine_id),
-                                                  psi, url,
-                                                  group_ids, secret,
-                                                  notes,
-                                                  metadata),
-                            "Error adding service")
+        retval = vaultReply(
+            self.vault.service_add(
+                self.authtok,
+                int(machine_id),
+                psi,
+                url,
+                group_ids,
+                secret,
+                notes,
+                metadata
+            ),
+            "Error adding service"
+        )
 
         print "Success: %s" % retval['message']
         print "New service ID: s#%d" % retval['service_id']
@@ -648,17 +652,15 @@ class SFLvaultClient(object):
     @authenticate()
     def service_passwd(self, service_id, newsecret):
         """Updates the password on the Vault for a certain service"""
-        retval = vaultReply(self.vault.service_passwd(self.authtok,
-                                                        service_id,
-                                                        newsecret),
-                            "Error changing password for "\
-                            "service %s" % service_id)
+        retval = vaultReply(
+            self.vault.service_passwd(self.authtok, service_id, newsecret),
+            "Error changing password for service %s" % service_id
+        )
 
         print "Success: %s" % retval['message']
         print "Password updated for service: s#%d" % int(retval['service_id'])
 
         return retval
-                            
 
     def _new_passphrase(self):
         """Return a new passphrase after asking arrogantly"""
@@ -728,9 +730,10 @@ class SFLvaultClient(object):
         
         print "Sending request to vault..."
         # Send it to the vault, with username
-        retval = vaultReply(self.vault.user_setup(username,
-                                                serial_elgamal_pubkey(pubkey)),
-                            "Setup failed")
+        retval = vaultReply(
+            self.vault.user_setup(username, serial_elgamal_pubkey(pubkey)),
+            "Setup failed"
+        )
 
         # If Vault sends a SUCCESS, save all the stuff (username, vault_url)
         # and encrypt privkey locally (with Blowfish)
@@ -742,16 +745,17 @@ class SFLvaultClient(object):
         self._set_vault(vault_url, True)
         # p and x form the private key, add the public key, add g and y.
         # if encryption is required at some point.
-        self.cfg.set('SFLvault', 'key',
-                   encrypt_privkey(serial_elgamal_privkey(elgamal_bothkeys(eg)),
-                                   passphrase))
+        self.cfg.set(
+            'SFLvault',
+            'key',
+            encrypt_privkey(serial_elgamal_privkey(elgamal_bothkeys(eg)), passphrase)
+        )
         del(passphrase)
         del(eg)
 
         print "Saving settings..."
         self.cfg.config_write()
         return True
-
 
     @authenticate()
     def search(self, query, filters=None, verbose=True):
@@ -774,9 +778,16 @@ class SFLvaultClient(object):
         if filters:
             filters = dict([(x, filters[x]) for x in filters if filters[x]])
 
-        retval = vaultReply(self.vault.search(self.authtok, query,
-                 filters.get('groups') if filters else None, verbose, filters),
-                            "Error searching database")
+        retval = vaultReply(
+            self.vault.search(
+                self.authtok,
+                query,
+                filters.get('groups') if filters else None,
+                verbose,
+                filters
+            ),
+            "Error searching database"
+        )
         print "Results:"
         encode = lambda x: x.encode('utf-8') if isinstance(x, str) else x
 
@@ -797,11 +808,9 @@ class SFLvaultClient(object):
                                                 m['fqdn'], m['ip'])
                 if verbose:
                     if m['location']:
-                        print "%s%slocation: %s" % (spc1, add,
-                                                 encode(m['location']))
+                        print "%s%slocation: %s" % (spc1, add, encode(m['location']))
                     if m['notes']:
-                        print "%s%snotes: %s" % (spc1, add,
-                                                 encode(m['notes']))
+                        print "%s%snotes: %s" % (spc1, add, encode(m['notes']))
 
                 spc2 = spc1 + add
                 print ""
@@ -810,10 +819,12 @@ class SFLvaultClient(object):
                     # Display service infos
                     add = ' ' * (4 + len(s_id))
                     p_id = s.get('parent_service_id')
-                    print "%ss#%s  %s%s" % (spc2, s_id,
-                                            encode(s['url']),
-                                            ("   (depends: s#%s)" % \
-                                             p_id if p_id else ''))
+                    print "%ss#%s  %s%s" % (
+                        spc2,
+                        s_id,
+                        encode(s['url']),
+                        "   (depends: s#%s)" % (p_id if p_id else '')
+                    )
                     if verbose:
                         if s['notes']:
                             print "%s%snotes: %s" % (spc2, add,
@@ -822,7 +833,7 @@ class SFLvaultClient(object):
                 if level == 2:
                     print "%s" % (spc2) + '-' * (80 - len(spc2))
                 
-            if level in [0,1]:
+            if level in [0, 1]:
                 print "%s" % (spc1) + '-' * (80 - len(spc1))
 
         return retval
@@ -860,18 +871,19 @@ class SFLvaultClient(object):
         if not onlygroupkey and not onlysymkey:
             serv['plaintext'] = decrypt_secret(aeskey, serv['secret'])
 
-
     @authenticate(True)
     def service_get(self, service_id, decrypt=True, group_id=None):
         """Get information to be edited"""
         if group_id:
-            retval = vaultReply(self.vault.service_get(self.authtok,
-                                                       service_id,
-                                                       group_id),
-                                "Error fetching data for service %s" % service_id)
+            retval = vaultReply(
+                self.vault.service_get(self.authtok, service_id, group_id),
+                "Error fetching data for service %s" % service_id
+            )
         else:
-            retval = vaultReply(self.vault.service_get(self.authtok, service_id),
-                                "Error fetching data for service %s" % service_id)
+            retval = vaultReply(
+                self.vault.service_get(self.authtok, service_id),
+                "Error fetching data for service %s" % service_id
+            )
 
         serv = retval['service']
         # Decrypt secret
@@ -885,7 +897,6 @@ class SFLvaultClient(object):
 
         return serv
 
-
     @authenticate(True)
     def service_get_tree(self, service_id, with_groups=False):
         """Get information to be edited"""
@@ -895,10 +906,10 @@ class SFLvaultClient(object):
         """Same as service_get_tree, but without authentication, so
         that it can be called by ``show`` and ``connect``.
         """
-        retval = vaultReply(self.vault.service_get_tree(self.authtok,
-                                                        service_id,
-                                                        with_groups),
-                "Error fetching data-tree for service %s" % service_id)
+        retval = vaultReply(
+            self.vault.service_get_tree(self.authtok, service_id, with_groups),
+            "Error fetching data-tree for service %s" % service_id
+        )
 
         for x in retval['services']:
             # Decrypt secret
@@ -913,7 +924,6 @@ class SFLvaultClient(object):
 
         return retval['services']
 
-
     @authenticate(True)
     def service_put(self, service_id, data):
         """Save the (potentially modified) service to the Vault"""
@@ -924,7 +934,6 @@ class SFLvaultClient(object):
         print "Success: %s " % retval['message']
 
         return retval
-        
 
     @authenticate(True)
     def machine_get(self, machine_id):
@@ -973,7 +982,7 @@ class SFLvaultClient(object):
             print "%s%s   secret: %s" % (pre, spc, secret)
             
             if verbose:
-                print "%s%s   notes: %s" % (pre,spc, x['notes'])
+                print "%s%s   notes: %s" % (pre, spc, x['notes'])
                 if x['metadata']:
                     print "%s%s   metadata:" % (pre, spc)
                     for key, val in x['metadata'].items():
@@ -982,7 +991,6 @@ class SFLvaultClient(object):
             del(secret)
 
             pre = pre + '   ' + spc
-
 
     @authenticate(True)
     def connect(self, vid, with_show=False, command_line=''):
@@ -1049,7 +1057,6 @@ class SFLvaultClient(object):
                 print "   sflvault user-del -u %s" % usr
 
         return retval
-        
 
     @authenticate(True)
     def group_get(self, group_id):
@@ -1062,14 +1069,13 @@ class SFLvaultClient(object):
     @authenticate(True)
     def group_put(self, group_id, data):
         """Save the (potentially modified) Group to the Vault"""
-        retval = vaultReply(self.vault.group_put(self.authtok, group_id,
-                                                   data),
-                            "Error saving data to vault, aborting.")
+        retval = vaultReply(
+            self.vault.group_put(self.authtok, group_id, data),
+            "Error saving data to vault, aborting.",
+        )
 
         print "Success: %s " % retval['message']
-        
         return retval
-
 
     @authenticate(True)
     def group_add_service(self, group_id, service_id):
@@ -1082,7 +1088,6 @@ class SFLvaultClient(object):
 
         print "Decrypting symkey..."
         self._decrypt_service(serv, onlysymkey=True)
-
 
         print "Sending data back to vault"
         retval = vaultReply(self.vault.group_add_service(self.authtok,
@@ -1097,9 +1102,10 @@ class SFLvaultClient(object):
 
     @authenticate()
     def group_del_service(self, group_id, service_id):
-        retval = vaultReply(self.vault.group_del_service(self.authtok, group_id,
-                                                 service_id),
-                            "Error removing service from group")
+        retval = vaultReply(
+            self.vault.group_del_service(self.authtok, group_id, service_id),
+            "Error removing service from group"
+        )
 
         print "Success: %s" % retval['message']
 
@@ -1156,7 +1162,6 @@ class SFLvaultClient(object):
 
         return retval
 
-
     @authenticate()
     def group_del(self, group_id, delete_cascade=False):
         """Remove a group from the Vault, making sure no services are left
@@ -1199,7 +1204,6 @@ class SFLvaultClient(object):
             print "* = group admin"
         return retval
 
-
     @authenticate()
     def machine_list(self, verbose=False, customer_id=None):
         retval = vaultReply(self.vault.machine_list(self.authtok, customer_id),
@@ -1220,7 +1224,6 @@ class SFLvaultClient(object):
 
         return retval
 
-
     @authenticate()
     def customer_list(self, customer_id=None):
         """List customers in the vault and possibly corresponding to the needed id
@@ -1238,5 +1241,3 @@ class SFLvaultClient(object):
         for x in retval['list']:
             print "c#%d\t%s" % (x['id'], x['name'])
         return retval
-
-

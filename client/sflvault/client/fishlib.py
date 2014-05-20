@@ -3,9 +3,7 @@
 #
 # SFLvault - Secure networked password store and credentials manager.
 #
-# Copyright (C) 2008-2009  Savoir-faire Linux inc.
-#
-# Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
+# Copyright (C) 2014 Savoir-faire Linux inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -57,7 +55,6 @@ class FishClient(object):
                 return (lines, l)
             lines.append(l)
 
-
     def start(self):
         """Start the FISH connection, init and get the remote version if any
         """
@@ -76,7 +73,6 @@ class FishClient(object):
         self.proc.sendline("echo '### 000'")
         lines, retval = self._wait_for('### 000')
         pprint((lines, retval))
-
 
     def retr(self, filename, write_to, callback=None):
         """Retrieve a file from remote host, and write the content to the
@@ -132,7 +128,7 @@ class FishClient(object):
         # Taken from lftp's fish.c implementation
               
         cmd = """#STOR %lu "%s"\n""" % (filelen, remote_filename)
-        cmd += """stty -echo; rest=%lu;file="%s";:>$file;echo '### 001';""" % (filelen,remote_filename)
+        cmd += """stty -echo; rest=%lu;file="%s";:>$file;echo '### 001';""" % (filelen, remote_filename)
         cmd += "stty -icanon;"
         cmd += "if echo 1|head -c 1 -q ->/dev/null 2>&1;then "
         cmd += "head -c $rest -q -|(cat>$file;cat>/dev/null);"
@@ -158,9 +154,7 @@ class FishClient(object):
                      done
                      stty echo
               }
-              echo '### 200'\n""" % (filelen, remote_filename,
-                                        remote_filename, filelen)
-
+              echo '### 200'\n""" % (filelen, remote_filename, remote_filename, filelen)
 
         self.proc.send(cmd)
         lines, retval = self._wait_for('### 001')
@@ -222,4 +216,3 @@ if __name__ == '__main__':
 
     print "Closing connection"
     proc.close()
-

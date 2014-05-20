@@ -5,7 +5,7 @@
 #
 #    This file is part of SFLvault-QT
 #
-#    Copyright (C) 2009 Thibault Cohen
+#    Copyright (C) 2014 Savoir-faire Linux inc.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -191,12 +191,10 @@ class PreferencesWidget(QtGui.QDialog):
     def fillLanguage(self, value):
         self.language.clear()
         i18n_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), '..', 'i18n')
-
         for file in os.listdir(i18n_dir):
             filename, ext = os.path.splitext(file)
             if ext == ".qm":
-                appname, lang = filename.split("_",1)
+                appname, lang = filename.split("_", 1)
                 self.language.addItem(lang)
                 if lang == value:
-                    self.language.setCurrentIndex(self.language.count()-1)
-
+                    self.language.setCurrentIndex(self.language.count() - 1)

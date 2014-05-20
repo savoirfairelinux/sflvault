@@ -1,2 +1,4 @@
-coverage==3.5.1
-nose==1.2.1
+coverage
+nose
+pep8
+-e git+http://gitlab.savoirfairelinux.com/virgil.dupras/sflakes.git#egg=sflakes

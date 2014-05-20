@@ -2,10 +2,7 @@
 #
 # SFLvault - Secure networked password store and credentials manager.
 #
-# Copyright (C) 2008-2014 Savoir-faire Linux inc.
-#
-# Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
-# Author: Lionel Nicolas <lionel.nicolas@savoirfairelinux.com>
+# Copyright (C) 2014 Savoir-faire Linux inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +22,6 @@ from setuptools import setup, find_packages
 import glob
 
 requires = [
-    "sflvault-common",
     "sflvault-client"
 ]
 
@@ -52,4 +48,3 @@ setup(
         ("/usr/share/pyshared/sflvault/clientqt/i18n",            glob.glob("sflvault/clientqt/i18n/*qm"))
 	]
 )
-

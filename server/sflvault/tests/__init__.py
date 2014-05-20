@@ -2,9 +2,7 @@
 #
 # SFLvault - Secure networked password store and credentials manager.
 #
-# Copyright (C) 2008-2009  Savoir-faire Linux inc.
-#
-# Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
+# Copyright (C) 2014 Savoir-faire Linux inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -144,7 +142,7 @@ class TestController(TestCase):
             SFLvaultClient.delete_all_machines = delete_all_machines
             SFLvaultClient.delete_all_customers = delete_all_customers
 
-            vault =  SFLvaultClient(getConfFileAdmin(), shell=True)
+            vault = SFLvaultClient(getConfFileAdmin(), shell=True)
 
             globs['vault'] = vault
             passphrase = u'test'
@@ -154,9 +152,6 @@ class TestController(TestCase):
                 return passphrase        
             globs['vault'].set_getpassfunc(givepass)
             log.warn("testing user setup")
-            globs['vault'].user_setup(username,
-                'http://localhost:6555/vault/rpc', passphrase)
+            globs['vault'].user_setup(username, 'http://localhost:6555/vault/rpc', passphrase)
             globs['cfg'] = globs['vault'].cfg
         return globs['vault']
-
-    

@@ -79,7 +79,7 @@ class SFLvaultAccess(object):
 
     def _log_any(self, log_func, msg, data):
         # Need to do that for user-setup
-        if self.myself_username == None and self.myself_id == None:
+        if self.myself_username is None and self.myself_id is None:
             head = "NO USER - "
         else:
             head = "User: u#d%d - %s - " % (self.myself_id, self.myself_username)
@@ -137,7 +137,7 @@ class SFLvaultAccess(object):
         if usr is None:
             # New user
             usr = User()
-            usr.waiting_setup =  datetime.now() + timedelta(0, int(setup_timeout))
+            usr.waiting_setup = datetime.now() + timedelta(0, int(setup_timeout))
             usr.username = username
             usr.is_admin = bool(is_admin)
             usr.created_time = datetime.now()
@@ -156,8 +156,7 @@ class SFLvaultAccess(object):
                 self.log_i('updated (had setup timeout expired).', {})
                 msg = 'updated (had setup timeout expired)'
             else:
-                self.log_i('User %(username)s is waiting for setup.',
-                       {"username": username})
+                self.log_i('User %(username)s is waiting for setup.', {"username": username})
                 return vaultMsg(False, "User %s is waiting for setup" % \
                                 username)
         else:
@@ -193,7 +192,7 @@ class SFLvaultAccess(object):
         # to a group which holds some passwords.
 
         t1 = model.usergroups_table
-        meta.Session.execute(t1.delete(t1.c.user_id==usr.id))
+        meta.Session.execute(t1.delete(t1.c.user_id == usr.id))
         username = usr.username
         meta.Session.delete(usr)
         transaction.commit()
@@ -285,8 +284,7 @@ class SFLvaultAccess(object):
 
         transaction.commit()
 
-        self.log_i('Service s#(service_id)s saved successfully' ,
-                   {"service_id": service_id})
+        self.log_i('Service s#(service_id)s saved successfully', {"service_id": service_id})
         return vaultMsg(True, "Service s#%s saved successfully" % service_id)
 
     def _service_get_data(self, service_id, group_id=None, with_groups=False):
@@ -304,11 +302,11 @@ class SFLvaultAccess(object):
         # We need no aliasing, because we'll only use `cryptgroupkey`,
         # `cryptsymkey` and `group_id` in there.
         req = sql.join(servicegroups_table, usergroups_table,
-                       ServiceGroup.group_id==UserGroup.group_id) \
-                 .join(users_table, User.id==UserGroup.user_id) \
+                       ServiceGroup.group_id == UserGroup.group_id) \
+                 .join(users_table, User.id == UserGroup.user_id) \
                  .select(use_labels=True) \
-                 .where(User.id==self.myself_id) \
-                 .where(ServiceGroup.service_id==s.id) \
+                 .where(User.id == self.myself_id) \
+                 .where(ServiceGroup.service_id == s.id) \
                  .order_by(ServiceGroup.group_id)
 
         # Deal with group if specified..
@@ -430,21 +428,23 @@ class SFLvaultAccess(object):
         # Quick helper funcs, to create the hierarchical 'out' structure.
         def set_customer(out, c):
             "Subfunc of search"
-            if out.has_key(str(c.customers_id)):
+            if str(c.customers_id) in out:
                 return
             out[str(c.customers_id)] = {'name': c.customers_name,
                                         'machines': {}}
 
         def set_machine(subout, m):
             "Subfunc of search"
-            if subout.has_key(str(m.machines_id)):
+            if str(m.machines_id) in subout:
                 return
-            subout[str(m.machines_id)] = {'name': m.machines_name,
-                            'fqdn': m.machines_fqdn or '',
-                            'ip': m.machines_ip or '',
-                            'location': m.machines_location or '',
-                            'notes': m.machines_notes or '',
-                            'services': {}}
+            subout[str(m.machines_id)] = {
+                'name': m.machines_name,
+                'fqdn': m.machines_fqdn or '',
+                'ip': m.machines_ip or '',
+                'location': m.machines_location or '',
+                'notes': m.machines_notes or '',
+                'services': {}
+            }
 
         def set_service(subsubout, s):
             "Subfunc of search"
@@ -461,8 +461,7 @@ class SFLvaultAccess(object):
             # Setup customer dans le out, pour le service
             set_customer(out, x)
             set_machine(out[str(x.customers_id)]['machines'], x)
-            set_service(out[str(x.customers_id)]['machines'] \
-                            [str(x.machines_id)]['services'], x)
+            set_service(out[str(x.customers_id)]['machines'][str(x.machines_id)]['services'], x)
 
 
         # Return 'out', in a nicely structured hierarchical form.
@@ -498,8 +497,10 @@ class SFLvaultAccess(object):
 
         transaction.commit()
 
-        self.log_i('Customer c#%(customer_id)s saved successfully)s',
-                  {"customer_id": customer_id})
+        self.log_i(
+            'Customer c#%(customer_id)s saved successfully)s',
+            {"customer_id": customer_id}
+        )
         return vaultMsg(True, "Customer c#%s saved successfully" % customer_id)
 
 
@@ -529,8 +530,10 @@ class SFLvaultAccess(object):
         try:
             m = query(Machine).filter_by(id=machine_id).one()
         except InvalidReq, e:
-            self.log_w('Machine m#%(machine_id)s saved successfully',
-                   {"machine_id": machine_id})
+            self.log_w(
+                'Machine m#%(machine_id)s saved successfully',
+                {"machine_id": machine_id}
+            )
             return vaultMsg(False, "Machine not found: %s" % str(e))
 
         if 'customer_id' in data:
@@ -760,7 +763,7 @@ class SFLvaultAccess(object):
                     
 
         # Delete UserGroup elements...
-        q1 = usergroups_table.delete(UserGroup.group_id==grp.id)
+        q1 = usergroups_table.delete(UserGroup.group_id == grp.id)
         meta.Session.execute(q1)
 
         name = grp.name
@@ -907,8 +910,7 @@ class SFLvaultAccess(object):
 
 
         # Make sure we don't double the group access.
-        if query(UserGroup).filter_by(group_id=group_id,
-                                  user_id=usr.id).first():
+        if query(UserGroup).filter_by(group_id=group_id, user_id=usr.id).first():
             return vaultMsg(False, "User %s is already in that group" % user)
 
         if not cryptgroupkey:
@@ -1063,7 +1065,7 @@ class SFLvaultAccess(object):
         # d4 = sql.delete(model.customers_table) \
         #        .where(model.customers_table.c.id == customer_id)
 
-        query(model.Customer).filter(model.Customer.id==customer_id).delete(synchronize_session=False)
+        query(model.Customer).filter(model.Customer.id == customer_id).delete(synchronize_session=False)
         # meta.Session.execute(d)
         # meta.Session.execute(d2)
         # meta.Session.execute(d3)
@@ -1116,7 +1118,7 @@ class SFLvaultAccess(object):
             query(model.Service)\
                 .filter(model.Service.id.in_(servs_ids))\
                 .delete(synchronize_session=False)
-        query(model.Machine).filter(model.Machine.id==machine_id).delete(synchronize_session=False)
+        query(model.Machine).filter(model.Machine.id == machine_id).delete(synchronize_session=False)
         # Delete all related groupciphers
 #        raise Exception
 #        d = sql.delete(model.servicegroups_table) \
@@ -1128,9 +1130,9 @@ class SFLvaultAccess(object):
 #        d3 = sql.delete(model.machines_table) \
 #                .where(model.machines_table.c.id == machine_id)
 
- #       meta.Session.execute(d)
- #       meta.Session.execute(d2)
- #       meta.Session.execute(d3)
+#       meta.Session.execute(d)
+#       meta.Session.execute(d2)
+#       meta.Session.execute(d3)
 
         transaction.commit()
 
@@ -1165,7 +1167,7 @@ class SFLvaultAccess(object):
         # Delete all related user-ciphers
         query(model.ServiceGroup).filter(model.ServiceGroup.service_id == service_id).delete(synchronize_session=False)
         # Delete the service
-        query(Service).filter(model.Service.id==service_id).delete(synchronize_session=False)
+        query(Service).filter(model.Service.id == service_id).delete(synchronize_session=False)
         transaction.commit()
 
         return vaultMsg(True, 'Deleted service s#%s successfully' % service_id)
@@ -1192,7 +1194,7 @@ class SFLvaultAccess(object):
 
         # Filter also..
         if customer_id:
-            sel = sel.where(Customer.id==customer_id)
+            sel = sel.where(Customer.id == customer_id)
 
         lst = meta.Session.execute(sel)
 
@@ -1262,5 +1264,8 @@ class SFLvaultAccess(object):
         transaction.commit()
 
 
-        return vaultMsg(True, "Password updated for service.", {'service_id': service_id,
-                                                 'encrypted_for': grouplist})
+        return vaultMsg(
+            True,
+            "Password updated for service.",
+            {'service_id': service_id, 'encrypted_for': grouplist}
+        )

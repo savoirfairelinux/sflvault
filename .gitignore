@@ -23,6 +23,7 @@ docs/*.html
 
 # Pip stufff
 pip-log.txt
+*.egg-info
 
 #log stuff
 *.log

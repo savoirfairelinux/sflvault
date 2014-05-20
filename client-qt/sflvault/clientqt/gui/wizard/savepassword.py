@@ -5,7 +5,7 @@
 #
 #    This file is part of SFLvault-QT
 #
-#    Copyright (C) 2009 Thibault Cohen
+#    Copyright (C) 2014 Savoir-faire Linux inc.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -124,9 +124,11 @@ class Page2(QtGui.QWizardPage):
             self.registerField("wallet", self.wallet)
             self.fillWallet()
 
-        QtCore.QObject.connect(self.wallet,
-                QtCore.SIGNAL("currentIndexChanged (int)"),
-                self.check_wallet)
+        QtCore.QObject.connect(
+            self.wallet,
+            QtCore.SIGNAL("currentIndexChanged (int)"),
+            self.check_wallet
+        )
 
     def validatePage(self):
         """ Check form and define next page
@@ -162,7 +164,7 @@ class Page2(QtGui.QWizardPage):
         backend_list = client.cfg.wallet_list()
         self.wallet.addItem(backend_list[0][1], QtCore.QVariant(backend_list[0][0]))
         # hide useless fields
-        if backend_list[0][4] == True:
+        if backend_list[0][4]:
             self.check_wallet(0)
 
         for i,backend in enumerate(backend_list[1:]):
@@ -173,7 +175,7 @@ class Page2(QtGui.QWizardPage):
             elif backend[3] == "Supported":
                 self.wallet.addItem(backend[1], QtCore.QVariant(backend[0]))
             # Set current wallet
-            if backend[4] == True:
+            if backend[4]:
                 self.wallet.setCurrentIndex(i + 1)
 
 
@@ -225,8 +227,7 @@ class Page4(QtGui.QWizardPage):
 
         self.setTitle("Wallet configuration saved unsuccessfully")
 
-        label = QtGui.QLabel("Your password was NOT saved in your wallet."
-                            )
+        label = QtGui.QLabel("Your password was NOT saved in your wallet.")
         label.setWordWrap(True)
 
         layout = QtGui.QVBoxLayout()

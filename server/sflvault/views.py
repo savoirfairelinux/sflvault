@@ -2,9 +2,7 @@
 #
 # SFLvault - Secure networked password store and credentials manager.
 #
-# Copyright (C) 2008-2009  Savoir-faire Linux inc.
-#
-# Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
+# Copyright (C) 2014 Savoir-faire Linux inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -178,7 +176,7 @@ def authenticated_admin(func, request, *args, **kwargs):
 def sflvault_authenticate(request, username, cryptok):
     """Receive the *decrypted* cryptok, b64 encoded"""
     settings = request['settings']
-    u  = None
+    u = None
     db = None
 
     # DEPRECATED: will be removed in 0.9
@@ -216,12 +214,13 @@ def sflvault_authenticate(request, username, cryptok):
         return vaultMsg(False, 'Authentication failed')
     else:
         newtok = b64encode(randfunc(32))
-        set_session(newtok, {'username': username,
-                                'timeout': datetime.now() + timedelta(0, int(settings['sflvault.vault.session_timeout'])),
-                                'remote_addr': request.get('REMOTE_ADDR', None),
-                                'userobj': u,
-                                'user_id': u.id
-                                })
+        set_session(newtok, {
+            'username': username,
+            'timeout': datetime.now() + timedelta(0, int(settings['sflvault.vault.session_timeout'])),
+            'remote_addr': request.get('REMOTE_ADDR', None),
+            'userobj': u,
+            'user_id': u.id
+        })
         return vaultMsg(True, 'Authentication successful', {'authtok': newtok})
 
 
@@ -321,11 +320,11 @@ def sflvault_service_put(request, authtok, service_id, data):
     # TODO: verify I had access to the service previously.
     sess = get_session(authtok, request)
     req = sql.join(servicegroups_table, usergroups_table,
-                    ServiceGroup.group_id==UserGroup.group_id) \
-                .join(users_table, User.id==UserGroup.user_id) \
+                    ServiceGroup.group_id == UserGroup.group_id) \
+                .join(users_table, User.id == UserGroup.user_id) \
                 .select() \
-                .where(User.id==sess['user_id']) \
-                .where(ServiceGroup.service_id==service_id)
+                .where(User.id == sess['user_id']) \
+                .where(ServiceGroup.service_id == service_id)
     res = list(meta.Session.execute(req))
     if not res:
         return vaultMsg(False, "You don't have access to that service.")
@@ -345,10 +344,9 @@ def sflvault_search(request, authtok, search_query, group_ids, verbose, filters)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_add')
 @authenticated_user
-def sflvault_service_add(request, authtok, machine_id, parent_service_id, url, group_ids, secret,
-        notes, metadata):
-    return vault.service_add(machine_id, parent_service_id, url, group_ids, secret, notes,
-        metadata)
+def sflvault_service_add(
+        request, authtok, machine_id, parent_service_id, url, group_ids, secret, notes, metadata):
+    return vault.service_add(machine_id, parent_service_id, url, group_ids, secret, notes, metadata)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_del')
 @authenticated_admin
@@ -468,19 +466,19 @@ def set_session(authtok, value):
     {authtok1: {'username':  , 'timeout': datetime}, authtok2: {}..}
     
     """
- #   _setup_sessions();
-    vaultSessions[authtok] = value;
+#   _setup_sessions();
+    vaultSessions[authtok] = value
 
 def get_session(authtok, request):
     """Return the values associated with a session"""
     #_setup_sessions();
     
-    if not vaultSessions.has_key(authtok):
+    if authtok not in vaultSessions:
         raise SessionNotFoundError
         return None
 
     # XXX: where does the SESSION_TIMEOUT come from?
-    if not vaultSessions[authtok].has_key('timeout'):
+    if 'timeout' not in vaultSessions[authtok]:
         vaultSessions[authtok]['timeout'] = datetime.now() + timedelta(0, SESSION_TIMEOUT)
 
     if vaultSessions[authtok]['timeout'] < datetime.now():
@@ -503,4 +501,3 @@ class SessionExpiredError(Exception):
 
 class SessionSourceAddressMismatchError(Exception):
     pass
-

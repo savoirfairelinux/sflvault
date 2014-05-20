@@ -5,7 +5,7 @@
 #
 #    This file is part of SFLvault-QT
 #
-#    Copyright (C) 2009 Thibault Cohen
+#    Copyright (C) 2014 Savoir-faire Linux inc.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ class DeleteServiceWidget(QtGui.QMessageBox):
         self.servid = servid
         # Test if service exist
         service = getService(servid)
-        if not "services" in service:
+        if "services" not in service:
             return False
         # Set windows
         self.setIcon(QtGui.QMessageBox.Question)
@@ -238,19 +238,23 @@ class EditServiceWidget(QtGui.QDialog):
         self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
 
     def add_metadata(self):
-        key, ret = QtGui.QInputDialog.getText(self,
-                                            self.tr("New Metadata"),
-                                            self.tr("Metadata key:"),
-                                            QtGui.QLineEdit.Normal,
-                                            '');
+        key, ret = QtGui.QInputDialog.getText(
+            self,
+            self.tr("New Metadata"),
+            self.tr("Metadata key:"),
+            QtGui.QLineEdit.Normal,
+            ''
+        )
         if key == '':
             print "error"
         else:
-            value, ret = QtGui.QInputDialog.getText(self,
-                                            self.tr("New Metadata"),
-                                            self.tr("Metadata value:"),
-                                            QtGui.QLineEdit.Normal,
-                                            '');
+            value, ret = QtGui.QInputDialog.getText(
+                self,
+                self.tr("New Metadata"),
+                self.tr("Metadata value:"),
+                QtGui.QLineEdit.Normal,
+                ''
+            )
             if value == '':
                 print "error"
             key_label = QtGui.QLabel(key)
@@ -349,7 +353,7 @@ class EditServiceWidget(QtGui.QDialog):
     def fill_password(self):
         if self.mode == "edit":
             decodedpassword = getPassword(self.servid)
-            if decodedpassword != False:
+            if decodedpassword is not False:
                 self.password.setText(decodedpassword)
                 self.password.setEchoMode(QtGui.QLineEdit.Normal)
                 self.password.setReadOnly(0)
@@ -385,7 +389,7 @@ class EditServiceWidget(QtGui.QDialog):
         for service in services["list"]:
             # Doesn t add this item in possible parent list (if it s edit mode
             if service['id'] != self.servid:
-                self.parentserv.addItem(service['url'] +" - s#" + unicode(service['id']), QtCore.QVariant(service['id']))
+                self.parentserv.addItem(service['url'] + " - s#" + unicode(service['id']), QtCore.QVariant(service['id']))
         # Select good row
         index = self.parentserv.findText(parentserv, QtCore.Qt.MatchEndsWith)
         if index > -1:
@@ -395,7 +399,7 @@ class EditServiceWidget(QtGui.QDialog):
         index = self.machine.findText(self.machineline.text(), QtCore.Qt.MatchContains)
         if index == -1:
             msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Critical, "No machine found","No machine found")
-            msgBox.exec_();
+            msgBox.exec_()
             self.machine.setFocus()
         else:
             self.machine.setCurrentIndex(index)
@@ -417,12 +421,12 @@ class EditServiceWidget(QtGui.QDialog):
     def exec_(self):
         # get groups lists
         groups = listGroup()
-        if not "list" in groups:
+        if "list" not in groups:
             return False
         for group in groups["list"]:
             ## ADD a checkbox to show/hide all groups/membre groups
             #if group["member"]:
-            item = QtGui.QListWidgetItem(group['name'] +" - g#" + unicode(group['id']))
+            item = QtGui.QListWidgetItem(group['name'] + " - g#" + unicode(group['id']))
             item.setData(Qt.UserRole, QtCore.QVariant(group['id']))
             self.groups.addItem(item)
 #                self.groups.addItem(group['name'] +" - g#" + unicode(group['id']), QtCore.QVariant(group['id']))
@@ -448,9 +452,9 @@ class EditServiceWidget(QtGui.QDialog):
             self.notes.setText(self.informations["notes"])
             # metadata
             if isinstance(self.informations["metadata"], dict):
-                self.metadata = dict([ (QtGui.QLabel(key), QtGui.QLabel(value))
-                                   for key, value in
-                                 self.informations["metadata"].items() ])
+                self.metadata = dict(
+                    [(QtGui.QLabel(key), QtGui.QLabel(value)) for key, value in self.informations["metadata"].items()]
+                )
             else:
                 self.metadata = {}
             for i, data in enumerate(self.metadata.items()):
@@ -464,7 +468,7 @@ class EditServiceWidget(QtGui.QDialog):
                 del_button.key = key_label
                 temp_func = partial(self.del_metadata, del_button)
                 self.connect(del_button, QtCore.SIGNAL("clicked()"), temp_func)
-                self.metadata_layout.addWidget(del_button, i+1, 2)
+                self.metadata_layout.addWidget(del_button, i + 1, 2)
             self.metadata_layout.addWidget(self.metadata_button,
                                             len(self.metadata) + 1,
                                             2)
@@ -508,16 +512,16 @@ class EditServiceWidget(QtGui.QDialog):
             return False
         group_ids = []
         for group_id_item in group_ids_item_list:
-            group_id, bool,= group_id_item.data(QtCore.Qt.UserRole).toInt()
+            group_id, bool, = group_id_item.data(QtCore.Qt.UserRole).toInt()
             group_ids.append(group_id)
 
         service_info["secret"] = unicode(self.password.text())
 
         service_info["notes"] = unicode(self.notes.text())
 
-        service_info["metadata"] = dict([(unicode(key.text()),
-                                          unicode(value.text()))
-                                    for key, value in self.metadata.items()])
+        service_info["metadata"] = dict(
+            [(unicode(key.text()), unicode(value.text())) for key, value in self.metadata.items()]
+        )
 
         if self.mode == "add":
             # Add a new service
@@ -535,9 +539,11 @@ class EditServiceWidget(QtGui.QDialog):
             new_groups = set(group_ids)
             ### add service to this groups
             for group_id in new_groups.difference(old_groups):
-                pdialog = progressdialog.ProgressDialog(self.tr("Adding service in a group"),
-                            self.tr("Please wait while adding service s#%s in group g#%s" % (self.servid, group_id)),
-                            addServiceGroup, group_id, self.servid)
+                pdialog = progressdialog.ProgressDialog(
+                    self.tr("Adding service in a group"),
+                    self.tr("Please wait while adding service s#%s in group g#%s" % (self.servid, group_id)),
+                    addServiceGroup, group_id, self.servid
+                )
                 ret = pdialog.run()
             ### remove service from this groups
             for group_id in old_groups.difference(new_groups):

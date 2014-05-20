@@ -63,11 +63,11 @@ class Service(object):
         self.timeout = timeout
         self.command_line = command_line
         # We need a copy, as the modes can change when configuring chain.
-        self.provides_modes = set() # List what a service handler supports
-               # (gives SHELL access or can provide PORT_FORWARD, etc. Defaults
-               # to nothing special: plugin is always an end-point.
-        self.operation_mode = None # By default, no operation mode, until we
-                                   # define one in required() for each service.
+        # List what a service handler supports (gives SHELL access or can provide PORT_FORWARD, etc.
+        # Defaults to nothing special: plugin is always an end-point.
+        self.provides_modes = set()
+        # By default, no operation mode, until we define one in required() for each service.
+        self.operation_mode = None
         # If this service is to go through another host/port
         self.op_through_host = None
         self.op_through_port = None
@@ -106,7 +106,6 @@ class Service(object):
         #if p:
         #    p.unlink()
 
-
     def provides(self, mode):
         """Return True of False, whether it supports the provisioning mode"""
         if not mode:
@@ -115,7 +114,6 @@ class Service(object):
             return set(mode).issubset(self.provides_modes)
         else:
             return mode in self.provides_modes
-
 
     # Abstract functions that must exist in childs
     def required(self, req=None):
@@ -166,7 +164,6 @@ class Chain(object):
         # Link-list of the Service objects, 
         self.service_list = None
 
-
     def debug_chain(self):
         print "self.ready: ", self.ready
         print "self.service_list:"
@@ -183,8 +180,6 @@ class Chain(object):
             print "    self.operation_mode: ", s.operation_mode
             print "    self.op_through_port: ", s.op_through_port
             print "    self.op_through_host: ", s.op_through_host
-
-
 
     def add_port_forward(self, service, direction, src_host, src_port,
                          dest_host, dest_port):
@@ -203,7 +198,7 @@ class Chain(object):
         lst = self.service_list
         # All services or the one under the specified `service`
         #print "List, from service: %s" % service
-        for srv in reversed(lst if service == None else lst[:lst.index(service)]):
+        for srv in reversed(lst if service is None else lst[:lst.index(service)]):
             # Last in chain ?
             if not srv.parent:
                 src = first_src
@@ -219,7 +214,6 @@ class Chain(object):
                 srv.local_forwards.append(add)
             dest = src
 
-        
     def setup(self):
         """Tries to set up the service chain (one service at a time).
         
@@ -227,7 +221,6 @@ class Chain(object):
         have all the required connection types (ex: no port forward
         exist prior to accessing a service which requires one, just like
         you can't establish an SSH connection over an HTTP connection)."""
-
 
         # Create Service objects for each of the service in the hierarchy.
         service_list = []
@@ -249,7 +242,7 @@ class Chain(object):
             
         # Link the services as parent/child.
         for i in range(len(service_list) - 1):
-            service_list[i].set_child(service_list[i+1])
+            service_list[i].set_child(service_list[i + 1])
 
         self.service_list = service_list
 
@@ -271,13 +264,11 @@ class Chain(object):
             self.ready = True
             return True
 
-
     def unlink_all(self):
         # Is this used anywhere ?
         sl = service_list
         self.service_list = None
         sl[0].unlink_child()
-        
 
     def connect(self):
         """Connect to the servers in cascade, and do whatever is possible
@@ -318,7 +309,6 @@ class Chain(object):
             # that didn't succeed.
             if go_break:
                 break
-
 
         # Interact with end-point
         if last:
