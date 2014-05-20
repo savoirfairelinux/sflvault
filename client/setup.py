@@ -27,7 +27,6 @@ except ImportError:
 import platform
 
 dependencies = [
-    "SFLvault-common==0.7.8.1",
     "pycrypto",
     "decorator",
 ]
