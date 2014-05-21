@@ -55,7 +55,7 @@ def setUp():
 
 
 class BaseTestCase(TestCase):
-    url = 'https://localhost:5767/vault/rpc'
+    url = 'http://localhost:5767/vault/rpc'
 
     def getVault(self):
         """Get the SFLVault server vault"""

@@ -53,7 +53,8 @@ conf_dir = os.path.dirname(os.path.dirname(here_dir))
 sys.path.insert(0, conf_dir)
 
 
-dbfile = os.path.join(conf_dir, 'test-database.db')
+# test.ini has the $(here) placeholder, which is replaced by os.getcwd().
+dbfile = os.path.join(os.getcwd(), 'test-database.db')
 confile = os.path.join(conf_dir, 'test-config')
 userconfile = os.path.join(conf_dir, 'test-config-user')
 test_file = os.path.join(conf_dir, 'test.ini')
