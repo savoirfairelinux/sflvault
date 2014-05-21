@@ -154,11 +154,6 @@ class SFLvaultCommand(object):
                 action = 'help'
 
             if action in ['-v', '--version']:
-                try:
-                    print pkgres.get_distribution('SFLvault_common')
-                except pkgres.DistributionNotFound, e:
-                    print "SFLvault-common not installed"
-                
                 print pkgres.get_distribution('SFLvault_client')
 
                 try:
