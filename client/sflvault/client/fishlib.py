@@ -78,7 +78,9 @@ class FishClient(object):
         """Retrieve a file from remote host, and write the content to the
         given file-like object"""
         self.proc.sendline('''#RETR "%s"''' % (filename))
-        self.proc.sendline("""ls -l "%s" | ( read a b c d x e; echo $x ); echo '### 100'; cat "%s"; echo '### 200'""" % (filename, filename))
+        self.proc.sendline(
+            """ls -l "%s" | ( read a b c d x e; echo $x ); echo '### 100'; cat "%s"; echo '### 200'""" % (filename, filename)
+        )
         lines, retval = self._wait_for('### 100')
         filelen = int(lines.pop().strip())
         print filelen

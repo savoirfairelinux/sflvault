@@ -41,4 +41,4 @@ class JSONEncodedDict(types.TypeDecorator):
         return json.loads(value) if value else {}
 
     def copy_value(self, value):
-        return json.loads(simplejson.dumps(value))
+        return json.loads(json.dumps(value))

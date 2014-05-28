@@ -634,7 +634,9 @@ class mysql(ShellService):
             raise ServiceRequireError("mysql module can't provide '%s'" % req)
         
         if not self.parent:
-            raise ServiceRequireError("mysql service can't be executed locally, it has to be behind a SHELL_ACCESS-providing module.")
+            raise ServiceRequireError(
+                "mysql service can't be executed locally, it has to be behind a SHELL_ACCESS-providing module."
+            )
 
         self.operation_mode = OP_THRGH_SHELL
         return self.parent.required(PROV_SHELL_ACCESS)
@@ -703,7 +705,9 @@ class postgres(ShellService):
             raise ServiceRequireError("postgres module can't provide '%s'" % req)
         
         if not self.parent:
-            raise ServiceRequireError("postgres service can't be executed locally, it has to be behind a SHELL_ACCESS-providing module.")
+            raise ServiceRequireError(
+                "postgres service can't be executed locally, it has to be behind a SHELL_ACCESS-providing module."
+            )
 
         self.operation_mode = OP_THRGH_SHELL
         return self.parent.required(PROV_SHELL_ACCESS)

@@ -406,9 +406,21 @@ class MainWindow(QtGui.QMainWindow):
         self.userinfo = getUserInfo(str(self.settings.value("SFLvault/username").toString()))
 
         ## "Connect" Alias
-        QtCore.QObject.connect(self.aliasdock.alias.alias_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark)
-        QtCore.QObject.connect(self.aliasdock.alias.alias_list.connectAct, QtCore.SIGNAL("triggered()"), self.GetIdByBookmark)
-        QtCore.QObject.connect(self.aliasdock.alias.alias_list.showAct, QtCore.SIGNAL("triggered()"), self.show_tooltip_by_bookmark)
+        QtCore.QObject.connect(
+            self.aliasdock.alias.alias_list,
+            QtCore.SIGNAL("doubleClicked (const QModelIndex&)"),
+            self.GetIdByBookmark
+        )
+        QtCore.QObject.connect(
+            self.aliasdock.alias.alias_list.connectAct,
+            QtCore.SIGNAL("triggered()"),
+            self.GetIdByBookmark
+        )
+        QtCore.QObject.connect(
+            self.aliasdock.alias.alias_list.showAct,
+            QtCore.SIGNAL("triggered()"),
+            self.show_tooltip_by_bookmark
+        )
 
         # "Connect" search dock
         ## Update Group list in search box
@@ -435,7 +447,11 @@ class MainWindow(QtGui.QMainWindow):
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
         ## Tree item informations
         QtCore.QObject.connect(self.tree, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.showInformations)
-        QtCore.QObject.connect(self.tree.selectionModel(), QtCore.SIGNAL("selectionChanged (const QItemSelection&,const QItemSelection&)"), self.showInformations)
+        QtCore.QObject.connect(
+            self.tree.selectionModel(),
+            QtCore.SIGNAL("selectionChanged (const QItemSelection&,const QItemSelection&)"),
+            self.showInformations
+        )
         ## Tree Filter
         QtCore.QObject.connect(self.treewidget.filter.filter_input, QtCore.SIGNAL("returnPressed ()"), self.focusOnTree)
 

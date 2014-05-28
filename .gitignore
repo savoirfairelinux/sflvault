@@ -41,6 +41,7 @@ test-database.db
 test-config
 test-suite.xml
 .coverage
+.tox
 server/test-config.bak
 tests/host.*
 tests/testconfig
