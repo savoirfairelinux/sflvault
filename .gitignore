@@ -18,9 +18,6 @@ SFLvault_client_qt.egg-info/
 # generated html files
 docs/*.html
 
-# pylons configuration
-*.ini
-
 # Pip stufff
 pip-log.txt
 *.egg-info

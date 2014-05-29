@@ -48,7 +48,7 @@ log = logging.getLogger(__name__)
 __all__ = ['url_for', 'TestController', 'setUp', 'tearDown']
 
 here_dir = os.path.dirname(os.path.abspath(__file__))
-conf_dir = os.path.dirname(os.path.dirname(here_dir))
+conf_dir = os.path.join(here_dir, '..', 'sandbox')
 
 sys.path.insert(0, conf_dir)
 
@@ -57,7 +57,7 @@ sys.path.insert(0, conf_dir)
 dbfile = os.path.join(os.getcwd(), 'test-database.db')
 confile = os.path.join(conf_dir, 'test-config')
 userconfile = os.path.join(conf_dir, 'test-config-user')
-test_file = os.path.join(conf_dir, 'test.ini')
+test_file = os.path.join(conf_dir, 'test-server.ini')
 globs = {}
 
 def tearDown():
