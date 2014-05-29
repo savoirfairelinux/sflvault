@@ -45,9 +45,10 @@ sleep 3
 
 echo "Running functional tests"
 nosetests -w .. -s
+RES=$?
 
 # Kill the test server
 echo "Killing server..."
 kill $!
 
-exit $?
+exit $RES
