@@ -507,7 +507,11 @@ class EditServiceWidget(QtGui.QDialog):
         # Groups update
         group_ids_item_list = self.groups.selectedIndexes()
         if len(group_ids_item_list) < 1:
-            error = QtGui.QMessageBox(QtGui.QMessageBox.Critical, self.tr("No group selected"), self.tr("You have to select at least one group"))
+            error = QtGui.QMessageBox(
+                QtGui.QMessageBox.Critical,
+                self.tr("No group selected"),
+                self.tr("You have to select at least one group")
+            )
             error.exec_()
             return False
         group_ids = []

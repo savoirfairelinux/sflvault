@@ -177,7 +177,7 @@ class URLParser(object):
     >>> u3.gen_url(with_password=False)  # Default behavior
     'https://[user@host]@[2009::10:ab]:123/var/my/path?q=hello#frag123'
     """
-    _regex = re.compile(r"([a-zA-Z0-1+-]+)(://)(((\[([^\]]+)\])|([^@]+))(:([^@]*))?@)?(([^\[/][^:/\?#]+)|(\[([^\]]+)\]))?(:(\d+))?(/([^\?]*))?(\?([^#]*))?(#(.*))?")
+    _regex = re.compile(r"([a-zA-Z0-1+-]+)(://)(((\[([^\]]+)\])|([^@]+))(:([^@]*))?@)?(([^\[/][^:/\?#]+)|(\[([^\]]+)\]))?(:(\d+))?(/([^\?]*))?(\?([^#]*))?(#(.*))?") # noqa
     
     def __init__(self, url=None):
         """Parse an URL or create a new empty object"""

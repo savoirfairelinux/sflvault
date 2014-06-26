@@ -1,4 +1,4 @@
-coverage
 nose
 pep8
--e git+http://gitlab.savoirfairelinux.com/virgil.dupras/sflakes.git#egg=sflakes
+flake8
+flake8-copyright

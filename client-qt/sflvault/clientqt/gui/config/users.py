@@ -175,7 +175,11 @@ class UsersWidget(QtGui.QDialog):
             ret = pdialog.run()
 
             if ret:
-                message = QtGui.QMessageBox(QtGui.QMessageBox.Information, self.tr("Delete group"), self.tr("Group %s deleted successfully" % unicode(selected_group.id)))
+                message = QtGui.QMessageBox(
+                    QtGui.QMessageBox.Information,
+                    self.tr("Delete group"),
+                    self.tr("Group %s deleted successfully" % unicode(selected_group.id))
+                )
                 message.exec_()
                 self.editUser() 
                 return True
@@ -277,7 +281,11 @@ class UsersWidget(QtGui.QDialog):
         ret = pdialog.run()
 
         if ret:
-            message = QtGui.QMessageBox(QtGui.QMessageBox.Information, self.tr("Create group"), self.tr("Group %s created successfully" % unicode(group_name)))
+            message = QtGui.QMessageBox(
+                QtGui.QMessageBox.Information,
+                self.tr("Create group"),
+                self.tr("Group %s created successfully" % unicode(group_name))
+            )
             message.exec_()
             self.editUser()
             return True

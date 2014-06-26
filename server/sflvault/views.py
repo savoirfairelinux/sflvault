@@ -23,7 +23,6 @@ import transaction
 from sflvault.common.crypto import *
 from sflvault.lib.vault import SFLvaultAccess, vaultMsg
 from sflvault.model import *
-import datetime
 from decorator import decorator
 from datetime import datetime, timedelta
 from distutils.version import LooseVersion

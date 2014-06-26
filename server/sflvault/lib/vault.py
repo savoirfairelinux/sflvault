@@ -332,7 +332,9 @@ class SFLvaultAccess(object):
         # Load groups too if required
         if with_groups:
             groups_list = []
-            req2 = sql.join(groups_table, servicegroups_table).select(use_labels=True).where(ServiceGroup.service_id == service_id)
+            req2 = sql.join(groups_table, servicegroups_table)\
+                .select(use_labels=True)\
+                .where(ServiceGroup.service_id == service_id)
             res2 = meta.Session.execute(req2)
             for grp in res2:
                 groups_list.append((grp.groups_id, grp.groups_name))
@@ -865,7 +867,10 @@ class SFLvaultAccess(object):
 
         # Make sure we don't lose all of the service's crypted information.
         if len(sgs) < 2:
-            return vaultMsg(False, "This is the last group this service is in. Either delete the service, or add it to another group first")
+            return vaultMsg(
+                False,
+                "This is the last group this service is in. Either delete the service, or add it to another group first"
+            )
 
         # Remove the GroupService from the Group object.
         meta.Session.delete(sg)
@@ -999,7 +1004,8 @@ class SFLvaultAccess(object):
 
         ohoh = ''
         if not id_admins:
-            ohoh = " - WARNING: there are no more group-admins in this group.  Ask a global-admin to elect someone group-admin for further management of this group."
+            ohoh = " - WARNING: there are no more group-admins in this group.  Ask a global-admin "\
+                "to elect someone group-admin for further management of this group."
 
         meta.Session.delete(hisug[0])
         transaction.commit()

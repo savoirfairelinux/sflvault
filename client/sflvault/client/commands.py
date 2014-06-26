@@ -154,11 +154,6 @@ class SFLvaultCommand(object):
                 action = 'help'
 
             if action in ['-v', '--version']:
-                try:
-                    print pkgres.get_distribution('SFLvault_common')
-                except pkgres.DistributionNotFound, e:
-                    print "SFLvault-common not installed"
-                
                 print pkgres.get_distribution('SFLvault_client')
 
                 try:
@@ -567,8 +562,8 @@ class SFLvaultCommand(object):
             dialog = ui_class(thing)
             save, data = dialog.run()
         except TypeError, e:
-            print "W00ps!  The shell GUI doesn't support certain operations, like copy and pasting, or specially weird characters."
-            print "In fact, most terminal support doing SHIFT+Middle_Button to paste the text as if the user has typed it, instead of sending Button2 events."
+            print "W00ps!  The shell GUI doesn't support certain operations, like copy and pasting, or specially weird characters." # noqa
+            print "In fact, most terminal support doing SHIFT+Middle_Button to paste the text as if the user has typed it, instead of sending Button2 events." # noqa
             print "Try it out, hope this helps."
             return
 

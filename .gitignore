@@ -18,9 +18,6 @@ SFLvault_client_qt.egg-info/
 # generated html files
 docs/*.html
 
-# pylons configuration
-*.ini
-
 # Pip stufff
 pip-log.txt
 *.egg-info
@@ -41,6 +38,7 @@ test-database.db
 test-config
 test-suite.xml
 .coverage
+.tox
 server/test-config.bak
 tests/host.*
 tests/testconfig
