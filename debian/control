@@ -1,0 +1,25 @@
+Source: sflvault
+Maintainer: Thibault Cohen <thibault.cohen@savorifairelinux.com>
+Section: python
+Priority: optional
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 7.4.3)
+Standards-Version: 3.9.1
+X-Python-Version: >= 2.5
+
+Package: sflvault-client
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Recommends: python-keyring
+Description: Networked credentials store and authentication manager - Cli client
+
+Package: sflvault-server
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, sflvault-client, python-pkg-resources
+Description: Networked credentials store and authentication manager - Server
+
+Package: sflvault-client-qt
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, sflvault-client, python-qt4
+Description: Networked credentials store and authentication manager - Qt client
+
+

@@ -1,0 +1,34 @@
+#!/usr/bin/make -f
+
+%:
+	#dh $@ --with python2 --install-layout=deb,quilt --buildsystem=python_distutils --namespace=sflvault
+	dh $@ --with python2 --install-layout=deb,quilt --namespace=sflvault
+
+
+override_dh_auto_build:
+	cd client && python setup.py build
+	cd client-qt && python setup.py build
+	cd server && python setup.py build
+
+
+override_dh_auto_clean:
+	cd client && python setup.py clean
+	rm -rf client/build
+	rm -f client/sflvault/__init__.pyc
+	rm -rf client/sflvault_client.egg-info
+	cd client-qt && python setup.py clean
+	rm -rf client-qt/build
+	rm -f client-qt/sflvault/__init__.pyc
+	rm -rf client-qt/sflvault_client_qt.egg-info
+	cd server && python setup.py clean
+	rm -rf server/build
+	rm -f server/sflvault/__init__.pyc
+	rm -rf server/sflvault_server.egg-info
+	dh_clean
+
+
+override_dh_install:
+	# INSTALL
+	cd client && python setup.py install --root=$(CURDIR)/debian/sflvault-client --install-layout=deb --no-compile -O0 --force
+	cd client-qt && python setup.py install --root=$(CURDIR)/debian/sflvault-client-qt --install-layout=deb --no-compile -O0 --force
+	cd server && python setup.py install --root=$(CURDIR)/debian/sflvault-server --install-layout=deb --no-compile -O0 --force
