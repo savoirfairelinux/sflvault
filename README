@@ -4,8 +4,8 @@ SFLvault is a Networked credentials store and authentication manager.
 
 It has a client/vault (server) architecture allowing to cryptographically store and organise loads of passwords for different machines and services.
 
-To learn more, see the Project's wiki
+To learn more, see the Project's website
 
-https://projects.savoirfairelinux.com/projects/sflvault/wiki/
+http://sflvault.org/
 
 Join us on #sflvault on freenode
