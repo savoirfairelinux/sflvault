@@ -432,7 +432,7 @@ class SFLvaultClient(object):
         # Set the default route to the Vault
         url = self.cfg.get('SFLvault', 'url')
         if url:
-            self.vault = xmlrpclib.Server(url, allow_none=True).sflvault
+            self._set_vault(url)
 
     def set_getpassfunc(self, func=None):
         """Set the function to ask for passphrase.
