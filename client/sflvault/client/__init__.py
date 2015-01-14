@@ -30,16 +30,19 @@ if '1' == os.environ.get('SFLVAULT_SSL_WORKAROUND_BAD_SERVER_CERTIFICATE'):
     else:
         import ssl
         if sys.version_info[0] >= 3:
-            from http.client import HTTPSConnection as orig
+            import http.client as orig
         else:
-            from httplib import HTTPSConnection as orig
+            import httplib as orig
 
-        class HTTPSConnection(orig, object):
+        class HTTPSConnection(orig.HTTPSConnection, object):
             def __init__(self, *args, **kwargs):
                 if sys.version_info[:2] < (3, 4):
                     kwargs['strict'] = False
                 kwargs['context'] = ssl._create_unverified_context()
                 super(HTTPSConnection, self).__init__(*args, **kwargs)
+
+        # replace the original class with the patched one :
+        orig.HTTPSConnection = HTTPSConnection
 
 
 from sflvault.client.commands import SFLvaultCommand
