@@ -1,7 +1,8 @@
 .. image:: ./docs/logos/sflvault-logo-tagline.png
 
-Welcome to SFLvault
+Welcome to SFLvault |badge|
 -------------------
+.. |badge| image:: https://api.travis-ci.org/savoirfairelinux/sflvault.png?branch=master
 SFLvault is a Networked credentials store and authentication manager.
 
 It has a client/vault (server) architecture allowing to cryptographically store and organise loads of passwords for different machines and services.
