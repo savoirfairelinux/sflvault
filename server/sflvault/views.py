@@ -44,7 +44,7 @@ vault = SFLvaultAccess()
 
 def test_group_admin(request, group_id):
     if not query(Group).filter_by(id=group_id).first():
-        return vaultMsg(False, "Group not found: %s" % str(e))
+        return vaultMsg(False, "Group not found: %s" % str(group_id))
     
     sess = get_session(request['rpc_args'][0], request)
 
