@@ -34,6 +34,7 @@ return clean responses to clean queries.
 
 
 import xmlrpclib
+import json
 
 from sqlalchemy import sql
 from sqlalchemy.exc import InvalidRequestError as InvalidReq
@@ -88,6 +89,40 @@ class SFLvaultAccess(object):
     def log_e(self, msg, data=None):
         self._log_any(log.error, msg, data)
 
+    def log_command(self, command, success=True, **kwargs):
+        """ Log a command as JSON
+
+        Only the command name is mandatory, but log_command can take
+        an arbitrary number of keyword arguments. If no keyword argument
+        is supplied, log_command will produce a log that is of the following
+        format:
+
+        {'command': command_name, 'user_id': user_id, 'username': username,
+         'success' true }
+
+        Where user_id and username are the user_id and user_name of the command
+        issuer.
+
+        If optional arguments are supplied, they will be placed in an
+        "arguments" dictionary.
+
+        If the optional "logger" keyword argument is specified, log_command
+        will use it to log the command. """
+
+        if 'logger' in kwargs:
+            log_command = kwargs['logger']
+        else:
+            log_command = log.info
+
+        command = {
+            'user_id': self.myself_id,
+            'username': self.myself_username,
+            'command': command,
+            'success': success,
+            'arguments': kwargs
+        }
+
+        log_command(json.dumps(command))
     def log_i(self, msg, data=None):
         self._log_any(log.info, msg, data)
 
