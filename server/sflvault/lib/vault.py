@@ -337,7 +337,7 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, "Service s#%s saved successfully" % service_id)
 
-    def _service_get_data(self, service_id, group_id=None, with_groups=False):
+    def _service_get_data(self, service_id, group_id=None):
         """Retrieve the information for a given service."""
         try:
             s = query(Service).filter_by(id=service_id).one()
@@ -378,16 +378,16 @@ class SFLvaultAccess(object):
             sgcsk = ucipher.services_groups_cryptsymkey
             uggi = ucipher.users_groups_group_id
 
-        groups_list = None
         # Load groups too if required
-        if with_groups:
-            groups_list = []
-            req2 = sql.join(groups_table, servicegroups_table)\
-                .select(use_labels=True)\
-                .where(ServiceGroup.service_id == service_id)
-            res2 = meta.Session.execute(req2)
-            for grp in res2:
-                groups_list.append((grp.groups_id, grp.groups_name))
+
+        groups_list = []
+        req2 = sql.join(groups_table, servicegroups_table)\
+                  .select(use_labels=True)\
+                  .where(ServiceGroup.service_id == service_id)
+
+        res2 = meta.Session.execute(req2)
+        for grp in res2:
+            groups_list.append((grp.groups_id, grp.groups_name))
 
         out = {'id': s.id,
                'url': s.url,
@@ -404,34 +404,31 @@ class SFLvaultAccess(object):
 
         return out
 
-    def service_get_tree(self, service_id, with_groups=False):
+    def service_get_tree(self, service_id):
         """Get a service tree, starting with service_id"""
 
-        if with_groups:
-            accessible_service_ids = []
+        accessible_service_ids = []
 
-            my_groups = set(
-                g.id for g in query(UserGroup).filter_by(
-                    user_id=self.myself_id
-                ).all()
-            )
+        my_groups = set(
+            g.id for g in query(UserGroup).filter_by(
+                user_id=self.myself_id
+            ).all()
+        )
 
         out = []
         while True:
             try:
-                data = self._service_get_data(service_id,
-                                              with_groups=with_groups)
+                data = self._service_get_data(service_id)
             except VaultError, e:
                 self.log_e('Show service: %(error)s', {"error": str(e)})
                 return vaultMsg(False, str(e))
 
-            if with_groups:
-                service_groups = set(
-                    g[0] for g in data['groups_list']
-                )
+            service_groups = set(
+                g[0] for g in data['groups_list']
+            )
 
-                if my_groups.intersection(service_groups):
-                    accessible_service_ids.append(data['id'])
+            if my_groups.intersection(service_groups):
+                accessible_service_ids.append(data['id'])
             out.append(data)
 
             if not data['parent_service_id']:
@@ -447,26 +444,21 @@ class SFLvaultAccess(object):
 
         out.reverse()
 
-        if with_groups:
-            self.log_command(
-                "show", all_service_ids=[service['id'] for service in out],
-                accessible_service_ids=accessible_service_ids
-            )
-        else:
-            self.log_command(
-                "show", all_service_ids=[service['id'] for service in out],
-            )
+        self.log_command(
+            "show", all_service_ids=[service['id'] for service in out],
+            accessible_service_ids=accessible_service_ids
+        )
 
         return vaultMsg(True, "Here are the services", {'services': out})
 
-    def show(self, service_id, with_groups=False):
+    def show(self, service_id):
         """Get the specified service ID and return the hierarchy to connect
         to it or to show it.
 
         We need self.myself_id to be set for this function.
 
         """
-        return self.service_get_tree(service_id, with_groups=with_groups)
+        return self.service_get_tree(service_id)
 
 
     def search(self, search_query, filters=None, verbose=False):

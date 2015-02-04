@@ -901,7 +901,11 @@ class SFLvaultClient(object):
 
     @authenticate(True)
     def service_get_tree(self, service_id, with_groups=False):
-        """Get information to be edited"""
+        """Get information to be edited
+
+        :param service_id: Service id
+        :param with_groups: Retrieve groups information (deprecated)
+        """
         return self._service_get_tree(service_id, with_groups)
 
     def _service_get_tree(self, service_id, with_groups=False):
@@ -958,7 +962,13 @@ class SFLvaultClient(object):
 
     @authenticate(True)
     def show(self, service_id, verbose=False, with_groups=False):
-        """Show informations to connect to a particular service"""
+        """Show informations of a service
+
+        :param service_id: Service id
+        :param verbose: Display notes and additional information
+        :param with_groups: Retrieve groups information (deprecated)
+
+        """
         servs = self._service_get_tree(service_id, with_groups)
         self._show(servs, verbose)
 
@@ -977,10 +987,11 @@ class SFLvaultClient(object):
 
             secret = x['plaintext'] if 'plaintext' in x else '[access denied]'
             print "%ss#%d %s" % (pre, x['id'], x['url'])
-            if x['groups_list']:
-                groups = ', '.join(["g#%s %s" % (g[0], g[1])
-                                    for g in x['groups_list']])
-                print "%s%s   groups: %s" % (pre, spc, groups)
+            if verbose:
+                if x['groups_list']:
+                    groups = ', '.join(["g#%s %s" % (g[0], g[1])
+                                        for g in x['groups_list']])
+                    print "%s%s   groups: %s" % (pre, spc, groups)
             print "%s%s   secret: %s" % (pre, spc, secret)
             
             if verbose:
