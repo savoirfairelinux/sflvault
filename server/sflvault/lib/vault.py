@@ -407,6 +407,15 @@ class SFLvaultAccess(object):
     def service_get_tree(self, service_id, with_groups=False):
         """Get a service tree, starting with service_id"""
 
+        if with_groups:
+            accessible_service_ids = []
+
+            my_groups = set(
+                g.id for g in query(UserGroup).filter_by(
+                    user_id=self.myself_id
+                ).all()
+            )
+
         out = []
         while True:
             try:
@@ -416,6 +425,13 @@ class SFLvaultAccess(object):
                 self.log_e('Show service: %(error)s', {"error": str(e)})
                 return vaultMsg(False, str(e))
 
+            if with_groups:
+                service_groups = set(
+                    g[0] for g in data['groups_list']
+                )
+
+                if my_groups.intersection(service_groups):
+                    accessible_service_ids.append(data['id'])
             out.append(data)
 
             if not data['parent_service_id']:
@@ -431,12 +447,17 @@ class SFLvaultAccess(object):
 
         out.reverse()
 
-        self.log_command(
-            "show", all_service_ids=[service['id'] for service in out],
-        )
+        if with_groups:
+            self.log_command(
+                "show", all_service_ids=[service['id'] for service in out],
+                accessible_service_ids=accessible_service_ids
+            )
+        else:
+            self.log_command(
+                "show", all_service_ids=[service['id'] for service in out],
+            )
 
         return vaultMsg(True, "Here are the services", {'services': out})
-
 
     def show(self, service_id, with_groups=False):
         """Get the specified service ID and return the hierarchy to connect
@@ -518,10 +539,10 @@ class SFLvaultAccess(object):
             set_machine(out[str(x.customers_id)]['machines'], x)
             set_service(out[str(x.customers_id)]['machines'][str(x.machines_id)]['services'], x)
 
-
         # Return 'out', in a nicely structured hierarchical form.
         #self.log_i('Search successfull for: %(search)s',
         #            {'search': search_query})
+
         return vaultMsg(True, "Here are the search results", {'results': out})
 
 
