@@ -1,21 +1,16 @@
 Steps to perform when releasing SFLvault
 ========================================
 
+Temporary instructions: SFLVault's release process is in the middle of a big overhaul. For now, we
+limit ourselves to PyPI release.
+
 * Modify setup.py and change the version number, for each of the components.
 
 * Make sure the MINIMAL_CLIENT_VERSION in controllers/xmlrpc.py is appropriate,
   to ensure backwards compatibility.
 
-* Modify `common/sflvault/common/__init__.py` to HIDE deprecation warnings.
-
 * Commit the release commit INCLUDING the Release Notes inside that commit.
   Note all new features and fixes.
-
-* For each component, update the debian/changelog with the same information as
-  in the Release commit.
-
-* For each component, update the debian/control file with the new versions
-  we are releasing, and update the dependenciies.
 
 * Step OUTSIDE of the virtualenv, with `deactivate` (otherwise, your
   virtenv's path will go in the `sflvault` executable file)
@@ -39,67 +34,8 @@ Steps to perform when releasing SFLvault
     cd ..
   done
 
-* For WINDOWS distribution, under the WINDOWS Platform:
-
-  Checkout the project
-
-  $ cd client-qt
-  $ python.exe setup.py bdist_wininst
-  $ cd ..\client
-  $ python.exe setup.py bdist_wininst
-  $ cd ..\common
-  $ python.exe setup.py bdist_wininst
-
-  Packages will be under pkg/dist/
-
-* Try the packages locally:
-
-  $ for path in common client client-qt
-  do
-    cd $path
-    debuild -i -us -uc -b
-    cd ..
-  done
-  $ 
-
-* Install and test locally
-
-* Prepare the Debian packages to be sent to Launchpad:
-
-  $ for path in common client client-qt
-  do
-    cd $path
-    debuild -S -sa -kFDFE4451
-    cd ..
-  done
-  $ 
-
-* Upload Debian packages:
-
-  $ for file in *_source.changes
-  do
-    dput ppa:savoirfairelinux/sflvault $file
-  done
-
-* Modify `common/sflvault/common/__init__.py` to SHOW deprecation warnings again.
-
-
-
-Update documentation
---------------------
-
-* Modify the UpgradePath page with everything required to upgrade.
-
-* Modify the wiki's front-page to announce it.
-  Link to the commit as "Release notes"
-
 * Tag the commit with the version number
 
 * Push with tags:
 
   git push --tags
-
-* Announce by other means, IRC, Freshmeat, Slashdot, etc...
-
-* Have another commit to RE-ENABLE deprecation warnings for development.
-

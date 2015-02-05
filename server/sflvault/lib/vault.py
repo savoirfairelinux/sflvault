@@ -855,13 +855,13 @@ class SFLvaultAccess(object):
         grp = query(Group).filter_by(id=group_id).first()
 
         if not grp:
-            return vaultMsg(False, "Group not found: %s" % str(e))
+            return vaultMsg(False, "Group not found: %s" % group_id)
 
         # TODO: DRY out this place, much copy from del_user and stuff
         sgs = query(ServiceGroup).filter_by(service_id=service_id).all()
 
         if grp.id not in [sg.group_id for sg in sgs]:
-            return vaultMsg(False, "Service is not in group: %s" % str(e))
+            return vaultMsg(False, "Service is not in group: %s" % group_id)
 
         sg = [sg for sg in sgs if grp.id == sg.group_id][0]
 

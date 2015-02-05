@@ -6,4 +6,4 @@ It has a client/vault (server) architecture allowing to cryptographically store 
 
 To learn more, see the Project's wiki
 
-https://projects.savoirfairelinux.com/projects/sflvault/wiki/
+http://sflvault.org/

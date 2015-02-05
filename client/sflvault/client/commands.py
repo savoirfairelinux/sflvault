@@ -708,7 +708,7 @@ class SFLvaultCommand(object):
         self.parser.add_option('-g', dest="group_id",
                                help="Group to add the service to")
         self.parser.add_option('-u', dest="user",
-                               help="Service to be added")
+                               help="User to be added")
 
     def _group_user_parse(self):
         if not self.opts.group_id or not self.opts.user:
