@@ -26,8 +26,8 @@ cd `dirname $0`
 echo "Wiping test directory"
 rm -rf sandbox
 mkdir -p sandbox
-cp ../server/test.ini sandbox/test-functional.ini
-cp ../server/test.ini sandbox/test-server.ini
+cp test.ini sandbox/test-functional.ini
+cp test.ini sandbox/test-server.ini
 cp ../server/test-config-user sandbox/
 cd sandbox
 
