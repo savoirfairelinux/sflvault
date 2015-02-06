@@ -310,7 +310,7 @@ def sflvault_service_get(request, authtok, service_id, group_id=None):
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_get_tree')
 @authenticated_user
 def sflvault_service_get_tree(request, authtok, service_id, with_groups):
-    return vault.service_get_tree(service_id, with_groups)
+    return vault.service_get_tree(service_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_put')
 @authenticated_user
