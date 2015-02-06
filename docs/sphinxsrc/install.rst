@@ -228,19 +228,17 @@ At this point you can :ref:`run-sflvault` and :ref:`create-admin-account`!
 
 Run the tests
 -------------
-To run the tests you need to install further dependencies:
+You need tox to run the tests:
 
 .. code::
 
-   $ pip install -r requirements.tests.freeze
+   $ pip install tox
 
 Which will let you run the vault's test suite:
 
 .. code::
 
-   $ nosetests -w server --cover-package=sflvault.server
-
-
+   $ tox
 
 ----------------------
 Additional information
