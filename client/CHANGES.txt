@@ -12,3 +12,4 @@ SFLVault Client Release Notes
 * Fix namespace packaging issue.
 * Fix compatibility with newer python-keyring versions. (#44977)
 * Merged with SFLvault-common.
+* Add support to disable the "strong" SSL certificate verification process.
