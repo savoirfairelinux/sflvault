@@ -1264,7 +1264,7 @@ class SFLvaultAccess(object):
         # Delete all related user-ciphers
         query(model.ServiceGroup).filter(model.ServiceGroup.service_id == service_id).delete(synchronize_session=False)
         # Delete the service
-        query(Service).filter(model.Service.id==service_id).delete(synchronize_session=False)
+        query(Service).filter(model.Service.id == service_id).delete(synchronize_session=False)
         transaction.commit()
 
         self.log_command("service_del", service_id=service_id)

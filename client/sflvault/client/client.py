@@ -25,6 +25,8 @@ import sys
 import re
 import os
 import time
+import warnings
+import ssl
 
 from subprocess import Popen, PIPE
 
@@ -432,7 +434,7 @@ class SFLvaultClient(object):
         # Set the default route to the Vault
         url = self.cfg.get('SFLvault', 'url')
         if url:
-            self.vault = xmlrpclib.Server(url, allow_none=True).sflvault
+            self._set_vault(url)
 
     def set_getpassfunc(self, func=None):
         """Set the function to ask for passphrase.
@@ -448,7 +450,14 @@ class SFLvaultClient(object):
         
     def _set_vault(self, url, save=False):
         """Set the vault's URL and optionally save it"""
-        self.vault = xmlrpclib.Server(url, allow_none=True).sflvault
+        suppl_kw = {}
+        if (self.cfg.has_option('SFLvault', 'allow-unverified-ssl-context')
+                and '1' == self.cfg.get('SFLvault', 'allow-unverified-ssl-context')):
+            if sys.version_info[:3] >= (2, 7, 9):
+                suppl_kw['context'] = ssl._create_unverified_context()
+            else:
+                warnings.warn('allow-unverified-ssl-context has only meaning for Python >= 2.7.9')
+        self.vault = xmlrpclib.Server(url, allow_none=True, **suppl_kw).sflvault
         if save:
             self.cfg.set('SFLvault', 'url', url)
 
