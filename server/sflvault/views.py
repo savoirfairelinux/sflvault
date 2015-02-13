@@ -43,7 +43,7 @@ def test_group_admin(request, group_id):
     if not query(Group).filter_by(id=group_id).first():
         return vaultMsg(False, "Group not found: %s" % str(group_id))
     
-    sess = get_session(request['rpc_args'][0], request)
+    sess = get_session(request['rpc_args'][0])
 
     # Verify if I'm is_admin on that group
     ug = query(UserGroup).filter_by(group_id=group_id,
@@ -115,35 +115,49 @@ class xmlrpc_method(object):
 def authenticated_user(func, request, *args, **kwargs):
     """Aborts if user isn't authenticated.
 
-    Timeout check done in get_session.
+    Timeout check done in session_errors.
 
     WARNING: authenticated_user READ the FIRST non-keyword argument
              (should be authtok)
     """
     cryptok = request['rpc_args'][0]
-    ret = _authenticated_user_first(request, cryptok)
-    if ret:
-        return ret
+    error_msg = session_errors(request, cryptok)
+    if error_msg:
+        return vaultMsg(False, "Permission denied (%s)" % error_msg)
 
     return func(request, *args, **kwargs)
 
-def _authenticated_user_first(request, cryptok):
-    """DRYed authenticated_user to skip repetition in authenticated_admin"""
-    try:
-        s = get_session(cryptok, request)
-    except SessionNotFoundError:
-        s = None
+
+def session_errors(request, authtok):
+    """ Test the session for errors
+
+    Make sure that the session the user is trying to use is valid.
+
+    Make the following tests:
+    1. Existence: make sure the authtok has an actual session
+    2. Expiration: make sure that the session is not expired
+    3. Remote addr: make sure that the user is connecting from the original
+                    remote addr
+
+    Return: the error message if the session is invalid, otherwise None
+    """
+
+    error_msg = None
+    if not session_exists(authtok):
         error_msg = 'session not found'
-    except SessionExpiredError:
-        s = None
+
+    elif session_expired(authtok):
         error_msg = 'session expired'
 
+    elif not session_has_same_address(authtok, request):
+        del(vaultSessions[authtok])
+        error_msg = 'remote addr for this session is different than the original remote addr'
 
-    if not s:
-        return vaultMsg(False, "Permission denied (%s)" % error_msg)
+    if error_msg:
+        return error_msg
 
-    sess = s
-
+    # TODO: Remove setting the "myself_id" on the vault
+    sess = get_session(authtok)
     if 'user_id' in sess:
         vault.myself_id = sess['user_id']
     if 'username' in sess:
@@ -156,17 +170,14 @@ def authenticated_admin(func, request, *args, **kwargs):
     Check authenticated_user , everything written then applies here as well.
     """
     cryptok = request['rpc_args'][0]
-    ret = _authenticated_user_first(request, cryptok)
-    if ret:
-        return ret
-    try:
-        sess = get_session(cryptok, request)
-    except SessionNotFoundError:
-        sess = None
+    error_msg = session_errors(request, cryptok)
+    if error_msg:
+        return vaultMsg(False, "Permission denied (%s)" % error_msg)
 
-    if sess:
-        if not sess['userobj'].is_admin:
-            return vaultMsg(False, "Permission denied, admin priv. required")
+    sess = get_session(cryptok)
+
+    if not sess['userobj'].is_admin:
+        return vaultMsg(False, "Permission denied, admin priv. required")
 
     return func(request, *args, **kwargs)
 
@@ -182,15 +193,10 @@ def sflvault_authenticate(request, username, cryptok):
     try:
         if settings['sflvault.vault.session_trust'].lower() in ['1', 'true', 't']:
             # If the session_trust parameter is true trust the session for the authentication.
-            try:
-                sess = get_session(cryptok, request)
-            except SessionNotFoundError:
-                sess = None
-                print "Session not found... "
-            except SessionExpiredError:
-                sess = None
-                print "Session expired... "
 
+            sess = None
+            if not session_errors(request, cryptok):
+                sess = get_session(cryptok)
             if sess:
                 return vaultMsg(True, 'Authentication successful (cached)', {'authtok': cryptok})
     except KeyError:
@@ -455,35 +461,40 @@ def set_session(authtok, value):
 #   _setup_sessions();
     vaultSessions[authtok] = value
 
-def get_session(authtok, request):
-    """Return the values associated with a session"""
-    #_setup_sessions();
-    
-    if authtok not in vaultSessions:
-        raise SessionNotFoundError
-        return None
 
+def session_exists(authtok):
+    """ Return True if the session exists """
+    return authtok in vaultSessions
+
+
+def session_expired(authtok):
+    """ Verify the expiration time of the session
+
+    Return True if the session is still valid
+    """
     # XXX: where does the SESSION_TIMEOUT come from?
     if 'timeout' not in vaultSessions[authtok]:
         vaultSessions[authtok]['timeout'] = datetime.now() + timedelta(0, SESSION_TIMEOUT)
 
     if vaultSessions[authtok]['timeout'] < datetime.now():
         del(vaultSessions[authtok])
-        raise SessionExpiredError
-        return None
+        return True
+    return False
 
+
+def session_has_same_address(authtok, request):
+    """ Verify the remote address of the user
+
+    Return True if the address of the request is the same
+    than the one this session was created for """
     if vaultSessions[authtok]['remote_addr'] != request.get('REMOTE_ADDR', 'gibberish'):
-        del(vaultSessions[authtok])
-        SessionSourceAddressMismatchError
-        return None
+        return False
+    return True
 
-    return vaultSessions[authtok]
 
-class SessionNotFoundError(Exception):
-    pass
+def get_session(authtok):
+    """Return the values associated with a session"""
 
-class SessionExpiredError(Exception):
-    pass
-
-class SessionSourceAddressMismatchError(Exception):
-    pass
+    if session_exists(authtok):
+        return vaultSessions[authtok]
+    return None
