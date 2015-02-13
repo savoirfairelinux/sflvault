@@ -1333,9 +1333,15 @@ class SFLvaultAccess(object):
 
     #    return vaultMsg(True, "Here is the machines list", {'list': out})
 
-
     def service_passwd(self, service_id, newsecret):
         """Change the passwd for a given service"""
+
+        if not model.has_access(self.myself_id, service_id):
+            return vaultMsg(
+                False,
+                "You do not have access to this service",
+            )
+
         transaction.begin()
         # number please
         service_id = int(service_id)
@@ -1346,13 +1352,6 @@ class SFLvaultAccess(object):
         (seckey, ciphertext) = encrypt_secret(newsecret)
         serv.secret = ciphertext
         serv.secret_last_modified = datetime.now()
-
-        # TODO absolutely:  verify this requesting user has access to the
-        # password first.  YES, he can add a new password, but not modify
-        # something he doesn't have access to, first.
-
-        # TODO: for traceability, mark the date we changed the password.
-        #
 
         for sg in serv.groups_assoc:
             eg = [g for g in groups if g.id == sg.group_id][0].elgamal()
