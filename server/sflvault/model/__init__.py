@@ -272,6 +272,34 @@ def query(cls):
     return meta.Session.query(cls)
 
 
+def has_access(user_id, service_id):
+    """ Tells if a user have access to a service
+
+    A user has access to a service_id if it is an admin or in a group
+    that has access to the service.
+    """
+    user = query(User).get(user_id)
+    service = query(Service).get(service_id)
+
+    if user.is_admin:
+        return True
+
+    my_groups = set(
+        g.id for g in query(UserGroup).filter_by(
+            user_id=user.id,
+        ).all()
+    )
+
+    service_groups = set(
+        g.id for g in query(ServiceGroup).filter_by(
+            service_id=service.id,
+        ).all()
+    )
+
+    return my_groups.intersection(service_groups)
+
+
+
 def get_user(user, eagerload_all_=None):
     """Get a user provided a username or an int(user_id), possibly eager
     loading some relations.
