@@ -284,9 +284,17 @@ class Chain(object):
         for srv in self.service_list:
             try:
                 srv.prework()
-            except ServiceExpectError, e:
+            except ServiceExpectError as e:
                 # Show error, fall back, and interact to last if it exists.
                 print "[SFLvault] Error connecting to %s: %s" % (srv.data['url'], str(e))
+                break
+            except ValueError as e:
+                # Give additional detail if we receive a ValueError
+                print """ [SFLvault] Error connecting to %s: %s" % (srv.data['url'], str(e))
+There seem to be a problem with the format of the URL of the service
+Please make sure that it is formatted as specified in RFC 3986"
+If your service has an IPv6 address, make sure the IPv6 literal is enclosed in '[' and ']'
+For example: ssh://root@[0:0:0:0:0:0:0:1]:22"""
                 break
             except TypeError, e:
                 print "[SFLvault] Timed out."
