@@ -303,6 +303,13 @@ class SFLvaultAccess(object):
 
     def service_put(self, service_id, data):
         """Put a single service's data back to the vault's database"""
+
+        if not model.has_access(self.myself_id, service_id):
+            return vaultMsg(
+                False,
+                "You do not have access to this service",
+            )
+
         try:
             s = query(Service).filter_by(id=service_id).one()
         except InvalidReq, e:

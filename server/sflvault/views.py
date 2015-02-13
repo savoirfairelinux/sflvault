@@ -315,20 +315,7 @@ def sflvault_service_get_tree(request, authtok, service_id, with_groups):
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_put')
 @authenticated_user
 def sflvault_service_put(request, authtok, service_id, data):
-    # 'user_id' required in session.
-    # TODO: verify I had access to the service previously.
-    sess = get_session(authtok, request)
-    req = sql.join(servicegroups_table, usergroups_table,
-                    ServiceGroup.group_id == UserGroup.group_id) \
-                .join(users_table, User.id == UserGroup.user_id) \
-                .select() \
-                .where(User.id == sess['user_id']) \
-                .where(ServiceGroup.service_id == service_id)
-    res = list(meta.Session.execute(req))
-    if not res:
-        return vaultMsg(False, "You don't have access to that service.")
-    else:
-        return vault.service_put(service_id, data)
+    return vault.service_put(service_id, data)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.search')
 @authenticated_user
