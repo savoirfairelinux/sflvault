@@ -301,8 +301,10 @@ class Chain(object):
                 print "[SFLvault] Timed out."
                 sys.stdout.write(srv.shell_handle.before)
                 go_break = True
-            except pexpect.EOF, e:
-                print "[SFLvault] Child exited"
+            except pexpect.EOF:
+                print "[SFLvault] Child exited. Following is the output of the command: %s" % (
+                    srv.shell_handle.before
+                )
                 break
             except KeyboardInterrupt, e:
                 print ""
