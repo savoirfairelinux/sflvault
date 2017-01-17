@@ -5,7 +5,7 @@
 #
 #    This file is part of SFLvault-QT
 #
-#    Copyright (C) 2009 Thibault Cohen
+#    Copyright (C) 2014 Savoir-faire Linux inc.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -110,8 +110,7 @@ class ProtocolsWidget(QtGui.QDialog):
         
         # FIXME set return shortcut to save config only
         # when editor mode in table view is not enabled
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Return),
-                self, None)
+        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Return), self, None)
 
     def exec_(self):
         """
@@ -214,12 +213,12 @@ class ProtocolModel(QtGui.QStandardItemModel):
         self.protocols = []
         # Header <=> protocol attribute
         self.columns = [
-                        "name",
-                        "command",
-                        "args",
-                        "clip",
-                        "tooltip",
-                        ]
+            "name",
+            "command",
+            "args",
+            "clip",
+            "tooltip",
+        ]
 
     def setHeaders(self):
         self.setColumnCount(5)

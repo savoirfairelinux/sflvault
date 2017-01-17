@@ -2,9 +2,7 @@
 #
 # SFLvault - Secure networked password store and credentials manager.
 #
-# Copyright (C) 2008-2009  Savoir-faire Linux inc.
-#
-# Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
+# Copyright (C) 2014 Savoir-faire Linux inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,6 +27,7 @@ README = open(os.path.join(here, 'README.txt')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
+    'SFLvault-client',
     'SQLAlchemy',
     'venusian',
     'zope.sqlalchemy',
@@ -43,7 +42,7 @@ setup(
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
     url='http://www.sflvault.org',
-    long_description=README + '\n\n' +  CHANGES,
+    long_description=README + '\n\n' + CHANGES,
     classifiers=[
         "Programming Language :: Python",
         "Topic :: Internet :: WWW/HTTP",
@@ -54,6 +53,5 @@ setup(
     zip_safe=False,
     package_data={'sflvault': ['i18n/*/LC_MESSAGES/*.mo']},
     test_suite='sflvault',
-    install_requires = requires,
+    install_requires=requires,
 )
-

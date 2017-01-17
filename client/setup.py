@@ -2,9 +2,7 @@
 #
 # SFLvault - Secure networked password store and credentials manager.
 #
-# Copyright (C) 2008-2009  Savoir-faire Linux inc.
-#
-# Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
+# Copyright (C) 2014 Savoir-faire Linux inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,22 +26,23 @@ except ImportError:
 
 import platform
 
+dependencies = [
+    "pycrypto",
+    "decorator",
+]
+
+if platform.system() != 'Windows':
+    dependencies += ["urwid>=0.9.8.1", "pexpect>=3.0"]
 
 setup(
     name='SFLvault-client',
-    version="0.7.8.2",
+    version="0.8.0",
     description='Networked credentials store and authentication manager - Client',
     author='Alexandre Bourget',
     author_email='alexandre.bourget@savoirfairelinux.com',
     url='http://www.sflvault.org',
     license='GPLv3',
-    install_requires=["SFLvault-common==0.7.8.1",
-                      "pycrypto",
-                      "decorator",
-                      ] + \
-                     ([] if platform.system() == 'Windows'
-                         else ["urwid>=0.9.8.1",
-                               "pexpect-u>=2.5"]),
+    install_requires=dependencies,
     packages=find_packages(),
     namespace_packages=['sflvault'],
     include_package_data=True,
@@ -72,5 +71,3 @@ setup(
 
     """,
 )
-
-

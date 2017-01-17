@@ -116,6 +116,14 @@ To provide a configuration file to your SFLvault instance, please use the follow
    sflvault.keyfile = /path/to/ssl/keyfile
    sflvault.certfile = /path/to/ssl/certfile
 
+   # BEGIN SSL note:
+
+   # sflvault.allow-unverified-ssl-context = 1
+
+   # If you happen to use a self-signed server certificate and you have Python >= 2.7.9
+   # then you'll need to enable this option.
+   # END SSL note.
+
    # Logging configuration
    [loggers]
    keys = root, sflvault, sqlalchemy
@@ -228,19 +236,17 @@ At this point you can :ref:`run-sflvault` and :ref:`create-admin-account`!
 
 Run the tests
 -------------
-To run the tests you need to install further dependencies:
+You need tox to run the tests:
 
 .. code::
 
-   $ pip install -r requirements.tests.freeze
+   $ pip install tox
 
 Which will let you run the vault's test suite:
 
 .. code::
 
-   $ nosetests -w server --cover-package=sflvault.server
-
-
+   $ tox
 
 ----------------------
 Additional information
@@ -285,6 +291,11 @@ Section sflvault
   Paths to a key file and certificate file to use the SSL mode. When both configurations are set,
   the server is started in SSL mode, otherwise, it's started in plain HTTP mode.
 
+*sflvault.allow-unverified-ssl-context*
+  Determines if a user bypass the server certificate verification.
+  Which can be useful if your server certificate happens to be self-signed.
+  Default value is undefined. Set to '1' to enable the option.
+
 *sqlalchemy.url (default value: sqlite://%(here)s/sflvault.sqlite)*
   Where SFLVault's database is. It's a SQLAlchemy URL, about which you can have more information at
   http://docs.sqlalchemy.org/en/rel_0_8/core/engines.html
@@ -312,6 +323,11 @@ SSL and password safety
 Running the server over SSL is required to ensure password safety. The ``show`` command sends
 passwords in an encrypted form, but ``service-add`` and ``service-passwd`` do not. Someone listening
 to the communications between the client and the server could very easily get these passwords.
+
+In old Python versions (< 2.7.9), the SSL server certificate wasn't strictly validated.
+If you happen to have a self-signed server certificate (or expired) and you run Python >= 2.7.9 then
+you can define sflvault.allow-unverified-ssl-context (to '1') in your configuration file to bypass
+the certificate strict validation.
 
 Make SFLvault a system service
 ==============================

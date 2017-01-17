@@ -5,7 +5,7 @@
 #
 #    This file is part of SFLvault-QT
 #
-#    Copyright (C) 2009 Thibault Cohen
+#    Copyright (C) 2014 Savoir-faire Linux inc.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ from sflvault.clientqt.lib.auth import *
 
 
 class InfoDock(QtGui.QDockWidget):
-    def __init__(self, parent=None ):
+    def __init__(self, parent=None):
         QtGui.QDockWidget.__init__(self, parent)
         self.parent = parent
         self.info = Info(self)
@@ -318,7 +318,7 @@ class Info(QtGui.QWidget):
         self.setLayout(mainLayout)
 
     def show_service_info(self, service):
-        if not 'group_id' in service or service['group_id'] == '':
+        if 'group_id' not in service or service['group_id'] == '':
             self.service_access.setText(self.tr(u"""<font color="red"><b>\
                                                  Denied</b></font>"""))
         else:
@@ -354,13 +354,11 @@ class Info(QtGui.QWidget):
 
         if service['parent_service_id'] != 0 \
            and service['parent_service_id'] is not None:
-            self.service_parent.setText(u"<b>s#" + \
-                        unicode(service['parent_service_id']) + u"</b>")
+            self.service_parent.setText(u"<b>s#" + unicode(service['parent_service_id']) + u"</b>")
         else:
             self.service_parent.clear()
 
-        groups_list = "<br>".join([u"g#%s - %s" % tuple(group )
-                                   for group in service['groups_list']])
+        groups_list = "<br>".join([u"g#%s - %s" % tuple(group) for group in service['groups_list']])
             
         self.service_groups.setText(groups_list)
 
@@ -413,4 +411,3 @@ class Info(QtGui.QWidget):
             self.service_groupbox.hide()
             self.machine_groupbox.hide()
             self.customer_groupbox.hide()
-

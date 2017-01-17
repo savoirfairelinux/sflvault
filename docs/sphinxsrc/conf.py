@@ -28,7 +28,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo',
 templates_path = ['_templates']
 
 # The suffix of source filenames.
-source_suffix = '.txt'
+source_suffix = '.rst'
 
 # The encoding of source files.
 #source_encoding = 'utf-8'
@@ -175,8 +175,7 @@ htmlhelp_basename = 'SFLvaultdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'SFLvault.tex', u'SFLvault Documentation',
-   u'Alexandre Bourget', 'manual'),
+    ('index', 'SFLvault.tex', u'SFLvault Documentation', u'Alexandre Bourget', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

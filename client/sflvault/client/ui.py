@@ -35,16 +35,16 @@ class DialogExit(Exception):
 
 class DialogDisplay(object):
     palette = [
-        ('body',       'black','light gray','standout'),
-        ('border',     'black','dark blue'),
-        ('shadow',     'white','black'),
-        ('selectable', 'black','dark cyan'),
-        ('focus',      'white','dark blue','bold'),
-        ('focustext',  'light gray','dark blue'),
-        ('editfc',     'white','dark blue','bold'),
-        ('editbx',     'light gray','dark blue'),
-        ('editcp',     'black','light gray','standout'),
-        ]
+        ('body',       'black', 'light gray', 'standout'),
+        ('border',     'black', 'dark blue'),
+        ('shadow',     'white', 'black'),
+        ('selectable', 'black', 'dark cyan'),
+        ('focus',      'white', 'dark blue', 'bold'),
+        ('focustext',  'light gray', 'dark blue'),
+        ('editfc',     'white', 'dark blue', 'bold'),
+        ('editbx',     'light gray', 'dark blue'),
+        ('editcp',     'black', 'light gray', 'standout'),
+    ]
 
 
     def __init__(self, text, height, width, body=None):
@@ -58,30 +58,29 @@ class DialogDisplay(object):
         self.body = body
         if body is None:
             # fill space with nothing
-            body = urwid.Filler(urwid.Divider(),'top')
+            body = urwid.Filler(urwid.Divider(), 'top')
 
-        self.frame = urwid.Frame( body, focus_part='footer')
+        self.frame = urwid.Frame(body, focus_part='footer')
         if text is not None:
-            self.frame.header = urwid.Pile( [urwid.Text(text),
-                    urwid.Divider()] )
+            self.frame.header = urwid.Pile([urwid.Text(text), urwid.Divider()])
         w = self.frame
 
         # pad area around listbox
-        w = urwid.Padding(w, ('fixed left',2), ('fixed right',2))
-        w = urwid.Filler(w, ('fixed top',1), ('fixed bottom',1))
+        w = urwid.Padding(w, ('fixed left', 2), ('fixed right', 2))
+        w = urwid.Filler(w, ('fixed top', 1), ('fixed bottom', 1))
         w = urwid.AttrWrap(w, 'body')
 
         # "shadow" effect
-        w = urwid.Columns( [w,('fixed', 2, urwid.AttrWrap(
-                urwid.Filler(urwid.Text(('border','  ')), "top")
-                ,'shadow'))])
-        w = urwid.Frame( w, footer = 
-                urwid.AttrWrap(urwid.Text(('border','  ')),'shadow'))
+        w = urwid.Columns([
+            w,
+            ('fixed', 2, urwid.AttrWrap(urwid.Filler(urwid.Text(('border', '  ')), "top"), 'shadow'))
+        ])
+        w = urwid.Frame(w, footer=urwid.AttrWrap(urwid.Text(('border', '  ')), 'shadow'))
 
         # outermost border area
-        w = urwid.Padding(w, 'center', width )
-        w = urwid.Filler(w, 'middle', height )
-        w = urwid.AttrWrap( w, 'border' )
+        w = urwid.Padding(w, 'center', width)
+        w = urwid.Filler(w, 'middle', height)
+        w = urwid.AttrWrap(w, 'border')
 
         self.view = w
 
@@ -94,25 +93,23 @@ class DialogDisplay(object):
             b = urwid.AttrWrap(b, 'selectable', 'focus')
             l.append(b)
         self.buttons = urwid.GridFlow(l, 10, 3, 1, 'center')
-        self.frame.footer = urwid.Pile([urwid.Divider(),
-                                        self.buttons],
-                                       focus_item = 1)
+        self.frame.footer = urwid.Pile([urwid.Divider(), self.buttons], focus_item=1)
 
     def button_press(self, button):
         raise DialogExit(button.exitcode)
 
     def main(self):
         self.ui = urwid.raw_display.Screen()
-        self.ui.register_palette( self.palette )
-        return self.ui.run_wrapper( self.show_dialog )
+        self.ui.register_palette(self.palette)
+        return self.ui.run_wrapper(self.show_dialog)
 
     def show_dialog(self):
         self.ui.set_mouse_tracking()
         size = self.ui.get_cols_rows()
         try:
             while True:
-                canvas = self.view.render( size, focus=True )
-                self.ui.draw_screen( size, canvas )
+                canvas = self.view.render(size, focus=True)
+                self.ui.draw_screen(size, canvas)
                 keys = None
                 while not keys: 
                     keys = self.ui.get_input()
@@ -123,32 +120,30 @@ class DialogDisplay(object):
                         check_mouse_event = urwid.util.is_mouse_event
                     if check_mouse_event(k):
                         event, button, col, row = k
-                        self.view.mouse_event( size, 
-                                event, button, col, row,
-                                focus=True)
+                        self.view.mouse_event(size, event, button, col, row, focus=True)
                     if k == 'window resize':
                         size = self.ui.get_cols_rows()
-                    k = self.view.keypress( size, k )
+                    k = self.view.keypress(size, k)
 
                     if k:
-                        self.unhandled_key( size, k)
+                        self.unhandled_key(size, k)
                         
         except DialogExit, e:
-            return self.on_exit( e.args[0] )
+            return self.on_exit(e.args[0])
 
     def on_exit(self, exitcode):
         return exitcode, ""
 
     def unhandled_key(self, size, k):
-        if k in ('up','page up'):
+        if k in ('up', 'page up'):
             self.frame.set_focus('body')
-        if k in ('down','page down'):
+        if k in ('down', 'page down'):
             self.frame.set_focus('footer')
         if k == 'enter':
             # pass enter to the "ok" button
             self.frame.set_focus('footer')
             self.buttons.set_focus(0)
-            self.view.keypress( size, k )
+            self.view.keypress(size, k)
 
 
 
@@ -179,37 +174,40 @@ class ServiceEditDialogDisplay(DialogDisplay):
                   'notes': urwid.Edit("", unicode(data['notes'])),
                   'metadata': urwid.Edit("", metadata_str, multiline=True)
                   }
-                  
-                
-        
+
         l = [
-            urwid.Columns([('fixed', 15, urwid.Text('URL ', align="right")),
-                  urwid.AttrWrap(inputs['url'], 'editbx', 'editfc' )]),
+            urwid.Columns([
+                ('fixed', 15, urwid.Text('URL ', align="right")),
+                urwid.AttrWrap(inputs['url'], 'editbx', 'editfc')
+            ]),
             
-            urwid.Columns([('fixed', 15, urwid.Text('Machine ID ',
-                                                    align="right")),
-                  urwid.AttrWrap(inputs['machine_id'], 'editbx', 'editfc')]),
-            
-            urwid.Columns([('fixed', 15, urwid.Text('Parent service ID ',
-                                                    align="right")),
-                  urwid.AttrWrap(inputs['parent_service_id'],
-                                 'editbx', 'editfc')]),
-            
-            urwid.Columns([('fixed', 15, urwid.Text('Notes ', align="right")),
-                  urwid.AttrWrap(inputs['notes'], 'editbx','editfc' )]),
+            urwid.Columns([
+                ('fixed', 15, urwid.Text('Machine ID ', align="right")),
+                urwid.AttrWrap(inputs['machine_id'], 'editbx', 'editfc')
+            ]),
+            urwid.Columns([
+                ('fixed', 15, urwid.Text('Parent service ID ', align="right")),
+                urwid.AttrWrap(inputs['parent_service_id'], 'editbx', 'editfc')
+            ]),
+            urwid.Columns([
+                ('fixed', 15, urwid.Text('Notes ', align="right")),
+                urwid.AttrWrap(inputs['notes'], 'editbx', 'editfc')
+            ]),
             urwid.Divider(),
-            urwid.Columns([('fixed', 15, urwid.Text('Metadata ', align="right")),
-                           urwid.AttrWrap(inputs['metadata'], 'editbx', 'editfc')])
+            urwid.Columns([
+                ('fixed', 15, urwid.Text('Metadata ', align="right")),
+                urwid.AttrWrap(inputs['metadata'], 'editbx', 'editfc')
+            ])
             
             # Temp disabled (read above)
             #urwid.Divider(),
             #urwid.Columns([('fixed', 15, urwid.Text('Groups ', align="right")),
             #               urwid.AttrWrap(urwid.Pile(groups, 1), 'selectable')])
-            ]
+        ]
 
 
         walker = urwid.SimpleListWalker(l)
-        lb = urwid.ListBox( walker )
+        lb = urwid.ListBox(walker)
         DialogDisplay.__init__(self, "Edit service", 22, 70, lb)
 
         self.frame.set_focus('body')
@@ -254,32 +252,35 @@ class MachineEditDialogDisplay(DialogDisplay):
             inputs[x] = urwid.Edit("", unicode(data[x])) # , wrap='clip'
                   
         l = [
-            urwid.Columns([('fixed', 15, urwid.Text('Customer ID ',
-                                                    align="right")),
-                  urwid.AttrWrap(inputs['customer_id'], 'editbx', 'editfc')]),
-            
-            urwid.Columns([('fixed', 15, urwid.Text('Name ', align="right")),
-                  urwid.AttrWrap(inputs['name'], 'editbx', 'editfc' )]),
-            
-            urwid.Columns([('fixed', 15, urwid.Text('IP ', align="right")),
-                  urwid.AttrWrap(inputs['ip'], 'editbx', 'editfc' )]),
-            
-            urwid.Columns([('fixed', 15, urwid.Text('FQDN ', align="right")),
-                  urwid.AttrWrap(inputs['fqdn'], 'editbx', 'editfc' )]),
-            
-            urwid.Columns([('fixed', 15, urwid.Text('Location ',
-                                                    align="right")),
-                  urwid.AttrWrap(inputs['location'], 'editbx', 'editfc' )]),
-            
-            urwid.Columns([('fixed', 15, urwid.Text('Notes ', align="right")),
-                  urwid.AttrWrap(inputs['notes'], 'editbx','editfc' )]),
-            
-
-            ]
+            urwid.Columns([
+                ('fixed', 15, urwid.Text('Customer ID ', align="right")),
+                urwid.AttrWrap(inputs['customer_id'], 'editbx', 'editfc')
+            ]),
+            urwid.Columns([
+                ('fixed', 15, urwid.Text('Name ', align="right")),
+                urwid.AttrWrap(inputs['name'], 'editbx', 'editfc')
+            ]),
+            urwid.Columns([
+                ('fixed', 15, urwid.Text('IP ', align="right")),
+                urwid.AttrWrap(inputs['ip'], 'editbx', 'editfc')
+            ]),
+            urwid.Columns([
+                ('fixed', 15, urwid.Text('FQDN ', align="right")),
+                urwid.AttrWrap(inputs['fqdn'], 'editbx', 'editfc')
+            ]),
+            urwid.Columns([
+                ('fixed', 15, urwid.Text('Location ', align="right")),
+                urwid.AttrWrap(inputs['location'], 'editbx', 'editfc')
+            ]),
+            urwid.Columns([
+                ('fixed', 15, urwid.Text('Notes ', align="right")),
+                urwid.AttrWrap(inputs['notes'], 'editbx', 'editfc')
+            ]),
+        ]
 
 
         walker = urwid.SimpleListWalker(l)
-        lb = urwid.ListBox( walker )
+        lb = urwid.ListBox(walker)
         DialogDisplay.__init__(self, "Edit machine", 22, 70, lb)
 
         self.frame.set_focus('body')
@@ -321,15 +322,13 @@ class CustomerEditDialogDisplay(DialogDisplay):
         for x in ['name']:
             inputs[x] = urwid.Edit("", unicode(data[x])) # , wrap='clip'
                   
-        l = [
-            urwid.Columns([('fixed', 15, urwid.Text('Name ',
-                                                    align="right")),
-                           urwid.AttrWrap(inputs['name'], 'editbx', 'editfc')]),
-            ]
-
+        l = [urwid.Columns([
+            ('fixed', 15, urwid.Text('Name ', align="right")),
+            urwid.AttrWrap(inputs['name'], 'editbx', 'editfc')
+        ])]
 
         walker = urwid.SimpleListWalker(l)
-        lb = urwid.ListBox( walker )
+        lb = urwid.ListBox(walker)
         DialogDisplay.__init__(self, "Edit customer", 22, 70, lb)
 
         self.frame.set_focus('body')
@@ -370,15 +369,14 @@ class GroupEditDialogDisplay(DialogDisplay):
         for x in ['name']:
             inputs[x] = urwid.Edit("", unicode(data[x])) # , wrap='clip'
                   
-        l = [
-            urwid.Columns([('fixed', 15, urwid.Text('Name ',
-                                                    align="right")),
-                           urwid.AttrWrap(inputs['name'], 'editbx', 'editfc')]),
-            ]
+        l = [urwid.Columns([
+            ('fixed', 15, urwid.Text('Name ', align="right")),
+            urwid.AttrWrap(inputs['name'], 'editbx', 'editfc')
+        ])]
 
 
         walker = urwid.SimpleListWalker(l)
-        lb = urwid.ListBox( walker )
+        lb = urwid.ListBox(walker)
         DialogDisplay.__init__(self, "Edit group", 22, 70, lb)
 
         self.frame.set_focus('body')
@@ -407,4 +405,3 @@ class GroupEditDialogDisplay(DialogDisplay):
         else:
             # return nothing..
             return False, None
-

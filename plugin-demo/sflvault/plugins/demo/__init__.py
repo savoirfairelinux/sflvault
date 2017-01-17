@@ -43,7 +43,9 @@ class demo(ShellService):
             raise ServiceRequireError("demo module can't provide '%s'" % req)
         
         if not self.parent:
-            raise ServiceRequireError("demo service can't be executed locally, it has to be behind a SHELL_ACCESS-providing service.")
+            raise ServiceRequireError(
+                "demo service can't be executed locally, it has to be behind a SHELL_ACCESS-providing service."
+            )
 
         self.operation_mode = OP_THRGH_SHELL
         return self.parent.required(PROV_SHELL_ACCESS)
@@ -51,6 +53,7 @@ class demo(ShellService):
 
     def prework(self):
         print "TESTING123"
+        
         class expect_linux_version(ExpectClass):
             """Shortcut pexpect operations.
 
@@ -91,4 +94,3 @@ class demo(ShellService):
         self.parent.interact()
 
     # interact() and postwork() inherited
-

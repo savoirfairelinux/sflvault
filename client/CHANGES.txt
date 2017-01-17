@@ -1,7 +1,7 @@
 SFLVault Client Release Notes
 =============================
 
-0.7.9 - 28-06-2013
+0.8.0 - 20-05-2014
 ------------------
 
 * Add support for group_id optional argument.
@@ -10,3 +10,6 @@ SFLVault Client Release Notes
 * Fix unicode conversion bug. (#7823)
 * Fix urwid 1.0 compatibility. (#7321)
 * Fix namespace packaging issue.
+* Fix compatibility with newer python-keyring versions. (#44977)
+* Merged with SFLvault-common.
+* Add support to disable the "strong" SSL certificate verification process.

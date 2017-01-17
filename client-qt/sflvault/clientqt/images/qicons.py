@@ -5,7 +5,7 @@
 #
 #    This file is part of SFLvault-QT
 #
-#    Copyright (C) 2009 Thibault Cohen
+#    Copyright (C) 2014 Savoir-faire Linux inc.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ def Qicons(icon_name, type=None):
 
     # Get service icons
     if type == "service":
-        if not icon_name in service_icons.keys():
+        if icon_name not in service_icons.keys():
             icon_name = "service"
         return QtGui.QIcon(os.path.join(this_dir, service_icons[icon_name]))
     # Return standard icons

@@ -5,7 +5,7 @@
 #
 #    This file is part of SFLvault-QT
 #
-#    Copyright (C) 2009 Thibault Cohen
+#    Copyright (C) 2014 Savoir-faire Linux inc.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -48,22 +48,27 @@ class Systray(QtGui.QSystemTrayIcon):
             Create action for context menu
         """
         self.minimizeAction = QtGui.QAction(self.tr("Mi&nimize"), self)
-        QtCore.QObject.connect(self.minimizeAction,
-                QtCore.SIGNAL("triggered()"), self.parent, QtCore.SLOT("hide()"))
+        QtCore.QObject.connect(
+            self.minimizeAction,
+            QtCore.SIGNAL("triggered()"), self.parent, QtCore.SLOT("hide()")
+        )
 
         self.maximizeAction = QtGui.QAction(self.tr("Ma&ximize"), self)
-        QtCore.QObject.connect(self.maximizeAction,
-                QtCore.SIGNAL("triggered()"), self.parent,
-                QtCore.SLOT("showMaximized()"))
+        QtCore.QObject.connect(
+            self.maximizeAction,
+            QtCore.SIGNAL("triggered()"), self.parent,
+            QtCore.SLOT("showMaximized()")
+        )
 
         self.restoreAction = QtGui.QAction(self.tr("&Restore"), self)
-        QtCore.QObject.connect(self.restoreAction,
-                QtCore.SIGNAL("triggered()"), self.parent,
-                QtCore.SLOT("showNormal()"))
+        QtCore.QObject.connect(
+            self.restoreAction,
+            QtCore.SIGNAL("triggered()"), self.parent,
+            QtCore.SLOT("showNormal()")
+        )
 
         self.quitAction = QtGui.QAction(self.tr("&Quit"), self)
-        QtCore.QObject.connect(self.quitAction, QtCore.SIGNAL("triggered()"),
-                self.parent.app.quit)
+        QtCore.QObject.connect(self.quitAction, QtCore.SIGNAL("triggered()"), self.parent.app.quit)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL("activated (QSystemTrayIcon::ActivationReason)"), self.hideShow)
 

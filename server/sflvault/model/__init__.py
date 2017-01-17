@@ -107,22 +107,22 @@ customers_table = Table('customers', metadata,
                         )
 
 machines_table = Table('machines', metadata,
-                      Column('id', types.Integer, primary_key=True),
-                      Column('customer_id', types.Integer, ForeignKey('customers.id')), # relation customers
-                      Column('created_time', types.DateTime,
-                             default=datetime.now),
-                      # Unicode lisible, un peu de descriptif
-                      Column('name', types.Unicode(150)),
-                      # Domaine complet.
-                      Column('fqdn', types.Unicode(150)),
-                      # Adresse IP si fixe, sinon 'dyn'
-                      Column('ip', types.String(100)),
-                      # Où il est ce serveur, location géographique, et dans
-                      # la ville et dans son boîtier (4ième ?)
-                      Column('location', types.Text),
-                      # Notes sur le serveur, références, URLs, etc..
-                      Column('notes', types.Text)
-                      )
+                       Column('id', types.Integer, primary_key=True),
+                       Column('customer_id', types.Integer, ForeignKey('customers.id')), # relation customers
+                       Column('created_time', types.DateTime,
+                              default=datetime.now),
+                       # Unicode lisible, un peu de descriptif
+                       Column('name', types.Unicode(150)),
+                       # Domaine complet.
+                       Column('fqdn', types.Unicode(150)),
+                       # Adresse IP si fixe, sinon 'dyn'
+                       Column('ip', types.String(100)),
+                       # Où il est ce serveur, location géographique, et dans
+                       # la ville et dans son boîtier (4ième ?)
+                       Column('location', types.Text),
+                       # Notes sur le serveur, références, URLs, etc..
+                       Column('notes', types.Text)
+                       )
 
 # Each ssh or web app. service that have a password.
 services_table = Table('services', metadata,
@@ -225,44 +225,45 @@ class Customer(object):
 # Map each class to its corresponding table.
 mapper(User, users_table, {
     # Quick access to services...
-    'services': relation(Service,
-                         secondary=usergroups_table.join(servicegroups_table, usergroups_table.c.group_id==servicegroups_table.c.group_id),
-                         backref='users',
-                         viewonly=True,
-                         ),
+    'services': relation(
+        Service,
+        secondary=usergroups_table.join(servicegroups_table, usergroups_table.c.group_id == servicegroups_table.c.group_id),
+        backref='users',
+        viewonly=True,
+    ),
     'groups_assoc': relation(UserGroup, backref='user')
-    })
+})
 User.groups = association_proxy('groups_assoc', 'group')
 
 mapper(UserGroup, usergroups_table, {
     'group': relation(Group, backref='users_assoc')
-    })
+})
 
 mapper(Group, groups_table, {
     'services_assoc': relation(ServiceGroup, backref='group')
-    })
+})
 Group.users = association_proxy('users_assoc', 'user')
 Group.services = association_proxy('services_assoc', 'service')
 
 mapper(ServiceGroup, servicegroups_table, {
     'service': relation(Service, backref='groups_assoc')
-    })
+})
 
 mapper(Service, services_table, {
     'children': relation(Service,
                          lazy=False,
                          backref=backref('parent', uselist=False,
                                          remote_side=[services_table.c.id]),
-                         primaryjoin=services_table.c.parent_service_id==services_table.c.id)
-    })
+                         primaryjoin=services_table.c.parent_service_id == services_table.c.id)
+})
 Service.groups = association_proxy('groups_assoc', 'group')
 
 mapper(Machine, machines_table, {
     'services': relation(Service, backref='machine', lazy=False)
-    })
+})
 mapper(Customer, customers_table, {
     'machines': relation(Machine, backref='customer', lazy=False)
-    })
+})
 
 ################ Helper functions ################
 
@@ -407,4 +408,3 @@ def search_query(swords, filters=None, verbose=False):
     sel = sel.order_by(Machine.name, Service.url)
 
     return meta.Session.execute(sel)
-

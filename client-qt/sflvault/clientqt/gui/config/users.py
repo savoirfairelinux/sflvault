@@ -5,7 +5,7 @@
 #
 #    This file is part of SFLvault-QT
 #
-#    Copyright (C) 2009 Thibault Cohen
+#    Copyright (C) 2014 Savoir-faire Linux inc.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -167,13 +167,19 @@ class UsersWidget(QtGui.QDialog):
             name = unicode(self.group_list.selectedIndexes()[0].data().toString())
             selected_group = self.model_group.groups[self.group_list.selectedIndexes()[0].row()]
 
-            pdialog = progressdialog.ProgressDialog("Deleting a group",
+            pdialog = progressdialog.ProgressDialog(
+                "Deleting a group",
                 "Please wait while deleting a group",
-                delGroup, selected_group.id)
+                delGroup, selected_group.id
+            )
             ret = pdialog.run()
 
             if ret:
-                message = QtGui.QMessageBox(QtGui.QMessageBox.Information, self.tr("Delete group"), self.tr("Group %s deleted successfully" % unicode(selected_group.id)))
+                message = QtGui.QMessageBox(
+                    QtGui.QMessageBox.Information,
+                    self.tr("Delete group"),
+                    self.tr("Group %s deleted successfully" % unicode(selected_group.id))
+                )
                 message.exec_()
                 self.editUser() 
                 return True
@@ -234,7 +240,7 @@ class UsersWidget(QtGui.QDialog):
                     # Load all groups
                     for group in self.groups["list"]:
                         # Do not show group which you are not member
-                        if not group["name"] in [yourgroup["name"]  for yourgroup in self.parent.userinfo["groups"] ]:
+                        if not group["name"] in [yourgroup["name"] for yourgroup in self.parent.userinfo["groups"]]:
                             continue
                         group_member = False
                         # browser user groups
@@ -259,19 +265,27 @@ class UsersWidget(QtGui.QDialog):
         """ Create a new group
         """
         # Show input Dialog
-        group_name, ok = QtGui.QInputDialog.getText(self.parent, self.tr("New group"),
-                                                self.tr("New group name :"),
-                                                QtGui.QLineEdit.Normal)
+        group_name, ok = QtGui.QInputDialog.getText(
+            self.parent, self.tr("New group"),
+            self.tr("New group name :"),
+            QtGui.QLineEdit.Normal
+        )
         if not ok or not group_name:
             return False
 
-        pdialog = progressdialog.ProgressDialog("Creating a new group",
+        pdialog = progressdialog.ProgressDialog(
+            "Creating a new group",
             "Please wait while creating a new group",
-            addGroup, unicode(group_name))
+            addGroup, unicode(group_name)
+        )
         ret = pdialog.run()
 
         if ret:
-            message = QtGui.QMessageBox(QtGui.QMessageBox.Information, self.tr("Create group"), self.tr("Group %s created successfully" % unicode(group_name)))
+            message = QtGui.QMessageBox(
+                QtGui.QMessageBox.Information,
+                self.tr("Create group"),
+                self.tr("Group %s created successfully" % unicode(group_name))
+            )
             message.exec_()
             self.editUser()
             return True
@@ -315,7 +329,7 @@ class UsersProxy(QtGui.QSortFilterProxyModel):
         pattern = self.filterRegExp().pattern()
         # If pattern is in id or name, show it !
         if unicode(index_id.data(0).toString()).find(pattern) != -1 or \
-            unicode(index_name.data(0).toString()).find(pattern) != -1:
+                unicode(index_name.data(0).toString()).find(pattern) != -1:
             return True
         return False
 
@@ -326,7 +340,7 @@ class UsersModel(QtGui.QStandardItemModel):
         self.parent = parent
         self.setHeaders()
         self.users = users
-        if users != False:
+        if users:
             for user in users:
                 self.addUser(user["username"], "u#" + unicode(user["id"]))
 
@@ -369,7 +383,7 @@ class GroupsProxy(QtGui.QSortFilterProxyModel):
         pattern = self.filterRegExp().pattern()
         # If pattern is in id or name, show it !
         if unicode(index_id.data(0).toString()).find(pattern) != -1 or \
-            unicode(index_name.data(0).toString()).find(pattern) != -1:
+                unicode(index_name.data(0).toString()).find(pattern) != -1:
             return True
         return False
 
@@ -476,16 +490,20 @@ class GroupItem(QtCore.QObject):
                         if not ret:
                             # If can not delete user, do nothing
                             return False
-                        pdialog = progressdialog.ProgressDialog("Adding user in group",
-                                "Please wait while adding user as group admin",
-                                addUserGroup, self.id, self.parent.current_username, True)
+                        pdialog = progressdialog.ProgressDialog(
+                            "Adding user in group",
+                            "Please wait while adding user as group admin",
+                            addUserGroup, self.id, self.parent.current_username, True
+                        )
                         ret = pdialog.run()
                         
                     else:
                         # if user is not already in this group
-                        pdialog = progressdialog.ProgressDialog("Adding user in group",
-                                "Please wait while adding user as group admin",
-                                addUserGroup, self.id, self.parent.current_username, True)
+                        pdialog = progressdialog.ProgressDialog(
+                            "Adding user in group",
+                            "Please wait while adding user as group admin",
+                            addUserGroup, self.id, self.parent.current_username, True
+                        )
                         ret = pdialog.run()
                         # TODO ret cannot be FALSE cause lib.auth.addUsergroup can not return False ...
                         if not ret:
@@ -499,9 +517,11 @@ class GroupItem(QtCore.QObject):
                     if not ret:
                         # If can not delete user, do nothing
                         return False
-                    pdialog = progressdialog.ProgressDialog("Delete admin in group",
-                            "Please wait while deleting this user as group admin ",
-                            addUserGroup, self.id, self.parent.current_username, False)
+                    pdialog = progressdialog.ProgressDialog(
+                        "Delete admin in group",
+                        "Please wait while deleting this user as group admin ",
+                        addUserGroup, self.id, self.parent.current_username, False
+                    )
                     ret = pdialog.run()
 
                 if not ret:
@@ -520,9 +540,11 @@ class GroupItem(QtCore.QObject):
                     is_admin = False
                 if value == QtCore.Qt.Checked:
                     # add user in group
-                    pdialog = progressdialog.ProgressDialog("Adding user in group",
-                                "Please wait while adding user in this group",
-                                addUserGroup, self.id, self.parent.current_username, is_admin)
+                    pdialog = progressdialog.ProgressDialog(
+                        "Adding user in group",
+                        "Please wait while adding user in this group",
+                        addUserGroup, self.id, self.parent.current_username, is_admin
+                    )
                     ret = pdialog.run()
                 elif value == QtCore.Qt.Unchecked:
                     # del user in group
@@ -536,7 +558,7 @@ class GroupItem(QtCore.QObject):
                     return False
 
                 # Save action
-                if ret == False:
+                if ret is False:
                     setattr(self, attr, value)
                     return False
                 else:
@@ -590,7 +612,7 @@ class NewUserWidget(QtGui.QDialog):
         # Add user
         status = addUser(username, admin)
         # Reload user list if no error
-        if status != False:
+        if status is not False:
             self.parent.loadUserList()
             self.done(status["user_id"])
         else:

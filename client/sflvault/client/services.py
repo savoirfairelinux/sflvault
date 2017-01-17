@@ -2,9 +2,7 @@
 #
 # SFLvault - Secure networked password store and credentials manager.
 #
-# Copyright (C) 2008-2009  Savoir-faire Linux inc.
-#
-# Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
+# Copyright (C) 2014 Savoir-faire Linux inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,16 +38,13 @@ PROV_MYSQL_CONSOLE = 'PROV_MYSQL_CONSOLE'
 PROV_POSTGRES_CONSOLE = 'PROV_POSTGRES_CONSOLE'
 
 # Operational modes
-OP_DIRECT = 'OP_DIRECT'                # - When, let's say 'ssh' is going to
-                                       # spawn a process.
-OP_THRGH_FWD = 'OP_THRGH_FWD'          # - When we must go through a port
-                                       # that's been forwarded.
-                                       # In that case, the parent must provide
-                                       # with  forwarded host and port.
-OP_THRGH_SHELL = 'OP_THRGH_SHELL'      # - When a command must be sent through
-                                       # an open shell
-
-
+# When, let's say 'ssh' is going to spawn a process.
+OP_DIRECT = 'OP_DIRECT'
+# When we must go through a port that's been forwarded. In that case, the parent must provide
+# with forwarded host and port.
+OP_THRGH_FWD = 'OP_THRGH_FWD'
+# When a command must be sent through an open shell
+OP_THRGH_SHELL = 'OP_THRGH_SHELL'
 
 ### Service definitions
 
@@ -139,11 +134,11 @@ class ShellService(Service):
     def interact(self):
 
         # To grab the window changing signals
-        def sigwinch_passthrough (sig, data):
+        def sigwinch_passthrough(sig, data):
             s = struct.pack("HHHH", 0, 0, 0, 0)
             a = struct.unpack('hhhh', fcntl.ioctl(sys.stdout.fileno(),
-                                                  termios.TIOCGWINSZ , s))
-            self.shell_handle.setwinsize(a[0],a[1])
+                                                  termios.TIOCGWINSZ, s))
+            self.shell_handle.setwinsize(a[0], a[1])
 
         # Map window resizing signal to function
         signal.signal(signal.SIGWINCH, sigwinch_passthrough)
@@ -226,6 +221,7 @@ class ssh(ShellService):
         # We shouldn't have remaining arguments
         if args:
             raise RemotingError('Unknown parameters: %s' % args)
+
         # Save locals and remotes
         def parse_forward(fwd):
             # Return tuples in the form: (bind_address, port, host, hostport)
@@ -402,7 +398,7 @@ class ssh(ShellService):
             print "... Trying to login to %s (through local port-forward, " \
                   "port %d) as %s ..." % (self.url.hostname, port, user)
             # TODO: Do not take into consideration the `known hosts` list.
-            sshcmd += " -l %s %s" % (user,host)
+            sshcmd += " -l %s %s" % (user, host)
             sshcmd += " -p %d" % (port)
             sshcmd += " -o NoHostAuthenticationForLocalhost=yes"
             #time.sleep(0)
@@ -411,7 +407,7 @@ class ssh(ShellService):
         pki_cmd = None
         if self.ssh_pki_auth:
             # Write the private-key to a temp file.
-            randfifo = '/tmp/sshpki%d' % random.randint(100000,999999)
+            randfifo = '/tmp/sshpki%d' % random.randint(100000, 999999)
             secret = pipes.quote(self.data['plaintext'])
             pki_cmd = "rm -f %s ; touch %s ; chmod 0600 %s ; " \
                       "((echo %s > %s; sleep 4; rm %s) &);" % (randfifo,
@@ -451,10 +447,6 @@ class ssh(ShellService):
         else:
             expect_login(self)
 
-
-
-
-
 class ssh_pki(ssh):
     """SSH with private-key handler"""
     ssh_pki_auth = True   # Overwridden by ssh_pki
@@ -474,8 +466,6 @@ B64DEADBEEF...==
             if '---END' in chunk:
                 break
         return '\n'.join(pk)
-        
-
 
 class content(Service):
     """Static content store.  Will store any blob into the database as the secret"""
@@ -495,8 +485,6 @@ class content(Service):
 class sflvault(content):
     """Inherit password entry, when storing other Vault's Private key"""
     pass
-
-
 
 # TODO: document that the `sudo` doesn't need a password, it takes the password
 # from the parent service.
@@ -521,7 +509,6 @@ class sudo(ShellService):
 
         # TODO: pass-through PORT_FORWARD provisioning if child supports it..
         return True
-
 
     def prework(self):
         # Inherit shell handle
@@ -585,12 +572,10 @@ class su(ShellService):
 
         # We can provide SHELL
         if not self.provides(req):
-            raise ServiceRequireError("`su` module can't provide "\
-                                      "'%s'" % req)
+            raise ServiceRequireError("`su` module can't provide '%s'" % req)
 
         # TODO: pass-through PORT_FORWARD provisioning if child supports it..
         return True
-
 
     def prework(self):
         # Inherit shell handle
@@ -620,7 +605,6 @@ class su(ShellService):
 
             def shell(self):
                 return True
-                
 
         # Send command
         self.shell_handle.sendline('su %s' % self.url.username or 'root')
@@ -631,8 +615,6 @@ class su(ShellService):
     #def interact(self):
     # Call parent
     #def postwork(self):
-
-
 
 class mysql(ShellService):
     """mysql app. service handler"""
@@ -652,11 +634,12 @@ class mysql(ShellService):
             raise ServiceRequireError("mysql module can't provide '%s'" % req)
         
         if not self.parent:
-            raise ServiceRequireError("mysql service can't be executed locally, it has to be behind a SHELL_ACCESS-providing module.")
+            raise ServiceRequireError(
+                "mysql service can't be executed locally, it has to be behind a SHELL_ACCESS-providing module."
+            )
 
         self.operation_mode = OP_THRGH_SHELL
         return self.parent.required(PROV_SHELL_ACCESS)
-
 
     def prework(self):
 
@@ -679,13 +662,11 @@ class mysql(ShellService):
 
             def error(self):
                 'ERROR \d*'
-                raise ServiceExpectError("Failed authentication for mysql "\
-                                         "at program launch")
+                raise ServiceExpectError("Failed authentication for mysql at program launch")
             
             def notfound(self):
                 'command not found.*$'
                 raise ServiceExpectError('mysql client not installed on server')
-
 
         # Bring over here the parent's shell handle.
         cnx = self.parent.shell_handle
@@ -702,12 +683,9 @@ class mysql(ShellService):
 
         cnx.sendline(cmd)
 
-
         expect_mysql(self)
 
-
     # interact() and postwork() inherited
-    
 
 class postgres(ShellService):
     """PostgreSQL service handler"""
@@ -727,11 +705,12 @@ class postgres(ShellService):
             raise ServiceRequireError("postgres module can't provide '%s'" % req)
         
         if not self.parent:
-            raise ServiceRequireError("postgres service can't be executed locally, it has to be behind a SHELL_ACCESS-providing module.")
+            raise ServiceRequireError(
+                "postgres service can't be executed locally, it has to be behind a SHELL_ACCESS-providing module."
+            )
 
         self.operation_mode = OP_THRGH_SHELL
         return self.parent.required(PROV_SHELL_ACCESS)
-
 
     def prework(self):
 
@@ -754,13 +733,11 @@ class postgres(ShellService):
 
             def error(self):
                 'postgres: FATAL:  password authentication failed \w* "\w*"'
-                raise ServiceExpectError("Failed authentication for postgres "\
-                                         "at program launch")
+                raise ServiceExpectError("Failed authentication for postgres at program launch")
             
             def notfound(self):
                 'command not found.*$'
                 raise ServiceExpectError('postgres client not installed on server')
-
 
         # Bring over here the parent's shell handle.
         cnx = self.parent.shell_handle
@@ -793,4 +770,3 @@ class vnc(Service):
 
     # Modes this service handler provides
     provides_modes = set([])
-
