@@ -2,6 +2,10 @@
 
 Welcome to SFLvault |badge|
 -------------------
+
+.. image:: https://badges.gitter.im/Join%20Chat.svg
+   :alt: Join the chat at https://gitter.im/savoirfairelinux/sflvault
+   :target: https://gitter.im/savoirfairelinux/sflvault?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 .. |badge| image:: https://api.travis-ci.org/savoirfairelinux/sflvault.png?branch=master
 SFLvault is a Networked credentials store and authentication manager.
 
