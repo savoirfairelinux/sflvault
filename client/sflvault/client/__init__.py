@@ -19,6 +19,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+
+if '1' == os.environ.get('SFLVAULT_SSL_WORKAROUND_BAD_SERVER_CERTIFICATE'):
+    import sys
+    if sys.version_info[:3] < (2, 7, 9):
+        import warnings
+        warnings.warn('The SFLVAULT_SSL_WORKAROUND_BAD_SERVER_CERTIFICATE '
+                      'environment parameter is only usable in 2.7.9 and higher.')
+    else:
+        import ssl
+        if sys.version_info[0] >= 3:
+            import http.client as orig
+        else:
+            import httplib as orig
+
+        class HTTPSConnection(orig.HTTPSConnection, object):
+            def __init__(self, *args, **kwargs):
+                if sys.version_info[:2] < (3, 4):
+                    kwargs['strict'] = False
+                kwargs['context'] = ssl._create_unverified_context()
+                super(HTTPSConnection, self).__init__(*args, **kwargs)
+
+        # replace the original class with the patched one :
+        orig.HTTPSConnection = HTTPSConnection
+
+
 from sflvault.client.commands import SFLvaultCommand
 from sflvault.client.commands import SFLvaultShell
 from sflvault.client.client import SFLvaultClient
