@@ -5,7 +5,7 @@
 #
 #    This file is part of SFLvault-QT
 #
-#    Copyright (C) 2009 Thibault Cohen
+#    Copyright (C) 2014 Savoir-faire Linux inc.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -59,8 +59,7 @@ class Page1(QtGui.QWizardPage):
         QtGui.QWizard.__init__(self, parent)
         self.parent = parent
         self.setTitle("Account Activation")
-        label = QtGui.QLabel("This wizard will activate your account."
-                )
+        label = QtGui.QLabel("This wizard will activate your account.")
         label.setWordWrap(True)
         layout = QtGui.QVBoxLayout()
         layout.addWidget(label)
@@ -143,10 +142,11 @@ class Page3(QtGui.QWizardPage):
         QtGui.QWizardPage.__init__(self, parent)
         self.parent = parent
         self.setTitle("Account activation successfully")
-        label = QtGui.QLabel("You account is now activated. "
-                            "You can now connect to the vault.\n"
-                            "\n"
-                            )
+        label = QtGui.QLabel(
+            "You account is now activated. "
+            "You can now connect to the vault.\n"
+            "\n"
+        )
         label.setWordWrap(True)
 
         self.savepassword_label = QtGui.QLabel("Save your password in your wallet")

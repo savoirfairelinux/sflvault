@@ -5,7 +5,7 @@
 #
 #    This file is part of SFLvault-QT
 #
-#    Copyright (C) 2009 Thibault Cohen
+#    Copyright (C) 2014 Savoir-faire Linux inc.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ class FilterBar(QtGui.QWidget):
         layout = QtGui.QHBoxLayout(self)
         layout.setMargin(0)
 
-        self.close = QtGui.QToolButton(self);
+        self.close = QtGui.QToolButton(self)
         self.close.setAutoRaise(True)
         self.close.setIcon(Qicons("close"))
         self.close.setToolTip(self.tr("Hide Filter Bar"))

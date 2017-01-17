@@ -5,7 +5,7 @@
 #
 #    This file is part of SFLvault-QT
 #
-#    Copyright (C) 2009 Thibault Cohen
+#    Copyright (C) 2014 Savoir-faire Linux inc.
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -36,17 +36,23 @@ import platform
 class Config(QtCore.QSettings):
     def __init__(self, parent=None):
         if platform.system() == 'Windows':
-            QtCore.QSettings.__init__(self, QtCore.QSettings.IniFormat,
-                                        QtCore.QSettings.UserScope,
-                                        "SFLvault", "config", parent);
+            QtCore.QSettings.__init__(
+                self, QtCore.QSettings.IniFormat,
+                QtCore.QSettings.UserScope,
+                "SFLvault", "config", parent
+            )
         elif platform.system() == 'Darwin':
-             QtCore.QSettings.__init__(self, QtCore.QSettings.IniFormat,
-                                        QtCore.QSettings.UserScope,
-                                        "SFLvault", "config", parent);
+            QtCore.QSettings.__init__(
+                self, QtCore.QSettings.IniFormat,
+                QtCore.QSettings.UserScope,
+                "SFLvault", "config", parent
+            )
         else:
-            QtCore.QSettings.__init__(self,
-                         '/home/' + os.getenv( 'USER' ) + '/.sflvault/config',
-                         0, parent)
+            QtCore.QSettings.__init__(
+                self,
+                '/home/' + os.getenv('USER') + '/.sflvault/config',
+                0, parent
+            )
         self.parent = parent
         self.checkConfig()
 
@@ -71,7 +77,7 @@ class Config(QtCore.QSettings):
         """
         if not self.contains("protocols/ssh"):
             self.beginGroup("protocols")
-            self.setValue("ssh", QtCore.QVariant("SSH protocol"));
+            self.setValue("ssh", QtCore.QVariant("SSH protocol"))
             self.endGroup()
 
         self.saveConfig()

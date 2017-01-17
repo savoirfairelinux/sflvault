@@ -1,5 +1,0 @@
-0.7.9 - 28-06-2013
-------------------
-
-* Replaced usage of obsolete crypto function. (#17444)
-* Fix namespace packaging issue.
