@@ -1,3 +1,5 @@
+**Warning: This application is not maintained anymore, therefore cannot be considered secure.**
+
 .. image:: ./docs/logos/sflvault-logo-tagline.png
 
 Welcome to SFLvault |badge|
@@ -17,6 +19,6 @@ Although pull requests and documented Github issues are always appreciated, the 
 
 Contributions
 -------------
-If you are interested in contributing or have questions about the project, feel free to contact us.
+If you are interested in contributing to this project, feel free to fork this repository.
 
 You can join us on #sflvault on freenode, or subscribe to our `mailing list <http://lists.savoirfairelinux.net/mailman/listinfo/sflvault>`_
