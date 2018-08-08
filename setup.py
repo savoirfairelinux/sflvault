@@ -11,4 +11,6 @@ setup(
     author_email='info@savoirfairelinux.com',
     url='https://sflvault.org',
     packages=['sflvault'],
+    setup_requires=["pytest-runner"],
+    tests_require=["pytest"],
 )
