@@ -1,0 +1,9 @@
+[run]
+omit = *site-packages*,/usr/*,/root/*
+
+[paths]
+source = sflvault/
+
+[report]
+precision = 2
+fail_under = 90
