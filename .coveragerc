@@ -1,5 +1,5 @@
 [run]
-omit = *site-packages*,/usr/*,/root/*
+omit = *site-packages*,/usr/*,/root/*, .eggs*, *virtualenv*, */__init__.py, tests/*, setup.py
 
 [paths]
 source = sflvault/

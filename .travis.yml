@@ -17,5 +17,5 @@ before_script:
 script:
   - coverage erase
   - flake8
-  - pipenv run python setup.py test
+  - pipenv run python -m coverage run setup.py test
   - coverage report

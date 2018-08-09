@@ -102,3 +102,6 @@ ENV/
 
 # PyCharm project settings
 .idea
+
+# PyTest plugin cache
+.pytest_cache
