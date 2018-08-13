@@ -2,5 +2,5 @@
 copyright-author = Savoir-faire Linux
 copyright-check = True
 copyright-min-file-size = 119
-exclude = migrations,build,docs,.tox,.venv,env/*,.git
+exclude = migrations,build,docs,.tox,.venv,env/*,.git, tests/
 max-line-length = 100
