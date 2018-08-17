@@ -11,7 +11,7 @@ matrix:
     - python: "3.7-dev"
 
 before_script:
-  - pip install pipenv coverage flake8 python-coveralls
+  - pip install pipenv coverage flake8 coveralls
   - pipenv install --system -d
 
 script:
