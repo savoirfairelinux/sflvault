@@ -177,7 +177,9 @@ class AskPassMethods(object):
             self.cfg._check_keyring()
             import keyring
             backend = self.cfg.wallet_get_obj()
-            return backend.get_password("sflvault", self.cfg._wallet_key)
+            return (backend.get_password("sflvault", self.cfg._wallet_key)
+                    or backend.get_password("sflvault",
+                                            self.cfg._wallet_key_legacy))
 
         if wallet_name:
             self.getpass = keyring_wallet
@@ -323,12 +325,21 @@ class SFLvaultConfig(object):
                         backend.__class__.__name__ == current,
                         ))
         return out
-        
+
+    @property
+    def _wallet_key_legacy(self):
+        """Legacy scheme deriving a key from the sflvault config file path
+
+It results in something like _'2ehome_2e$USERNAME_2esflvault_2econfig'
+and breaks portability across machines using different usernames.
+        """
+        return re.subn(r'\.+', '.', re.subn(r'[-_:\\ /]', '.',
+                                            self.config_file)[0].lower())[0]
+
     @property
     def _wallet_key(self):
-        """Standardizes the key to be stored in the keystore"""
-        return re.subn(r'\.+', '.', re.subn(r'[-_:\\ /]', '.',
-                                               self.config_file)[0].lower())[0]
+        """Return a the key used to store the password in the keystore."""
+        return 'password'
 
     def wallet_set(self, id, password):
         if id is None or id == '0':
