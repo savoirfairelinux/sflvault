@@ -43,7 +43,7 @@ setup(
                       ] + \
                      ([] if platform.system() == 'Windows'
                          else ["urwid>=0.9.8.1",
-                               "pexpect-u>=2.5"]),
+                               "pexpect>=2.3"]),
     packages=find_packages(),
     namespace_packages=['sflvault'],
     include_package_data=True,

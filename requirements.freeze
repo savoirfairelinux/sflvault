@@ -1,7 +1,7 @@
 SQLAlchemy==0.8.1
 argparse==1.2.1
 decorator==3.4.0
-pexpect-u==2.5.1
+pexpect==2.4
 pycrypto==2.6
 transaction==1.4.1
 urwid==1.1.1
