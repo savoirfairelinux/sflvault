@@ -24,7 +24,7 @@ import optparse
 import os
 import re
 import sys
-import xmlrpclib
+import xmlrpc.client
 import getpass
 import shlex
 import socket
@@ -80,11 +80,11 @@ class SFLvaultShell(object):
         """Go through all commands on a pseudo-shell, and execute them,
         caching the passphrase at some point."""
         
-        print "Welcome to SFLvault. Type 'help' for help."
+        print("Welcome to SFLvault. Type 'help' for help.")
         prompt = "SFLvault> "
         
         while True:
-            cmd = raw_input(prompt)
+            cmd = input(prompt)
             if not cmd:
                 continue
             
@@ -99,12 +99,12 @@ class SFLvaultShell(object):
                 runcmd = SFLvaultCommand(self.config, self.vault, parser)
                 try:
                     runcmd._run(args)
-                except ExitParserException, e:
+                except ExitParserException as e:
                     pass
                 
                 if hasattr(runcmd, 'next_command') \
                           and platform.system() != 'Windows':
-                    print "[Added to shell history: %s]" % runcmd.next_command
+                    print("[Added to shell history: %s]" % runcmd.next_command)
                     readline.add_history(runcmd.next_command)
 
     def quit(self):
@@ -158,16 +158,16 @@ class SFLvaultCommand(object):
 
             if action in ['-v', '--version']:
                 try:
-                    print pkgres.get_distribution('SFLvault_common')
-                except pkgres.DistributionNotFound, e:
-                    print "SFLvault-common not installed"
+                    print(pkgres.get_distribution('SFLvault_common'))
+                except pkgres.DistributionNotFound as e:
+                    print("SFLvault-common not installed")
                 
-                print pkgres.get_distribution('SFLvault_client')
+                print(pkgres.get_distribution('SFLvault_client'))
 
                 try:
-                    print pkgres.get_distribution('SFLvault_server')
-                except pkgres.DistributionNotFound, e:
-                    print "SFLvault-server not installed"
+                    print(pkgres.get_distribution('SFLvault_server'))
+                except pkgres.DistributionNotFound as e:
+                    print("SFLvault-server not installed")
                 return
 
             # Fix for functions
@@ -176,43 +176,43 @@ class SFLvaultCommand(object):
 
         # Call it or show the help.
         if not hasattr(self, action):
-            print "[SFLvault] Invalid command: %s" % action
+            print("[SFLvault] Invalid command: %s" % action)
             action = 'help'
 
         self.action = action
         try:
             getattr(self, action)()
-        except SFLvaultParserError, e:
-            print "[SFLvault] Command line error: %s" % e
-            print
+        except SFLvaultParserError as e:
+            print("[SFLvault] Command line error: %s" % e)
+            print()
             self.help(cmd=action, error=e)
         except AuthenticationError:
             raise
         except VaultError:
             #raise
             pass
-        except xmlrpclib.Fault, e:
+        except xmlrpc.client.Fault as e:
             # On is_admin check failed, on user authentication failed.
-            print "[SFLvault] XML-RPC Fault: %s" % e.faultString
-        except xmlrpclib.ProtocolError, e:
+            print("[SFLvault] XML-RPC Fault: %s" % e.faultString)
+        except xmlrpc.client.ProtocolError as e:
             # Server crashed
-            print "[SFLvault] XML-RPC end-point failure: %s" % e
-        except PermissionError, e:
-            print "[SFLvault] Permission denied: %s" % e
-        except VaultConfigurationError, e:
-            print "[SFLvault] Configuration error: %s" % e
-        except RemotingError, e:
-            print "[SFLvault] Remoting error: %s" % e
-        except ServiceRequireError, e:
-            print "[SFLvault] Service-chain setup error: %s" % e
-        except DecryptError, e:
-            print "[SFLvault] Error decrypting messages: %s" % e.message
-        except VaultIDSpecError, e:
-            print "[SFLvault] VaultID spec. error: %s" % e
-        except socket.error, e:
-            print "[SFLvault] Cannot connect to the vault: %s" % e
-        except KeyringError, e:
-            print "[SFLvault] Keyring error: %s" % e
+            print("[SFLvault] XML-RPC end-point failure: %s" % e)
+        except PermissionError as e:
+            print("[SFLvault] Permission denied: %s" % e)
+        except VaultConfigurationError as e:
+            print("[SFLvault] Configuration error: %s" % e)
+        except RemotingError as e:
+            print("[SFLvault] Remoting error: %s" % e)
+        except ServiceRequireError as e:
+            print("[SFLvault] Service-chain setup error: %s" % e)
+        except DecryptError as e:
+            print("[SFLvault] Error decrypting messages: %s" % e.message)
+        except VaultIDSpecError as e:
+            print("[SFLvault] VaultID spec. error: %s" % e)
+        except socket.error as e:
+            print("[SFLvault] Cannot connect to the vault: %s" % e)
+        except KeyringError as e:
+            print("[SFLvault] Keyring error: %s" % e)
         
 
     def _parse(self):
@@ -234,15 +234,15 @@ class SFLvaultCommand(object):
             # Show only a list of commands, for bash-completion.
             for x in dir(self):
                 if not x.startswith('_') and callable(getattr(self, x)):
-                    print x.replace('_', '-')
+                    print(x.replace('_', '-'))
             sys.exit()
 
         # Normal help screen.
-        print "%s version %s" % ('SFLvault-client', pkgres.get_distribution('SFLvault_client').version)
-        print "---------------------------------------------"
+        print("%s version %s" % ('SFLvault-client', pkgres.get_distribution('SFLvault_client').version))
+        print("---------------------------------------------")
 
         if not cmd:
-            print "Here is a quick overview of the commands:"
+            print("Here is a quick overview of the commands:")
             # TODO: go around all the self. attributes and display docstrings
             #       and give coherent help for every function if specified.
             #       all those not starting with _.
@@ -254,35 +254,35 @@ class SFLvaultCommand(object):
                     else:
                         doc = '[n/a]'
                 
-                    print " %s%s%s" % (x.replace('_','-'),
+                    print(" %s%s%s" % (x.replace('_','-'),
                                        (18 - len(x)) * ' ',
-                                       doc)
-            print "---------------------------------------------"
-            print "Run: sflvault [command] --help for more details on each of those commands."
+                                       doc))
+            print("---------------------------------------------")
+            print("Run: sflvault [command] --help for more details on each of those commands.")
         elif not cmd.startswith('_') and callable(getattr(self, cmd)):
             readcmd = cmd.replace('_','-')
 
             doc = getattr(self, cmd).__doc__
             if doc:
-                print "Help for command: %s" % readcmd
-                print "---------------------------------------------"
-                print doc
+                print("Help for command: %s" % readcmd)
+                print("---------------------------------------------")
+                print(doc)
             else:
-                print "No documentation available for `%s`." % readcmd
+                print("No documentation available for `%s`." % readcmd)
 
-            print ""
+            print("")
 
             try:
                 self.parser.parse_args(args=['--help'])
-            except ExitParserException, e:
+            except ExitParserException as e:
                 pass
         else:
-            print "No such command"
+            print("No such command")
 
-        print "---------------------------------------------"
+        print("---------------------------------------------")
             
         if (error):
-            print "ERROR calling %s: %s" % (cmd, error)
+            print("ERROR calling %s: %s" % (cmd, error))
         return
             
 
@@ -437,7 +437,7 @@ class SFLvaultCommand(object):
                                        ''.join(out),
                                        url[2], url[3], url[4], url[5]))
 
-            print "NOTE: Do not specify password in URL. Rewritten as: %s" % url
+            print("NOTE: Do not specify password in URL. Rewritten as: %s" % url)
             return url
         else:
             return False
@@ -567,17 +567,17 @@ class SFLvaultCommand(object):
         try:
             dialog = ui_class(thing)
             save, data = dialog.run()
-        except TypeError, e:
-            print "W00ps!  The shell GUI doesn't support certain operations, like copy and pasting, or specially weird characters."
-            print "In fact, most terminal support doing SHIFT+Middle_Button to paste the text as if the user has typed it, instead of sending Button2 events."
-            print "Try it out, hope this helps."
+        except TypeError as e:
+            print("W00ps!  The shell GUI doesn't support certain operations, like copy and pasting, or specially weird characters.")
+            print("In fact, most terminal support doing SHIFT+Middle_Button to paste the text as if the user has typed it, instead of sending Button2 events.")
+            print("Try it out, hope this helps.")
             return
 
         if save:
-            print "Sending data to vault..."
+            print("Sending data to vault...")
             put_function(thing_id, data)
         else:
-            print abort_message
+            print(abort_message)
 
 
     def service_passwd(self):
@@ -616,33 +616,33 @@ class SFLvaultCommand(object):
             res = self.vault.cfg.alias_del(self.opts.delete)
 
             if res:
-                print "Alias removed"
+                print("Alias removed")
             else:
-                print "No such alias"
+                print("No such alias")
 
         elif len(self.args) == 0:
             # List aliases
             l = self.vault.cfg.alias_list()
-            print "Aliased VaultIDs:"
+            print("Aliased VaultIDs:")
             for x in l:
-                print "\t%s\t%s" % (x[0], x[1])
+                print("\t%s\t%s" % (x[0], x[1]))
 
         elif len(self.args) == 1:
             # Show this alias's value
             a = self.vault.cfg.alias_get(self.args[0])
             if a:
-                print "Aliased VaultID:"
-                print "\t%s\t%s" % (self.args[0], a)
+                print("Aliased VaultID:")
+                print("\t%s\t%s" % (self.args[0], a))
             else:
-                print "Invalid alias"
+                print("Invalid alias")
 
         elif len(self.args) == 2:
             try:
                 r = self.vault.cfg.alias_add(self.args[0], self.args[1])
-            except ValueError, e:
+            except ValueError as e:
                 raise SFLvaultParserError(str(e))
 
-            print "Alias added"
+            print("Alias added")
 
         else:
             raise SFLvaultParserError("Invalid number of parameters")
@@ -894,9 +894,9 @@ class SFLvaultCommand(object):
                 if command_line:
                     al += " " + ' '.join(command_line)
                 r = self.vault.cfg.alias_add(self.opts.alias, al)
-            except ValueError, e:
+            except ValueError as e:
                 raise SFLvaultParserError(str(e))
-            print "Alias added"
+            print("Alias added")
 
         # Grab alias's arguments if they exist...
         alias = self.vault.cfg.alias_get(where)
@@ -940,7 +940,7 @@ class SFLvaultCommand(object):
                   'machines': 'm',
                   'customers': 'c'}
         filters = {}
-        for f in fields.keys():
+        for f in list(fields.keys()):
             criteria = None
             if getattr(self.opts, f):
                 criteria = [self.vault.vaultId(x, fields[f])
@@ -956,10 +956,10 @@ class SFLvaultCommand(object):
 
         if len(self.args) == 0:
             for i, name, obj, status, current in self.vault.cfg.wallet_list():
-                print "%s. %s - %s%s" % (i, name, status,
-                                         " (*current)" if current else '')
-            print
-            print "Execute 'wallet <num>' to change wallet"
+                print("%s. %s - %s%s" % (i, name, status,
+                                         " (*current)" if current else ''))
+            print()
+            print("Execute 'wallet <num>' to change wallet")
             return
 
         # Otherwise
@@ -970,7 +970,7 @@ class SFLvaultCommand(object):
         if id == '0':
             self.vault.cfg.wallet_set(None, None)
             self.vault.set_getpassfunc(None)
-            print "Keyring disabled"
+            print("Keyring disabled")
             return
 
         if id not in ids:
@@ -982,10 +982,10 @@ class SFLvaultCommand(object):
         try:
             passwd = getpass.getpass("Enter your current vault password: ")
             self.vault.cfg.wallet_set(id, passwd)
-        except KeyringError, e:
-            print "[SFLvault] %s" % e
+        except KeyringError as e:
+            print("[SFLvault] %s" % e)
             return False
-        print "Keyring set and password saved"
+        print("Keyring set and password saved")
 
 
 
@@ -1046,14 +1046,14 @@ def main():
     if len(args) > 1 and args[1] == '-i':
         del args[1]
         if len(args) == 1 or args[1].startswith('-'):
-            print "Error: Identity required after -i"
+            print("Error: Identity required after -i")
             sys.exit()
         identity = args.pop(1)
 
     config_file = CONFIG_FILE
     if identity:
         config_file = "%s.%s" % (CONFIG_FILE, identity)
-        print "NOTICE: USING VAULT IDENTITY: %s  (in %s)" % (identity, config_file)
+        print("NOTICE: USING VAULT IDENTITY: %s  (in %s)" % (identity, config_file))
     elif CONFIG_FILE_ENV in os.environ:
         config_file = os.environ[CONFIG_FILE_ENV]
 
@@ -1061,8 +1061,8 @@ def main():
         s = SFLvaultShell(config=config_file)
         try:
             s._run()
-        except (KeyboardInterrupt, EOFError), e:
-            print "\nExiting."
+        except (KeyboardInterrupt, EOFError) as e:
+            print("\nExiting.")
             sys.exit()
     else:
         f = SFLvaultCommand(config=config_file)

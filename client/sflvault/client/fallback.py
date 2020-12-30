@@ -72,20 +72,20 @@ class SFLvaultFallback(object):
             for tmpid in range(self.parent_completer_last_item, last_item):
                 try:
                     readline.remove_history_item(readline.get_current_history_length() - 1)
-                except ValueError, e:
+                except ValueError as e:
                     pass
         readline.set_completer(self.parent_completer)
-        print "\nExiting SFLvaultFallback."
+        print("\nExiting SFLvaultFallback.")
 
     def _run(self):
         """Run the shell, and dispatch commands"""
 
         while True:
-            print "\nWelcome to SFLvaultFallback. Type 'help' for help."
+            print("\nWelcome to SFLvaultFallback. Type 'help' for help.")
             prompt = "SFLvaultFallback> "
 
             while True:
-                cmd = raw_input(prompt)
+                cmd = input(prompt)
                 if not cmd:
                     continue
 
@@ -105,12 +105,12 @@ class SFLvaultFallback(object):
 
                     try:
                         getattr(self, args[0])()
-                    except SFLvaultParserError, e:
+                    except SFLvaultParserError as e:
                         self.help(cmd=args[0], error=e)
                         pass
-                    except ExitParserException, e:
+                    except ExitParserException as e:
                         pass
-                    except UnboundLocalError, e:
+                    except UnboundLocalError as e:
                         # TODO: verify if this error can be worked out
                         # differently
                         self.help(cmd=args[0])
@@ -129,24 +129,24 @@ class SFLvaultFallback(object):
                 else:
                     doc = '[n/a]'
             
-                print "  %s%s%s" % (func,(25 - len(func)) * ' ',doc)
+                print("  %s%s%s" % (func,(25 - len(func)) * ' ',doc))
         elif not cmd.startswith('_') and callable(getattr(self, cmd)):
             doc = getattr(self, cmd).__doc__
             if doc:
-                print "Help for command: %s" % cmd
-                print "---------------------------------------------"
-                print doc
+                print("Help for command: %s" % cmd)
+                print("---------------------------------------------")
+                print(doc)
             else:
-                print "No documentation available for `%s`." % cmd
+                print("No documentation available for `%s`." % cmd)
 
-            print ""
+            print("")
             try:
                 self.parser.parse_args(args=['--help'])
-            except ExitParserException, e:
+            except ExitParserException as e:
                 pass
             
         if (error):
-            print "ERROR calling %s: %s" % (cmd, error)
+            print("ERROR calling %s: %s" % (cmd, error))
 
 
     def shells(self):
@@ -162,18 +162,18 @@ class SFLvaultFallback(object):
                 if last == srv.shell_handle:
                     continue
                 count += 1
-                print "%d. Shell on service %s%s" % (count, srv,
-                                                   ' (current)' if star else '')
+                print("%d. Shell on service %s%s" % (count, srv,
+                                                   ' (current)' if star else ''))
                 last = srv.shell_handle
                 out[str(count)] = srv
         while True:
-            shell = raw_input("Switch> ")
+            shell = input("Switch> ")
             if shell in out:
                 srv = out[shell]
                 e = ServiceSwitchException("Switching to service %s" % srv)
                 e.service = srv
                 raise e
-            print "Please select a shell from the list"
+            print("Please select a shell from the list")
             break
 
     def quit(self):
@@ -201,17 +201,17 @@ class SFLvaultFallback(object):
             # we will store in /tmp folder by default
             tmp = self.opts.source.split('/')
             self.opts.dest = '/tmp/' + tmp[-1]
-            print "Source file will be stored as: %s" % self.opts.dest
+            print("Source file will be stored as: %s" % self.opts.dest)
             #raise SFLvaultParserError("Required parameter 'dest' omitted")
         
         try:
             local_file = open(self.opts.dest, 'w')
-        except IOError, e:
+        except IOError as e:
             raise SFLvaultParserError("I can't create file: %s" % \
                                       self.opts.dest)
         try:
             self.fish_obj.retr(self.opts.source, local_file, showstatus)
-        except ValueError, e:
+        except ValueError as e:
             raise SFLvaultParserError("I can't find file: %s" % \
                                       self.opts.source)
 
@@ -238,12 +238,12 @@ class SFLvaultFallback(object):
             # we will store in /tmp folder by default
             tmp = self.opts.source.split('/')
             self.opts.dest = '/tmp/' + tmp[-1]
-            print "Source file will be stored as: %s" % self.opts.dest
+            print("Source file will be stored as: %s" % self.opts.dest)
             #raise SFLvaultParserError("Required parameter 'dest' omitted")
         
         try:
             filesize = os.path.getsize(self.opts.source)
-        except OSError, e:
+        except OSError as e:
             raise SFLvaultParserError("I can't read file: %s" % self.opts.source)
 
         local_file = open(self.opts.source, 'rb')

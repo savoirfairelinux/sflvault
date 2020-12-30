@@ -47,10 +47,10 @@ class FishClient(object):
             # Add some handling to make it stop at some point..
             try:
                 l = self.proc.readline()
-            except KeyboardInterrupt, e:
-                print "Before: ", self.proc.before
-                print "After: ", self.proc.after
-                print "Buffer: ", self.proc.buffer
+            except KeyboardInterrupt as e:
+                print("Before: ", self.proc.before)
+                print("After: ", self.proc.after)
+                print("Buffer: ", self.proc.buffer)
                 return (lines, 'KeyboardInterrupt')
             # Stop when starts with 'until'
             if l.startswith(until):
@@ -85,9 +85,9 @@ class FishClient(object):
         self.proc.sendline("""ls -l "%s" | ( read a b c d x e; echo $x ); echo '### 100'; cat "%s"; echo '### 200'""" % (filename, filename))
         lines, retval = self._wait_for('### 100')
         filelen = int(lines.pop().strip())
-        print filelen
+        print(filelen)
 
-        print "Downloading..."
+        print("Downloading...")
         dl = 0
         remain = filelen
         self.callback_chk = -1
@@ -118,7 +118,7 @@ class FishClient(object):
                     chunk += nextchr
             write_to.write(chunk)
 
-        print "Download done."
+        print("Download done.")
 
         # Take out the CRLF chars produced by cat.
         #self.proc.read(2)
@@ -166,7 +166,7 @@ class FishClient(object):
         lines, retval = self._wait_for('### 001')
 
         # Write:
-        print "Uploading..."
+        print("Uploading...")
         self.proc.delaybeforesend = 0
         dl = 0
         remain = filelen
@@ -187,14 +187,14 @@ class FishClient(object):
 
         self.proc.delaybeforesend = olddelay
         lines, retval = self._wait_for('### 200')
-        print "Uploading done."
+        print("Uploading done.")
 
 def showstatus(fishproc):
     n = datetime.now().second
     if fishproc.callback_chk != n:
         fishproc.callback_chk = n
         diff = fishproc.filelen - fishproc.remain
-        print "%d / %d" % (diff, fishproc.filelen)
+        print("%d / %d" % (diff, fishproc.filelen))
 
 if __name__ == '__main__':
     # Connect to an ssh command
@@ -212,7 +212,7 @@ if __name__ == '__main__':
 
     oldn = -1
 
-    fname = '/tmp/' + raw_input("Fichier dans /tmp/: ")
+    fname = '/tmp/' + input("Fichier dans /tmp/: ")
     filesize = os.path.getsize(fname)
     myfile = open(fname, 'rb')
     fc.stor(fname, myfile, filesize, showstatus)
@@ -220,6 +220,6 @@ if __name__ == '__main__':
 
     proc.interact()
 
-    print "Closing connection"
+    print("Closing connection")
     proc.close()
 

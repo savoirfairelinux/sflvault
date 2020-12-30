@@ -133,7 +133,7 @@ class DialogDisplay(object):
                     if k:
                         self.unhandled_key( size, k)
                         
-        except DialogExit, e:
+        except DialogExit as e:
             return self.on_exit( e.args[0] )
 
     def on_exit(self, exitcode):
@@ -170,13 +170,13 @@ class ServiceEditDialogDisplay(DialogDisplay):
         #          urwid.CheckBox('tag 3', False, user_data=3)]
 
         if isinstance(data['metadata'], dict):
-            metadata_str = '\n'.join('%s=%s' % (key, val) for key, val in data['metadata'].items()) + '\n'
+            metadata_str = '\n'.join('%s=%s' % (key, val) for key, val in list(data['metadata'].items())) + '\n'
         else:
             metadata_str = ''
-        inputs = {'url': urwid.Edit("", unicode(data['url']), wrap='clip'),
+        inputs = {'url': urwid.Edit("", str(data['url']), wrap='clip'),
                   'machine_id': urwid.Edit("", str(data['machine_id'] or '')),
                   'parent_service_id': urwid.Edit("", str(data['parent_service_id'] or '')),
-                  'notes': urwid.Edit("", unicode(data['notes'])),
+                  'notes': urwid.Edit("", str(data['notes'])),
                   'metadata': urwid.Edit("", metadata_str, multiline=True)
                   }
                   
@@ -251,7 +251,7 @@ class MachineEditDialogDisplay(DialogDisplay):
         # Create fields..
         inputs = {'customer_id': urwid.Edit("", str(data['customer_id'] or ''))}
         for x in ['ip', 'name', 'fqdn', 'location', 'notes']:
-            inputs[x] = urwid.Edit("", unicode(data[x])) # , wrap='clip'
+            inputs[x] = urwid.Edit("", str(data[x])) # , wrap='clip'
                   
         l = [
             urwid.Columns([('fixed', 15, urwid.Text('Customer ID ',
@@ -319,7 +319,7 @@ class CustomerEditDialogDisplay(DialogDisplay):
         # Create fields..
         inputs = {}
         for x in ['name']:
-            inputs[x] = urwid.Edit("", unicode(data[x])) # , wrap='clip'
+            inputs[x] = urwid.Edit("", str(data[x])) # , wrap='clip'
                   
         l = [
             urwid.Columns([('fixed', 15, urwid.Text('Name ',
@@ -368,7 +368,7 @@ class GroupEditDialogDisplay(DialogDisplay):
         inputs = {}
         # TODO: Eventually add 'hidden' to tweak hidden status.
         for x in ['name']:
-            inputs[x] = urwid.Edit("", unicode(data[x])) # , wrap='clip'
+            inputs[x] = urwid.Edit("", str(data[x])) # , wrap='clip'
                   
         l = [
             urwid.Columns([('fixed', 15, urwid.Text('Name ',
