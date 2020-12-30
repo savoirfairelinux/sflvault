@@ -29,7 +29,7 @@ if platform.system() != 'Windows':
     import readline
 
 
-__all__ = ['urlparse', 'AuthenticationError', 'PermissionError',
+__all__ = ['urllib', 'AuthenticationError', 'PermissionError',
            'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
            'ServiceRequireError', 'ServiceExpectError', 'sflvault_escape_chr',
            'ask_for_service_password', 'services_entry_points',
