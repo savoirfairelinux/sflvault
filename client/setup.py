@@ -38,12 +38,16 @@ setup(
     url='http://www.sflvault.org',
     license='GPLv3',
     install_requires=["SFLvault-common==0.7.8.1",
+                      # TODO: Port to a recent keyring.  This old 1.6
+                      # version works until Python 3.8 (see:
+                      # https://github.com/savoirfairelinux/sflvault/issues/51).
+                      "keyring~=1.6",
                       "pycrypto",
                       "decorator",
                       ] + \
                      ([] if platform.system() == 'Windows'
                          else ["urwid>=0.9.8.1",
-                               "pexpect-u>=2.5"]),
+                               "pexpect>=2.5"]),
     packages=find_packages(),
     namespace_packages=['sflvault'],
     include_package_data=True,
