@@ -166,10 +166,10 @@ def serial_elgamal_privkey(privkey):
     return ns
 
 def unserial_elgamal_privkey(privkey):
-    """Get a string, return a 4-elements tuple of long()
+    """Get a byte string, return a 4-elements tuple of long()
 
     This contains the private (two first elements) and the public key."""
-    x = privkey.split(':')
+    x = privkey.split(':'.encode('utf-8'))
     return (bytes_to_long(b64decode(x[0])),
             bytes_to_long(b64decode(x[1])),
             bytes_to_long(b64decode(x[2])),
@@ -201,7 +201,8 @@ def decrypt_privkey(something, pw):
 
     Remove padding on right."""
     b = Blowfish.new(pw)
-    return chksum(b.decrypt(b64decode(something)).rstrip("\x00"))
+    decrypted_key = b.decrypt(b64decode(something))
+    return chksum(decrypted_key.rstrip('\x00'.encode('utf-8')))
 
 
 #
@@ -233,7 +234,7 @@ def decrypt_secret(seckey, ciphertext):
     """Decrypt using the provided seckey"""
     a = AES.new(b64decode(seckey))
     ciphertext = b64decode(ciphertext)
-    secret = a.decrypt(ciphertext).rstrip("\x00")    
+    secret = a.decrypt(ciphertext).rstrip('\x00'.encode('utf-8'))
     del(a)
     del(ciphertext)
     # Validate checksum
@@ -278,18 +279,18 @@ def decrypt_longmsg(eg, ciphermessage):
     """This takes the long cipher message, splits in chunks and decodes with
     the provided ElGamal key (private key must be in).
 
-    This returns the original str()."""
+    This returns the original byte string."""
 
     chunks = ciphermessage.split('&')
     out = []
     for chunk in chunks:
-        snip = eg.decrypt(unserial_elgamal_msg(chunk))
+        snip = eg.decrypt(unserial_elgamal_msg(chunk))  # returned as bytes
         out.append(snip)
 
-    message = chksum(''.join(out))
+    message = chksum(''.encode('utf-8').join(out))
 
     return message
-        
+
 
 # Include the '_' function in the public names
 __all__ = [__name for __name in list(locals().keys()) if not __name.startswith('_')]
