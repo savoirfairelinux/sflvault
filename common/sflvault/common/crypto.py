@@ -238,7 +238,7 @@ def decrypt_secret(seckey, ciphertext):
     del(a)
     del(ciphertext)
     # Validate checksum
-    return chksum(secret)
+    return chksum(secret).decode('utf-8')
 
 
 #
