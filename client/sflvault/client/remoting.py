@@ -41,6 +41,7 @@ import sys
 import platform
 if platform.system() != 'Windows':
     import pexpect
+import urllib.parse
 
 __all__ = ['Service', 'Chain']
 
@@ -59,7 +60,7 @@ class Service(object):
     """
     def __init__(self, data, timeout=30, command_line=''):
         self.data = data
-        self.url = urlparse.urlparse(data['url'])
+        self.url = urllib.parse.urlparse(data['url'])
         self.timeout = timeout
         self.command_line = command_line
         # We need a copy, as the modes can change when configuring chain.
@@ -232,7 +233,7 @@ class Chain(object):
         # Create Service objects for each of the service in the hierarchy.
         service_list = []
         for srvdata in self.services:
-            parsed_url = urlparse.urlparse(srvdata['url'])
+            parsed_url = urllib.parse.urlparse(srvdata['url'])
             service = None
 
             for ep in services_entry_points():
