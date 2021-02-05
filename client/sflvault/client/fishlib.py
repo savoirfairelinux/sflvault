@@ -198,7 +198,7 @@ def showstatus(fishproc):
 
 if __name__ == '__main__':
     # Connect to an ssh command
-    proc = pexpect.spawn('ssh office')
+    proc = pexpect.spawn('ssh office', encoding='utf-8')
 
     # Create the FishClient and wrap it around.
     # This can also be done after the interact() session if you wish.

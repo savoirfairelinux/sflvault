@@ -432,7 +432,7 @@ class ssh(ShellService):
                 print("Running SSH+PKI setup...")
                 os.system(pki_cmd)
             print("EXECUTING: %s" % sshcmd)
-            cnx = pexpect.spawn(sshcmd)
+            cnx = pexpect.spawn(sshcmd, encoding='utf-8')
         elif self.operation_mode == OP_THRGH_SHELL:
             cnx = self.parent.shell_handle
             if pki_cmd:
