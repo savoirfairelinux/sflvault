@@ -22,7 +22,7 @@
 import pkg_resources as pkgres
 import optparse
 import os
-import re
+import urllib
 import sys
 import xmlrpc.client
 import getpass
@@ -422,7 +422,7 @@ class SFLvaultCommand(object):
         """Remove password in URL, and notify about rewrite."""
         # Rewrite url if a password was included... strip the port and
         #       username from the URL too.
-        url = urlparse.urlparse(url)
+        url = urllib.parse.urlparse(url)
         if url.password:
             out = []
             if url.username:
@@ -433,9 +433,8 @@ class SFLvaultCommand(object):
             if url.port:
                 out.append(":%d" % url.port)
             
-            url = urlparse.urlunparse((url[0],
-                                       ''.join(out),
-                                       url[2], url[3], url[4], url[5]))
+            url = urllib.parse.urlunparse((url[0], ''.join(out),
+                                           url[2], url[3], url[4], url[5]))
 
             print("NOTE: Do not specify password in URL. Rewritten as: %s" % url)
             return url
