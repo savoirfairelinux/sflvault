@@ -35,7 +35,8 @@ fi
 source \"$venv\"/bin/activate
 
 # Install sflvault in 'editable' mode.
-pip install --editable ./common ./client
+pip install --editable ./common
+pip install --editable ./client
 "
 
 # Create venv if it doesn't already exists.
