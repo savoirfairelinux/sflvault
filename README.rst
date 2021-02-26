@@ -1,5 +1,3 @@
-**Warning: This application is not maintained anymore, therefore cannot be considered secure.**
-
 .. image:: ./docs/logos/sflvault-logo-tagline.png
 
 Welcome to SFLvault |badge|
