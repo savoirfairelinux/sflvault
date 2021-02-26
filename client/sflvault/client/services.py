@@ -88,7 +88,7 @@ class ExpectClass(object):
 
         try:
             idx = self.cnx.expect(strings, timeout=timeout)
-        except pexpect.TIMEOUT, e:
+        except pexpect.TIMEOUT as e:
             self._flush()
             if hasattr(self, '_timeout'):
                 self._timeout()
@@ -168,7 +168,7 @@ class ShellService(Service):
                 s = SFLvaultFallback(self.chain, self.shell_handle)
                 try:
                     s._run()
-                except (KeyboardInterrupt, EOFError), e:
+                except (KeyboardInterrupt, EOFError) as e:
                     s._return_completer()
                 continue
 
@@ -177,17 +177,17 @@ class ShellService(Service):
             # Reset signal
             signal.signal(signal.SIGWINCH, signal.SIG_DFL)
 
-            print "[SFLvault] Escaped from %s, calling postwork." % self.__class__.__name__
-        except OSError, e:
-            print "[SFLvault] %s disconnected: %s" % (self.__class__.__name__,
-                                                      e)
+            print("[SFLvault] Escaped from %s, calling postwork." % self.__class__.__name__)
+        except OSError as e:
+            print("[SFLvault] %s disconnected: %s" % (self.__class__.__name__,
+                                                      e))
             raise e
 
 
     def postwork(self):
         # Close any open connection.
         if not self.shell_handle.closed:
-            print "Closing connection for service %s" % self
+            print("Closing connection for service %s" % self)
             self.shell_handle.close()
         # NOTE: this will close all the `ssh` tunnel when it was continued
         #       through shells
@@ -325,18 +325,18 @@ class ssh(ShellService):
             def failed_login(self):
                 'assword:'
                 self.cnx.sendcontrol('c')
-                print ""
+                print("")
                 raise ServiceExpectError("Failed to authenticate")
 
             def are_you_sure(self):
                 "(?i)are you sure you want to continue connecting.*\? "
-                ans = raw_input()
+                ans = input()
                 self.cnx.sendline(ans)
                 expect_shell(self.service)
 
             def forward_error(self):
                 "Privileged ports can only be forwarded by root"
-                print ""
+                print("")
                 raise ServiceExpectError("Port forward failed.")
 
         class expect_login(ExpectClass): 
@@ -352,12 +352,12 @@ class ssh(ShellService):
 
             def werein(self):
                 'Last login'
-                print " [We're in! (using shared-key?)] ",
+                print(" [We're in! (using shared-key?)] ", end=' ')
 
             def are_you_sure(self):
                 "(?i)are you sure you want to continue connecting.*\? "
                 # TODO: are you always sure ??
-                ans = raw_input()
+                ans = input()
                 self.cnx.sendline(ans)
 
                 expect_login(self.service)
@@ -365,7 +365,7 @@ class ssh(ShellService):
             def remote_host_changed(self):
                 "REMOTE HOST IDENTIFICATION HAS CHANGED!"
 
-                ans = raw_input("Would you like SFLvault to remove that offending line and try again (yes/no)? ")
+                ans = input("Would you like SFLvault to remove that offending line and try again (yes/no)? ")
                 if ans.lower() == 'yes' or ans.lower() == 'y':
                     idx = self._expect([r"Offending key in ([^:]+):(\d+)"])
                     cmd = 'sed -i %sd "%s"' % (self.cnx.match.group(2),
@@ -390,8 +390,8 @@ class ssh(ShellService):
 
         sshcmd = "ssh"
         if self.operation_mode in [OP_DIRECT, OP_THRGH_SHELL]:
-            print "\n... Trying to login to %s as %s ..." % (self.url.hostname,
-                                                             user)
+            print("\n... Trying to login to %s as %s ..." % (self.url.hostname,
+                                                             user))
             sshcmd += " -l %s %s" % (user, self.url.hostname)
             if self.url.port:
                 sshcmd += " -p %d" % (self.url.port)
@@ -399,8 +399,8 @@ class ssh(ShellService):
             # Take the bound port on the first (OP_DIRECT) ssh connection.
             port = self.op_through_port
             host = self.op_through_host
-            print "... Trying to login to %s (through local port-forward, " \
-                  "port %d) as %s ..." % (self.url.hostname, port, user)
+            print("... Trying to login to %s (through local port-forward, " \
+                  "port %d) as %s ..." % (self.url.hostname, port, user))
             # TODO: Do not take into consideration the `known hosts` list.
             sshcmd += " -l %s %s" % (user,host)
             sshcmd += " -p %d" % (port)
@@ -429,16 +429,16 @@ class ssh(ShellService):
 
         if self.operation_mode in [OP_DIRECT, OP_THRGH_FWD]:
             if pki_cmd:
-                print "Running SSH+PKI setup..."
+                print("Running SSH+PKI setup...")
                 os.system(pki_cmd)
-            print "EXECUTING: %s" % sshcmd
-            cnx = pexpect.spawn(sshcmd)
+            print("EXECUTING: %s" % sshcmd)
+            cnx = pexpect.spawn(sshcmd, encoding='utf-8')
         elif self.operation_mode == OP_THRGH_SHELL:
             cnx = self.parent.shell_handle
             if pki_cmd:
-                print "Sending SSH+PKI setup..."
+                print("Sending SSH+PKI setup...")
                 cnx.sendline(pki_cmd)
-            print "SENDING LINE: %s" % sshcmd
+            print("SENDING LINE: %s" % sshcmd)
             cnx.sendline(sshcmd)
         else:
             # NOTE: This should be dead code:
@@ -462,14 +462,14 @@ class ssh_pki(ssh):
     @staticmethod
     def ask_password(edit, parsed_url):
         """Function to grab password"""
-        print """Copy and paste the SSH PRIVATE KEY, which looks like:
+        print("""Copy and paste the SSH PRIVATE KEY, which looks like:
 -----BEGIN (D|R)SA PRIVATE KEY-----
 B64DEADBEEF...==
 -----END (D|R)SA PRIVATE KEY-----
-"""
+""")
         pk = []
         while True:
-            chunk = raw_input(">>> ")
+            chunk = input(">>> ")
             pk.append(chunk)
             if '---END' in chunk:
                 break
@@ -482,14 +482,14 @@ class content(Service):
     @staticmethod
     def ask_password(edit, parsed_url):
         """Function to grab the content and set it as the secret"""
-        print """Paste the content to store, and hit Ctrl+C"""
+        print("""Paste the content to store, and hit Ctrl+C""")
         pk = []
         try:
             while True:
-                chunk = raw_input(">>> ")
+                chunk = input(">>> ")
                 pk.append(chunk)
-        except KeyboardInterrupt, e:
-            print ""
+        except KeyboardInterrupt as e:
+            print("")
             return '\n'.join(pk)
 
 class sflvault(content):
@@ -534,7 +534,7 @@ class sudo(ShellService):
             def failed(self):
                 'assword:'
                 self.cnx.sendintr()
-                print ""
+                print("")
                 raise ServiceExpectError("Failed to authenticate sudo://")
 
             def failed2(self):

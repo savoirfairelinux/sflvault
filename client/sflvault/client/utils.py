@@ -21,7 +21,7 @@
 
 """Several utilities used in the SFLvault client"""
 
-import urlparse
+import urllib.parse
 import re
 from pkg_resources import iter_entry_points, DistributionNotFound
 import platform
@@ -29,7 +29,7 @@ if platform.system() != 'Windows':
     import readline
 
 
-__all__ = ['urlparse', 'AuthenticationError', 'PermissionError',
+__all__ = ['urllib', 'AuthenticationError', 'PermissionError',
            'VaultIDSpecError', 'VaultConfigurationError', 'RemotingError',
            'ServiceRequireError', 'ServiceExpectError', 'sflvault_escape_chr',
            'ask_for_service_password', 'services_entry_points',
@@ -43,7 +43,7 @@ def services_entry_points():
 #
 # Add protocols to urlparse, for correct parsing of ssh and others.
 #
-urlparse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
+urllib.parse.uses_netloc.extend(['ssh', 'vlc', 'vpn', 'openvpn', 'git',
                              'bzr+ssh', 'vnc', 'mysql', 'sudo', 'su',
                              'psql'] +
                              [x.name for x in services_entry_points()])
@@ -54,12 +54,12 @@ sflvault_escape_chr = chr(30)
 
 def ask_for_service_password(edit=False, url=None):
     # Use the module's ask_password if it supports one...
-    parsed_url = urlparse.urlparse(url)
+    parsed_url = urllib.parse.urlparse(url)
     for ep in services_entry_points():
         if ep.name == parsed_url.scheme:
             try:
                 srvobj = ep.load()
-            except DistributionNotFound, e:
+            except DistributionNotFound as e:
                 break
             if hasattr(srvobj, 'ask_password'):
                 return srvobj.ask_password(edit, parsed_url)
@@ -67,13 +67,13 @@ def ask_for_service_password(edit=False, url=None):
     # Use raw_input so that we see the password. To make sure we enter
     # a valid and the one we want (what if copy&paste didn't work, and
     # you didn't know ?)
-    sec = raw_input("Enter new service's password: " if edit
+    sec = input("Enter new service's password: " if edit
                     else "Enter service's password: ")
     if readline.get_current_history_length() > 0:
         readline.remove_history_item(readline.get_current_history_length() - 1)
     # CSI n F to go back one line. CSI n K to erase the line.
     # See http://en.wikipedia.org/wiki/ANSI_escape_code
-    print "\033[1F\033[2K ... password taken ..."
+    print("\033[1F\033[2K ... password taken ...")
     return sec
 
 
@@ -209,7 +209,7 @@ class URLParser(object):
 
     def _show(self):
         for i in range(len(self.res.groups())):
-            print i+1, self.res.group(i+1)
+            print(i+1, self.res.group(i+1))
 
     def gen_url(self, with_password=False):
         """Renders the URL, optionally without the password, based on

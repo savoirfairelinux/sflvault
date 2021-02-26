@@ -27,6 +27,6 @@ import warnings
 # HIDE DEPRECATION WARINGS ONLY IN RELEASES. SHOW THEM IN DEV. TRUNKS
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
-class VaultError(StandardError):
+class VaultError(Exception):
     """Vault-specific Error"""
     pass

@@ -41,6 +41,7 @@ import sys
 import platform
 if platform.system() != 'Windows':
     import pexpect
+import urllib.parse
 
 __all__ = ['Service', 'Chain']
 
@@ -59,7 +60,7 @@ class Service(object):
     """
     def __init__(self, data, timeout=30, command_line=''):
         self.data = data
-        self.url = urlparse.urlparse(data['url'])
+        self.url = urllib.parse.urlparse(data['url'])
         self.timeout = timeout
         self.command_line = command_line
         # We need a copy, as the modes can change when configuring chain.
@@ -168,21 +169,21 @@ class Chain(object):
 
 
     def debug_chain(self):
-        print "self.ready: ", self.ready
-        print "self.service_list:"
+        print("self.ready: ", self.ready)
+        print("self.service_list:")
         for s in self.service_list:
-            print " ", s
-            print "    self.data['url']: ", s.data['url']
-            print "    self.provides_modes: ", s.provides_modes
-            print "    self.local_forwards: ", s.local_forwards
-            print "    self.remote_forwards: ", s.remote_forwards
-            print "    self.ssh_pki_auth: ", s.ssh_pki_auth
-            print "    self.has_forwards(): ", s.has_forwards()
-            print "    self.child: ", s.child
-            print "    self.parent: ", s.parent
-            print "    self.operation_mode: ", s.operation_mode
-            print "    self.op_through_port: ", s.op_through_port
-            print "    self.op_through_host: ", s.op_through_host
+            print(" ", s)
+            print("    self.data['url']: ", s.data['url'])
+            print("    self.provides_modes: ", s.provides_modes)
+            print("    self.local_forwards: ", s.local_forwards)
+            print("    self.remote_forwards: ", s.remote_forwards)
+            print("    self.ssh_pki_auth: ", s.ssh_pki_auth)
+            print("    self.has_forwards(): ", s.has_forwards())
+            print("    self.child: ", s.child)
+            print("    self.parent: ", s.parent)
+            print("    self.operation_mode: ", s.operation_mode)
+            print("    self.op_through_port: ", s.op_through_port)
+            print("    self.op_through_host: ", s.op_through_host)
 
 
 
@@ -232,7 +233,7 @@ class Chain(object):
         # Create Service objects for each of the service in the hierarchy.
         service_list = []
         for srvdata in self.services:
-            parsed_url = urlparse.urlparse(srvdata['url'])
+            parsed_url = urllib.parse.urlparse(srvdata['url'])
             service = None
 
             for ep in services_entry_points():
@@ -293,22 +294,22 @@ class Chain(object):
         for srv in self.service_list:
             try:
                 srv.prework()
-            except ServiceExpectError, e:
+            except ServiceExpectError as e:
                 # Show error, fall back, and interact to last if it exists.
-                print "[SFLvault] Error connecting to %s: %s" % (srv.data['url'], str(e))
+                print("[SFLvault] Error connecting to %s: %s" % (srv.data['url'], str(e)))
                 break
-            except TypeError, e:
-                print "[SFLvault] Timed out."
+            except TypeError as e:
+                print("[SFLvault] Timed out.")
                 sys.stdout.write(srv.shell_handle.before)
                 go_break = True
             except pexpect.EOF:
-                print "[SFLvault] Child exited. Following is the output of the command: %s" % (
+                print("[SFLvault] Child exited. Following is the output of the command: %s" % (
                     srv.shell_handle.before
-                )
+                ))
                 break
-            except KeyboardInterrupt, e:
-                print ""
-                print "[SFLvault] Keyboard interrupt, dropping in interactive mode"
+            except KeyboardInterrupt as e:
+                print("")
+                print("[SFLvault] Keyboard interrupt, dropping in interactive mode")
                 sys.stdout.write(srv.shell_handle.before)
                 last = srv
                 go_break = True
@@ -328,10 +329,10 @@ class Chain(object):
             while True:
                 try:
                     current.interact()
-                except OSError, e:
+                except OSError as e:
                     # Make suer you clean-up anyways :)
                     break
-                except ServiceSwitchException, e:
+                except ServiceSwitchException as e:
                     # A way to switch shells..
                     current = e.service
                     continue
