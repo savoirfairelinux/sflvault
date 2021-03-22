@@ -50,6 +50,7 @@
          "grep"
          "python"
          "python-pylint"
+         "python-twine"                 ;for uploading releases PyPI
          "python-virtualenv"))
        ;; Custom packages.
        (packages->manifest

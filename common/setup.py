@@ -2,7 +2,7 @@
 #
 # SFLvault - Secure networked password store and credentials manager.
 #
-# Copyright (C) 2008-2009  Savoir-faire Linux inc.
+# Copyright (C) 2008-2021  Savoir-faire Linux inc.
 #
 # Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
 #
@@ -32,11 +32,11 @@ requires = [
 
 setup(
     name='SFLvault-common',
-    version="0.7.8.1",
+    version="0.9.0",
     description='Networked credentials store and authentication manager - Common',
-    author='Alexandre Bourget',
-    author_email='alexandre.bourget@savoirfairelinux.com',
-    url='http://www.sflvault.org',
+    author='Savoir-faire Linux',
+    author_email='contact@savoirfairelinux.com',
+    url='https://www.sflvault.org',
     license='GPLv3',
     install_requires=requires,
     packages=find_packages(),

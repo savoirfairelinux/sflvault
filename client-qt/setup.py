@@ -9,11 +9,11 @@ except ImportError:
 
 setup(
     name='SFLvault-client-qt',
-    version="0.7.8.2",
+    version="0.9.0",
     description='Networked credentials store and authentication manager - Qt Client',
-    author='Thibault Cohen',
-    author_email='thibault.cohen@savoirfairelinux.com',
-    url='http://www.sflvault.org',
+    author='Savoir-faire Linux',
+    author_email='contact@savoirfairelinux.com',
+    url='https://www.sflvault.org',
     license='GPLv2',
     install_requires=[
                     #"PyQt",

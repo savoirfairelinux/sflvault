@@ -1,3 +1,13 @@
+0.9.0
+-----
+
+* Ported SFLvault-common and SFLvault-client to Python 3 (up to Python
+  3.8 is currently supported).  The server and client-qt components
+  haven't been touched for now.
+* The key name used to store the wallet password no longer includes
+  the machine hostname, which was breaking portability.  This makes it
+  possible to share the same sflvault config across systems.
+
 0.7.8.1
 -------
 

@@ -31,11 +31,11 @@ import platform
 
 setup(
     name='SFLvault-client',
-    version="0.7.8.2",
+    version="0.9.0",
     description='Networked credentials store and authentication manager - Client',
-    author='Alexandre Bourget',
-    author_email='alexandre.bourget@savoirfairelinux.com',
-    url='http://www.sflvault.org',
+    author='Savoir-faire Linux',
+    author_email='contact@savoirfairelinux.com',
+    url='https://www.sflvault.org',
     license='GPLv3',
     install_requires=["SFLvault-common==0.7.8.1",
                       # TODO: Port to a recent keyring.  This old 1.6

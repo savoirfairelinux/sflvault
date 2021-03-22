@@ -38,11 +38,11 @@ requires = [
 
 setup(
     name='SFLvault-server',
-    version='0.8.0.0',
+    version='0.9.0',
     description='Networked credentials store and authentification manager - Server',
-    author='Alexandre Bourget',
-    author_email='alexandre.bourget@savoirfairelinux.com',
-    url='http://www.sflvault.org',
+    author='Savoir-faire Linux',
+    author_email='contact@savoirfairelinux.com',
+    url='https://www.sflvault.org',
     long_description=README + '\n\n' +  CHANGES,
     classifiers=[
         "Programming Language :: Python",

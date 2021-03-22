@@ -1,13 +1,10 @@
 Steps to perform when releasing SFLvault
 ========================================
 
-Temporary instructions: SFLVault's release process is in the middle of a big overhaul. For now, we
-limit ourselves to PyPI release.
-
 * Modify setup.py and change the version number, for each of the components.
 
-* Make sure the MINIMAL_CLIENT_VERSION in controllers/xmlrpc.py is appropriate,
-  to ensure backwards compatibility.
+* Make sure the MINIMAL_CLIENT_VERSION in server/sflvault/views.py is
+  appropriate, to ensure backwards compatibility.
 
 * Commit the release commit INCLUDING the Release Notes inside that commit.
   Note all new features and fixes.
@@ -18,24 +15,19 @@ limit ourselves to PyPI release.
 * For each module, SFLvault-common, SFLvault-server, SFLvault-client and
   SFLvault-client-qt:
   
-  $ for path in common client client-qt server
-  do
-    cd $path
-    python setup.py sdist
-    cd ..
+  $ for path in common client client-qt server; do
+      (cd $path && python setup.py sdist)
   done
 
-  If this works, then upload it:
-
-  $ for path in common client client-qt server
-  do
-    cd $path
-    python setup.py sdist upload
-    cd ..
-  done
-
-* Tag the commit with the version number
+* Assuming the above step worked, tag the commit with the version
+  number.
 
 * Push with tags:
 
   git push --tags
+
+* Finally, upload it to PyPI:
+
+  $ for path in common client client-qt server; do
+    (cd $path && twine upload dist/*)
+  done
