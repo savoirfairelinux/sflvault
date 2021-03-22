@@ -51,7 +51,8 @@
          "python"
          "python-pylint"
          "python-twine"                 ;for uploading releases PyPI
-         "python-virtualenv"))
+         "python-virtualenv"
+         "python-wheel"))
        ;; Custom packages.
        (packages->manifest
         (list python-keyring-1.6))))

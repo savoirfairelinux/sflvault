@@ -14,10 +14,23 @@ Steps to perform when releasing SFLvault
 
 * For each module, SFLvault-common, SFLvault-server, SFLvault-client and
   SFLvault-client-qt:
+
+  # Clear any previous dist builds.
+  $ find -type d -name dist -exec rm -r {} +
   
   $ for path in common client client-qt server; do
-      (cd $path && python setup.py sdist)
+      (cd $path && python setup.py sdist bdist_wheel)
   done
+
+  Validate that the packages can be installed via:
+
+  $ pip install server/dist/*.tar.gz \
+      common/dist/*.tar.gz client{,-qt}/dist/*.tar.gz
+
+  and
+
+  $ pip install server/dist/*.whl \
+      common/dist/*. client{,-qt}/dist/*.whl
 
 * Assuming the above step worked, tag the commit with the version
   number.

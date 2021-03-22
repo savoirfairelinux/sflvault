@@ -2,7 +2,7 @@
 #
 # SFLvault - Secure networked password store and credentials manager.
 #
-# Copyright (C) 2008-2009  Savoir-faire Linux inc.
+# Copyright (C) 2008-2021  Savoir-faire Linux inc.
 #
 # Author: Alexandre Bourget <alexandre.bourget@savoirfairelinux.com>
 #
@@ -31,13 +31,14 @@ import platform
 
 setup(
     name='SFLvault-client',
-    version="0.9.0",
+    version="0.9.2",
     description='Networked credentials store and authentication manager - Client',
     author='Savoir-faire Linux',
     author_email='contact@savoirfairelinux.com',
     url='https://www.sflvault.org',
     license='GPLv3',
-    install_requires=["SFLvault-common==0.7.8.1",
+    setup_requires=['wheel'],
+    install_requires=["SFLvault-common~=0.9",
                       # TODO: Port to a recent keyring.  This old 1.6
                       # version works until Python 3.8 (see:
                       # https://github.com/savoirfairelinux/sflvault/issues/51).
@@ -76,5 +77,3 @@ setup(
 
     """,
 )
-
-
