@@ -43,7 +43,7 @@ def test_group_admin(request, group_id):
     if not query(Group).filter_by(id=group_id).first():
         return vaultMsg(False, "Group not found: %s" % str(group_id))
     
-    sess = get_session(request['rpc_args'][0], request)
+    sess = get_session(request['rpc_args'][0])
 
     # Verify if I'm is_admin on that group
     ug = query(UserGroup).filter_by(group_id=group_id,
@@ -115,39 +115,47 @@ class xmlrpc_method(object):
 def authenticated_user(func, request, *args, **kwargs):
     """Aborts if user isn't authenticated.
 
-    Timeout check done in get_session.
+    Timeout check done in session_errors.
 
     WARNING: authenticated_user READ the FIRST non-keyword argument
              (should be authtok)
     """
     cryptok = request['rpc_args'][0]
-    ret = _authenticated_user_first(request, cryptok)
-    if ret:
-        return ret
+    error_msg = session_errors(request, cryptok)
+    if error_msg:
+        return vaultMsg(False, "Permission denied (%s)" % error_msg)
 
     return func(request, *args, **kwargs)
 
-def _authenticated_user_first(request, cryptok):
-    """DRYed authenticated_user to skip repetition in authenticated_admin"""
-    try:
-        s = get_session(cryptok, request)
-    except SessionNotFoundError:
-        s = None
+
+def session_errors(request, authtok):
+    """ Test the session for errors
+
+    Make sure that the session the user is trying to use is valid.
+
+    Make the following tests:
+    1. Existence: make sure the authtok has an actual session
+    2. Expiration: make sure that the session is not expired
+    3. Remote addr: make sure that the user is connecting from the original
+                    remote addr
+
+    Return: the error message if the session is invalid, otherwise None
+    """
+
+    error_msg = None
+    if not session_exists(authtok):
         error_msg = 'session not found'
-    except SessionExpiredError:
-        s = None
+
+    elif session_expired(authtok):
         error_msg = 'session expired'
 
+    elif not session_has_same_address(authtok, request):
+        del(vaultSessions[authtok])
+        error_msg = 'remote addr for this session is different than the original remote addr'
 
-    if not s:
-        return vaultMsg(False, "Permission denied (%s)" % error_msg)
+    if error_msg:
+        return error_msg
 
-    sess = s
-
-    if 'user_id' in sess:
-        vault.myself_id = sess['user_id']
-    if 'username' in sess:
-        vault.myself_username = sess['username']
 
 @decorator
 def authenticated_admin(func, request, *args, **kwargs):
@@ -156,17 +164,14 @@ def authenticated_admin(func, request, *args, **kwargs):
     Check authenticated_user , everything written then applies here as well.
     """
     cryptok = request['rpc_args'][0]
-    ret = _authenticated_user_first(request, cryptok)
-    if ret:
-        return ret
-    try:
-        sess = get_session(cryptok, request)
-    except SessionNotFoundError:
-        sess = None
+    error_msg = session_errors(request, cryptok)
+    if error_msg:
+        return vaultMsg(False, "Permission denied (%s)" % error_msg)
 
-    if sess:
-        if not sess['userobj'].is_admin:
-            return vaultMsg(False, "Permission denied, admin priv. required")
+    sess = get_session(cryptok)
+
+    if not sess['userobj'].is_admin:
+        return vaultMsg(False, "Permission denied, admin priv. required")
 
     return func(request, *args, **kwargs)
 
@@ -182,15 +187,10 @@ def sflvault_authenticate(request, username, cryptok):
     try:
         if settings['sflvault.vault.session_trust'].lower() in ['1', 'true', 't']:
             # If the session_trust parameter is true trust the session for the authentication.
-            try:
-                sess = get_session(cryptok, request)
-            except SessionNotFoundError:
-                sess = None
-                print "Session not found... "
-            except SessionExpiredError:
-                sess = None
-                print "Session expired... "
 
+            sess = None
+            if not session_errors(request, cryptok):
+                sess = get_session(cryptok)
             if sess:
                 return vaultMsg(True, 'Authentication successful (cached)', {'authtok': cryptok})
     except KeyError:
@@ -266,7 +266,7 @@ def user_add(request, authtok, username, is_admin):
         setup_timeout = request['settings']['sflvault.vault.setup_timeout']
     except KeyError, e:
         setup_timeout = 300
-    return vault.user_add(username, is_admin, setup_timeout=setup_timeout)
+    return vault.user_add(get_user(authtok), username, is_admin, setup_timeout=setup_timeout)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.user_setup')
 def user_setup(request, username, pubkey):
@@ -274,13 +274,13 @@ def user_setup(request, username, pubkey):
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.user_del')
 @authenticated_admin
-def sflvault_user_del(request, authtok, user):
-    return vault.user_del(user)
+def sflvault_user_del(request, authtok, username):
+    return vault.user_del(get_user(authtok), username)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.user_list')
 @authenticated_user
 def sflvault_user_list(request, authtok, groups):
-    return vault.user_list(groups)
+    return vault.user_list(get_user(authtok), groups)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.machine_get')
 @xmlrpc_method(endpoint='sflvault', method='sflvault.machine.get')
@@ -291,12 +291,12 @@ def sflvault_machine_get(request, authtok, machine_id):
 @xmlrpc_method(endpoint='sflvault', method='sflvault.machine_put')
 @authenticated_user
 def sflvault_machine_put(request, authtok, machine_id, data):
-    return vault.machine_put(machine_id, data)
+    return vault.machine_put(get_user(authtok), machine_id, data)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_get')
 @authenticated_user
 def sflvault_service_get(request, authtok, service_id, group_id=None):
-    return vault.service_get(service_id, group_id)
+    return vault.service_get(get_user(authtok), service_id, group_id)
 
 
 # si ça arrive via /jsonrpc .. on convertie en JSON en sortant
@@ -310,88 +310,85 @@ def sflvault_service_get(request, authtok, service_id, group_id=None):
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_get_tree')
 @authenticated_user
 def sflvault_service_get_tree(request, authtok, service_id, with_groups):
-    return vault.service_get_tree(service_id)
+    return vault.service_get_tree(get_user(authtok), service_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_put')
 @authenticated_user
 def sflvault_service_put(request, authtok, service_id, data):
-    # 'user_id' required in session.
-    # TODO: verify I had access to the service previously.
-    sess = get_session(authtok, request)
-    req = sql.join(servicegroups_table, usergroups_table,
-                    ServiceGroup.group_id == UserGroup.group_id) \
-                .join(users_table, User.id == UserGroup.user_id) \
-                .select() \
-                .where(User.id == sess['user_id']) \
-                .where(ServiceGroup.service_id == service_id)
-    res = list(meta.Session.execute(req))
-    if not res:
-        return vaultMsg(False, "You don't have access to that service.")
-    else:
-        return vault.service_put(service_id, data)
+    return vault.service_put(get_user(authtok), service_id, data)
+
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.search')
 @authenticated_user
-def sflvault_search(request, authtok, search_query, group_ids, verbose, filters):
+def sflvault_search(request,  authtok, search_query, group_ids, verbose, filters):
     if group_ids and not filters:
         filters = {'groups': group_ids}
     if group_ids and isinstance(filters, dict) and 'groups' not in filters:
         # Please don't do that, use filters instead.
         filters['groups'] = group_ids
 
-    return vault.search(search_query, filters, verbose)
+    return vault.search(get_user(authtok), search_query, filters, verbose)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_add')
 @authenticated_user
 def sflvault_service_add(
         request, authtok, machine_id, parent_service_id, url, group_ids, secret, notes, metadata):
-    return vault.service_add(machine_id, parent_service_id, url, group_ids, secret, notes, metadata)
+    return vault.service_add(
+        get_user(authtok),
+        machine_id,
+        parent_service_id,
+        url,
+        group_ids,
+        secret,
+        notes,
+        metadata
+    )
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_del')
 @authenticated_admin
 def sflvault_service_del(request, authtok, service_id):
-    return vault.service_del(service_id)
+    return vault.service_del(get_user(authtok), service_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_list')
 @authenticated_user
 def sflvault_service_list(request, authtok, machine_id=None, customer_id=None):
-    return vault.service_list(machine_id, customer_id)
+    return vault.service_list(get_user(authtok), machine_id, customer_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.machine_add')
 @authenticated_user
 def sflvault_machine_add(request, authtok, customer_id, name, fqdn, ip, location, notes):
-    return vault.machine_add(customer_id, name, fqdn, ip, location, notes)
+    return vault.machine_add(get_user(authtok), customer_id, name, fqdn, ip, location, notes)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.machine_del')
 @authenticated_admin
 def sflvault_machine_del(request, authtok, machine_id):
-    return vault.machine_del(machine_id)
+    return vault.machine_del(get_user(authtok), machine_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.machine_list')
 @authenticated_user
 def sflvault_machine_list(request, authtok, customer_id=None):
-    return vault.machine_list(customer_id)
+    return vault.machine_list(get_user(authtok), customer_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.customer_get')
 @xmlrpc_method(endpoint='sflvault', method='sflvault.customer.get')
 @authenticated_user
 def sflvault_customer_get(request, authtok, customer_id):
-    return vault.customer_get(customer_id)
+    return vault.customer_get(get_user(authtok), customer_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.customer_put')
 @authenticated_user
 def sflvault_customer_put(request, authtok, customer_id, data):
-    return vault.customer_put(customer_id, data)
+    return vault.customer_put(get_user(authtok), customer_id, data)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.customer_add')
 @authenticated_user
 def sflvault_customer_add(request, authtok, customer_name):
-    return vault.customer_add(customer_name)
+    return vault.customer_add(get_user(authtok), customer_name)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.customer_del')
 @authenticated_admin
 def sflvault_customer_del(request, authtok, customer_id):
-    return vault.customer_del(customer_id)
+    return vault.customer_del(get_user(authtok), customer_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.customer_list')
 @authenticated_user
@@ -401,28 +398,31 @@ def sflvault_customer_list(request, authtok):
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_get')
 @authenticated_user
 def sflvault_group_get(request, authtok, group_id):
-    return vault.group_get(group_id)
+    return vault.group_get(get_user(authtok), group_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_put')
 @authenticated_user
 def sflvault_group_put(request, authtok, group_id, data):
-    return vault.group_put(group_id, data)
+    return vault.group_put(get_user(authtok), group_id, data)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_add')
 @authenticated_user
 def sflvault_group_add(request, authtok, group_name):
-    return vault.group_add(group_name)
+    return vault.group_add(get_user(authtok), group_name)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_del')
 @authenticated_admin
 def sflvault_group_del(request, authtok, group_id, delete_cascade):
-    return vault.group_del(group_id,
-                           delete_cascade=delete_cascade)
+    return vault.group_del(
+        get_user(authtok),
+        group_id,
+        delete_cascade=delete_cascade
+    )
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_add_service')
 @authenticated_user
 def sflvault_group_add_service(request, authtok, group_id, service_id, symkey):
-    return vault.group_add_service(group_id, service_id, symkey)
+    return vault.group_add_service(get_user(authtok), group_id, service_id, symkey)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_del_service')
 @authenticated_user
@@ -430,31 +430,31 @@ def sflvault_group_del_service(request, authtok, group_id, service_id):
     fail = test_group_admin(request, group_id)
     if fail:
         return fail
-    return vault.group_del_service(group_id, service_id)
+    return vault.group_del_service(get_user(authtok), group_id, service_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_add_user')
 @authenticated_user
 def sflvault_group_add_user(request, authtok, group_id, user, is_admin=False, cryptgroupkey=None):
-    return vault.group_add_user(group_id, user, is_admin, cryptgroupkey)
+    return vault.group_add_user(get_user(authtok), group_id, user, is_admin, cryptgroupkey)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_del_user')
 @authenticated_user
-def sflvault_group_del_user(request, authtok, group_id, user):
+def sflvault_group_del_user(request, authtok, group_id, user_id):
     fail = test_group_admin(request, group_id)
     if fail:
         return fail
-    return vault.group_del_user(group_id, user)
+    return vault.group_del_user(get_user(authtok), group_id, user_id)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group_list')
 @xmlrpc_method(endpoint='sflvault', method='sflvault.group.list')
 @authenticated_user
 def sflvault_group_list(request, authtok, list_users=False):
-    return vault.group_list(False, list_users)
+    return vault.group_list(get_user(authtok), False, list_users)
 
 @xmlrpc_method(endpoint='sflvault', method='sflvault.service_passwd')
 @authenticated_user
 def sflvault_service_passwd(request, authtok, service_id, newsecret):
-    return vault.service_passwd(service_id, newsecret)
+    return vault.service_passwd(get_user(authtok), service_id, newsecret)
 
 #def _setup_sessions():
 #    """DRY out set_session and get_session"""
@@ -468,35 +468,47 @@ def set_session(authtok, value):
 #   _setup_sessions();
     vaultSessions[authtok] = value
 
-def get_session(authtok, request):
-    """Return the values associated with a session"""
-    #_setup_sessions();
-    
-    if authtok not in vaultSessions:
-        raise SessionNotFoundError
-        return None
 
+def session_exists(authtok):
+    """ Return True if the session exists """
+    return authtok in vaultSessions
+
+
+def session_expired(authtok):
+    """ Verify the expiration time of the session
+
+    Return True if the session is still valid
+    """
     # XXX: where does the SESSION_TIMEOUT come from?
     if 'timeout' not in vaultSessions[authtok]:
         vaultSessions[authtok]['timeout'] = datetime.now() + timedelta(0, SESSION_TIMEOUT)
 
     if vaultSessions[authtok]['timeout'] < datetime.now():
         del(vaultSessions[authtok])
-        raise SessionExpiredError
-        return None
+        return True
+    return False
 
+
+def session_has_same_address(authtok, request):
+    """ Verify the remote address of the user
+
+    Return True if the address of the request is the same
+    than the one this session was created for """
     if vaultSessions[authtok]['remote_addr'] != request.get('REMOTE_ADDR', 'gibberish'):
-        del(vaultSessions[authtok])
-        SessionSourceAddressMismatchError
+        return False
+    return True
+
+
+def get_user(authtok):
+    """ Return the user associated with an authtok """
+    session = get_session(authtok)
+    if not session:
         return None
+    return query(User).get(session['user_id'])
 
-    return vaultSessions[authtok]
+def get_session(authtok):
+    """Return the values associated with a session"""
 
-class SessionNotFoundError(Exception):
-    pass
-
-class SessionExpiredError(Exception):
-    pass
-
-class SessionSourceAddressMismatchError(Exception):
-    pass
+    if session_exists(authtok):
+        return vaultSessions[authtok]
+    return None

@@ -68,28 +68,7 @@ class SFLvaultAccess(object):
         if method:
             return method(*params)
 
-    def __init__(self):
-        """Init obj."""
-
-        # This gives this object the knowledge of which user_id is currently
-        # using the Vault
-        self.myself_id = None
-        # This gives this object the knowledge of which username is currently
-        # using the Vault
-        self.myself_username = None
-
-    def _log_any(self, log_func, msg, data):
-        # Need to do that for user-setup
-        if self.myself_username is None and self.myself_id is None:
-            head = "NO USER - "
-        else:
-            head = "User: u#d%d - %s - " % (self.myself_id, self.myself_username)
-        log_func(head + msg % data)
-
-    def log_e(self, msg, data=None):
-        self._log_any(log.error, msg, data)
-
-    def log_command(self, command, success=True, **kwargs):
+    def log_command(self, user, command, success=True, **kwargs):
         """ Log a command as JSON
 
         Only the command name is mandatory, but log_command can take
@@ -115,42 +94,55 @@ class SFLvaultAccess(object):
             log_command = log.info
 
         command = {
-            'user_id': self.myself_id,
-            'username': self.myself_username,
             'command': command,
             'success': success,
             'arguments': kwargs
         }
 
+        if user:
+            command.update({
+                'user_id': user.id,
+                'username': user.username,
+            })
+
         log_command(json.dumps(command))
-
-    def log_i(self, msg, data=None):
-        self._log_any(log.info, msg, data)
-
-    def log_w(self, msg, data=None):
-        self._log_any(log.warning, msg, data)
-
 
     def user_setup(self, username, pubkey):
         """Setup the user's account"""
-
         u = query(User).filter_by(username=username).first()
 
         if u is None:
-            self.log_i('No such temporary user %(username)s, add it first',
-                       {"username": username})
+            self.log_command(
+                None,
+                "user_setup",
+                success=False,
+                username=username,
+                message="No such temporary user, add it first."
+            )
+
             return vaultMsg(False, 'No such temporary user %s, add it first' % username)
 
         if u.setup_expired():
-            self.log_i('Setup expired for user %(username)s',
-                       {"username": username})
+            self.log_command(
+                None,
+                "user_setup",
+                success=False,
+                username=username,
+                message="Setup expired"
+            )
+
             return vaultMsg(False, 'Setup expired for user %s' % username)
 
         if u.pubkey:
-            self.log_i('User %(username)s already has a publics',
-                       {"username": username})
-            return vaultMsg(False, 'User %s already has a public ' \
-                                'key stored' % username)
+            self.log_command(
+                None,
+                "user_setup",
+                success=False,
+                username=username,
+                message="User already has a public key stored"
+            )
+
+            return vaultMsg(False, 'User already has a public key stored')
 
         # Ok, let's save the things and reset waiting_setup.
         u.waiting_setup = None
@@ -161,13 +153,12 @@ class SFLvaultAccess(object):
         transaction.commit()
 
         self.log_command(
-            "user_setup", username=username
+            None, "user_setup", username=username
         )
 
         return vaultMsg(True, 'User setup complete for %s' % username)
 
-
-    def user_add(self, username, is_admin, setup_timeout=300):
+    def user_add(self, user, username, is_admin, setup_timeout=300):
         usr = query(User).filter_by(username=username).first()
 
         msg = ''
@@ -183,7 +174,6 @@ class SFLvaultAccess(object):
             meta.Session.add(usr)
             meta.Session.flush()
 
-            self.log_i('User %(username)s added.', {"username": username})
             msg = 'added'
         elif usr.waiting_setup:
             if usr.waiting_setup < datetime.now():
@@ -191,31 +181,46 @@ class SFLvaultAccess(object):
                 usr.waiting_setup = datetime.now() + \
                                     timedelta(0, int(setup_timeout))
 
-                self.log_i('updated (had setup timeout expired).', {})
                 msg = 'updated (had setup timeout expired)'
             else:
-                self.log_i('User %(username)s is waiting for setup.', {"username": username})
-                return vaultMsg(False, "User %s is waiting for setup" % \
-                                username)
+                self.log_command(
+                    user,
+                    "user_add",
+                    username=username,
+                    success=False,
+                    message="User is waiting for setup"
+                )
+
+                return vaultMsg(False, "User %s is waiting for setup" % username)
         else:
-            self.log_i('User %(username)s already exists.',
-                       {"username": username})
+            self.log_command(
+                user,
+                "user_add",
+                username=username,
+                success=False,
+                message="User already exists"
+            )
+
             return vaultMsg(False, 'User %s already exists.' % username)
         uid = usr.id
         transaction.commit()
 
-        self.log_command(
-            "user_add", new_user_id=uid, username=username, is_admin=is_admin
+        message = '%s %s. User has a delay of %d seconds to invoke a "user-setup" command'
+
+        message = message % (
+            'Admin user' if is_admin else 'User',
+            msg,
+            int(setup_timeout)
         )
 
+        self.log_command(
+            user,
+            "user_add", message=message, new_user_id=uid, username=username, is_admin=is_admin
+        )
 
-        return vaultMsg(True, '%s %s. User has a delay of %d seconds '
-                              'to invoke a "user-setup" command' % \
-                            ('Admin user' if is_admin else 'User',
-                             msg, int(setup_timeout)), {'user_id': uid})
+        return vaultMsg(True, message, {'user_id': uid})
 
-
-    def user_del(self, user):
+    def user_del(self, user, username):
         transaction.begin()
         """Delete a user from database.
 
@@ -225,10 +230,15 @@ class SFLvaultAccess(object):
 
         """
         try:
-            usr = model.get_user(user)
+            usr = model.get_user(username)
         except LookupError, e:
-            self.log_w('User UNsuccessfully deleted: %(error)s',
-                        {'error': str(e)})
+            self.log_command(
+                user,
+                "user_del",
+                success=False,
+                error=str(e)
+            )
+
             return vaultMsg(False, str(e))
 
         # TODO: prevent removing a user if it is the last link
@@ -241,6 +251,7 @@ class SFLvaultAccess(object):
         transaction.commit()
 
         self.log_command(
+            user,
             "user_del", username=username
         )
 
@@ -248,7 +259,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "User %s successfully deleted" % username)
 
 
-    def user_list(self, groups=False):
+    def user_list(self, user, groups=False):
         """Return a simple list of the users
 
         groups - return the list of groups for each user, or not
@@ -288,25 +299,39 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Here is the user list", {'list': out})
 
 
-    def service_get(self, service_id, group_id=None):
+    def service_get(self, user, service_id, group_id=None):
         """Get a single service's data.
 
         group_id - return this group's key, otherwise, use first available
         """
         try:
-            out = self._service_get_data(service_id, group_id)
+            out = self._service_get_data(user, service_id, group_id)
         except VaultError, e:
             return vaultMsg(False, str(e))
 
         return vaultMsg(True, "Here is the service", {'service': out})
 
 
-    def service_put(self, service_id, data):
+    def service_put(self, user, service_id, data):
         """Put a single service's data back to the vault's database"""
+
+        if not model.has_access(user.id, service_id):
+            return vaultMsg(
+                False,
+                "You do not have access to this service",
+            )
+
         try:
             s = query(Service).filter_by(id=service_id).one()
         except InvalidReq, e:
-            self.log_i('Service not found: %(error)s', {"error": str(e)})
+
+            self.log_command(
+                user,
+                "service_put",
+                success=False,
+                error=str(e)
+            )
+
             return vaultMsg(False, "Service not found: %s" % str(e))
 
         #Save:
@@ -332,18 +357,17 @@ class SFLvaultAccess(object):
         transaction.commit()
 
         self.log_command(
+            user,
             "service_put", service_id=service_id, data=data
         )
 
         return vaultMsg(True, "Service s#%s saved successfully" % service_id)
 
-    def _service_get_data(self, service_id, group_id=None):
+    def _service_get_data(self, user, service_id, group_id=None):
         """Retrieve the information for a given service."""
         try:
             s = query(Service).filter_by(id=service_id).one()
         except InvalidReq, e:
-            self.log_w('Service not found: %(service_id)s (%(error)s)',
-                       {"service_id": service_id, "error": str(e)})
             raise VaultError("Service not found: %s (%s)" % (service_id,
                                                              str(e)))
         # unused
@@ -355,7 +379,7 @@ class SFLvaultAccess(object):
                        ServiceGroup.group_id == UserGroup.group_id) \
                  .join(users_table, User.id == UserGroup.user_id) \
                  .select(use_labels=True) \
-                 .where(User.id == self.myself_id) \
+                 .where(User.id == user.id) \
                  .where(ServiceGroup.service_id == s.id) \
                  .order_by(ServiceGroup.group_id)
 
@@ -404,23 +428,29 @@ class SFLvaultAccess(object):
 
         return out
 
-    def service_get_tree(self, service_id):
+    def service_get_tree(self, user, service_id):
         """Get a service tree, starting with service_id"""
 
         accessible_service_ids = []
 
         my_groups = set(
             g.id for g in query(UserGroup).filter_by(
-                user_id=self.myself_id
+                user_id=user.id
             ).all()
         )
 
         out = []
         while True:
             try:
-                data = self._service_get_data(service_id)
+                data = self._service_get_data(user, service_id)
             except VaultError, e:
-                self.log_e('Show service: %(error)s', {"error": str(e)})
+                self.log_command(
+                    user,
+                    'show',
+                    success=False,
+                    error=str(e)
+                )
+
                 return vaultMsg(False, str(e))
 
             service_groups = set(
@@ -439,41 +469,47 @@ class SFLvaultAccess(object):
 
             # check if we're not in an infinite loop!
             if service_id in [x['id'] for x in out]:
-                self.log_e('Circular references of parent services, aborting.', {})
-                return vaultMsg(False, "Circular references of parent services, aborting.")
+                message = "Circular references of parent services, aborting."
+
+                self.log_command(
+                    user,
+                    "show",
+                    success=False,
+                    message=message,
+                )
+
+                return vaultMsg(False, message)
 
         out.reverse()
 
         self.log_command(
-            "show", all_service_ids=[service['id'] for service in out],
+            user, "show",
+            all_service_ids=[service['id'] for service in out],
             accessible_service_ids=accessible_service_ids
         )
 
         return vaultMsg(True, "Here are the services", {'services': out})
 
-    def show(self, service_id):
+    def show(self, user, service_id):
         """Get the specified service ID and return the hierarchy to connect
         to it or to show it.
 
-        We need self.myself_id to be set for this function.
-
         """
-        return self.service_get_tree(service_id)
+        return self.service_get_tree(user, service_id)
 
-
-    def search(self, search_query, filters=None, verbose=False):
+    def search(self, user, search_query, filters=None, verbose=False):
         """Do the search, and return the result tree.
 
         filters - must be a dictionary with options on which to constraint
                   results.
 
         """
+
         filter_types = ['groups', 'machines', 'customers']
         # Load objects on which to restrict the query:
         newfilters = {}
         if filters:
             if not isinstance(filters, dict):
-                self.log_e('Search: filters must be a dictionary')
                 return vaultMsg(False, "filters must be a dictionary")
             for flt in filter_types:
                 # Skip filters that aren't specified
@@ -487,7 +523,6 @@ class SFLvaultAccess(object):
                 try:
                     newfilters[flt] = model.get_objects_ids(filters[flt], flt)
                 except ValueError, e:
-                    self.log_e('Search error: %(error)s', {"error": str(e)})
                     return vaultMsg(False, str(e))
 
         search = model.search_query(search_query, newfilters, verbose)
@@ -532,18 +567,21 @@ class SFLvaultAccess(object):
             set_service(out[str(x.customers_id)]['machines'][str(x.machines_id)]['services'], x)
 
         # Return 'out', in a nicely structured hierarchical form.
-        #self.log_i('Search successfull for: %(search)s',
-        #            {'search': search_query})
 
         return vaultMsg(True, "Here are the search results", {'results': out})
 
 
-    def customer_get(self, customer_id):
+    def customer_get(self, user, customer_id):
         """Get a single customer's data"""
         try:
             cust = query(Customer).filter_by(id=customer_id).one()
         except InvalidReq, e:
-            self.log_i('Customer not found: %(error)s', {"error": str(e)})
+            self.log_command(
+                user,
+                "customer_get",
+                success=False,
+                error=str(e)
+            )
             return vaultMsg(False, "Customer not found: %s" % str(e))
 
         out = {'id': cust.id,
@@ -551,13 +589,20 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, "Here is the customer", {'customer': out})
 
-    def customer_put(self, customer_id, data):
+    def customer_put(self, user, customer_id, data):
         """Put a single customer's data back to the Vault"""
         try:
             cust = query(Customer).filter_by(id=customer_id).one()
         except InvalidReq, e:
-            self.log_w('Customer not found: %(customer_id)s',
-                       {"customer_id": customer_id})
+
+            self.log_command(
+                user,
+                'customer_put',
+                success=False,
+                customer_id=customer_id,
+                error=str(e)
+            )
+
             return vaultMsg(False, "Customer not found: %s" % str(e))
 
         if 'name' in data:
@@ -566,22 +611,19 @@ class SFLvaultAccess(object):
         transaction.commit()
 
         self.log_command(
+            user,
             'customer_put', customer_id=customer_id, data=data
         )
 
         return vaultMsg(True, "Customer c#%s saved successfully" % customer_id)
 
 
-    def customer_add(self, customer_name):
+    def customer_add(self, user, customer_name):
         """Add a new customer to the database"""
         nc = Customer()
         nc.name = customer_name
         nc.created_time = datetime.now()
-        nc.created_user = self.myself_username
-        if not self.myself_username:
-            log.warning("You should *always* set myself_username on the " + \
-                        self.__class__.__name__ + " object when calling "\
-                        "add_customer() to log creation time and user infos.")
+        nc.created_user = user.username
 
         meta.Session.add(nc)
         meta.Session.flush()
@@ -589,22 +631,26 @@ class SFLvaultAccess(object):
         transaction.commit()
 
         self.log_command(
+            user,
             'customer_add', customer_name=customer_name, customer_id=cid
         )
 
         return vaultMsg(True, 'Customer added', {'customer_id': cid})
 
-
-    def machine_put(self, machine_id, data):
+    def machine_put(self, user, machine_id, data):
         transaction.begin()
         """Put a single machine's data back to the vault"""
         try:
             m = query(Machine).filter_by(id=machine_id).one()
         except InvalidReq, e:
-            self.log_w(
-                'Machine m#%(machine_id)s saved successfully',
-                {"machine_id": machine_id}
+            self.log_command(
+                user,
+                'machine_put',
+                success=False,
+                machine_id=machine_id,
+                message="machine not found"
             )
+
             return vaultMsg(False, "Machine not found: %s" % str(e))
 
         if 'customer_id' in data:
@@ -616,6 +662,7 @@ class SFLvaultAccess(object):
         transaction.commit()
 
         self.log_command(
+            user,
             "machine_put", machine_id=machine_id, data=data
         )
         return vaultMsg(True, "Machine m#%s saved successfully" % machine_id)
@@ -639,7 +686,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Here is the machine", {'machine': out})
 
 
-    def machine_add(self, customer_id, name, fqdn, ip, location, notes):
+    def machine_add(self, user, customer_id, name, fqdn, ip, location, notes):
         """Add a new machine to the database"""
 
         nm = Machine()
@@ -659,11 +706,11 @@ class SFLvaultAccess(object):
 
 
         transaction.commit()
-        self.log_command("machine_add", machine_id=nmid)
+        self.log_command(user, "machine_add", machine_id=nmid)
         return vaultMsg(True, "Machine added.", {'machine_id': nmid})
 
 
-    def service_add(self, machine_id, parent_service_id, url,
+    def service_add(self, user, machine_id, parent_service_id, url,
                     group_ids, secret, notes, metadata):
         # Get groups
         try:
@@ -714,21 +761,19 @@ class SFLvaultAccess(object):
         nsid = ns.id
         transaction.commit()
 
-        self.log_command(
-            "service_add", service_id=nsid
-        )
+        self.log_command(user, "service_add", service_id=nsid)
 
         return vaultMsg(True, "Service added.", {'service_id': nsid,
                                                  'encrypted_for': grouplist})
 
-    def group_get(self, group_id):
+    def group_get(self, user, group_id):
         """Get a single group's data"""
         try:
             grp = query(Group).filter_by(id=group_id).one()
         except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % str(e))
 
-        ug = query(UserGroup).filter_by(user_id=self.myself_id,
+        ug = query(UserGroup).filter_by(user_id=user.id,
                                         group_id=group_id).first()
 
         # TODO: don't allow if grp.hidden == True and user isn't part of the
@@ -747,7 +792,7 @@ class SFLvaultAccess(object):
         return vaultMsg(True, "Here is the group", {'group': out})
 
 
-    def group_put(self, group_id, data):
+    def group_put(self, user, group_id, data):
         """Put a single group's data back to the Vault"""
         transaction.begin()
         try:
@@ -755,7 +800,7 @@ class SFLvaultAccess(object):
         except InvalidReq, e:
             return vaultMsg(False, "Group not found: %s" % str(e))
 
-        ug = query(UserGroup).filter_by(user_id=self.myself_id,
+        ug = query(UserGroup).filter_by(user_id=user.id,
                                         group_id=group_id).first()
         if not ug:
             return vaultMsg(False, "Cannot write to group: not member of group")
@@ -772,17 +817,16 @@ class SFLvaultAccess(object):
             grp.hidden = newhidden
 
         transaction.commit()
-        self.log_command('group_put', group_id=group_id, data=data)
+        self.log_command(user, 'group_put', group_id=group_id, data=data)
         return vaultMsg(True, "Group g#%s saved successfully" % group_id)
 
 
-    def group_add(self, group_name, hidden=False):
+    def group_add(self, user, group_name, hidden=False):
         """Add a new group the database. Nothing will be added to it
         by default"""
 
         # Get my User, to get my pubkey.
-        me = query(User).get(self.myself_id)
-        myeg = me.elgamal()
+        myeg = user.elgamal()
 
         # Generate keypair
         newkeys = generate_elgamal_keypair()
@@ -796,12 +840,12 @@ class SFLvaultAccess(object):
 
         # Add myself to the group and all other global admins.
         admins = set(query(User).filter_by(is_admin=True).all())
-        admins.add(me)
+        admins.add(user)
 
         for usr in list(admins):
             nug = UserGroup()
             # Make sure I'm admin of my newly created group
-            if usr == me:
+            if usr == user:
                 nug.is_admin = True
             nug.user_id = usr.id
             nug.cryptgroupkey = encrypt_longmsg(usr.elgamal(),
@@ -813,15 +857,13 @@ class SFLvaultAccess(object):
         key = nug.cryptgroupkey
         transaction.commit()
 
-        self.log_command(
-            'group_add', group_id=gid, group_name=group_name
-        )
+        self.log_command(user, 'group_add', group_id=gid, group_name=group_name)
 
         return vaultMsg(True, "Added group '%s'" % name,
                         {'name': name, 'group_id': int(gid),
                          'cryptgroupkey': key})
 
-    def group_del(self, group_id, delete_cascade=True):
+    def group_del(self, user, group_id, delete_cascade=True):
         """Remove a group from the vault. Only if no services are associated
         with it anymore.
 
@@ -839,7 +881,7 @@ class SFLvaultAccess(object):
                 return vaultMsg(False, "Group not empty, cannot delete")
             else:
                 for service in grp.services_assoc:
-                    self.service_del(service.id)
+                    self.service_del(user, service.id)
                     
 
         # Delete UserGroup elements...
@@ -851,22 +893,20 @@ class SFLvaultAccess(object):
         meta.Session.delete(grp)
         transaction.commit()
 
-        self.log_command(
-            'group_del', group_id=group_id
-        )
+        self.log_command(user, 'group_del', group_id=group_id)
 
         retval = {'name': name,
                   'group_id': group_id}
         return vaultMsg(True, 'Removed group "%s" successfully' % name, retval)
 
 
-    def group_list(self, show_hidden=False, list_users=False):
+    def group_list(self, user, show_hidden=False, list_users=False):
         """Return a simple list of the available groups"""
         # FIXME: list_users is not used
         # FIXME: show_hidden is not used
 
         groups = query(Group).options(eagerload_all('users_assoc.user')).all()
-        me = query(User).get(self.myself_id)
+        me = user
 
         out = []
         for grp in groups:
@@ -874,14 +914,14 @@ class SFLvaultAccess(object):
 
             res = {'id': grp.id,
                    'name': grp.name,
-                   'member': me in grp.users,
+                   'member': user in grp.users,
                    'hidden': False,
                    'admin': False}
 
             if grp.hidden:
                 # Only for global-admin or members, if we're asked to hide
                 # hidden groups
-                if not show_hidden and not me.is_admin and not myug:
+                if not show_hidden and not user.is_admin and not myug:
                     continue
                 res['hidden'] = True
 
@@ -897,8 +937,7 @@ class SFLvaultAccess(object):
 
         return vaultMsg(True, 'Here is the list of groups', {'list': out})
 
-
-    def group_add_service(self, group_id, service_id, symkey):
+    def group_add_service(self, user, group_id, service_id, symkey):
         """Add a service to a group.
 
         Call servie_get() first to get the information and decrypt the symkey
@@ -928,14 +967,12 @@ class SFLvaultAccess(object):
         meta.Session.add(nsg)
         transaction.commit()
 
-        self.log_command(
-            'group_add_service', service_id=service_id, group_id=group_id
-        )
+        self.log_command(user, 'group_add_service', service_id=service_id, group_id=group_id)
 
         return vaultMsg(True, "Added service to group successfully", {})
 
 
-    def group_del_service(self, group_id, service_id):
+    def group_del_service(self, user, group_id, service_id):
         """Remove the association between a group and a service, simply."""
         transaction.begin()
         grp = query(Group).filter_by(id=group_id).first()
@@ -962,11 +999,11 @@ class SFLvaultAccess(object):
         meta.Session.delete(sg)
         transaction.commit()
 
-        self.log_command('group_del_service', group_id=group_id, service_id=service_id)
+        self.log_command(user, 'group_del_service', group_id=group_id, service_id=service_id)
         return vaultMsg(True, "Removed service from group successfully")
 
 
-    def group_add_user(self, group_id, user, is_admin=False,
+    def group_add_user(self, user, group_id, user_id,  is_admin=False,
                        cryptgroupkey=None):
         """Add a user to a group. Call once to retrieve information,
         and a second time with cryptgroupkey to save cipher information.
@@ -984,8 +1021,9 @@ class SFLvaultAccess(object):
             return vaultMsg(False, "Group not found: %s" % str(e))
 
         # Verify if I'm admin on that group
+        # XXX: it doesn't verify that
         ug = query(UserGroup).filter_by(group_id=group_id,
-                                        user_id=self.myself_id).first()
+                                        user_id=user.id).first()
 
         # Make sure I'm in that group (to be able to decrypt the groupkey)
         if not ug:
@@ -996,9 +1034,9 @@ class SFLvaultAccess(object):
 
         # Find added user
         try:
-            usr = get_user(user)
+            usr = get_user(user_id)
         except LookupError, e:
-            return vaultMsg(False, "User %s not found: %s" % (user, str(e)))
+            return vaultMsg(False, "User %s not found: %s" % (usr, str(e)))
 
 
         # Make sure we don't double the group access.
@@ -1027,11 +1065,10 @@ class SFLvaultAccess(object):
         meta.Session.add(nug)
         transaction.commit()
 
-        self.log_command('group_add_user', group_id=group_id, user_id=usr.id)
+        self.log_command(user, 'group_add_user', group_id=group_id, user_id=usr.id)
         return vaultMsg(True, "Added user to group successfully")
 
-
-    def group_del_user(self, group_id, user):
+    def group_del_user(self, user, group_id, user_id):
         """Remove the association between a group and a user.
 
         Make sure there are still 'is_admin' users associated with the group
@@ -1054,20 +1091,20 @@ class SFLvaultAccess(object):
         # Verify if I'm admin on that group
         ugs = query(UserGroup).filter_by(group_id=group_id).all()
 
-        myug = [ug for ug in ugs if ug.user_id == self.myself_id]
+        myug = [ug for ug in ugs if ug.user_id == user.id]
         if not myug:
             return vaultMsg(False, "You are not part of that group")
 
         ug = myug[0] # This is my UserGroup row.
 
-        me = query(User).get(self.myself_id)
+        me = user
 
         if not ug.is_admin and not me.is_admin:
             return vaultMsg(False, "You are not admin on that group (nor global admin)")
 
         # Find added user
         try:
-            usr = get_user(user)
+            usr = get_user(user_id)
         except LookupError, e:
             return vaultMsg(False, "User %s not found: %s" % (user, str(e)))
 
@@ -1077,7 +1114,7 @@ class SFLvaultAccess(object):
             return vaultMsg(False, "User isn't part of the group")
 
         # Check I'm not removing myself
-        if self.myself_id == usr.id:
+        if user.id == usr.id:
             return vaultMsg(False, "Cannot remove yourself from a group")
 
         # This also prevents from removing myself from the group.
@@ -1098,11 +1135,11 @@ class SFLvaultAccess(object):
         meta.Session.delete(hisug[0])
         transaction.commit()
 
-        self.log_command('group_del_user', group_id=group_id, user_id=usr.id)
+        self.log_command(user, 'group_del_user', group_id=group_id, user_id=usr.id)
         return vaultMsg(True, "Removed user from group successfully" + ohoh, {})
 
 
-    def customer_del(self, customer_id):
+    def customer_del(self, user, customer_id):
         """Delete a customer from database, bringing along all it's machines
         and services
         """
@@ -1168,12 +1205,12 @@ class SFLvaultAccess(object):
 
         transaction.commit()
 
-        self.log_command('customer_del', customer_id=customer_id)
+        self.log_command(user, 'customer_del', customer_id=customer_id)
         return vaultMsg(True,
                         'Deleted customer c#%s successfully' % customer_id)
 
 
-    def machine_del(self, machine_id):
+    def machine_del(self, user, machine_id):
         """Delete a machine from database, bringing on all child services."""
         transaction.begin()
         # Get machine
@@ -1232,11 +1269,11 @@ class SFLvaultAccess(object):
 
         transaction.commit()
 
-        self.log_command("machine_del", machine_id=machine_id)
+        self.log_command(user, "machine_del", machine_id=machine_id)
         return vaultMsg(True, 'Deleted machine m#%s successfully' % machine_id)
 
 
-    def service_del(self, service_id):
+    def service_del(self, user, service_id):
         """Delete a service, making sure no other child remains attached."""
         # Integerize
         service_id = int(service_id)
@@ -1267,7 +1304,7 @@ class SFLvaultAccess(object):
         query(Service).filter(model.Service.id == service_id).delete(synchronize_session=False)
         transaction.commit()
 
-        self.log_command("service_del", service_id=service_id)
+        self.log_command(user, "service_del", service_id=service_id)
         return vaultMsg(True, 'Deleted service s#%s successfully' % service_id)
 
 
@@ -1284,7 +1321,7 @@ class SFLvaultAccess(object):
 
 
 
-    def machine_list(self, customer_id=None):
+    def machine_list(self, user, customer_id=None):
         """Return a simple list of the machines"""
         sel = sql.join(customers_table, machines_table) \
                  .select(use_labels=True) \
@@ -1333,10 +1370,10 @@ class SFLvaultAccess(object):
 
     #    return vaultMsg(True, "Here is the machines list", {'list': out})
 
-    def service_passwd(self, service_id, newsecret):
+    def service_passwd(self, user, service_id, newsecret):
         """Change the passwd for a given service"""
 
-        if not model.has_access(self.myself_id, service_id):
+        if not model.has_access(user.id, service_id):
             return vaultMsg(
                 False,
                 "You do not have access to this service",
@@ -1360,7 +1397,7 @@ class SFLvaultAccess(object):
         grouplist = [g.name for g in groups]
         transaction.commit()
 
-        self.log_command('service_passwd', service_id=service_id)
+        self.log_command(user, 'service_passwd', service_id=service_id)
 
         return vaultMsg(
             True,
