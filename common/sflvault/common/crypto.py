@@ -119,7 +119,7 @@ def elgamal_bothkeys(eg):
 def serial_elgamal_msg(cryptsymkey):
     """Get a 2-elements tuple of str(), return a string."""
     try:
-        ns = b64encode(cryptsymkey[0]) + b':' + \
+        ns = b64encode(cryptsymkey[0]) + ':' + \
              b64encode(cryptsymkey[1])
     except IndexError as e:
         raise DecryptError("Error decrypting: inconsistent message")
@@ -128,7 +128,7 @@ def serial_elgamal_msg(cryptsymkey):
 
 def unserial_elgamal_msg(cryptsymkey):
     """Get a string, return a 2-elements tuple of str()"""
-    x = cryptsymkey.split(b':')
+    x = cryptsymkey.split(':')
     try:
         return (b64decode(x[0]),
                 b64decode(x[1]))
@@ -139,14 +139,14 @@ def unserial_elgamal_msg(cryptsymkey):
 # (El Gamal pub key, packed together)
 def serial_elgamal_pubkey(pubkey):
     """Get a 3-elements tuple of long(), return a string."""
-    ns = b64encode(long_to_bytes(pubkey[0])) + b':' + \
-         b64encode(long_to_bytes(pubkey[1])) + b':' + \
+    ns = b64encode(long_to_bytes(pubkey[0])) + ':' + \
+         b64encode(long_to_bytes(pubkey[1])) + ':' + \
          b64encode(long_to_bytes(pubkey[2]))         
     return ns
 
 def unserial_elgamal_pubkey(pubkey):
     """Get a string, return a 3-elements tuple of long()"""
-    x = pubkey.split(b':')
+    x = pubkey.split(':')
     return (bytes_to_long(b64decode(x[0])),
             bytes_to_long(b64decode(x[1])),
             bytes_to_long(b64decode(x[2])))
@@ -159,9 +159,9 @@ def serial_elgamal_privkey(privkey):
     """Get a 4-elements tuple of long(), return a string.
 
     This contains the private (two first elements) *and* the public key."""
-    ns = b64encode(long_to_bytes(privkey[0])) + b':' + \
-         b64encode(long_to_bytes(privkey[1])) + b':' + \
-         b64encode(long_to_bytes(privkey[2])) + b':' + \
+    ns = b64encode(long_to_bytes(privkey[0])) + ':' + \
+         b64encode(long_to_bytes(privkey[1])) + ':' + \
+         b64encode(long_to_bytes(privkey[2])) + ':' + \
          b64encode(long_to_bytes(privkey[3]))
     return ns
 
@@ -169,7 +169,7 @@ def unserial_elgamal_privkey(privkey):
     """Get a byte string, return a 4-elements tuple of long()
 
     This contains the private (two first elements) and the public key."""
-    x = privkey.split(b':')
+    x = privkey.split(':'.encode('utf-8'))
     return (bytes_to_long(b64decode(x[0])),
             bytes_to_long(b64decode(x[1])),
             bytes_to_long(b64decode(x[2])),
