@@ -35,7 +35,7 @@ setup(
     url='https://www.sflvault.org',
     license='GPLv3',
     setup_requires=['wheel'],
-    install_requires=['pycrypto'],
+    install_requires=['pycryptodome'],
     packages=find_packages(),
     namespace_packages=['sflvault'],
     test_suite='nose.collector',

@@ -25,7 +25,7 @@ from sflvault.client.fallback import SFLvaultFallback
 import struct, fcntl, termios, signal # for term size signaling..
 import optparse
 import random
-import pipes
+import shlex
 import time
 import sys
 import os
@@ -309,7 +309,7 @@ class ssh(ShellService):
         class expect_shell(ExpectShell):
 
             def terminal_type(self):
-                "Terminal type\?.*$"
+                r"Terminal type\?.*$"
                 sys.stdout.write(" [sending: xterm] ")
                 self.cnx.sendline("xterm")
                 sys.stdout.flush()
@@ -329,7 +329,7 @@ class ssh(ShellService):
                 raise ServiceExpectError("Failed to authenticate")
 
             def are_you_sure(self):
-                "(?i)are you sure you want to continue connecting.*\? "
+                r"(?i)are you sure you want to continue connecting.*\? "
                 ans = input()
                 self.cnx.sendline(ans)
                 expect_shell(self.service)
@@ -355,7 +355,7 @@ class ssh(ShellService):
                 print(" [We're in! (using shared-key?)] ", end=' ')
 
             def are_you_sure(self):
-                "(?i)are you sure you want to continue connecting.*\? "
+                r"(?i)are you sure you want to continue connecting.*\? "
                 # TODO: are you always sure ??
                 ans = input()
                 self.cnx.sendline(ans)
@@ -412,7 +412,7 @@ class ssh(ShellService):
         if self.ssh_pki_auth:
             # Write the private-key to a temp file.
             randfifo = '/tmp/sshpki%d' % random.randint(100000,999999)
-            secret = pipes.quote(self.data['plaintext'])
+            secret = shlex.quote(self.data['plaintext'])
             pki_cmd = "rm -f %s ; touch %s ; chmod 0600 %s ; " \
                       "((echo %s > %s; sleep 4; rm %s) &);" % (randfifo,
                                                                randfifo,
@@ -666,7 +666,7 @@ class mysql(ShellService):
                 pass # We're in :)
 
             def error(self):
-                'ERROR \d*'
+                r'ERROR \d*'
                 raise ServiceExpectError('Failed to authenticate with mysql')
 
         class expect_mysql(ExpectClass):
@@ -678,7 +678,7 @@ class mysql(ShellService):
                 expect_mysql_shell(self.service)
 
             def error(self):
-                'ERROR \d*'
+                r'ERROR \d*'
                 raise ServiceExpectError("Failed authentication for mysql "\
                                          "at program launch")
             
@@ -737,23 +737,23 @@ class postgres(ShellService):
 
         class expect_postgres_shell(ExpectClass):
             def shell(self):
-                '\w*=#'
+                r'\w*=#'
                 pass # We're in :)
 
             def error(self):
-                'postgres: FATAL:  password authentication failed \w* "\w*"'
+                r'postgres: FATAL:  password authentication failed \w* "\w*"'
                 raise ServiceExpectError('Failed to authenticate with postgres')
 
         class expect_postgres(ExpectClass):
             def login(self):
-                'assword for user \w*:'
+                r'assword for user \w*:'
                 sys.stdout.write(" [sending password...] ")
                 self.cnx.sendline(self.service.data['plaintext'])
 
                 expect_postgres_shell(self.service)
 
             def error(self):
-                'postgres: FATAL:  password authentication failed \w* "\w*"'
+                r'postgres: FATAL:  password authentication failed \w* "\w*"'
                 raise ServiceExpectError("Failed authentication for postgres "\
                                          "at program launch")
             

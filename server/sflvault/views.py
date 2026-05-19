@@ -28,7 +28,7 @@ from sflvault.model import *
 import datetime
 from decorator import decorator
 from datetime import datetime, timedelta
-from distutils.version import LooseVersion
+from packaging.version import Version as LooseVersion
 import venusian
 
 import sys
@@ -61,11 +61,27 @@ def test_group_admin(request, group_id):
 class XMLRPCDispatcher(object):
 
     def _dispatch(self, request, method, params):
-
+        import traceback as _tb
+        import xmlrpc.client as _xmlrpc
         params = (request, ) + params
 
+        # Unwrap xmlrpc.client.Binary objects to plain bytes in all params
+        def _unwrap(v):
+            if isinstance(v, _xmlrpc.Binary):
+                return v.data
+            if isinstance(v, (list, tuple)):
+                return type(v)(_unwrap(i) for i in v)
+            if isinstance(v, dict):
+                return {k: _unwrap(val) for k, val in v.items()}
+            return v
+        params = tuple(_unwrap(p) for p in params)
+
         if method in self.registry:
-            return self.registry[method](*params)
+            try:
+                return self.registry[method](*params)
+            except Exception as e:
+                log.error("Exception in %s:\n%s", method, _tb.format_exc())
+                return {'error': True, 'message': "%s: %s" % (type(e), str(e))}
 
     def __init__(self):
         self.registry = {}
@@ -189,10 +205,10 @@ def sflvault_authenticate(request, username, cryptok):
                 sess = get_session(cryptok, request)
             except SessionNotFoundError:
                 sess = None
-                print "Session not found... "
+                print("Session not found... ")
             except SessionExpiredError:
                 sess = None
-                print "Session expired... "
+                print("Session expired... ")
 
             if sess:
                 return vaultMsg(True, 'Authentication successful (cached)', {'authtok': cryptok})
@@ -209,13 +225,13 @@ def sflvault_authenticate(request, username, cryptok):
     if u.logging_timeout < datetime.now():
         return vaultMsg(False, 'Login token expired. Now: %s Timeout: %s' % (datetime.now(), u.logging_timeout))
 
-    # str() necessary, to convert buffer to string.
-    if cryptok != str(u.logging_token):
+    stored_token = u.logging_token
+    if cryptok != stored_token:
         #TODO: Ask about this line.
         #raise Exception
         return vaultMsg(False, 'Authentication failed')
     else:
-        newtok = b64encode(randfunc(32))
+        newtok = b64encode(randfunc(32)).decode('ascii')
         set_session(newtok, {'username': username,
                                 'timeout': datetime.now() + timedelta(0, int(settings['sflvault.vault.session_timeout'])),
                                 'remote_addr': request.get('REMOTE_ADDR', None),
@@ -241,21 +257,21 @@ def sflvault_login(request, username, version):
     try:
         #u = query(User).filter_by(username=username).one()
         u = meta.Session.query(User).filter_by(username=username).one()
-    except Exception, e:
-        return vaultMsg(False, "User unknown: %s" % e.message)
+    except Exception as e:
+        return vaultMsg(False, "User unknown: %s" % str(e))
     
     # TODO: implement throttling ?
 
     rnd = randfunc(32)
     # 15 seconds to complete login/authenticate round-trip.
     u.logging_timeout = datetime.now() + timedelta(0, 15)
-    u.logging_token = b64encode(rnd)
+    u.logging_token = b64encode(rnd).decode('ascii')
     if not u.pubkey:
         return vaultMsg(False, "User %s is not set up. Run user-setup first!" % username)
     
     #a = meta.Session.query(User).filter_by(username=username).one()
     e = u.elgamal()
-    cryptok = serial_elgamal_msg(e.encrypt(rnd, randfunc(32)))
+    cryptok = serial_elgamal_msg(elgamal_encrypt(e, rnd, randfunc(32)))
     
     transaction.commit()
     #meta.Session.close()
@@ -266,7 +282,7 @@ def sflvault_login(request, username, version):
 def user_add(request, authtok, username, is_admin):
     try:
         setup_timeout = request['settings']['sflvault.vault.setup_timeout']
-    except KeyError, e:
+    except KeyError as e:
         setup_timeout = 300
     return vault.user_add(username, is_admin, setup_timeout=setup_timeout)
 
@@ -475,12 +491,12 @@ def get_session(authtok, request):
     """Return the values associated with a session"""
     #_setup_sessions();
     
-    if not vaultSessions.has_key(authtok):
+    if authtok not in vaultSessions:
         raise SessionNotFoundError
         return None
 
     # XXX: where does the SESSION_TIMEOUT come from?
-    if not vaultSessions[authtok].has_key('timeout'):
+    if 'timeout' not in vaultSessions[authtok]:
         vaultSessions[authtok]['timeout'] = datetime.now() + timedelta(0, SESSION_TIMEOUT)
 
     if vaultSessions[authtok]['timeout'] < datetime.now():

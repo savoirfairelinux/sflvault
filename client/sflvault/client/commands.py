@@ -19,10 +19,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pkg_resources as pkgres
+import importlib.metadata as _ilmeta
 import optparse
 import os
-import urllib
+import urllib.parse
 import sys
 import xmlrpc.client
 import getpass
@@ -158,15 +158,18 @@ class SFLvaultCommand(object):
 
             if action in ['-v', '--version']:
                 try:
-                    print(pkgres.get_distribution('SFLvault_common'))
-                except pkgres.DistributionNotFound as e:
+                    print(_ilmeta.version('SFLvault-common'))
+                except _ilmeta.PackageNotFoundError:
                     print("SFLvault-common not installed")
-                
-                print(pkgres.get_distribution('SFLvault_client'))
 
                 try:
-                    print(pkgres.get_distribution('SFLvault_server'))
-                except pkgres.DistributionNotFound as e:
+                    print(_ilmeta.version('SFLvault-client'))
+                except _ilmeta.PackageNotFoundError:
+                    print("SFLvault-client not installed")
+
+                try:
+                    print(_ilmeta.version('SFLvault-server'))
+                except _ilmeta.PackageNotFoundError:
                     print("SFLvault-server not installed")
                 return
 
@@ -206,7 +209,7 @@ class SFLvaultCommand(object):
         except ServiceRequireError as e:
             print("[SFLvault] Service-chain setup error: %s" % e)
         except DecryptError as e:
-            print("[SFLvault] Error decrypting messages: %s" % e.message)
+            print("[SFLvault] Error decrypting messages: %s" % str(e))
         except VaultIDSpecError as e:
             print("[SFLvault] VaultID spec. error: %s" % e)
         except socket.error as e:
@@ -238,7 +241,7 @@ class SFLvaultCommand(object):
             sys.exit()
 
         # Normal help screen.
-        print("%s version %s" % ('SFLvault-client', pkgres.get_distribution('SFLvault_client').version))
+        print("%s version %s" % ('SFLvault-client', _ilmeta.version('SFLvault-client')))
         print("---------------------------------------------")
 
         if not cmd:

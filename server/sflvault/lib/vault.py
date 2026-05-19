@@ -33,11 +33,11 @@ return clean responses to clean queries.
 """
 
 
-import xmlrpclib
+import xmlrpc.client as xmlrpclib
 
-from sqlalchemy import sql
+from sqlalchemy import sql, select as sa_select, LABEL_STYLE_TABLENAME_PLUS_COL
 from sqlalchemy.exc import InvalidRequestError as InvalidReq
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm import joinedload
 
 from sflvault import model
 from sflvault.model import *
@@ -184,7 +184,7 @@ class SFLvaultAccess(object):
         """
         try:
             usr = model.get_user(user)
-        except LookupError, e:
+        except LookupError as e:
             self.log_w('User UNsuccessfully deleted: %(error)s',
                         {'error': str(e)})
             return vaultMsg(False, str(e))
@@ -193,7 +193,7 @@ class SFLvaultAccess(object):
         # to a group which holds some passwords.
 
         t1 = model.usergroups_table
-        meta.Session.execute(t1.delete(t1.c.user_id==usr.id))
+        meta.Session.execute(t1.delete().where(t1.c.user_id==usr.id))
         username = usr.username
         meta.Session.delete(usr)
         transaction.commit()
@@ -209,7 +209,7 @@ class SFLvaultAccess(object):
         """
         req = query(User)
         if groups:
-            req = req.options(eagerload_all('groups_assoc.group'))
+            req = req.options(joinedload(User.groups_assoc).joinedload(UserGroup.group))
         lst = query(User).all()
 
         out = []
@@ -249,7 +249,7 @@ class SFLvaultAccess(object):
         """
         try:
             out = self._service_get_data(service_id, group_id)
-        except VaultError, e:
+        except VaultError as e:
             return vaultMsg(False, str(e))
 
         return vaultMsg(True, "Here is the service", {'service': out})
@@ -259,7 +259,7 @@ class SFLvaultAccess(object):
         """Put a single service's data back to the vault's database"""
         try:
             s = query(Service).filter_by(id=service_id).one()
-        except InvalidReq, e:
+        except InvalidReq as e:
             self.log_i('Service not found: %(error)s', {"error": str(e)})
             return vaultMsg(False, "Service not found: %s" % str(e))
 
@@ -293,7 +293,7 @@ class SFLvaultAccess(object):
         """Retrieve the information for a given service."""
         try:
             s = query(Service).filter_by(id=service_id).one()
-        except InvalidReq, e:
+        except InvalidReq as e:
             self.log_w('Service not found: %(service_id)s (%(error)s)',
                        {"service_id": service_id, "error": str(e)})
             raise VaultError("Service not found: %s (%s)" % (service_id,
@@ -303,17 +303,17 @@ class SFLvaultAccess(object):
 
         # We need no aliasing, because we'll only use `cryptgroupkey`,
         # `cryptsymkey` and `group_id` in there.
-        req = sql.join(servicegroups_table, usergroups_table,
-                       ServiceGroup.group_id==UserGroup.group_id) \
-                 .join(users_table, User.id==UserGroup.user_id) \
-                 .select(use_labels=True) \
-                 .where(User.id==self.myself_id) \
-                 .where(ServiceGroup.service_id==s.id) \
-                 .order_by(ServiceGroup.group_id)
+        req = sa_select(sql.join(servicegroups_table, usergroups_table,
+                       servicegroups_table.c.group_id==usergroups_table.c.group_id) \
+                 .join(users_table, users_table.c.id==usergroups_table.c.user_id)) \
+                 .set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL) \
+                 .where(usergroups_table.c.user_id==self.myself_id) \
+                 .where(servicegroups_table.c.service_id==s.id) \
+                 .order_by(servicegroups_table.c.group_id)
 
         # Deal with group if specified..
         if group_id:
-            req = req.where(ServiceGroup.group_id == group_id)
+            req = req.where(servicegroups_table.c.group_id == group_id)
 
         res = meta.Session.execute(req)
 
@@ -334,7 +334,8 @@ class SFLvaultAccess(object):
         # Load groups too if required
         if with_groups:
             groups_list = []
-            req2 = sql.join(groups_table, servicegroups_table).select(use_labels=True).where(ServiceGroup.service_id == service_id)
+            req2 = sa_select(sql.join(groups_table, servicegroups_table,
+                             groups_table.c.id==servicegroups_table.c.group_id)).set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL).where(servicegroups_table.c.service_id == service_id)
             res2 = meta.Session.execute(req2)
             for grp in res2:
                 groups_list.append((grp.groups_id, grp.groups_name))
@@ -362,7 +363,7 @@ class SFLvaultAccess(object):
             try:
                 data = self._service_get_data(service_id,
                                               with_groups=with_groups)
-            except VaultError, e:
+            except VaultError as e:
                 self.log_e('Show service: %(error)s', {"error": str(e)})
                 return vaultMsg(False, str(e))
 
@@ -420,7 +421,7 @@ class SFLvaultAccess(object):
 
                 try:
                     newfilters[flt] = model.get_objects_ids(filters[flt], flt)
-                except ValueError, e:
+                except ValueError as e:
                     self.log_e('Search error: %(error)s', {"error": str(e)})
                     return vaultMsg(False, str(e))
 
@@ -430,14 +431,14 @@ class SFLvaultAccess(object):
         # Quick helper funcs, to create the hierarchical 'out' structure.
         def set_customer(out, c):
             "Subfunc of search"
-            if out.has_key(str(c.customers_id)):
+            if str(c.customers_id) in out:
                 return
             out[str(c.customers_id)] = {'name': c.customers_name,
                                         'machines': {}}
 
         def set_machine(subout, m):
             "Subfunc of search"
-            if subout.has_key(str(m.machines_id)):
+            if str(m.machines_id) in subout:
                 return
             subout[str(m.machines_id)] = {'name': m.machines_name,
                             'fqdn': m.machines_fqdn or '',
@@ -475,7 +476,7 @@ class SFLvaultAccess(object):
         """Get a single customer's data"""
         try:
             cust = query(Customer).filter_by(id=customer_id).one()
-        except InvalidReq, e:
+        except InvalidReq as e:
             self.log_i('Customer not found: %(error)s', {"error": str(e)})
             return vaultMsg(False, "Customer not found: %s" % str(e))
 
@@ -488,7 +489,7 @@ class SFLvaultAccess(object):
         """Put a single customer's data back to the Vault"""
         try:
             cust = query(Customer).filter_by(id=customer_id).one()
-        except InvalidReq, e:
+        except InvalidReq as e:
             self.log_w('Customer not found: %(customer_id)s',
                        {"customer_id": customer_id})
             return vaultMsg(False, "Customer not found: %s" % str(e))
@@ -528,7 +529,7 @@ class SFLvaultAccess(object):
         """Put a single machine's data back to the vault"""
         try:
             m = query(Machine).filter_by(id=machine_id).one()
-        except InvalidReq, e:
+        except InvalidReq as e:
             self.log_w('Machine m#%(machine_id)s saved successfully',
                    {"machine_id": machine_id})
             return vaultMsg(False, "Machine not found: %s" % str(e))
@@ -549,7 +550,7 @@ class SFLvaultAccess(object):
         """Get a single machine's data"""
         try:
             m = query(Machine).filter_by(id=machine_id).one()
-        except InvalidReq, e:
+        except InvalidReq as e:
             return vaultMsg(False, "Machine not found: %s" % str(e))
 
 
@@ -595,7 +596,7 @@ class SFLvaultAccess(object):
         try:
             groups, group_ids = model.get_objects_list(group_ids, 'groups',
                                                        return_objects=True)
-        except ValueError, e:
+        except ValueError as e:
             return vaultMsg(False, str(e))
 
         # TODO: centralise the grant and users matching service resolution.
@@ -646,7 +647,7 @@ class SFLvaultAccess(object):
         """Get a single group's data"""
         try:
             grp = query(Group).filter_by(id=group_id).one()
-        except InvalidReq, e:
+        except InvalidReq as e:
             return vaultMsg(False, "Group not found: %s" % str(e))
 
         ug = query(UserGroup).filter_by(user_id=self.myself_id,
@@ -673,7 +674,7 @@ class SFLvaultAccess(object):
         transaction.begin()
         try:
             grp = query(Group).filter_by(id=group_id).one()
-        except InvalidReq, e:
+        except InvalidReq as e:
             return vaultMsg(False, "Group not found: %s" % str(e))
 
         ug = query(UserGroup).filter_by(user_id=self.myself_id,
@@ -720,6 +721,9 @@ class SFLvaultAccess(object):
         admins.add(me)
 
         for usr in list(admins):
+            if not usr.pubkey:
+                log.warning("Skipping admin user '%s' (id=%s): no pubkey set up", usr.username, usr.id)
+                continue
             nug = UserGroup()
             # Make sure I'm admin of my newly created group
             if usr == me:
@@ -746,7 +750,7 @@ class SFLvaultAccess(object):
 
         """
         transaction.begin()
-        grp = query(Group).options(eagerload('services_assoc')).filter_by(id=int(group_id)).first()
+        grp = query(Group).options(joinedload(Group.services_assoc)).filter_by(id=int(group_id)).first()
 
         if grp is None:
             return vaultMsg(False, "Group not found: %s" % (group_id,))
@@ -760,7 +764,7 @@ class SFLvaultAccess(object):
                     
 
         # Delete UserGroup elements...
-        q1 = usergroups_table.delete(UserGroup.group_id==grp.id)
+        q1 = usergroups_table.delete().where(usergroups_table.c.group_id==grp.id)
         meta.Session.execute(q1)
 
         name = grp.name
@@ -778,7 +782,7 @@ class SFLvaultAccess(object):
         # FIXME: list_users is not used
         # FIXME: show_hidden is not used
 
-        groups = query(Group).options(eagerload_all('users_assoc.user')).all()
+        groups = query(Group).options(joinedload(Group.users_assoc).joinedload(UserGroup.user)).all()
         me = query(User).get(self.myself_id)
 
         out = []
@@ -822,7 +826,7 @@ class SFLvaultAccess(object):
         transaction.begin()
         try:
             grp = query(Group).filter_by(id=group_id).one()
-        except InvalidReq, e:
+        except InvalidReq as e:
             return vaultMsg(False, "Group not found: %s" % str(e))
 
         grpeg = grp.elgamal()
@@ -885,7 +889,7 @@ class SFLvaultAccess(object):
         transaction.begin()
         try:
             grp = query(Group).filter_by(id=group_id).one()
-        except InvalidReq, e:
+        except InvalidReq as e:
             return vaultMsg(False, "Group not found: %s" % str(e))
 
         # Verify if I'm admin on that group
@@ -902,7 +906,7 @@ class SFLvaultAccess(object):
         # Find added user
         try:
             usr = get_user(user)
-        except LookupError, e:
+        except LookupError as e:
             return vaultMsg(False, "User %s not found: %s" % (user, str(e)))
 
 
@@ -953,7 +957,7 @@ class SFLvaultAccess(object):
         # TODO: DRY out this place, much copy from group_add_user
         try:
             grp = query(Group).filter_by(id=group_id).one()
-        except InvalidReq, e:
+        except InvalidReq as e:
             return vaultMsg(False, "Group not found: %s" % str(e))
 
         # Verify if I'm admin on that group
@@ -973,7 +977,7 @@ class SFLvaultAccess(object):
         # Find added user
         try:
             usr = get_user(user)
-        except LookupError, e:
+        except LookupError as e:
             return vaultMsg(False, "User %s not found: %s" % (user, str(e)))
 
         hisug = [ug for ug in ugs if ug.user_id == usr.id]
@@ -1010,14 +1014,14 @@ class SFLvaultAccess(object):
         and services
         """
         # Get customer
-        cust = query(model.Customer).options(model.eagerload('machines'))\
+        cust = query(model.Customer).options(joinedload(Customer.machines))\
                                     .get(int(customer_id))
 
         if not cust:
             return vaultMsg(True, "No such customer: c#%s" % customer_id)
 
         # Get all the services that will be deleted
-        servs = query(model.Service).join('machine', 'customer') \
+        servs = query(model.Service).join(model.Service.machine).join(model.Machine.customer) \
                      .filter(model.Customer.id == customer_id) \
                      .all()
         servs_ids = [s.id for s in servs]
@@ -1085,7 +1089,7 @@ class SFLvaultAccess(object):
             return vaultMsg(True, "No such machine: m#%s" % machine_id)
 
         # Get all the services that will be deleted
-        servs = query(model.Service).join('machine') \
+        servs = query(model.Service).join(model.Service.machine) \
                      .filter(model.Machine.id == machine_id).all()
         servs_ids = [s.id for s in servs]
 
@@ -1186,9 +1190,10 @@ class SFLvaultAccess(object):
 
     def machine_list(self, customer_id=None):
         """Return a simple list of the machines"""
-        sel = sql.join(customers_table, machines_table) \
-                 .select(use_labels=True) \
-                 .order_by(Customer.id)
+        sel = sa_select(sql.join(customers_table, machines_table,
+                        customers_table.c.id==machines_table.c.customer_id)) \
+                 .set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL) \
+                 .order_by(customers_table.c.id)
 
         # Filter also..
         if customer_id:

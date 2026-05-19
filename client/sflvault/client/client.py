@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pkg_resources as pkgres
+import importlib.metadata as _ilmeta
 from configparser import ConfigParser, NoSectionError
 import xmlrpc.client
 import getpass
@@ -84,9 +84,8 @@ def authenticate(keep_privkey=False):
                 privpass = self.getpassfunc()
                 privkey_packed = decrypt_privkey(privkey_enc, privpass)
                 del(privpass)
-                eg = ElGamal.ElGamalobj()
-                (eg.p, eg.x, eg.g, eg.y) = unserial_elgamal_privkey(privkey_packed)
-                privkey = eg
+                (eg_p, eg_x, eg_g, eg_y) = unserial_elgamal_privkey(privkey_packed)
+                privkey = ElGamal.construct((eg_p, eg_g, eg_y, eg_x))
 
             except DecryptError as e:
                 print("[SFLvault] Invalid passphrase")
@@ -106,7 +105,7 @@ def authenticate(keep_privkey=False):
 
         # TODO: check also is the privkey (ElGamal obj) has been cached
         #       in self.privkey (when invoked with keep_privkey)
-        retval = self.vault.login(username, pkgres.get_distribution('SFLvault_client').version)
+        retval = self.vault.login(username, _ilmeta.version('SFLvault-client'))
         self.authret = retval
         if not retval['error']:
             # try the last token
@@ -114,8 +113,8 @@ def authenticate(keep_privkey=False):
             if retval2['error']:
                 print(retval2['message'])
                 # decrypt token.
-                cryptok = privkey.decrypt(unserial_elgamal_msg(retval['cryptok']))
-                retval3 = self.vault.authenticate(username, b64encode(cryptok))
+                cryptok = elgamal_decrypt(privkey, unserial_elgamal_msg(retval['cryptok']))
+                retval3 = self.vault.authenticate(username, b64encode(cryptok).decode('ascii'))
                 self.authret = retval3
 
                 if retval3['error']:
@@ -227,11 +226,9 @@ class SFLvaultConfig(object):
             sys.exit()
 
     def config_read(self):
-        """Return the ConfigParser object, fully loaded"""    
+        """Return the ConfigParser object, fully loaded"""
         self.cfg = ConfigParser()
-        fp = open(self.config_file, 'r')
-        self.cfg.readfp(fp)
-        fp.close()
+        self.cfg.read(self.config_file)
 
         if not self.cfg.has_section('SFLvault'):
             self.cfg.add_section('SFLvault')
@@ -263,7 +260,7 @@ class SFLvaultConfig(object):
         """Add an alias and save config."""
         tid = re.match(r'(.)#(\d+)', ptr)
         if not tid:
-            raise ValueError("VaultID must be in the format: (.)#(\d+)")
+            raise ValueError(r"VaultID must be in the format: (.)#(\d+)")
 
         # Set the alias value
         self.cfg.set('Aliases', alias, ptr)
@@ -851,9 +848,8 @@ class SFLvaultClient(object):
         except Exception as e:
             raise DecryptError("Unable to decrypt groupkey (%s)" % e)
 
-        eg = ElGamal.ElGamalobj()
-        (eg.p, eg.x, eg.g, eg.y) = unserial_elgamal_privkey(grouppacked)
-        groupkey = eg
+        (eg_p, eg_x, eg_g, eg_y) = unserial_elgamal_privkey(grouppacked)
+        groupkey = ElGamal.construct((eg_p, eg_g, eg_y, eg_x))
         
         if onlygroupkey:
             serv['groupkey'] = eg
@@ -1126,8 +1122,8 @@ class SFLvaultClient(object):
         grouppacked = decrypt_longmsg(self.privkey, retval['cryptgroupkey'])
         
         # Get userpubkey and unpack
-        eg = ElGamal.ElGamalobj()
-        (eg.p, eg.g, eg.y) = unserial_elgamal_pubkey(retval['userpubkey'])
+        (eg_p, eg_g, eg_y) = unserial_elgamal_pubkey(retval['userpubkey'])
+        eg = ElGamal.construct((eg_p, eg_g, eg_y))
         
         # Re-encrypt for user
         newcryptgroupkey = encrypt_longmsg(eg, grouppacked)

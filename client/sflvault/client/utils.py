@@ -23,7 +23,7 @@
 
 import urllib.parse
 import re
-from pkg_resources import iter_entry_points, DistributionNotFound
+from importlib.metadata import entry_points as _entry_points, PackageNotFoundError as DistributionNotFound
 import platform
 if platform.system() != 'Windows':
     import readline
@@ -38,7 +38,7 @@ __all__ = ['urllib', 'AuthenticationError', 'PermissionError',
 
 def services_entry_points():
     """Return the list of entry points for the different services."""
-    return iter_entry_points('sflvault.services')
+    return list(_entry_points(group='sflvault.services'))
 
 #
 # Add protocols to urlparse, for correct parsing of ssh and others.

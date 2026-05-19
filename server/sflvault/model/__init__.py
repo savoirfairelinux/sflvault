@@ -25,9 +25,16 @@ import re
 
 from Crypto.PublicKey import ElGamal
 from sqlalchemy import Column, MetaData, Table, types, ForeignKey
-from sqlalchemy.orm import mapper, relation, backref
-from sqlalchemy.orm import scoped_session, sessionmaker, eagerload, lazyload
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy import select as sa_select
+from sqlalchemy.sql.expression import LABEL_STYLE_TABLENAME_PLUS_COL
+from sqlalchemy.orm import registry as _orm_registry, relationship, backref
+from sqlalchemy.orm import scoped_session, sessionmaker, joinedload, lazyload
+from functools import reduce
+
+def _make_joinedload(path):
+    """Convert a dotted relationship path string to chained joinedload options."""
+    parts = path.split('.')
+    return reduce(lambda opt, rel: opt.joinedload(rel), parts[1:], joinedload(parts[0]))
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy import sql
 
@@ -35,20 +42,23 @@ from sflvault.model import meta
 from sflvault.model.meta import Session, metadata
 from sflvault.model.custom_types import JSONEncodedDict
 from sflvault.common.crypto import *
-from zope.sqlalchemy import ZopeTransactionExtension
+try:
+    from zope.sqlalchemy import register as zope_register
+except ImportError:
+    zope_register = None
 
 # TODO: add an __all__ statement here, to speed up loading...
 
 
 def init_model(engine):
     """Call me before using any of the tables or classes in the model."""
-    sm = sessionmaker(autoflush=True,
-                      bind=engine,
-                      expire_on_commit=False,
-                      extension=ZopeTransactionExtension())
-
+    sm = sessionmaker(autoflush=True, expire_on_commit=False)
     meta.engine = engine
     meta.Session = scoped_session(sm)
+    meta.Session.configure(bind=engine)
+
+    if zope_register is not None:
+        zope_register(meta.Session)
 
 
 users_table = Table("users", metadata,
@@ -57,7 +67,7 @@ users_table = Table("users", metadata,
                     # ElGamal user's public key.
                     Column('pubkey', types.Text),
                     # Used in the login/authenticate challenge
-                    Column('logging_token', types.Binary(35)),
+                    Column('logging_token', types.String(50)),
                     # Time until the token is valid.
                     Column('logging_timeout', types.DateTime),
                     # This stamp is used to wipe users which haven't 'setup'
@@ -164,12 +174,8 @@ class User(object):
 
     def elgamal(self):
         """Return the ElGamal object, ready to encrypt stuff."""
-        e = ElGamal.ElGamalobj()
-        (e.p, e.g, e.y) = unserial_elgamal_pubkey(self.pubkey)
-        return e
-    
-    def __repr__(self):
-        return "<User u#%d: %s>" % (self.id, self.username)
+        (p, g, y) = unserial_elgamal_pubkey(self.pubkey)
+        return ElGamal.construct((p, g, y))
 
 class UserGroup(object):
     """Membership of a user to a group"""
@@ -195,9 +201,8 @@ class Group(object):
     
     def elgamal(self):
         """Return the ElGamal object, ready to encrypt stuff."""
-        e = ElGamal.ElGamalobj()
-        (e.p, e.g, e.y) = unserial_elgamal_pubkey(self.pubkey)
-        return e
+        (p, g, y) = unserial_elgamal_pubkey(self.pubkey)
+        return ElGamal.construct((p, g, y))
 
 class Customer(object):
     def __repr__(self):
@@ -222,34 +227,35 @@ class Customer(object):
 #           .user
 #             User
 
-# Map each class to its corresponding table.
-mapper(User, users_table, {
+# Map each class to its corresponding table using SQLAlchemy 2.0 imperative mapping.
+_mapper_registry = _orm_registry()
+_mapper_registry.map_imperatively(User, users_table, properties={
     # Quick access to services...
-    'services': relation(Service,
+    'services': relationship(Service,
                          secondary=usergroups_table.join(servicegroups_table, usergroups_table.c.group_id==servicegroups_table.c.group_id),
                          backref='users',
                          viewonly=True,
                          ),
-    'groups_assoc': relation(UserGroup, backref='user')
+    'groups_assoc': relationship(UserGroup, backref='user')
     })
 User.groups = association_proxy('groups_assoc', 'group')
 
-mapper(UserGroup, usergroups_table, {
-    'group': relation(Group, backref='users_assoc')
+_mapper_registry.map_imperatively(UserGroup, usergroups_table, properties={
+    'group': relationship(Group, backref='users_assoc')
     })
 
-mapper(Group, groups_table, {
-    'services_assoc': relation(ServiceGroup, backref='group')
+_mapper_registry.map_imperatively(Group, groups_table, properties={
+    'services_assoc': relationship(ServiceGroup, backref='group')
     })
 Group.users = association_proxy('users_assoc', 'user')
 Group.services = association_proxy('services_assoc', 'service')
 
-mapper(ServiceGroup, servicegroups_table, {
-    'service': relation(Service, backref='groups_assoc')
+_mapper_registry.map_imperatively(ServiceGroup, servicegroups_table, properties={
+    'service': relationship(Service, backref='groups_assoc')
     })
 
-mapper(Service, services_table, {
-    'children': relation(Service,
+_mapper_registry.map_imperatively(Service, services_table, properties={
+    'children': relationship(Service,
                          lazy=False,
                          backref=backref('parent', uselist=False,
                                          remote_side=[services_table.c.id]),
@@ -257,11 +263,11 @@ mapper(Service, services_table, {
     })
 Service.groups = association_proxy('groups_assoc', 'group')
 
-mapper(Machine, machines_table, {
-    'services': relation(Service, backref='machine', lazy=False)
+_mapper_registry.map_imperatively(Machine, machines_table, properties={
+    'services': relationship(Service, backref='machine', lazy=False)
     })
-mapper(Customer, customers_table, {
-    'machines': relation(Machine, backref='customer', lazy=False)
+_mapper_registry.map_imperatively(Customer, customers_table, properties={
+    'machines': relationship(Machine, backref='customer', lazy=False)
     })
 
 ################ Helper functions ################
@@ -281,7 +287,7 @@ def get_user(user, eagerload_all_=None):
         uq = query(User).filter_by(username=user)
 
     if eagerload_all_:
-        uq = uq.options(eagerload_all(eagerload_all_))
+        uq = uq.options(_make_joinedload(eagerload_all_))
 
     usr = uq.first()
     
@@ -334,10 +340,10 @@ def get_objects_list(objects_ids, object_type, eagerload_all_=None,
         objects_q = query(obj).filter(obj.id.in_(objects_ids))
 
         if eagerload_all_:
-            objects_q = objects_q.options(eagerload_all(eagerload_all_))
+            objects_q = objects_q.options(_make_joinedload(eagerload_all_))
         objects = objects_q.all()
     else:
-        objects_q = sql.select([obj.id]).where(obj.id.in_(objects_ids))
+        objects_q = sql.select(obj.id).where(obj.id.in_(objects_ids))
         objects = meta.Session.execute(objects_q).fetchall()
         
     if len(objects) != len(objects_ids):
@@ -352,7 +358,10 @@ def get_objects_list(objects_ids, object_type, eagerload_all_=None,
 def search_query(swords, filters=None, verbose=False):
 
     # Create the join..
-    sel = sql.outerjoin(customers_table, machines_table).outerjoin(services_table)
+    j = sql.outerjoin(customers_table, machines_table,
+                      customers_table.c.id == machines_table.c.customer_id) \
+           .outerjoin(services_table,
+                      machines_table.c.id == services_table.c.machine_id)
 
     if filters:
         # Remove filters that are just None
@@ -363,33 +372,34 @@ def search_query(swords, filters=None, verbose=False):
 
         if [True for x in filters if not isinstance(filters[x], list)]:
             raise RuntimeError("filters themselves must be a list of ints")
-        
-        if 'groups' in filters:
-            sel = sel.join(servicegroups_table)
 
-    sel = sel.select(use_labels=True)
+        if 'groups' in filters:
+            j = j.join(servicegroups_table,
+                       services_table.c.id == servicegroups_table.c.service_id)
+
+    sel = sa_select(j).set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL)
 
     if filters:
         if 'groups' in filters:
-            sel = sel.where(ServiceGroup.group_id.in_(filters['groups']))
+            sel = sel.where(servicegroups_table.c.group_id.in_(filters['groups']))
         if 'machines' in filters:
-            sel = sel.where(Machine.id.in_(filters['machines']))
+            sel = sel.where(machines_table.c.id.in_(filters['machines']))
         if 'customers' in filters:
-            sel = sel.where(Customer.id.in_(filters['customers']))
+            sel = sel.where(customers_table.c.id.in_(filters['customers']))
 
     # Fields to search in..
-    textfields = [Customer.name,
-                  Machine.name,
-                  Machine.fqdn,
-                  Machine.ip,
-                  Machine.location,
-                  Machine.notes,
-                  Service.url,
-                  Service.notes]
-    numfields = [Customer.id,
-                 Machine.id,
-                 Service.id]
-    
+    textfields = [customers_table.c.name,
+                  machines_table.c.name,
+                  machines_table.c.fqdn,
+                  machines_table.c.ip,
+                  machines_table.c.location,
+                  machines_table.c.notes,
+                  services_table.c.url,
+                  services_table.c.notes]
+    numfields = [customers_table.c.id,
+                 machines_table.c.id,
+                 services_table.c.id]
+
     # TODO: distinguish between INTEGER fields and STRINGS and search
     # differently (check only ==, and only if word can be converted to int())
 
@@ -404,7 +414,7 @@ def search_query(swords, filters=None, verbose=False):
 
     sel = sel.where(sql.and_(*andlist))
 
-    sel = sel.order_by(Machine.name, Service.url)
+    sel = sel.order_by(machines_table.c.name, services_table.c.url)
 
     return meta.Session.execute(sel)
 

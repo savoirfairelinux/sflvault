@@ -1,8 +1,8 @@
-import ConfigParser
+import configparser
 from datetime import datetime, timedelta
-from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler, SimpleXMLRPCDispatcher
-import SocketServer
-from BaseHTTPServer import HTTPServer
+from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler, SimpleXMLRPCDispatcher
+import socketserver
+from http.server import HTTPServer
 import os
 import sys
 import logging
@@ -29,8 +29,8 @@ class SFLvaultRequestHandler(SimpleXMLRPCRequestHandler):
 
     def setup(self):
         self.connection = self.request
-        self.rfile = socket._fileobject(self.request, "rb", self.rbufsize)
-        self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
+        self.rfile = self.request.makefile("rb", self.rbufsize)
+        self.wfile = self.request.makefile("wb", self.wbufsize)
 
     def _dispatch(self, method, params):
         address = self.client_address
@@ -55,7 +55,7 @@ class SecureXMLRPCServer(HTTPServer, SimpleXMLRPCDispatcher):
         self.logRequests = logRequests
 
         SimpleXMLRPCDispatcher.__init__(self, allow_none=allow_none)
-        SocketServer.BaseServer.__init__(self, server_address, requestHandler)
+        socketserver.BaseServer.__init__(self, server_address, requestHandler)
         ctx = SSL.Context(SSL.SSLv23_METHOD)
         ctx.use_privatekey_file(keyfile)
         ctx.use_certificate_file(certfile)
@@ -94,9 +94,16 @@ class SFLvaultServer(object):
             'sqlalchemy.url': 'sqlite:///%s/sflvault.db' % os.getcwd()
         }
         if config_file_name:
-            config = ConfigParser.ConfigParser()
+            config = configparser.ConfigParser()
             config.read(config_file_name)
-            result.update(self.get_dict_for_config_section(config, 'sflvault'))
+            # Support both simple [sflvault] and legacy Pylons [app:main] sections
+            if config.has_section('sflvault'):
+                section = 'sflvault'
+            elif config.has_section('app:main'):
+                section = 'app:main'
+            else:
+                raise RuntimeError("Config file must have a [sflvault] or [app:main] section")
+            result.update(self.get_dict_for_config_section(config, section))
         return result
 
     def start_sqlalchemy(self):
@@ -157,10 +164,10 @@ class SFLvaultServer(object):
         self.server.serve_forever()
 
     def get_dict_for_config_section(self, config, section):
-        my_dict = {} 
+        my_dict = {}
         for key in config._sections[section].keys():
-            my_dict[key] = config.get(section, key, 0,
-                                      {'here': os.getcwd()})
+            my_dict[key] = config.get(section, key, raw=False,
+                                      vars={'here': os.getcwd()})
         return my_dict
 
 def main():

@@ -23,18 +23,48 @@
 
 from Crypto.PublicKey import ElGamal
 from Crypto.Cipher import AES, Blowfish
-from Crypto.Util.number import long_to_bytes, bytes_to_long
+from Crypto.Util.number import long_to_bytes, bytes_to_long, inverse
 from Crypto import Random
 from base64 import b64decode, b64encode
 import random
 import os
-from zlib import crc32 # Also available in binascii
+from zlib import crc32  # Also available in binascii
 
 #
 # Random number generators setup
 #
 pool = Random.new()
 randfunc = pool.read # We'll use this func for most of the random stuff
+
+
+def elgamal_encrypt(key, plaintext_bytes, K_bytes):
+    """Encrypt bytes with an ElGamal public key.
+
+    PyCryptodome removed ElGamalKey.encrypt(); this reimplements the same
+    operation: a = g^K mod p,  b = m * y^K mod p.
+    Returns (a_bytes, b_bytes) matching the old PyCrypto API.
+    """
+    m = bytes_to_long(plaintext_bytes)
+    K = bytes_to_long(K_bytes)
+    p, g, y = key.p, key.g, key.y
+    a = pow(int(g), int(K), int(p))
+    b = m * pow(int(y), int(K), int(p)) % int(p)
+    return (long_to_bytes(a), long_to_bytes(b))
+
+
+def elgamal_decrypt(key, ciphertext):
+    """Decrypt a (a_bytes, b_bytes) tuple with an ElGamal private key.
+
+    PyCryptodome removed ElGamalKey.decrypt(); this reimplements the same
+    operation: m = b * (a^x)^-1 mod p.
+    Returns plaintext bytes matching the old PyCrypto API.
+    """
+    a = bytes_to_long(ciphertext[0])
+    b = bytes_to_long(ciphertext[1])
+    p, x = int(key.p), int(key.x)
+    ax = pow(a, x, p)
+    m = b * inverse(ax, p) % p
+    return long_to_bytes(m)
 
 
 #
@@ -52,14 +82,18 @@ class DecryptError(Exception):
 # Checksum padding management
 #
 def non_zero_crc(txt):
-    """Calculate the CRC checksum, ensuring it never ends with \x00,
-    thus conflicting with the \x00 padding of encrypted secrets and keys"""
-    crc = crc32(txt) & 0xffffffff # Make unsigned hack
+    """Calculate the CRC checksum, ensuring it never ends with \\x00,
+    thus conflicting with the \\x00 padding of encrypted secrets and keys"""
+    if isinstance(txt, str):
+        txt = txt.encode('utf-8')
+    crc = crc32(txt) & 0xffffffff  # Make unsigned hack
     if not crc % 256:
         crc += 1
     return crc
 
 def wrapsum(plainval):
+    if isinstance(plainval, str):
+        plainval = plainval.encode('utf-8')
     crc = non_zero_crc(plainval)
     # Add 4 bytes checksum and return
     return plainval + long_to_bytes(crc, 4)
@@ -76,8 +110,8 @@ def chksum(sumval):
     return plainval
 
 def pad(text, length):
-    """Add \x00 characters to pad for multiple of `length`"""
-    newtext = (((length - (len(text) % length)) % length) * "\x00")
+    """Add \\x00 bytes to pad `text` to a multiple of `length`"""
+    newtext = (((length - (len(text) % length)) % length) * b"\x00")
     return text + newtext
 
 
@@ -85,16 +119,34 @@ def pad(text, length):
 # Generate ElGamal keys (for users and groups)
 #
 def generate_elgamal_keypair():
-    """Return an ElGamal object with newly generated keypair"""
+    """Return an ElGamal object with newly generated keypair.
+
+    Uses the RFC 3526 1536-bit MODP safe prime instead of generating one,
+    which would take minutes with PyCryptodome's ElGamal.generate().
+    """
     if 'SFLVAULT_IN_TEST' in os.environ:
         print("WARNING: IN TEST MODE, EVERY KEYPAIR GENERATION IS BYPASSED AND USES A PRE-GENERATED AND WORLD-KNOWN KEYPAIR. REMOVE 'SFLVAULT_IN_TEST' FROM YOUR ENVIRONMENT IF YOU ARE DOING THIS ON PRODUCTION")
-        eg = ElGamal.ElGamalobj()
         keys = [(177089723724552644256797243527295142469255734138493329314329932362154457094059269514887621456192343485606008571733849784882603220703971587460034382850082611103881050702039214183956206957248098956098183898169452181835193285526486693996807247957663965314452283162788463761928354944430848933147875443419511844733534867714246125293090881680286010834371853006350372947758409794906981881841508329191534306452090259107460058479336274992461969572007575859837, 2368830913657867259423174096782984007672147302922056255072161233714845396747550413964785336340342087070536608406864241095864284199288769810784864221075742905057068477336098276284927890562488210509136821440679916802167852789973929164278286140181738520594891315446533462206307248550944558426698389577513200698569512147125339722576147002382255876258436727504192479647579172625910816774587488928783787624267035610900290120258307919121453927670441700811482181614216947, 5861471316007038922650757021308043193803646029154275389954930654765928019938681282006482343772842302607960473277926921384673235972813815577111985557701858831111694263179407993690846841997398288866685890418702914928188654979371728552059661796422031090374692580710906447170464105162673344042938184790777466702148445760745296149876416417949678454708511011740073066144877868339403040477747772225977519821312965207, 1169412825199936698700035513185825593893938895474876750007859746409857305379860678064015124546593449912724002752383066585681624318254362438491372548721947497497739043831382430104856590871057670575051579668363576657397472353061812950884556034822611307705562237354213497368218843244103113882159981178841442771150519161251285978446459307942619668439466357674240712609844734284943761543870187004331653216116937988266963743961096619840352159665738163357566198583064435),
                 (363126185715790250119395282425017818083421673278440118808474954552806007436370887232958142538070938460903011757636551318850215594111019699633958587914824512339681573953775134121488999147928038505883131989323638021781157246124428000084118138446325126739005521403114471077697023469488488105229388102971903306007555362613775010306064798678761753948810755236011346132218974049446116094394433461746597812371697367173395113014824646850943586174124632464143, 1989666736598081965365973787349938627625613245335951894925228395719349924579514682166704542464221001327015131231101009506582078440087637470784673000661958376397578391397303146171320274531265903747455382524598808613766406694744319576824028880703970997080651320662468590292703565426391011134523391035995750230341849776175803186815053305823053143914398318121693692044542134832809759905437953710838534372887584358442203447387293183908262967797038874535690090799742911, 133850088107174975861015682594827971956767368440585898108600141692889215241539178575381178799995195531301157505453120993980045956642227472649664668888717884598815932243844750408878011387532720932159839454554017574665882963054750224693505390054364096154711586190837517112644639757613967217614109546151313073865262488626822109764294618345504453742784825659007630866924661811701179640013729327586347, 742665583685283032188129474839034185107068199926583417281240975739235100098517297493350864258177674271267050862217567671938790648634008735784684115797768392310253433978502694449565453913758801583487678024491118014887051643096970952295790434950566748516670079663712282848262006606082748685002561868381598918739708181310245226480020229450553192469536632519293406262550081671717685585065331112633947328611250435010734072352883491446355872734313855711051794348490960)]
-        eg.g, eg.p, eg.x, eg.y = keys[random.randint(0, 1)]
-        return eg
-    # Otherwise, generate, really :)
-    return ElGamal.generate(1536, randfunc)
+        eg_g, eg_p, eg_x, eg_y = keys[random.randint(0, 1)]
+        return ElGamal.construct((eg_p, eg_g, eg_y, eg_x))
+
+    # Use the RFC 3526 1536-bit MODP safe prime (Group 5) to avoid the
+    # minutes-long prime generation that ElGamal.generate() requires.
+    p = int(
+        "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1"
+        "29024E088A67CC74020BBEA63B139B22514A08798E3404DD"
+        "EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245"
+        "E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7ED"
+        "EE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3D"
+        "C2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F"
+        "83655D23DCA3AD961C62F356208552BB9ED529077096966D"
+        "670C354E4ABC9804F1746C08CA237327FFFFFFFFFFFFFFFF", 16)
+    g = 2
+    # Pick a random private key x in [2, p-2]
+    x = bytes_to_long(randfunc(192)) % (p - 3) + 2
+    y = pow(g, x, p)
+    return ElGamal.construct((p, g, y, x))
 
 def elgamal_pubkey(eg):
     """Return only the pubkey from the given ElGamal object"""
@@ -117,17 +169,17 @@ def elgamal_bothkeys(eg):
 # _msg are used to store Userciphers in the database (symkey
 # encrypted for each user)
 def serial_elgamal_msg(cryptsymkey):
-    """Get a 2-elements tuple of str(), return a string."""
+    """Get a 2-elements tuple of bytes, return a string."""
     try:
-        ns = b64encode(cryptsymkey[0]) + ':' + \
-             b64encode(cryptsymkey[1])
+        ns = b64encode(cryptsymkey[0]).decode('ascii') + ':' + \
+             b64encode(cryptsymkey[1]).decode('ascii')
     except IndexError as e:
         raise DecryptError("Error decrypting: inconsistent message")
     
     return ns
 
 def unserial_elgamal_msg(cryptsymkey):
-    """Get a string, return a 2-elements tuple of str()"""
+    """Get a string, return a 2-elements tuple of bytes"""
     x = cryptsymkey.split(':')
     try:
         return (b64decode(x[0]),
@@ -138,14 +190,14 @@ def unserial_elgamal_msg(cryptsymkey):
 # _pubkey are used to encode the public key stored in the database
 # (El Gamal pub key, packed together)
 def serial_elgamal_pubkey(pubkey):
-    """Get a 3-elements tuple of long(), return a string."""
-    ns = b64encode(long_to_bytes(pubkey[0])) + ':' + \
-         b64encode(long_to_bytes(pubkey[1])) + ':' + \
-         b64encode(long_to_bytes(pubkey[2]))         
+    """Get a 3-elements tuple of int, return a string."""
+    ns = b64encode(long_to_bytes(pubkey[0])).decode('ascii') + ':' + \
+         b64encode(long_to_bytes(pubkey[1])).decode('ascii') + ':' + \
+         b64encode(long_to_bytes(pubkey[2])).decode('ascii')
     return ns
 
 def unserial_elgamal_pubkey(pubkey):
-    """Get a string, return a 3-elements tuple of long()"""
+    """Get a string, return a 3-elements tuple of int"""
     x = pubkey.split(':')
     return (bytes_to_long(b64decode(x[0])),
             bytes_to_long(b64decode(x[1])),
@@ -156,20 +208,22 @@ def unserial_elgamal_pubkey(pubkey):
 # to go in the ~/.sflvault/config file, as the 'key' key.
 # NOTE: privkey ALSO STORES pubkey!
 def serial_elgamal_privkey(privkey):
-    """Get a 4-elements tuple of long(), return a string.
+    """Get a 4-elements tuple of int, return a string.
 
     This contains the private (two first elements) *and* the public key."""
-    ns = b64encode(long_to_bytes(privkey[0])) + ':' + \
-         b64encode(long_to_bytes(privkey[1])) + ':' + \
-         b64encode(long_to_bytes(privkey[2])) + ':' + \
-         b64encode(long_to_bytes(privkey[3]))
+    ns = b64encode(long_to_bytes(privkey[0])).decode('ascii') + ':' + \
+         b64encode(long_to_bytes(privkey[1])).decode('ascii') + ':' + \
+         b64encode(long_to_bytes(privkey[2])).decode('ascii') + ':' + \
+         b64encode(long_to_bytes(privkey[3])).decode('ascii')
     return ns
 
 def unserial_elgamal_privkey(privkey):
-    """Get a byte string, return a 4-elements tuple of long()
+    """Get a byte string, return a 4-elements tuple of int
 
     This contains the private (two first elements) and the public key."""
-    x = privkey.split(':'.encode('utf-8'))
+    if isinstance(privkey, str):
+        privkey = privkey.encode('ascii')
+    x = privkey.split(b':')
     return (bytes_to_long(b64decode(x[0])),
             bytes_to_long(b64decode(x[1])),
             bytes_to_long(b64decode(x[2])),
@@ -186,23 +240,29 @@ def unserial_elgamal_privkey(privkey):
 def encrypt_privkey(something, pw):
     """Encrypt using a password and Blowfish.
 
-    something should normally be 8-bytes padded, but we add some '\0'
+    something should normally be 8-bytes padded, but we add some '\\0'
     to pad it.
 
     Most of the time anyway, we get some base64 stuff to encrypt, so
     it shouldn't pose a problem."""
-    b = Blowfish.new(pw)
+    if isinstance(something, str):
+        something = something.encode('utf-8')
+    if isinstance(pw, str):
+        pw = pw.encode('utf-8')
+    b = Blowfish.new(pw, Blowfish.MODE_ECB)
     nsomething = wrapsum(something)
     nsomething = pad(nsomething, 8)
-    return b64encode(b.encrypt(nsomething))
+    return b64encode(b.encrypt(nsomething)).decode('ascii')
 
 def decrypt_privkey(something, pw):
     """Decrypt using Blowfish and a password
 
     Remove padding on right."""
-    b = Blowfish.new(pw)
+    if isinstance(pw, str):
+        pw = pw.encode('utf-8')
+    b = Blowfish.new(pw, Blowfish.MODE_ECB)
     decrypted_key = b.decrypt(b64decode(something))
-    return chksum(decrypted_key.rstrip('\x00'.encode('utf-8')))
+    return chksum(decrypted_key.rstrip(b'\x00'))
 
 
 #
@@ -211,12 +271,16 @@ def decrypt_privkey(something, pw):
 
 def encrypt_secret(secret, seckey=None):
     """Gen. a random key, AES256 encrypts the secret, return the random key"""
+    if isinstance(secret, str):
+        secret = secret.encode('utf-8')
     a = None
     if not seckey:
         seckey = randfunc(32)
-        a = AES.new(seckey)
+        a = AES.new(seckey, AES.MODE_ECB)
     else:
-        a = AES.new(b64decode(seckey))
+        raw_seckey = b64decode(seckey)
+        a = AES.new(raw_seckey, AES.MODE_ECB)
+        seckey = raw_seckey
 
     # Pad with CRC32 checksum
     secret = wrapsum(secret)
@@ -225,16 +289,16 @@ def encrypt_secret(secret, seckey=None):
     padded_secret = pad(secret, 16)
     ciphertext = a.encrypt(padded_secret)
     del(padded_secret)
-    ciphertext = b64encode(ciphertext)
-    seckey = b64encode(seckey)
+    ciphertext = b64encode(ciphertext).decode('ascii')
+    seckey = b64encode(seckey).decode('ascii')
     del(a)
     return (seckey, ciphertext)
 
 def decrypt_secret(seckey, ciphertext):
     """Decrypt using the provided seckey"""
-    a = AES.new(b64decode(seckey))
+    a = AES.new(b64decode(seckey), AES.MODE_ECB)
     ciphertext = b64decode(ciphertext)
-    secret = a.decrypt(ciphertext).rstrip('\x00'.encode('utf-8'))
+    secret = a.decrypt(ciphertext).rstrip(b'\x00')
     del(a)
     del(ciphertext)
     # Validate checksum
@@ -254,6 +318,9 @@ def encrypt_longmsg(eg, message):
     # Tested and works to up to 192, but we'll use 96 for safety.
     CHUNK_MAX_SIZE = 96
 
+    if isinstance(message, str):
+        message = message.encode('utf-8')
+
     message = wrapsum(message)
 
     # TODO: split into chunks if too long
@@ -269,7 +336,7 @@ def encrypt_longmsg(eg, message):
 
     out = []
     for chunk in chunks:
-        b64chunk = serial_elgamal_msg(eg.encrypt(chunk, randfunc(32)))
+        b64chunk = serial_elgamal_msg(elgamal_encrypt(eg, chunk, randfunc(32)))
         out.append(b64chunk)
 
     return '&'.join(out)
@@ -284,10 +351,10 @@ def decrypt_longmsg(eg, ciphermessage):
     chunks = ciphermessage.split('&')
     out = []
     for chunk in chunks:
-        snip = eg.decrypt(unserial_elgamal_msg(chunk))  # returned as bytes
+        snip = elgamal_decrypt(eg, unserial_elgamal_msg(chunk))  # returned as bytes
         out.append(snip)
 
-    message = chksum(''.encode('utf-8').join(out))
+    message = chksum(b''.join(out))
 
     return message
 

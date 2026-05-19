@@ -95,7 +95,7 @@ def delete_all_groups(self):
     vault_response = self.group_list()
     groups = vault_response['list']
     for group in groups:
-        print "*** Deleting group: %s" % group['id']
+        print("*** Deleting group: %s" % group['id'])
         delete_cascade = True
         self.group_del(group['id'], delete_cascade=True)
 
@@ -104,19 +104,19 @@ def delete_all_users(self):
     vault_response = self.user_list()
     for user in vault_response['list']:
         if not (user['username'] == 'admin'):
-            print "*** Deleting user: %s" % user['id']
+            print("*** Deleting user: %s" % user['id'])
             self.user_del(user['username'])
 
 def delete_all_machines(self):
     vault_response = self.machine_list()
     for machine in vault_response['list']:
-        print "*** Deleting machine: %s" % machine['id']
+        print("*** Deleting machine: %s" % machine['id'])
         self.machine_del(machine['id'])
 
 def delete_all_customers(self):
     vault_response = self.customer_list()
     for customer in vault_response['list']:
-        print "*** Deleting customer: %s" % customer['id']
+        print("*** Deleting customer: %s" % customer['id'])
         self.customer_del(customer['id'])
 
 

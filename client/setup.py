@@ -39,11 +39,8 @@ setup(
     license='GPLv3',
     setup_requires=['wheel'],
     install_requires=["SFLvault-common~=0.9",
-                      # TODO: Port to a recent keyring.  This old 1.6
-                      # version works until Python 3.8 (see:
-                      # https://github.com/savoirfairelinux/sflvault/issues/51).
-                      "keyring~=1.6",
-                      "pycrypto",
+                      "keyring>=3.0",
+                      "pycryptodome",
                       "decorator",
                       ] + \
                      ([] if platform.system() == 'Windows'
