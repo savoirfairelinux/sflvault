@@ -1,0 +1,31 @@
+[Unit]
+Description=SFLvault Secure Credential Store Server
+Documentation=https://www.sflvault.org
+After=network.target
+
+[Service]
+Type=simple
+User=sflvault
+Group=sflvault
+
+# Adjust these paths to match your deployment
+WorkingDirectory=/opt/SFLvault
+ExecStart=/opt/sflvault-env/bin/python -m sflvault.server /opt/SFLvault/etc/sflvault-server/production.ini
+
+Restart=on-failure
+RestartSec=5
+
+# Logging — journald captures stdout/stderr automatically
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sflvault
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/SFLvault/var/lib/sflvault-server
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
