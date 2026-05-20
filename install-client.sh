@@ -13,7 +13,6 @@
 #   2. Install sflvault-common and sflvault-client from the repo
 #   3. Symlink the `sflvault` binary to ~/.local/bin/sflvault
 #
-set -euo pipefail
 
 # ---------- defaults ----------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -43,19 +42,45 @@ if git -C "$REPO_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
 fi
 
 # ---------- install python3 / python3-venv on Debian/Ubuntu ----------
-if command -v apt-get &>/dev/null && [[ -f /etc/debian_version ]]; then
-    MISSING=()
-    command -v python3 &>/dev/null       || MISSING+=(python3)
-    python3 -m venv --help &>/dev/null 2>&1 || MISSING+=(python3-venv)
-    python3 -m pip --version &>/dev/null 2>&1 || MISSING+=(python3-pip)
-    if [[ ${#MISSING[@]} -gt 0 ]]; then
-        echo "Installing missing packages: ${MISSING[*]} ..."
-        if [[ $EUID -ne 0 ]]; then
-            sudo apt-get update -qq && sudo apt-get install -y -qq "${MISSING[@]}"
-        else
-            apt-get update -qq && apt-get install -y -qq "${MISSING[@]}"
-        fi
+if [ -f /etc/debian_version ]; then
+ MISSING=()
+ echo "Checking dependencies ..."
+ for pkg in python3 python3-venv python3-pip
+ do
+    dpkg -l |egrep -q "^ii(.*)$pkg"
+    if [ $? -ne 0 ]
+    then
+       MISSING+=("$pkg")
+    else
+       echo pakage $pkg is already installed
     fi
+ done 
+
+ echo Missing packages are "${MISSING[@]}"
+ if [[ ${#MISSING[@]} -gt 0 ]]; then
+   if  [ $UID -eq 0 ] 
+   then
+        apt-get update && apt-get install -y -qq "${MISSING[@]}"
+	INSTALLSTATUS=$?
+   else
+ 	if [ -f /usr/bin/sudo ]
+	then
+	   sudo apt-get update && sudo apt-get install -y -qq "${MISSING[@]}"
+	   INSTALLSTATUS=$?
+	else
+	   echo "sudo not found on your system"
+	   INSTALLSTATUS=3
+	fi
+   fi
+
+   if [ $INSTALLSTATUS -ne 0 ]
+   then
+           echo "python3 packages installation failed"
+           echo "please install manually as root:"
+           echo "apt install python3 python3-venv python3-pip"
+ 	   exit 2
+   fi
+ fi
 fi
 
 # ---------- sanity checks ----------
@@ -111,9 +136,12 @@ echo "Symlinked $SFLVAULT_BIN → $LOCAL_BIN/sflvault"
 if ! echo "$PATH" | grep -q "$LOCAL_BIN"; then
     echo ""
     echo "NOTE: $LOCAL_BIN is not in your PATH."
-    echo "Add this line to your ~/.bashrc or ~/.profile:"
-    echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo "Adding it to your .profile:"
+    echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> $HOME/.profile
+    echo "don't forget to run "
+    echo "'source $HOME/.profile'"
 fi
 
 echo ""
-echo "Installation complete. Run 'sflvault connect' to configure the client."
+echo "Installation complete. Run 'sflvault' now to use the client."
+
