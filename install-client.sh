@@ -42,6 +42,22 @@ if git -C "$REPO_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
     git -C "$REPO_DIR" pull --ff-only || echo "WARNING: git pull failed, installing from current state"
 fi
 
+# ---------- install python3 / python3-venv on Debian/Ubuntu ----------
+if command -v apt-get &>/dev/null && [[ -f /etc/debian_version ]]; then
+    MISSING=()
+    command -v python3 &>/dev/null       || MISSING+=(python3)
+    python3 -m venv --help &>/dev/null 2>&1 || MISSING+=(python3-venv)
+    python3 -m pip --version &>/dev/null 2>&1 || MISSING+=(python3-pip)
+    if [[ ${#MISSING[@]} -gt 0 ]]; then
+        echo "Installing missing packages: ${MISSING[*]} ..."
+        if [[ $EUID -ne 0 ]]; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq "${MISSING[@]}"
+        else
+            apt-get update -qq && apt-get install -y -qq "${MISSING[@]}"
+        fi
+    fi
+fi
+
 # ---------- sanity checks ----------
 for dir in "$COMMON_DIR" "$CLIENT_DIR"; do
     if [[ ! -f "$dir/setup.py" ]]; then
