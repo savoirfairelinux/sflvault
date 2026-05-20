@@ -90,9 +90,6 @@ def authenticate(keep_privkey=False):
             except DecryptError as e:
                 print("[SFLvault] Invalid passphrase")
                 return False
-            except TypeError as e:
-                print("[SFLvault] Could not retrieve passphrase, please resync your Keyring using the 'wallet' command.")
-                return False
             except KeyboardInterrupt as e:
                 print("[aborted]")
                 return False
@@ -176,9 +173,13 @@ class AskPassMethods(object):
             self.cfg._check_keyring()
             import keyring
             backend = self.cfg.wallet_get_obj()
-            return (backend.get_password("sflvault", self.cfg._wallet_key)
-                    or backend.get_password("sflvault",
-                                            self.cfg._wallet_key_legacy))
+            password = (backend.get_password("sflvault", self.cfg._wallet_key)
+                        or backend.get_password("sflvault",
+                                                self.cfg._wallet_key_legacy))
+            if password is None:
+                # Not stored in keyring yet — fall back to interactive prompt
+                password = self.default()
+            return password
 
         if wallet_name:
             self.getpass = keyring_wallet
