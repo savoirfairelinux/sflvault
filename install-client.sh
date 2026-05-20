@@ -36,6 +36,12 @@ done
 COMMON_DIR="$REPO_DIR/common"
 CLIENT_DIR="$REPO_DIR/client"
 
+# ---------- git pull if inside a git repo ----------
+if git -C "$REPO_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+    echo "Updating repository..."
+    git -C "$REPO_DIR" pull --ff-only || echo "WARNING: git pull failed, installing from current state"
+fi
+
 # ---------- sanity checks ----------
 for dir in "$COMMON_DIR" "$CLIENT_DIR"; do
     if [[ ! -f "$dir/setup.py" ]]; then
