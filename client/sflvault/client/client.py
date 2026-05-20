@@ -313,12 +313,29 @@ class SFLvaultConfig(object):
 
         current = self.wallet_get()
         out = [('0', 'Manual', None, 'Disabled', current == None)]
-        ref = {1: "Recommended", 0: "Supported", -1: "Not installed"} 
+
+        def _status(backend):
+            """Map modern keyring priority/viable to a human-readable status."""
+            try:
+                # Modern keyring (>=3.0): priority is a float, viable is a bool
+                if not backend.viable:
+                    return "Not installed"
+                if backend.priority >= 5:
+                    return "Recommended"
+                return "Supported"
+            except AttributeError:
+                # Legacy keyring: supported() returns -1, 0, or 1
+                try:
+                    v = backend.supported()
+                    return {1: "Recommended", 0: "Supported", -1: "Not installed"}.get(v, "Supported")
+                except Exception:
+                    return "Supported"
+
         for i, backend in enumerate(keyring.backend.get_all_keyring()):
             out.append((str(i + 1),
                         backend.__class__.__name__,
                         backend,
-                        ref[backend.supported()],
+                        _status(backend),
                         backend.__class__.__name__ == current,
                         ))
         return out
@@ -392,7 +409,8 @@ and breaks portability across machines using different usernames.
                  'KDEKWallet': 'python-keyring-kwallet',
                  'GnomeKeyring': 'python-keyring-gnome',
                  }
-        if backend.supported() == -1:
+        if not getattr(backend, 'viable', True) or \
+                (hasattr(backend, 'supported') and backend.supported() == -1):
             if name in assoc:
                 add = ' To add support, please install the `%s` package.' % \
                     assoc[name]
