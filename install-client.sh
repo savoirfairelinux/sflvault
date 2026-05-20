@@ -77,11 +77,8 @@ PIP="$VENV_DIR/bin/pip"
 "$PIP" install --quiet --upgrade pip
 
 # ---------- install packages ----------
-echo "Installing sflvault-common ..."
-"$PIP" install --quiet --force-reinstall "$COMMON_DIR"
-
-echo "Installing sflvault-client ..."
-"$PIP" install --quiet --force-reinstall "$CLIENT_DIR"
+echo "Installing sflvault-common and sflvault-client ..."
+"$PIP" install --quiet --force-reinstall "$COMMON_DIR" "$CLIENT_DIR"
 
 # ---------- symlink binary ----------
 SFLVAULT_BIN="$VENV_DIR/bin/sflvault"
