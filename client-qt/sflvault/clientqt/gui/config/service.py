@@ -28,8 +28,8 @@ import shutil
 import os
 from functools import partial
 
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 
 import sflvault
 from sflvault.client import SFLvaultClient
@@ -37,9 +37,9 @@ from sflvault.clientqt.gui.dialog import progressdialog
 from sflvault.clientqt.lib.auth import *
 
 
-class DeleteServiceWidget(QtGui.QMessageBox):
+class DeleteServiceWidget(QtWidgets.QMessageBox):
     def __init__(self, servid=None, parent=None):
-        QtGui.QMessageBox.__init__(self, parent)
+        QtWidgets.QMessageBox.__init__(self, parent)
         self.parent = parent
         # Check if a line is selected
         if not servid:
@@ -50,14 +50,14 @@ class DeleteServiceWidget(QtGui.QMessageBox):
         if not "services" in service:
             return False
         # Set windows
-        self.setIcon(QtGui.QMessageBox.Question)
-        self.ok = self.addButton(QtGui.QMessageBox.Ok)
-        self.cancel = self.addButton(QtGui.QMessageBox.Cancel)
+        self.setIcon(QtWidgets.QMessageBox.Question)
+        self.ok = self.addButton(QtWidgets.QMessageBox.Ok)
+        self.cancel = self.addButton(QtWidgets.QMessageBox.Cancel)
         self.setText(self.tr("Do you want to delete %s" % service["services"][-1]["url"]))
 
         # SIGNALS
-        self.connect(self.ok, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
-        self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        self.ok.clicked.connect(self.accept)
+        self.cancel.clicked.connect(self.reject)
 
     def accept(self):
         # Delete service
@@ -68,9 +68,9 @@ class DeleteServiceWidget(QtGui.QMessageBox):
             self.done(1)
 
 
-class EditServiceWidget(QtGui.QDialog):
+class EditServiceWidget(QtWidgets.QDialog):
     def __init__(self, servid=False, machid=None, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.parent = parent
         self.settings = self.parent.settings
         self.servid = servid
@@ -85,29 +85,29 @@ class EditServiceWidget(QtGui.QDialog):
 
         # Load gui items
         ## Main groupbox
-        groupbox = QtGui.QGroupBox()
+        groupbox = QtWidgets.QGroupBox()
         groupbox.setTitle(self.tr("Service"))
 
         # Service info groupbox
-        info_layout = QtGui.QGridLayout()
-        groupbox_info = QtGui.QGroupBox()
+        info_layout = QtWidgets.QGridLayout()
+        groupbox_info = QtWidgets.QGroupBox()
         groupbox_info.setTitle(self.tr("Service info"))
         groupbox_info.setLayout(info_layout)
-        self.machineLabel = QtGui.QLabel(self.tr("Machine"))
+        self.machineLabel = QtWidgets.QLabel(self.tr("Machine"))
         self.machineLabel.setMinimumWidth(100)
-        self.machine = QtGui.QComboBox()
+        self.machine = QtWidgets.QComboBox()
         self.machine.setEditable(1)
-        self.parentservLabel = QtGui.QLabel(self.tr("Parent service"))
+        self.parentservLabel = QtWidgets.QLabel(self.tr("Parent service"))
         self.parentservLabel.setMinimumWidth(100)
-        self.parentserv = QtGui.QComboBox()
+        self.parentserv = QtWidgets.QComboBox()
         self.parentserv.setEditable(1)
-        self.groupsLabel = QtGui.QLabel(self.tr("Group"))
+        self.groupsLabel = QtWidgets.QLabel(self.tr("Group"))
         self.groupsLabel.setMinimumWidth(100)
-        self.groups = QtGui.QListWidget(self)
-        self.groups.setSelectionMode(QtGui.QAbstractItemView.MultiSelection)
-        self.notesLabel = QtGui.QLabel(self.tr("Notes"))
+        self.groups = QtWidgets.QListWidget(self)
+        self.groups.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.notesLabel = QtWidgets.QLabel(self.tr("Notes"))
         self.notesLabel.setMinimumWidth(100)
-        self.notes = QtGui.QLineEdit()
+        self.notes = QtWidgets.QLineEdit()
         info_layout.addWidget(self.machineLabel, 0, 0)
         info_layout.addWidget(self.machine, 0, 1)
         info_layout.addWidget(self.parentservLabel, 1, 0)
@@ -118,13 +118,13 @@ class EditServiceWidget(QtGui.QDialog):
         info_layout.addWidget(self.notes, 3, 1)
 
         # Metadata groupbox
-        self.metadata_layout = QtGui.QGridLayout()
-        self.groupbox_metadata = QtGui.QGroupBox()
+        self.metadata_layout = QtWidgets.QGridLayout()
+        self.groupbox_metadata = QtWidgets.QGroupBox()
         self.groupbox_metadata.setTitle(self.tr("Metadata"))
         self.groupbox_metadata.setLayout(self.metadata_layout)
-        self.metadata_key_label = QtGui.QLabel(self.tr("Metadata key"))
-        self.metadata_value_label = QtGui.QLabel(self.tr("Metadata value"))
-        self.metadata_button = QtGui.QPushButton(self.tr("+"))
+        self.metadata_key_label = QtWidgets.QLabel(self.tr("Metadata key"))
+        self.metadata_value_label = QtWidgets.QLabel(self.tr("Metadata value"))
+        self.metadata_button = QtWidgets.QPushButton(self.tr("+"))
         self.metadata_button.adjustSize()
         w = self.metadata_button.height()
         self.metadata_button.setMaximumWidth(w)
@@ -136,28 +136,28 @@ class EditServiceWidget(QtGui.QDialog):
         self.groupbox_metadata.hide()
         
         # Url groupbox
-        url_layout = QtGui.QGridLayout()
-        groupbox_url = QtGui.QGroupBox()
+        url_layout = QtWidgets.QGridLayout()
+        groupbox_url = QtWidgets.QGroupBox()
         groupbox_url.setTitle(self.tr("Url"))
         groupbox_url.setLayout(url_layout)
-        self.usernameLabel = QtGui.QLabel(self.tr("Username"))
+        self.usernameLabel = QtWidgets.QLabel(self.tr("Username"))
         self.usernameLabel.setMinimumWidth(100)
-        self.username = QtGui.QLineEdit()
-        self.hostLabel = QtGui.QLabel(self.tr("Host"))
+        self.username = QtWidgets.QLineEdit()
+        self.hostLabel = QtWidgets.QLabel(self.tr("Host"))
         self.hostLabel.setMinimumWidth(100)
-        self.host = QtGui.QLineEdit()
-        self.portLabel = QtGui.QLabel(self.tr("Port"))
+        self.host = QtWidgets.QLineEdit()
+        self.portLabel = QtWidgets.QLabel(self.tr("Port"))
         self.portLabel.setMinimumWidth(100)
-        self.port = QtGui.QLineEdit()
-        self.schemeLabel = QtGui.QLabel(self.tr("Scheme"))
-        self.scheme = QtGui.QLineEdit()
-        self.paramsLabel = QtGui.QLabel(self.tr("Parameters"))
+        self.port = QtWidgets.QLineEdit()
+        self.schemeLabel = QtWidgets.QLabel(self.tr("Scheme"))
+        self.scheme = QtWidgets.QLineEdit()
+        self.paramsLabel = QtWidgets.QLabel(self.tr("Parameters"))
         self.paramsLabel.setMinimumWidth(100)
-        self.params = QtGui.QLineEdit()
-        self.urlLabel = QtGui.QLabel(self.tr("Url"))
+        self.params = QtWidgets.QLineEdit()
+        self.urlLabel = QtWidgets.QLabel(self.tr("Url"))
         self.urlLabel.setMinimumWidth(100)
         self.urlLabel.hide()
-        self.url = QtGui.QLineEdit()
+        self.url = QtWidgets.QLineEdit()
         self.url.hide()
         url_layout.addWidget(self.schemeLabel, 0, 0)
         url_layout.addWidget(self.scheme, 0, 1)
@@ -174,87 +174,87 @@ class EditServiceWidget(QtGui.QDialog):
         groupbox_url.setLayout(url_layout)
 
         # Password Groupbox
-        password_layout = QtGui.QGridLayout()
-        groupbox_password = QtGui.QGroupBox()
+        password_layout = QtWidgets.QGridLayout()
+        groupbox_password = QtWidgets.QGroupBox()
         groupbox_password.setTitle(self.tr("Secret"))
         groupbox_password.setLayout(password_layout)
-        self.passwordLabel = QtGui.QLabel(self.tr("Password"))
+        self.passwordLabel = QtWidgets.QLabel(self.tr("Password"))
         self.passwordLabel.setMaximumWidth(100)
-        self.password = QtGui.QLineEdit()
-        self.password_button = QtGui.QPushButton(self.tr("Show Password"))
+        self.password = QtWidgets.QLineEdit()
+        self.password_button = QtWidgets.QPushButton(self.tr("Show Password"))
         if self.mode == "edit":
             self.password.setReadOnly(1)
             self.password.setDisabled(1)
         else:
             self.password.setReadOnly(0)
-            self.password.setEchoMode(QtGui.QLineEdit.Password)
+            self.password.setEchoMode(QtWidgets.QLineEdit.Password)
         password_layout.addWidget(self.passwordLabel, 0, 0)
         password_layout.addWidget(self.password, 0, 1, 1, 2)
         password_layout.addWidget(self.password_button, 0, 3)
 
         # Button Groupbox
-        button_layout = QtGui.QHBoxLayout()
-        groupbox_button = QtGui.QGroupBox()
+        button_layout = QtWidgets.QHBoxLayout()
+        groupbox_button = QtWidgets.QGroupBox()
         groupbox_button.setLayout(button_layout)
-        self.advanced = QtGui.QPushButton(self.tr("Advanced"))
-        self.save = QtGui.QPushButton(self.tr("Save service"))
-        self.cancel = QtGui.QPushButton(self.tr("Cancel"))
+        self.advanced = QtWidgets.QPushButton(self.tr("Advanced"))
+        self.save = QtWidgets.QPushButton(self.tr("Save service"))
+        self.cancel = QtWidgets.QPushButton(self.tr("Cancel"))
         button_layout.addWidget(self.cancel)
         button_layout.addWidget(self.advanced)
         button_layout.addWidget(self.save)
 
         # Positionning items
         # Main groupbox
-        gridLayout = QtGui.QGridLayout()
+        gridLayout = QtWidgets.QGridLayout()
         gridLayout.addWidget(groupbox_url, 1, 0, 1, 2)
         gridLayout.addWidget(groupbox_info, 2, 0, 1, 2)
         gridLayout.addWidget(groupbox_password, 6, 0, 1, 2)
         gridLayout.addWidget(groupbox_button, 7, 0, 1, 2)
         groupbox.setLayout(gridLayout)
-        mainLayout = QtGui.QGridLayout()
+        mainLayout = QtWidgets.QGridLayout()
         mainLayout.addWidget(groupbox,0,0)
         self.setLayout(mainLayout)
 
         self.setWindowTitle(self.tr("Add service"))
 
         self.machineline = self.machine.lineEdit()
-        QtCore.QObject.connect(self.machineline, QtCore.SIGNAL("editingFinished()"), self.completeMachine)
+        self.machineline.editingFinished.connect(self.completeMachine)
         self.parentservline = self.parentserv.lineEdit()
-        QtCore.QObject.connect(self.parentservline, QtCore.SIGNAL("editingFinished()"), self.completeParentserv)
+        self.parentservline.editingFinished.connect(self.completeParentserv)
 
         # SIGNALS
-        self.connect(self.username, QtCore.SIGNAL("textEdited(const QString&)"), self.simple_to_advanced)
-        self.connect(self.host, QtCore.SIGNAL("textEdited(const QString&)"), self.simple_to_advanced)
-        self.connect(self.port, QtCore.SIGNAL("textEdited(const QString&)"), self.simple_to_advanced)
-        self.connect(self.scheme, QtCore.SIGNAL("textEdited(const QString&)"), self.simple_to_advanced)
-        self.connect(self.params, QtCore.SIGNAL("textEdited(const QString&)"), self.simple_to_advanced)
-        self.connect(self.url, QtCore.SIGNAL("textEdited(const QString&)"), self.advanced_to_simple)
-        self.connect(self.password_button, QtCore.SIGNAL("clicked()"), self.fill_password)
+        self.username.textEdited.connect(self.simple_to_advanced)
+        self.host.textEdited.connect(self.simple_to_advanced)
+        self.port.textEdited.connect(self.simple_to_advanced)
+        self.scheme.textEdited.connect(self.simple_to_advanced)
+        self.params.textEdited.connect(self.simple_to_advanced)
+        self.url.textEdited.connect(self.advanced_to_simple)
+        self.password_button.clicked.connect(self.fill_password)
 
-        self.connect(self.metadata_button, QtCore.SIGNAL("clicked()"), self.add_metadata)
+        self.metadata_button.clicked.connect(self.add_metadata)
 
-        self.connect(self.advanced, QtCore.SIGNAL("clicked()"), self.switch_edit)
-        self.connect(self.save, QtCore.SIGNAL("clicked()"), self.editService)
-        self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        self.advanced.clicked.connect(self.switch_edit)
+        self.save.clicked.connect(self.editService)
+        self.cancel.clicked.connect(self.reject)
 
     def add_metadata(self):
-        key, ret = QtGui.QInputDialog.getText(self,
+        key, ret = QtWidgets.QInputDialog.getText(self,
                                             self.tr("New Metadata"),
                                             self.tr("Metadata key:"),
-                                            QtGui.QLineEdit.Normal,
+                                            QtWidgets.QLineEdit.Normal,
                                             '');
         if key == '':
-            print "error"
+            print("error")
         else:
-            value, ret = QtGui.QInputDialog.getText(self,
+            value, ret = QtWidgets.QInputDialog.getText(self,
                                             self.tr("New Metadata"),
                                             self.tr("Metadata value:"),
-                                            QtGui.QLineEdit.Normal,
+                                            QtWidgets.QLineEdit.Normal,
                                             '');
             if value == '':
-                print "error"
-            key_label = QtGui.QLabel(key)
-            value_label = QtGui.QLabel(value)
+                print("error")
+            key_label = QtWidgets.QLabel(key)
+            value_label = QtWidgets.QLabel(value)
 
             self.metadata[key_label] = value_label
 
@@ -262,18 +262,18 @@ class EditServiceWidget(QtGui.QDialog):
             self.metadata_layout.addWidget(key_label, length, 0)
             self.metadata_layout.addWidget(value_label, length, 1)
             self.metadata_layout.addWidget(self.metadata_button, length + 1, 2)
-            del_button = QtGui.QPushButton("-")
+            del_button = QtWidgets.QPushButton("-")
             del_button.adjustSize()
             w = del_button.height()
             del_button.setMaximumWidth(w)
             del_button.key = key_label 
             temp_func = partial(self.del_metadata, del_button)
-            self.connect(del_button, QtCore.SIGNAL("clicked()"), temp_func) 
+            del_button.clicked.connect(temp_func)
             self.metadata_layout.addWidget(del_button, length, 2)
 
 
     def switch_edit(self):
-        if self.advanced.text() == QtCore.QString(self.tr("Advanced")):
+        if self.advanced.text() == str(self.tr("Advanced")):
             # Hide simple fields
             self.usernameLabel.hide()
             self.username.hide()
@@ -309,7 +309,7 @@ class EditServiceWidget(QtGui.QDialog):
             self.advanced.setText(self.tr("Advanced"))
 
     def advanced_to_simple(self):
-        advanced_url = unicode(self.url.text())
+        advanced_url = str(self.url.text())
         # Split data
         if len(advanced_url.split("@")) > 2:
             temp = advanced_url.rsplit("@",1)
@@ -319,11 +319,11 @@ class EditServiceWidget(QtGui.QDialog):
             url = QtCore.QUrl(protocol + "://" + url)
         else:
             url = QtCore.QUrl(advanced_url)
-        username = unicode(url.userName())
-        protocol = unicode(url.scheme())
-        port = unicode(url.port() if url.port() > 0 else '')
-        host = unicode(url.host())
-        uri = unicode(url.path())
+        username = str(url.userName())
+        protocol = str(url.scheme())
+        port = str(url.port() if url.port() > 0 else '')
+        host = str(url.host())
+        uri = str(url.path())
         # Set fields
         self.username.setText(username)
         self.host.setText(host)
@@ -341,7 +341,10 @@ class EditServiceWidget(QtGui.QDialog):
         advanced_url = QtCore.QUrl()
         advanced_url.setScheme(scheme)
         advanced_url.setHost(host)
-        advanced_url.setPort(port.toInt()[0] if port.toInt()[1] else -1)
+        try:
+            advanced_url.setPort(int(port) if port else -1)
+        except ValueError:
+            advanced_url.setPort(-1)
         advanced_url.setPath(params)
         advanced_url.setUserName(username)
         self.url.setText(advanced_url.toString())
@@ -351,19 +354,19 @@ class EditServiceWidget(QtGui.QDialog):
             decodedpassword = getPassword(self.servid)
             if decodedpassword != False:
                 self.password.setText(decodedpassword)
-                self.password.setEchoMode(QtGui.QLineEdit.Normal)
+                self.password.setEchoMode(QtWidgets.QLineEdit.Normal)
                 self.password.setReadOnly(0)
                 self.password.setDisabled(0)
             else:
                 # TODO show error box (permission denied ?)
                 pass
         else:
-            if self.password.echoMode() == QtGui.QLineEdit.Password:
+            if self.password.echoMode() == QtWidgets.QLineEdit.Password:
                 self.password_button.setText(self.tr("Hide Password"))
-                self.password.setEchoMode(QtGui.QLineEdit.Normal)
+                self.password.setEchoMode(QtWidgets.QLineEdit.Normal)
             else:
                 self.password_button.setText(self.tr("Show Password"))
-                self.password.setEchoMode(QtGui.QLineEdit.Password)
+                self.password.setEchoMode(QtWidgets.QLineEdit.Password)
 
 
     def fillMachinesList(self):
@@ -371,7 +374,7 @@ class EditServiceWidget(QtGui.QDialog):
         # Fill machine combo box
         selected_machine = self.machineline.text()
         for machine in machines["list"]:
-            self.machine.addItem(machine['name'] + " - m#" + unicode(machine['id']), QtCore.QVariant(machine['id']))
+            self.machine.addItem(machine['name'] + " - m#" + str(machine['id']), machine['id'])
         # Select good row
         index = self.machine.findText(" - " + selected_machine, QtCore.Qt.MatchEndsWith)
         if index > -1:
@@ -381,11 +384,11 @@ class EditServiceWidget(QtGui.QDialog):
         parentserv = self.parentservline.text()
         services = listService()
         # Fill service combo box
-        self.parentserv.addItem(self.tr("No parent"), QtCore.QVariant(None))
+        self.parentserv.addItem(self.tr("No parent"), None)
         for service in services["list"]:
             # Doesn t add this item in possible parent list (if it s edit mode
             if service['id'] != self.servid:
-                self.parentserv.addItem(service['url'] +" - s#" + unicode(service['id']), QtCore.QVariant(service['id']))
+                self.parentserv.addItem(service['url'] +" - s#" + str(service['id']), service['id'])
         # Select good row
         index = self.parentserv.findText(parentserv, QtCore.Qt.MatchEndsWith)
         if index > -1:
@@ -394,7 +397,7 @@ class EditServiceWidget(QtGui.QDialog):
     def completeMachine(self):
         index = self.machine.findText(self.machineline.text(), QtCore.Qt.MatchContains)
         if index == -1:
-            msgBox = QtGui.QMessageBox(QtGui.QMessageBox.Critical, "No machine found","No machine found")
+            msgBox = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Critical, "No machine found","No machine found")
             msgBox.exec_();
             self.machine.setFocus()
         else:
@@ -422,10 +425,10 @@ class EditServiceWidget(QtGui.QDialog):
         for group in groups["list"]:
             ## ADD a checkbox to show/hide all groups/membre groups
             #if group["member"]:
-            item = QtGui.QListWidgetItem(group['name'] +" - g#" + unicode(group['id']))
-            item.setData(Qt.UserRole, QtCore.QVariant(group['id']))
+            item = QtWidgets.QListWidgetItem(group['name'] +" - g#" + str(group['id']))
+            item.setData(Qt.UserRole, group['id'])
             self.groups.addItem(item)
-#                self.groups.addItem(group['name'] +" - g#" + unicode(group['id']), QtCore.QVariant(group['id']))
+#                self.groups.addItem(group['name'] +" - g#" + str(group['id']), QtCore.QVariant(group['id']))
         if self.servid:
             # Fill fields for edit mode
             service = getService(self.servid, True)
@@ -441,14 +444,14 @@ class EditServiceWidget(QtGui.QDialog):
             # groups
             if self.informations["groups_list"]:
                 for group in self.informations["groups_list"]:
-                    item_list = self.groups.findItems(QtCore.QString(group[1] + " - "), QtCore.Qt.MatchStartsWith)
+                    item_list = self.groups.findItems(str(group[1] + " - "), QtCore.Qt.MatchStartsWith)
                     # Selected groups in listwidget
                     if len(item_list) > 0:
                         item_list[0].setSelected(True) 
             self.notes.setText(self.informations["notes"])
             # metadata
             if isinstance(self.informations["metadata"], dict):
-                self.metadata = dict([ (QtGui.QLabel(key), QtGui.QLabel(value))
+                self.metadata = dict([ (QtWidgets.QLabel(key), QtWidgets.QLabel(value))
                                    for key, value in
                                  self.informations["metadata"].items() ])
             else:
@@ -457,13 +460,13 @@ class EditServiceWidget(QtGui.QDialog):
                 key_label, value_label = data
                 self.metadata_layout.addWidget(key_label, i + 1, 0)
                 self.metadata_layout.addWidget(value_label, i + 1, 1)
-                del_button = QtGui.QPushButton("-")
+                del_button = QtWidgets.QPushButton("-")
                 del_button.adjustSize()
                 w = del_button.height()
                 del_button.setMaximumWidth(w)
                 del_button.key = key_label
                 temp_func = partial(self.del_metadata, del_button)
-                self.connect(del_button, QtCore.SIGNAL("clicked()"), temp_func)
+                del_button.clicked.connect(temp_func)
                 self.metadata_layout.addWidget(del_button, i+1, 2)
             self.metadata_layout.addWidget(self.metadata_button,
                                             len(self.metadata) + 1,
@@ -497,26 +500,25 @@ class EditServiceWidget(QtGui.QDialog):
                         "notes": None,
                         }
         # Fill it
-        service_info["machine_id"], bool = self.machine.itemData(self.machine.currentIndex()).toInt()
-        service_info["parent_service_id"], bool = self.parentserv.itemData(self.parentserv.currentIndex()).toInt()
-        service_info["url"] = unicode(self.url.text())
+        service_info["machine_id"] = self.machine.itemData(self.machine.currentIndex())
+        service_info["parent_service_id"] = self.parentserv.itemData(self.parentserv.currentIndex())
+        service_info["url"] = str(self.url.text())
         # Groups update
         group_ids_item_list = self.groups.selectedIndexes()
         if len(group_ids_item_list) < 1:
-            error = QtGui.QMessageBox(QtGui.QMessageBox.Critical, self.tr("No group selected"), self.tr("You have to select at least one group"))
+            error = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Critical, self.tr("No group selected"), self.tr("You have to select at least one group"))
             error.exec_()
             return False
         group_ids = []
         for group_id_item in group_ids_item_list:
-            group_id, bool,= group_id_item.data(QtCore.Qt.UserRole).toInt()
-            group_ids.append(group_id)
+            group_ids.append(int(group_id_item.data(QtCore.Qt.UserRole)))
 
-        service_info["secret"] = unicode(self.password.text())
+        service_info["secret"] = str(self.password.text())
 
-        service_info["notes"] = unicode(self.notes.text())
+        service_info["notes"] = str(self.notes.text())
 
-        service_info["metadata"] = dict([(unicode(key.text()),
-                                          unicode(value.text()))
+        service_info["metadata"] = dict([(str(key.text()),
+                                          str(value.text()))
                                     for key, value in self.metadata.items()])
 
         if self.mode == "add":
@@ -548,7 +550,7 @@ class EditServiceWidget(QtGui.QDialog):
             if service_info["secret"] != '':
                 editPassword(self.servid, service_info["secret"])
         else:
-            print "ERROR ??"
+            print("ERROR ??")
             return False
         # reload tree
         self.parent.search(None)

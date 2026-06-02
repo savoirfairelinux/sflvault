@@ -23,9 +23,10 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui, QtWebKit
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWebEngineWidgets import QWebEngineView as QWebView
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 from sflvault.clientqt.images.qicons import *
@@ -33,12 +34,12 @@ import shutil
 import os
 
 
-class WebPreviewWidget(QtGui.QWidget):
+class WebPreviewWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         """ Widget to show a preview
             of web site
         """
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
     
         # Widget options
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, False)
@@ -49,15 +50,15 @@ class WebPreviewWidget(QtGui.QWidget):
         self.webpreview = WebPreview(self)
 
         # Layout
-        layout = QtGui.QVBoxLayout(self)
+        layout = QtWidgets.QVBoxLayout(self)
         # Load proxy widget 
-        self.proxyitem = QtGui.QGraphicsProxyWidget()
+        self.proxyitem = QtWidgets.QGraphicsProxyWidget()
         self.proxyitem.setWidget(self.webpreview)
         # Scence
-        scene = QtGui.QGraphicsScene()
+        scene = QtWidgets.QGraphicsScene()
         scene.addItem(self.proxyitem)
         # View
-        view = QtGui.QGraphicsView(scene)
+        view = QtWidgets.QGraphicsView(scene)
         ## rescale view
         view.scale(0.4, 0.4)
         view.setScene(scene)
@@ -70,11 +71,11 @@ class WebPreviewWidget(QtGui.QWidget):
         """
         self.close()
 
-class WebPreview(QtWebKit.QWebView):
+class WebPreview(QWebView):
     def __init__(self, parent=None):
         """
         """
-        QtWebKit.QWebView.__init__(self, None)
+        QWebView.__init__(self, None)
         self.parent = parent
 
     def mousePressEvent(self, event):

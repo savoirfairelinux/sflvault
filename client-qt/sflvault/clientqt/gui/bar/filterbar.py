@@ -23,35 +23,35 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.clientqt.images.qicons import *
 import shutil
 import os
 
 
-class FilterBar(QtGui.QWidget):
+class FilterBar(QtWidgets.QWidget):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.parent = parent
 
-        layout = QtGui.QHBoxLayout(self)
-        layout.setMargin(0)
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        self.close = QtGui.QToolButton(self);
+        self.close = QtWidgets.QToolButton(self);
         self.close.setAutoRaise(True)
         self.close.setIcon(Qicons("close"))
         self.close.setToolTip(self.tr("Hide Filter Bar"))
         layout.addWidget(self.close)
 
-        self.filter_label = QtGui.QLabel(self.tr("Filter : "))
+        self.filter_label = QtWidgets.QLabel(self.tr("Filter : "))
         layout.addWidget(self.filter_label)
 
-        self.filter_input = QtGui.QLineEdit(self)
+        self.filter_input = QtWidgets.QLineEdit(self)
         self.filter_input.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.filter_label.setBuddy(self.filter_input)
         layout.addWidget(self.filter_input)
 
-        QtCore.QObject.connect(self.close, QtCore.SIGNAL("clicked()"), self.hide)
+        self.close.clicked.connect(self.hide)

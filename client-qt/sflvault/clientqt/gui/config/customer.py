@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
@@ -34,9 +34,9 @@ import os
 from sflvault.clientqt.lib.auth import *
 
 
-class DeleteCustomerWidget(QtGui.QMessageBox):
+class DeleteCustomerWidget(QtWidgets.QMessageBox):
     def __init__(self, custid=None, parent=None):
-        QtGui.QMessageBox.__init__(self, parent)
+        QtWidgets.QMessageBox.__init__(self, parent)
         self.parent = parent
         # Check if a line is selected
         if not custid:
@@ -47,14 +47,14 @@ class DeleteCustomerWidget(QtGui.QMessageBox):
         if not "customer" in customer:
             return False
         # Set windows
-        self.setIcon(QtGui.QMessageBox.Question)
-        self.ok = self.addButton(QtGui.QMessageBox.Ok)
-        self.cancel = self.addButton(QtGui.QMessageBox.Cancel)
+        self.setIcon(QtWidgets.QMessageBox.Question)
+        self.ok = self.addButton(QtWidgets.QMessageBox.Ok)
+        self.cancel = self.addButton(QtWidgets.QMessageBox.Cancel)
         self.setText(self.tr("Do you want to delete %s" % customer["customer"]["name"]))
 
         # SIGNALS
-        self.connect(self.ok, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
-        self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        self.ok.clicked.connect(self.accept)
+        self.cancel.clicked.connect(self.reject)
 
     def accept(self):
         # Delete customer
@@ -65,39 +65,39 @@ class DeleteCustomerWidget(QtGui.QMessageBox):
             self.done(1)
         
 
-class EditCustomerWidget(QtGui.QDialog):
+class EditCustomerWidget(QtWidgets.QDialog):
     def __init__(self, custid=None, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.parent = parent
         self.custid = custid
         self.mode = "add"
 
         # Load gui items
-        groupbox = QtGui.QGroupBox()
-        self.nameLabel = QtGui.QLabel(self.tr("Customer Name"))
-        self.name = QtGui.QLineEdit()
+        groupbox = QtWidgets.QGroupBox()
+        self.nameLabel = QtWidgets.QLabel(self.tr("Customer Name"))
+        self.name = QtWidgets.QLineEdit()
 
-        self.save = QtGui.QPushButton(self.tr("Save customer"))
-        self.cancel = QtGui.QPushButton(self.tr("Cancel"))
+        self.save = QtWidgets.QPushButton(self.tr("Save customer"))
+        self.cancel = QtWidgets.QPushButton(self.tr("Cancel"))
 
         # Positionning items
         ## Groups groupbox
-        gridLayout = QtGui.QGridLayout()
+        gridLayout = QtWidgets.QGridLayout()
         gridLayout.addWidget(self.nameLabel,0,0)
         gridLayout.addWidget(self.name,0,1)
         gridLayout.addWidget(self.cancel,1,0)
         gridLayout.addWidget(self.save,1,1)
         groupbox.setLayout(gridLayout)
 
-        mainLayout = QtGui.QGridLayout()
+        mainLayout = QtWidgets.QGridLayout()
         mainLayout.addWidget(groupbox,0,0)
         self.setLayout(mainLayout)
 
         self.setWindowTitle(self.tr("Add customer"))
 
         # SIGNALS
-        self.connect(self.save, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
-        self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        self.save.clicked.connect(self.accept)
+        self.cancel.clicked.connect(self.reject)
 
     def exec_(self):
         # Set field if is an edit
@@ -111,7 +111,7 @@ class EditCustomerWidget(QtGui.QDialog):
 
     def accept(self):
         customer_info = {"name" : None}
-        customer_info["name"] = unicode(self.name.text())
+        customer_info["name"] = str(self.name.text())
         if self.mode == "add":
             # Add new customer
             addCustomer(customer_info["name"])

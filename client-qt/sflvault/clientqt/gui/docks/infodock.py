@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
@@ -34,16 +34,16 @@ import os
 from sflvault.clientqt.lib.auth import *
 
 
-class InfoDock(QtGui.QDockWidget):
+class InfoDock(QtWidgets.QDockWidget):
     def __init__(self, parent=None ):
-        QtGui.QDockWidget.__init__(self, parent)
+        QtWidgets.QDockWidget.__init__(self, parent)
         self.parent = parent
         self.info = Info(self)
         self.setWidget(self.info)
         self.setWindowTitle(self.tr("Informations"))
 
         ## Check visibility
-        QtCore.QObject.connect(self, QtCore.SIGNAL("visibilityChanged (bool)"), self.parent.menubar.checkDockBoxes)
+        self.visibilityChanged.connect(self.parent.menubar.checkDockBoxes)
 
     def showInformations(self, customerid, machineid=None, serviceid=None):
         """
@@ -86,9 +86,9 @@ class InfoDock(QtGui.QDockWidget):
         self.info.showInformations(self.customer, self.machine, self.service)
 
 
-class Info(QtGui.QWidget):
+class Info(QtWidgets.QWidget):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.parent = parent
 
         self.service_list = []
@@ -101,46 +101,46 @@ class Info(QtGui.QWidget):
         self.vault_list_title = []
 
         # Service info
-        service_layout = QtGui.QGridLayout()
+        service_layout = QtWidgets.QGridLayout()
         service_layout.setSpacing(False)
-        self.service_access_label = QtGui.QLabel(self.tr("Service access"))
-        self.service_access = QtGui.QLabel()
+        self.service_access_label = QtWidgets.QLabel(self.tr("Service access"))
+        self.service_access = QtWidgets.QLabel()
         self.service_list_title.append(self.service_access_label)
         self.service_list.append(self.service_access)
-        self.service_id_label = QtGui.QLabel(self.tr("Service id"))
-        self.service_id = QtGui.QLabel()
+        self.service_id_label = QtWidgets.QLabel(self.tr("Service id"))
+        self.service_id = QtWidgets.QLabel()
         self.service_list_title.append(self.service_id_label)
         self.service_list.append(self.service_id)
-        self.service_scheme_label = QtGui.QLabel(self.tr("Service scheme"))
-        self.service_scheme = QtGui.QLabel()
+        self.service_scheme_label = QtWidgets.QLabel(self.tr("Service scheme"))
+        self.service_scheme = QtWidgets.QLabel()
         self.service_list_title.append(self.service_scheme_label)
         self.service_list.append(self.service_scheme)
-        self.service_host_label = QtGui.QLabel(self.tr("Service host"))
-        self.service_host = QtGui.QLabel()
+        self.service_host_label = QtWidgets.QLabel(self.tr("Service host"))
+        self.service_host = QtWidgets.QLabel()
         self.service_list_title.append(self.service_host_label)
         self.service_list.append(self.service_host)
-        self.service_port_label = QtGui.QLabel(self.tr("Service port"))
-        self.service_port = QtGui.QLabel()
+        self.service_port_label = QtWidgets.QLabel(self.tr("Service port"))
+        self.service_port = QtWidgets.QLabel()
         self.service_list_title.append(self.service_port_label)
         self.service_list.append(self.service_port)
-        self.service_username_label = QtGui.QLabel(self.tr("Service username"))
-        self.service_username = QtGui.QLabel()
+        self.service_username_label = QtWidgets.QLabel(self.tr("Service username"))
+        self.service_username = QtWidgets.QLabel()
         self.service_list_title.append(self.service_username_label)
         self.service_list.append(self.service_username)
-        self.service_params_label = QtGui.QLabel(self.tr("Service path"))
-        self.service_params = QtGui.QLabel()
+        self.service_params_label = QtWidgets.QLabel(self.tr("Service path"))
+        self.service_params = QtWidgets.QLabel()
         self.service_list_title.append(self.service_params_label)
         self.service_list.append(self.service_params)
-        self.service_url_label = QtGui.QLabel(self.tr("Service url"))
-        self.service_url = QtGui.QLabel()
+        self.service_url_label = QtWidgets.QLabel(self.tr("Service url"))
+        self.service_url = QtWidgets.QLabel()
         self.service_list_title.append(self.service_url_label)
         self.service_list.append(self.service_url)
-        self.service_parent_label = QtGui.QLabel(self.tr("Service parent"))
-        self.service_parent = QtGui.QLabel()
+        self.service_parent_label = QtWidgets.QLabel(self.tr("Service parent"))
+        self.service_parent = QtWidgets.QLabel()
         self.service_list_title.append(self.service_parent_label)
         self.service_list.append(self.service_parent)
-        self.service_groups_label = QtGui.QLabel(self.tr("Service group"))
-        self.service_groups = QtGui.QLabel()
+        self.service_groups_label = QtWidgets.QLabel(self.tr("Service group"))
+        self.service_groups = QtWidgets.QLabel()
         self.service_list_title.append(self.service_groups_label)
         self.service_list.append(self.service_groups)
         service_layout.addWidget(self.service_access_label, 0, 0)
@@ -163,35 +163,35 @@ class Info(QtGui.QWidget):
         service_layout.addWidget(self.service_parent, 8, 1)
         service_layout.addWidget(self.service_groups_label, 9, 0)
         service_layout.addWidget(self.service_groups, 9, 1)
-        self.service_groupbox = QtGui.QGroupBox()
+        self.service_groupbox = QtWidgets.QGroupBox()
         self.service_groupbox.setTitle(self.tr("Service"))
         self.service_groupbox.setLayout(service_layout)
 
         # Machine info
-        machine_layout = QtGui.QGridLayout()
+        machine_layout = QtWidgets.QGridLayout()
         machine_layout.setSpacing(False)
-        self.machine_id_label = QtGui.QLabel(self.tr("Machine id"))
-        self.machine_id = QtGui.QLabel()
+        self.machine_id_label = QtWidgets.QLabel(self.tr("Machine id"))
+        self.machine_id = QtWidgets.QLabel()
         self.machine_list_title.append(self.machine_id_label)
         self.machine_list.append(self.machine_id)
-        self.machine_fqdn_label = QtGui.QLabel(self.tr("Machine FQDN"))
-        self.machine_fqdn = QtGui.QLabel()
+        self.machine_fqdn_label = QtWidgets.QLabel(self.tr("Machine FQDN"))
+        self.machine_fqdn = QtWidgets.QLabel()
         self.machine_list_title.append(self.machine_fqdn_label)
         self.machine_list.append(self.machine_fqdn)
-        self.machine_ip_label = QtGui.QLabel(self.tr("Machine IP"))
-        self.machine_ip = QtGui.QLabel()
+        self.machine_ip_label = QtWidgets.QLabel(self.tr("Machine IP"))
+        self.machine_ip = QtWidgets.QLabel()
         self.machine_list_title.append(self.machine_ip_label)
         self.machine_list.append(self.machine_ip)
-        self.machine_location_label = QtGui.QLabel(self.tr("Machine Location"))
-        self.machine_location = QtGui.QLabel()
+        self.machine_location_label = QtWidgets.QLabel(self.tr("Machine Location"))
+        self.machine_location = QtWidgets.QLabel()
         self.machine_list_title.append(self.machine_location_label)
         self.machine_list.append(self.machine_location)
-        self.machine_name_label = QtGui.QLabel(self.tr("Machine Name")) 
-        self.machine_name = QtGui.QLabel()
+        self.machine_name_label = QtWidgets.QLabel(self.tr("Machine Name")) 
+        self.machine_name = QtWidgets.QLabel()
         self.machine_list_title.append(self.machine_name_label)
         self.machine_list.append(self.machine_name)
-        self.machine_notes_label = QtGui.QLabel(self.tr("Machine Notes"))
-        self.machine_notes = QtGui.QLabel()
+        self.machine_notes_label = QtWidgets.QLabel(self.tr("Machine Notes"))
+        self.machine_notes = QtWidgets.QLabel()
         self.machine_list_title.append(self.machine_notes_label)
         self.machine_list.append(self.machine_notes)
         machine_layout.addWidget(self.machine_id_label, 0, 0)
@@ -206,50 +206,50 @@ class Info(QtGui.QWidget):
         machine_layout.addWidget(self.machine_name, 4, 1)
         machine_layout.addWidget(self.machine_notes_label, 5, 0)
         machine_layout.addWidget(self.machine_notes, 5, 1)
-        self.machine_groupbox = QtGui.QGroupBox()
+        self.machine_groupbox = QtWidgets.QGroupBox()
         self.machine_groupbox.setTitle(self.tr("Machine"))
         self.machine_groupbox.setLayout(machine_layout)
 
         # Customer info
-        customer_layout = QtGui.QGridLayout()
+        customer_layout = QtWidgets.QGridLayout()
         customer_layout.setSpacing(False)
-        self.customer_id_label = QtGui.QLabel(self.tr("Customer id"))
-        self.customer_id = QtGui.QLabel()
+        self.customer_id_label = QtWidgets.QLabel(self.tr("Customer id"))
+        self.customer_id = QtWidgets.QLabel()
         self.customer_list_title.append(self.customer_id_label)
         self.customer_list.append(self.customer_id)
-        self.customer_name_label = QtGui.QLabel(self.tr("Customer name"))
-        self.customer_name = QtGui.QLabel()
+        self.customer_name_label = QtWidgets.QLabel(self.tr("Customer name"))
+        self.customer_name = QtWidgets.QLabel()
         self.customer_list_title.append(self.customer_name_label)
         self.customer_list.append(self.customer_name)
         customer_layout.addWidget(self.customer_id_label, 0, 0)
         customer_layout.addWidget(self.customer_id, 0, 1)
         customer_layout.addWidget(self.customer_name_label, 1, 0)
         customer_layout.addWidget(self.customer_name, 1, 1)
-        self.customer_groupbox = QtGui.QGroupBox()
+        self.customer_groupbox = QtWidgets.QGroupBox()
         self.customer_groupbox.setTitle(self.tr("Customer"))
         self.customer_groupbox.setLayout(customer_layout)
 
         # Vault info
-        vault_layout = QtGui.QGridLayout()
+        vault_layout = QtWidgets.QGridLayout()
         vault_layout.setSpacing(False)
-        self.vault_server_label = QtGui.QLabel(self.tr("Vault address"))
-        self.vault_server = QtGui.QLabel()
+        self.vault_server_label = QtWidgets.QLabel(self.tr("Vault address"))
+        self.vault_server = QtWidgets.QLabel()
         self.vault_list_title.append(self.vault_server_label)
         self.vault_list.append(self.vault_server)
-        self.vault_user_label = QtGui.QLabel(self.tr("Vault username"))
-        self.vault_user = QtGui.QLabel()
+        self.vault_user_label = QtWidgets.QLabel(self.tr("Vault username"))
+        self.vault_user = QtWidgets.QLabel()
         self.vault_list_title.append(self.vault_user_label)
         self.vault_list.append(self.vault_user)
         vault_layout.addWidget(self.vault_server_label, 0, 0)
         vault_layout.addWidget(self.vault_server, 0, 1)
         vault_layout.addWidget(self.vault_user_label, 1, 0)
         vault_layout.addWidget(self.vault_user, 1, 1)
-        self.vault_groupbox = QtGui.QGroupBox()
+        self.vault_groupbox = QtWidgets.QGroupBox()
         self.vault_groupbox.setTitle(self.tr("Vault"))
         self.vault_groupbox.setLayout(vault_layout)
 
         # QGridLayout
-        mainLayout = QtGui.QGridLayout()
+        mainLayout = QtWidgets.QGridLayout()
         mainLayout.addWidget(self.service_groupbox, 0, 0)
         mainLayout.addWidget(self.machine_groupbox, 1, 0)
         mainLayout.addWidget(self.customer_groupbox, 2, 0)
@@ -286,28 +286,28 @@ class Info(QtGui.QWidget):
         for info in self.service_list:
             info.setTextInteractionFlags(Qt.TextSelectableByMouse)
             info.setAlignment(QtCore.Qt.AlignRight)
-            info.setMargin(2)
+            info.setContentsMargins(2, 2, 2, 2)
             info.setMinimumHeight(20)
             info.setWordWrap(1)
 
         for info in self.machine_list:
             info.setTextInteractionFlags(Qt.TextSelectableByMouse)
             info.setAlignment(QtCore.Qt.AlignRight)
-            info.setMargin(2)
+            info.setContentsMargins(2, 2, 2, 2)
             info.setMinimumHeight(20)
             info.setWordWrap(1)
 
         for info in self.customer_list:
             info.setTextInteractionFlags(Qt.TextSelectableByMouse)
             info.setAlignment(QtCore.Qt.AlignRight)
-            info.setMargin(2)
+            info.setContentsMargins(2, 2, 2, 2)
             info.setMinimumHeight(20)
             info.setWordWrap(1)
 
         for info in self.vault_list:
             info.setTextInteractionFlags(Qt.TextSelectableByMouse)
             info.setAlignment(QtCore.Qt.AlignRight)
-            info.setMargin(2)
+            info.setContentsMargins(2, 2, 2, 2)
             info.setMinimumHeight(20)
             info.setWordWrap(1)
 
@@ -319,15 +319,15 @@ class Info(QtGui.QWidget):
 
     def show_service_info(self, service):
         if not 'group_id' in service or service['group_id'] == '':
-            self.service_access.setText(self.tr(u"""<font color="red"><b>\
+            self.service_access.setText(self.tr("""<font color="red"><b>\
                                                  Denied</b></font>"""))
         else:
-            self.service_access.setText(self.tr(u"""<font color="green"><b>\
+            self.service_access.setText(self.tr("""<font color="green"><b>\
                                                  Authorized</b></font>"""))
 
-        self.service_id.setText(u"<b>s#" + unicode(service['id']) + u"</b>")
+        self.service_id.setText("<b>s#" + str(service['id']) + "</b>")
 
-        advanced_url = unicode(service['url'])
+        advanced_url = str(service['url'])
         # Split data
         if len(advanced_url.split("@")) > 2:
             temp = advanced_url.rsplit("@",1)
@@ -337,11 +337,11 @@ class Info(QtGui.QWidget):
             url = QtCore.QUrl(protocol + "://" + url)
         else:
             url = QtCore.QUrl(advanced_url)
-        username = unicode(url.userName())
-        protocol = unicode(url.scheme())
-        port = unicode(url.port() if url.port() > 0 else '')
-        host = unicode(url.host())
-        uri = unicode(url.path())
+        username = str(url.userName())
+        protocol = str(url.scheme())
+        port = str(url.port() if url.port() > 0 else '')
+        host = str(url.host())
+        uri = str(url.path())
         # Set fields
         self.service_username.setText(username)
         self.service_host.setText(host)
@@ -354,18 +354,18 @@ class Info(QtGui.QWidget):
 
         if service['parent_service_id'] != 0 \
            and service['parent_service_id'] is not None:
-            self.service_parent.setText(u"<b>s#" + \
-                        unicode(service['parent_service_id']) + u"</b>")
+            self.service_parent.setText("<b>s#" + \
+                        str(service['parent_service_id']) + "</b>")
         else:
             self.service_parent.clear()
 
-        groups_list = "<br>".join([u"g#%s - %s" % tuple(group )
+        groups_list = "<br>".join(["g#%s - %s" % tuple(group )
                                    for group in service['groups_list']])
             
         self.service_groups.setText(groups_list)
 
     def show_machine_info(self, machine):
-        self.machine_id.setText(u"<b>m#" + unicode(machine['id']) + u"</b>")
+        self.machine_id.setText("<b>m#" + str(machine['id']) + "</b>")
         self.machine_fqdn.setText(machine['fqdn'])
         self.machine_ip.setText(machine['ip'])
         self.machine_location.setText(machine['location'])
@@ -373,13 +373,13 @@ class Info(QtGui.QWidget):
         self.machine_notes.setText(machine['notes'])
 
     def show_customer_info(self, customer):
-        self.customer_id.setText(u"<b>c#" + unicode(customer['id']) + u"</b>")
-        self.customer_name.setText(unicode(customer['name']))
+        self.customer_id.setText("<b>c#" + str(customer['id']) + "</b>")
+        self.customer_name.setText(str(customer['name']))
 
     def show_vault_info(self):
         settings = self.parent.parent.settings
-        self.vault_server.setText(settings.value("SFLvault/url").toString())
-        self.vault_user.setText(settings.value("SFLvault/username").toString())
+        self.vault_server.setText(settings.value("SFLvault/url", ""))
+        self.vault_user.setText(settings.value("SFLvault/username", ""))
 
     def showInformations(self, customer, machine=None, service=None):
         if service \

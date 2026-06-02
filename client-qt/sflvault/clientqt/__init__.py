@@ -23,7 +23,7 @@
 #
 
     
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from sflvault.clientqt.gui import mainWindow
 import sys
 from sflvault.clientqt.images.qicons import *
@@ -35,7 +35,7 @@ from sflvault.clientqt.lib.auth import *
 
 
 def main():
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
   
     app.setWindowIcon(Qicons("sflvault_icon"))
  

@@ -24,17 +24,17 @@
 
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
 import os
 
-class MenuBar(QtGui.QMenuBar):
+class MenuBar(QtWidgets.QMenuBar):
     def __init__(self, parent=None, ):
-        QtGui.QMenuBar.__init__(self, parent)
+        QtWidgets.QMenuBar.__init__(self, parent)
         self.parent = parent
         self.file_ = self.addMenu(self.tr("&File"))
         self.edit = self.addMenu(self.tr("&Edit"))
@@ -152,7 +152,7 @@ class MenuBar(QtGui.QMenuBar):
         """
             Check box if dock is visible
         """
-        for name, widget in self.parent.listWidget.iteritems():
+        for name, widget in self.parent.listWidget.items():
             if widget.isVisible():
                 self.listDockBoxes[name].setChecked(True)
             else:

@@ -27,18 +27,19 @@
 
 import sys
 import os
+import socket
 
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from Crypto.PublicKey import ElGamal
 
 from sflvault.client import SFLvaultClient
 from sflvault.clientqt.gui.config.config import Config
-from error import *
+from sflvault.clientqt.lib.error import *
 
 try:
     import keyring
 except:
-    print "No keyring system supported"
+    print("No keyring system supported")
 
 client = None
 error_message = QtCore.QObject()
@@ -47,15 +48,15 @@ settings = Config()
 client_alias = SFLvaultClient(str(settings.fileName()))
 
 def manual_auth():
-    password, ok = QtGui.QInputDialog.getText( None,
+    password, ok = QtWidgets.QInputDialog.getText( None,
                                    "SFLvault password",
                                    "Type your SFLvault password",
-                                   QtGui.QLineEdit.Password,
+                                   QtWidgets.QLineEdit.Password,
                                     )
-    return str(password)
+    return password
 
 def getSecret():
-    wallet_setting = str(settings.value("SFLvault/wallet").toString())
+    wallet_setting = settings.value("SFLvault/wallet", "")
     if hasattr(keyring.backend, wallet_setting):
         keyring_backend = getattr(keyring.backend, wallet_setting)()
         secret = keyring_backend.get_password("sflvault", str(settings.fileName()))
@@ -73,16 +74,16 @@ def setSecret(wallet_id, password=None):
         return True
     # Check if sflvault item exists
     if getSecret() != False:
-        question = QtGui.QMessageBox(QtGui.QMessageBox.Question,
+        question = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Question,
                                     "Save password in your wallet",
                                     "This password already exists."
                                     "Do you want to replace it ?",
                                     )
-        question.addButton(QtGui.QMessageBox.Save)
-        question.addButton(QtGui.QMessageBox.Cancel)
+        question.addButton(QtWidgets.QMessageBox.Save)
+        question.addButton(QtWidgets.QMessageBox.Cancel)
         # Ask to user if he wants to replace old password
         ret = question.exec_()
-        if ret == QtGui.QMessageBox.Cancel:
+        if ret == QtWidgets.QMessageBox.Cancel:
             # Do nothing
             return False
         # Simplify code or keep it simple to understand ?
@@ -90,7 +91,7 @@ def setSecret(wallet_id, password=None):
             # Replace password
             try:
                 return client.cfg.wallet_set(wallet_id, password)
-            except Exception, e:
+            except Exception as e:
                 ErrorMessage(e)
                 return False
 
@@ -98,7 +99,7 @@ def setSecret(wallet_id, password=None):
         # Save a new password
         try:
             return client.cfg.wallet_set(wallet_id, password)
-        except Exception, e:
+        except Exception as e:
             ErrorMessage(e)
             return False
 
@@ -122,7 +123,7 @@ def getAuth():
             e = Exception("ConnectionDenied")
             e.message = error_message.tr("Connection Denied")
             raise e
-    except Exception, e:
+    except Exception as e:
         ErrorMessage(e)
         return False
     return client
@@ -133,7 +134,7 @@ def registerAccount(username, vaultaddress, password):
     client = SFLvaultClient(str(settings.fileName()))
     try:
         client.user_setup(username, vaultaddress, password)
-    except Exception, e:
+    except Exception as e:
         ErrorMessage(e)
         return False
     return True 
@@ -144,7 +145,7 @@ def try_connect(func):
     def try_func(*k,**a):
         try:
             status = func(*k, **a)
-        except socket.error, e:
+        except socket.error as e:
             ErrorMessage(e)
             return False
         return status

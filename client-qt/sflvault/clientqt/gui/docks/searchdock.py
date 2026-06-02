@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
@@ -33,33 +33,33 @@ import os
 
 from sflvault.clientqt.lib.auth import *
 
-class SearchDock(QtGui.QDockWidget):
+class SearchDock(QtWidgets.QDockWidget):
     def __init__(self, parent=None, ):
-        QtGui.QDockWidget.__init__(self, parent)
+        QtWidgets.QDockWidget.__init__(self, parent)
         self.parent = parent
         self.search = Search()
         self.setWidget(self.search)
         self.setWindowTitle(self.tr("Search items"))
         ## Check visibility
-        QtCore.QObject.connect(self, QtCore.SIGNAL("visibilityChanged (bool)"), self.parent.menubar.checkDockBoxes)
+        self.visibilityChanged.connect(self.parent.menubar.checkDockBoxes)
 
     def connection(self):
         self.search.updateGroup()
 
 
-class Search(QtGui.QWidget):
+class Search(QtWidgets.QWidget):
     def __init__(self, parent=None, ):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.parent = parent
 
         # QlineEdits
-        self.search = QtGui.QLineEdit()
-        self.searchLabel = QtGui.QLabel(self.tr("Search"))
-        self.groups = QtGui.QComboBox()
-        self.groupsLabel = QtGui.QLabel(self.tr("Groups"))
+        self.search = QtWidgets.QLineEdit()
+        self.searchLabel = QtWidgets.QLabel(self.tr("Search"))
+        self.groups = QtWidgets.QComboBox()
+        self.groupsLabel = QtWidgets.QLabel(self.tr("Groups"))
 
         # QGridLayout
-        mainLayout = QtGui.QGridLayout()
+        mainLayout = QtWidgets.QGridLayout()
         mainLayout.addWidget(self.searchLabel,0,0)
         mainLayout.addWidget(self.search,0,1)
         mainLayout.addWidget(self.groupsLabel,1,0)
@@ -78,13 +78,11 @@ class Search(QtGui.QWidget):
         """
         self.groups.clear()
         # Add All
-        id = QtCore.QVariant(None)
-        self.groups.addItem(self.tr("All"), id)
+        self.groups.addItem(self.tr("All"), None)
         # Get all groups 
         grouplist = listGroup()["list"]
         if grouplist:
             for group in grouplist:
-                id = QtCore.QVariant(group["id"])
-                self.groups.addItem(group["name"], id)
+                self.groups.addItem(group["name"], group["id"])
         # Resize comboBox
-        self.groups.setSizeAdjustPolicy(QtGui.QComboBox.AdjustToContents)
+        self.groups.setSizeAdjustPolicy(QtWidgets.QComboBox.AdjustToContents)

@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import shutil
 import os
 
@@ -60,7 +60,7 @@ def Qicons(icon_name, type=None):
 
     # Get service icons
     if type == "service":
-        if not icon_name in service_icons.keys():
+        if not icon_name in list(service_icons.keys()):
             icon_name = "service"
         return QtGui.QIcon(os.path.join(this_dir, service_icons[icon_name]))
     # Return standard icons

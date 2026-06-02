@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.clientqt.lib.auth import setSecret
 import sflvault.clientqt
@@ -38,51 +38,51 @@ except:
     pass
 
 
-class PreferencesWidget(QtGui.QDialog):
+class PreferencesWidget(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.parent = parent
         self.settings = self.parent.settings
         self.wizard = False
 
         # Load gui items
-        self.save = QtGui.QPushButton(self.tr("Save"))
-        self.cancel = QtGui.QPushButton(self.tr("Cancel"))
+        self.save = QtWidgets.QPushButton(self.tr("Save"))
+        self.cancel = QtWidgets.QPushButton(self.tr("Cancel"))
 
-        self.usernameLabel = QtGui.QLabel(self.tr("User name"))
-        self.username = QtGui.QLineEdit()
-        self.urlLabel = QtGui.QLabel(self.tr("Vault server address"))
-        self.url = QtGui.QLineEdit()
-        self.wallet_label = QtGui.QLabel(self.tr("Wallet configuration"))
-        self.configure_wallet = QtGui.QPushButton(self.tr("Configure Wallet"))
-        self.saveMainWindowLabel = QtGui.QLabel(self.tr("Save dock positions"))
-        self.saveMainWindow = QtGui.QCheckBox()
-        self.autoConnectLabel = QtGui.QLabel(self.tr("Auto connect"))
-        self.autoConnect = QtGui.QCheckBox()
-        self.systrayLabel = QtGui.QLabel(self.tr("Show system tray"))
-        self.systray = QtGui.QCheckBox()
-        self.effectsLabel = QtGui.QLabel(self.tr("Enabled effects"))
-        self.effects = QtGui.QCheckBox()
-        self.hideLabel = QtGui.QLabel(self.tr("Hide on close"))
-        self.hide = QtGui.QCheckBox()
-        self.webpreviewLabel = QtGui.QLabel(self.tr("Web preview"))
-        self.webpreview = QtGui.QCheckBox()
-        self.filterLabel = QtGui.QLabel(self.tr("Filter bar"))
-        self.filter = QtGui.QCheckBox()
-        self.minSearchLabel = QtGui.QLabel(self.tr("Minimum search"))
-        self.minSearch = QtGui.QSpinBox()
+        self.usernameLabel = QtWidgets.QLabel(self.tr("User name"))
+        self.username = QtWidgets.QLineEdit()
+        self.urlLabel = QtWidgets.QLabel(self.tr("Vault server address"))
+        self.url = QtWidgets.QLineEdit()
+        self.wallet_label = QtWidgets.QLabel(self.tr("Wallet configuration"))
+        self.configure_wallet = QtWidgets.QPushButton(self.tr("Configure Wallet"))
+        self.saveMainWindowLabel = QtWidgets.QLabel(self.tr("Save dock positions"))
+        self.saveMainWindow = QtWidgets.QCheckBox()
+        self.autoConnectLabel = QtWidgets.QLabel(self.tr("Auto connect"))
+        self.autoConnect = QtWidgets.QCheckBox()
+        self.systrayLabel = QtWidgets.QLabel(self.tr("Show system tray"))
+        self.systray = QtWidgets.QCheckBox()
+        self.effectsLabel = QtWidgets.QLabel(self.tr("Enabled effects"))
+        self.effects = QtWidgets.QCheckBox()
+        self.hideLabel = QtWidgets.QLabel(self.tr("Hide on close"))
+        self.hide = QtWidgets.QCheckBox()
+        self.webpreviewLabel = QtWidgets.QLabel(self.tr("Web preview"))
+        self.webpreview = QtWidgets.QCheckBox()
+        self.filterLabel = QtWidgets.QLabel(self.tr("Filter bar"))
+        self.filter = QtWidgets.QCheckBox()
+        self.minSearchLabel = QtWidgets.QLabel(self.tr("Minimum search"))
+        self.minSearch = QtWidgets.QSpinBox()
         self.minSearch.setMinimum(0)
         self.minSearch.setMaximum(10)
-        self.osdLabel = QtGui.QLabel(self.tr("Osd show time"))
-        self.osd = QtGui.QSpinBox()
+        self.osdLabel = QtWidgets.QLabel(self.tr("Osd show time"))
+        self.osd = QtWidgets.QSpinBox()
         self.osd.setMinimum(0)
         self.osd.setMaximum(500)
-        self.languageLabel = QtGui.QLabel(self.tr("Language"))
-        self.language = QtGui.QComboBox()
+        self.languageLabel = QtWidgets.QLabel(self.tr("Language"))
+        self.language = QtWidgets.QComboBox()
 
         # Vault Group Box
-        vaultbox = QtGui.QGroupBox(self.tr("SFLvault preferences"))
-        gridLayout = QtGui.QGridLayout()
+        vaultbox = QtWidgets.QGroupBox(self.tr("SFLvault preferences"))
+        gridLayout = QtWidgets.QGridLayout()
         gridLayout.addWidget(self.usernameLabel,0,0)
         gridLayout.addWidget(self.username,0,1,)
         gridLayout.addWidget(self.urlLabel,1,0)
@@ -92,8 +92,8 @@ class PreferencesWidget(QtGui.QDialog):
         vaultbox.setLayout(gridLayout)
 
         # Gui Group box
-        guibox = QtGui.QGroupBox(self.tr("GUI preferences"))
-        gridLayout = QtGui.QGridLayout()
+        guibox = QtWidgets.QGroupBox(self.tr("GUI preferences"))
+        gridLayout = QtWidgets.QGridLayout()
         gridLayout.addWidget(self.saveMainWindowLabel,0,0)
         gridLayout.addWidget(self.saveMainWindow,0,1)
         gridLayout.addWidget(self.autoConnectLabel,1,0)
@@ -117,12 +117,12 @@ class PreferencesWidget(QtGui.QDialog):
         guibox.setLayout(gridLayout)
 
         # Positionning items
-        buttonLayout = QtGui.QHBoxLayout()
+        buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.addStretch(1)
         buttonLayout.addWidget(self.cancel)
         buttonLayout.addWidget(self.save)
 
-        mainLayout = QtGui.QVBoxLayout()
+        mainLayout = QtWidgets.QVBoxLayout()
         mainLayout.addWidget(vaultbox)
         mainLayout.addWidget(guibox)
         mainLayout.addLayout(buttonLayout)
@@ -132,15 +132,9 @@ class PreferencesWidget(QtGui.QDialog):
         self.resize(500,400)
 
         # SIGNALS
-        QtCore.QObject.connect(self.save,
-                                QtCore.SIGNAL("clicked()"),
-                                self.saveConfig)
-        QtCore.QObject.connect(self.cancel,
-                                QtCore.SIGNAL("clicked()"),
-                                self, QtCore.SLOT("reject()"))
-        QtCore.QObject.connect(self.configure_wallet,
-                                QtCore.SIGNAL("clicked()"),
-                                self.parent.savePassword)
+        self.save.clicked.connect(self.saveConfig)
+        self.cancel.clicked.connect(self.reject)
+        self.configure_wallet.clicked.connect(self.parent.savePassword)
 
 
     def exec_(self):
@@ -152,35 +146,35 @@ class PreferencesWidget(QtGui.QDialog):
     def readConfig(self):
         """ ReadConfig
         """
-        self.username.setText(self.settings.value("SFLvault/username").toString())
-        self.url.setText(self.settings.value("SFLvault/url").toString())
-        self.saveMainWindow.setCheckState(self.settings.value("SFLvault-qt4/savewindow").toInt()[0])
-        self.autoConnect.setCheckState(self.settings.value("SFLvault-qt4/autoconnect").toInt()[0])
-        self.systray.setCheckState(self.settings.value("SFLvault-qt4/systray").toInt()[0])
-        self.effects.setCheckState(self.settings.value("SFLvault-qt4/effects").toInt()[0])
-        self.hide.setCheckState(self.settings.value("SFLvault-qt4/hide").toInt()[0])
-        self.webpreview.setCheckState(self.settings.value("SFLvault-qt4/webpreview").toInt()[0])
-        self.filter.setCheckState(self.settings.value("SFLvault-qt4/filter").toInt()[0])
-        self.minSearch.setValue(self.settings.value("SFLvault-qt4/minsearch").toInt()[0])
-        self.osd.setValue(self.settings.value("osd/timer").toInt()[0])
-        self.fillLanguage(self.settings.value("SFLvault-qt4/language").toString())
+        self.username.setText(self.settings.value("SFLvault/username", ""))
+        self.url.setText(self.settings.value("SFLvault/url", ""))
+        self.saveMainWindow.setCheckState(int(self.settings.value("SFLvault-qt4/savewindow", 0)))
+        self.autoConnect.setCheckState(int(self.settings.value("SFLvault-qt4/autoconnect", 0)))
+        self.systray.setCheckState(int(self.settings.value("SFLvault-qt4/systray", 0)))
+        self.effects.setCheckState(int(self.settings.value("SFLvault-qt4/effects", 0)))
+        self.hide.setCheckState(int(self.settings.value("SFLvault-qt4/hide", 0)))
+        self.webpreview.setCheckState(int(self.settings.value("SFLvault-qt4/webpreview", 0)))
+        self.filter.setCheckState(int(self.settings.value("SFLvault-qt4/filter", 0)))
+        self.minSearch.setValue(int(self.settings.value("SFLvault-qt4/minsearch", 0)))
+        self.osd.setValue(int(self.settings.value("osd/timer", 0)))
+        self.fillLanguage(self.settings.value("SFLvault-qt4/language", ""))
 #        self.fillWallet()
 
     def saveConfig(self):
         """ Save configuration
         """
-        self.settings.setValue("SFLvault/username", QtCore.QVariant(self.username.text()))
-        self.settings.setValue("SFLvault/url", QtCore.QVariant(self.url.text()))
-        self.settings.setValue("SFLvault-qt4/savewindow", QtCore.QVariant(self.saveMainWindow.checkState()))
-        self.settings.setValue("SFLvault-qt4/autoconnect", QtCore.QVariant(self.autoConnect.checkState()))
-        self.settings.setValue("SFLvault-qt4/systray", QtCore.QVariant(self.systray.checkState()))
-        self.settings.setValue("SFLvault-qt4/effects", QtCore.QVariant(self.effects.checkState()))
-        self.settings.setValue("SFLvault-qt4/hide", QtCore.QVariant(self.hide.checkState()))
-        self.settings.setValue("SFLvault-qt4/webpreview", QtCore.QVariant(self.webpreview.checkState()))
-        self.settings.setValue("SFLvault-qt4/filter", QtCore.QVariant(self.filter.checkState()))
-        self.settings.setValue("SFLvault-qt4/minsearch", QtCore.QVariant(self.minSearch.value()))
-        self.settings.setValue("osd/timer", QtCore.QVariant(self.osd.value()))
-        self.settings.setValue("SFLvault-qt4/language", QtCore.QVariant(self.language.currentText()))
+        self.settings.setValue("SFLvault/username", self.username.text())
+        self.settings.setValue("SFLvault/url", self.url.text())
+        self.settings.setValue("SFLvault-qt4/savewindow", self.saveMainWindow.checkState())
+        self.settings.setValue("SFLvault-qt4/autoconnect", self.autoConnect.checkState())
+        self.settings.setValue("SFLvault-qt4/systray", self.systray.checkState())
+        self.settings.setValue("SFLvault-qt4/effects", self.effects.checkState())
+        self.settings.setValue("SFLvault-qt4/hide", self.hide.checkState())
+        self.settings.setValue("SFLvault-qt4/webpreview", self.webpreview.checkState())
+        self.settings.setValue("SFLvault-qt4/filter", self.filter.checkState())
+        self.settings.setValue("SFLvault-qt4/minsearch", self.minSearch.value())
+        self.settings.setValue("osd/timer", self.osd.value())
+        self.settings.setValue("SFLvault-qt4/language", self.language.currentText())
         self.parent.loadUnloadSystrayConfig()
         self.parent.disEnableEffectsConfig()
         self.parent.showHideFilterBarConfig()

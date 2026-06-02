@@ -24,9 +24,9 @@
 
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
@@ -35,9 +35,9 @@ from sflvault.clientqt.images.qicons import *
 from sflvault.clientqt.lib.auth import *
 
 
-class Systray(QtGui.QSystemTrayIcon):
+class Systray(QtWidgets.QSystemTrayIcon):
     def __init__(self, parent=None, ):
-        QtGui.QSystemTrayIcon.__init__(self, parent)
+        QtWidgets.QSystemTrayIcon.__init__(self, parent)
         self.parent = parent
         self.setIcon(Qicons("sflvault_icon"))
         self.createActions()
@@ -47,46 +47,40 @@ class Systray(QtGui.QSystemTrayIcon):
         """
             Create action for context menu
         """
-        self.minimizeAction = QtGui.QAction(self.tr("Mi&nimize"), self)
-        QtCore.QObject.connect(self.minimizeAction,
-                QtCore.SIGNAL("triggered()"), self.parent, QtCore.SLOT("hide()"))
+        self.minimizeAction = QtWidgets.QAction(self.tr("Mi&nimize"), self)
+        self.minimizeAction.triggered.connect(self.parent.hide)
 
-        self.maximizeAction = QtGui.QAction(self.tr("Ma&ximize"), self)
-        QtCore.QObject.connect(self.maximizeAction,
-                QtCore.SIGNAL("triggered()"), self.parent,
-                QtCore.SLOT("showMaximized()"))
+        self.maximizeAction = QtWidgets.QAction(self.tr("Ma&ximize"), self)
+        self.maximizeAction.triggered.connect(self.parent.showMaximized)
 
-        self.restoreAction = QtGui.QAction(self.tr("&Restore"), self)
-        QtCore.QObject.connect(self.restoreAction,
-                QtCore.SIGNAL("triggered()"), self.parent,
-                QtCore.SLOT("showNormal()"))
+        self.restoreAction = QtWidgets.QAction(self.tr("&Restore"), self)
+        self.restoreAction.triggered.connect(self.parent.showNormal)
 
-        self.quitAction = QtGui.QAction(self.tr("&Quit"), self)
-        QtCore.QObject.connect(self.quitAction, QtCore.SIGNAL("triggered()"),
-                self.parent.app.quit)
+        self.quitAction = QtWidgets.QAction(self.tr("&Quit"), self)
+        self.quitAction.triggered.connect(self.parent.app.quit)
 
-        QtCore.QObject.connect(self, QtCore.SIGNAL("activated (QSystemTrayIcon::ActivationReason)"), self.hideShow)
+        self.activated.connect(self.hideShow)
 
     def hideShow(self, reason):
         """
             Hide or show application
         """
         # Only if it s a left clik
-        if reason == QtGui.QSystemTrayIcon.Trigger:
+        if reason == QtWidgets.QSystemTrayIcon.Trigger:
             if self.parent.isVisible():
-                state = QtCore.QVariant(self.parent.saveGeometry())
+                state = self.parent.saveGeometry()
                 self.parent.settings.setValue("SFLvault-qt4/binsavewindow", state)
                 self.parent.hide()
             else:
                 self.parent.show()
-                geometry = self.parent.settings.value("SFLvault-qt4/binsavewindow").toByteArray()
+                geometry = self.parent.settings.value("SFLvault-qt4/binsavewindow")
                 self.parent.restoreGeometry(geometry)
 
     def createTrayMenu(self):
         """
             Load context menu
         """
-        self.trayIconMenu = QtGui.QMenu()
+        self.trayIconMenu = QtWidgets.QMenu()
         self.trayIconMenu.addAction(self.minimizeAction)
         self.trayIconMenu.addAction(self.maximizeAction)
         self.trayIconMenu.addAction(self.restoreAction)

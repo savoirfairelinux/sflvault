@@ -24,24 +24,24 @@
 
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
 import os
 
 
-class ProtocolsWidget(QtGui.QDialog):
+class ProtocolsWidget(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.parent = parent
         self.settings = self.parent.settings
         self.model = ProtocolModel(self)
 
         # Load gui items
-        label = QtGui.QLabel("Here you can choose which command will be\
+        label = QtWidgets.QLabel("Here you can choose which command will be\
                                 launch when you want to connect to a service.<br/>\
                                 You can use several parameters from the service :\
                                 <table>\
@@ -65,36 +65,36 @@ class ProtocolsWidget(QtGui.QDialog):
         label.setTextFormat(QtCore.Qt.RichText)
         label.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
                         
-        self.addprotocol = QtGui.QPushButton(self.tr("Add"))
-        self.removeprotocol = QtGui.QPushButton(self.tr("Remove"))
-        save = QtGui.QPushButton(self.tr("Save"))
-        reload = QtGui.QPushButton(self.tr("Reload"))
-        cancel = QtGui.QPushButton(self.tr("Cancel"))
-        groupbox = QtGui.QGroupBox()
+        self.addprotocol = QtWidgets.QPushButton(self.tr("Add"))
+        self.removeprotocol = QtWidgets.QPushButton(self.tr("Remove"))
+        save = QtWidgets.QPushButton(self.tr("Save"))
+        reload = QtWidgets.QPushButton(self.tr("Reload"))
+        cancel = QtWidgets.QPushButton(self.tr("Cancel"))
+        groupbox = QtWidgets.QGroupBox()
         # Configure table view
         self.protocol_list = ProtocolView(self)
         self.protocol_list.setModel(self.model)
-        self.protocol_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.protocol_list.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.protocol_list.setSortingEnabled(1)
-        self.protocol_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        self.protocol_list.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.protocol_list.adjustSize()
 
 
         # Positionning items
-        gridLayout = QtGui.QGridLayout()
+        gridLayout = QtWidgets.QGridLayout()
         gridLayout.addWidget(self.protocol_list,0,0,1,6)
         gridLayout.addWidget(self.addprotocol,1,1)
         gridLayout.addWidget(self.removeprotocol,1,4)
         gridLayout.addWidget(label,2,0,1,6)
         groupbox.setLayout(gridLayout)
 
-        buttonLayout = QtGui.QHBoxLayout()
+        buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.addStretch(1)
         buttonLayout.addWidget(cancel)
         buttonLayout.addWidget(reload)
         buttonLayout.addWidget(save)
 
-        mainLayout = QtGui.QVBoxLayout()
+        mainLayout = QtWidgets.QVBoxLayout()
         mainLayout.addWidget(groupbox)
         mainLayout.addLayout(buttonLayout)
         self.setLayout(mainLayout)
@@ -102,16 +102,15 @@ class ProtocolsWidget(QtGui.QDialog):
         self.setWindowTitle(self.tr("Procotols management"))
 
         # SIGNALS
-        QtCore.QObject.connect(self.addprotocol, QtCore.SIGNAL("clicked()"), self.model.addProtocol)
-        QtCore.QObject.connect(self.removeprotocol, QtCore.SIGNAL("clicked()"), self.model.delProtocol)
-        QtCore.QObject.connect(save, QtCore.SIGNAL("clicked()"), self.saveConfig)
-        QtCore.QObject.connect(reload, QtCore.SIGNAL("clicked()"), self.readConfig)
-        QtCore.QObject.connect(cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        self.addprotocol.clicked.connect(self.model.addProtocol)
+        self.removeprotocol.clicked.connect(self.model.delProtocol)
+        save.clicked.connect(self.saveConfig)
+        reload.clicked.connect(self.readConfig)
+        cancel.clicked.connect(self.reject)
         
         # FIXME set return shortcut to save config only
-        # when editor mode in table view is not enabled
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Return),
-                self, None)
+        # when editor mode in table view is not enabled
+        QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Return), self)
 
     def exec_(self):
         """
@@ -134,11 +133,11 @@ class ProtocolsWidget(QtGui.QDialog):
         self.model.setHeaders()
         for protocol_name in self.settings.readConfig("protocols"):
             # Get values in config
-            protocol_name = unicode(protocol_name)
-            command = unicode(self.settings.value("protocols/" + protocol_name + "/command").toString())
-            args = unicode(self.settings.value("protocols/" + protocol_name + "/args").toString())
-            clip, bool = self.settings.value("protocols/" + protocol_name + "/clip").toInt()
-            tooltip, bool = self.settings.value("protocols/" + protocol_name + "/tooltip").toInt()
+            protocol_name = str(protocol_name)
+            command = self.settings.value("protocols/" + protocol_name + "/command", "")
+            args = self.settings.value("protocols/" + protocol_name + "/args", "")
+            clip = int(self.settings.value("protocols/" + protocol_name + "/clip", 0))
+            tooltip = int(self.settings.value("protocols/" + protocol_name + "/tooltip", 0))
             # Create new item
             self.model.addProtocol(protocol_name, command, args, clip, tooltip)
         # Set Geometries
@@ -154,17 +153,17 @@ class ProtocolsWidget(QtGui.QDialog):
         self.settings.beginGroup("protocols")
         for row in range(self.model.rowCount()):
             # Get values
-            protocol_name = self.model.data(self.model.index(row,0), QtCore.Qt.DisplayRole).toString()
-            command = self.model.data(self.model.index(row,1), QtCore.Qt.DisplayRole).toString()
-            args = self.model.data(self.model.index(row,2), QtCore.Qt.DisplayRole).toString()
-            clip, bool = self.model.data(self.model.index(row,3), QtCore.Qt.CheckStateRole).toInt()
-            tooltip, bool = self.model.data(self.model.index(row,4), QtCore.Qt.CheckStateRole).toInt()
+            protocol_name = self.model.data(self.model.index(row,0), QtCore.Qt.DisplayRole) or ""
+            command = self.model.data(self.model.index(row,1), QtCore.Qt.DisplayRole) or ""
+            args = self.model.data(self.model.index(row,2), QtCore.Qt.DisplayRole) or ""
+            clip = int(self.model.data(self.model.index(row,3), QtCore.Qt.CheckStateRole) or 0)
+            tooltip = int(self.model.data(self.model.index(row,4), QtCore.Qt.CheckStateRole) or 0)
             # Write values in config
             self.settings.beginGroup(protocol_name)
-            self.settings.setValue("command", QtCore.QVariant(command))
-            self.settings.setValue("args", QtCore.QVariant(args))
-            self.settings.setValue("clip", QtCore.QVariant(clip))
-            self.settings.setValue("tooltip", QtCore.QVariant(tooltip))
+            self.settings.setValue("command", command)
+            self.settings.setValue("args", args)
+            self.settings.setValue("clip", clip)
+            self.settings.setValue("tooltip", tooltip)
             self.settings.endGroup()
         self.settings.endGroup()
         # Save config
@@ -179,8 +178,8 @@ class ProtocolsWidget(QtGui.QDialog):
         # Get horizontal header
         h = self.protocol_list.horizontalHeader()
         # Set headers behaviors
-        h.setResizeMode(0, QtGui.QHeaderView.Fixed)
-        h.setResizeMode(1, QtGui.QHeaderView.Stretch)
+        h.setSectionResizeMode(0, QtWidgets.QHeaderView.Fixed)
+        h.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
         h.setStretchLastSection(0)
         # Set size
         self.protocol_list.setColumnWidth(0,100)
@@ -189,21 +188,21 @@ class ProtocolsWidget(QtGui.QDialog):
         h = self.protocol_list.verticalHeader()
         h.hide()
 
-class ProtocolView(QtGui.QTableView):
+class ProtocolView(QtWidgets.QTableView):
     def __init__(self, parent=None):
-        QtGui.QTableView.__init__(self, parent)
+        QtWidgets.QTableView.__init__(self, parent)
         self.parent = parent
 
-        QtCore.QObject.connect(self, QtCore.SIGNAL("clicked(const QModelIndex&)"), self.select_bin)
+        self.clicked.connect(self.select_bin)
 
 
     def select_bin(self, index):
         if index.column() == 1:
-            get_file_dialog = QtGui.QFileDialog(self)
-            get_file_dialog.setAcceptMode(QtGui.QFileDialog.AcceptOpen)
+            get_file_dialog = QtWidgets.QFileDialog(self)
+            get_file_dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptOpen)
             bin_file_name = get_file_dialog.getOpenFileName()
             selected_protocol = self.model().protocols[index.row()]
-            self.model().setData(index, QtCore.QVariant(bin_file_name))
+            self.model().setData(index, bin_file_name)
         
 
 class ProtocolModel(QtGui.QStandardItemModel):
@@ -224,11 +223,11 @@ class ProtocolModel(QtGui.QStandardItemModel):
     def setHeaders(self):
         self.setColumnCount(5)
         self.setRowCount(0)
-        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Protocol"))
-        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Command"))
-        self.setHeaderData(2, QtCore.Qt.Horizontal, QtCore.QVariant("Arguments"))
-        self.setHeaderData(3, QtCore.Qt.Horizontal, QtCore.QVariant("Pass to Clip"))
-        self.setHeaderData(4, QtCore.Qt.Horizontal, QtCore.QVariant("Show tooltip"))
+        self.setHeaderData(0, QtCore.Qt.Horizontal, "Protocol")
+        self.setHeaderData(1, QtCore.Qt.Horizontal, "Command")
+        self.setHeaderData(2, QtCore.Qt.Horizontal, "Arguments")
+        self.setHeaderData(3, QtCore.Qt.Horizontal, "Pass to Clip")
+        self.setHeaderData(4, QtCore.Qt.Horizontal, "Show tooltip")
 
     def addProtocol(self, protocol=None, command=None, args=None, clip=QtCore.Qt.Unchecked, tooltip=QtCore.Qt.Unchecked):
         # Create new item
@@ -258,10 +257,10 @@ class ProtocolModel(QtGui.QStandardItemModel):
     def data(self, index, role):
         # if index is not valid
         if not index.isValid():
-            return QtCore.QVariant()
+            return None
         # if protocols is empty
         if not self.protocols:
-            return QtCore.QVariant()
+            return None
 
         protocol = self.protocols[index.row()] 
 
@@ -270,7 +269,7 @@ class ProtocolModel(QtGui.QStandardItemModel):
             if index.column() == 3 or index.column() == 4:
                 attrName = self.columns[index.column()]
                 value = getattr(protocol, attrName) 
-                return QtCore.QVariant(value)
+                return value
 
         # get value of protocol name and command and args
         if role in [QtCore.Qt.EditRole, QtCore.Qt.DisplayRole]:
@@ -278,9 +277,9 @@ class ProtocolModel(QtGui.QStandardItemModel):
                or index.column() == 2:
                 attrName = self.columns[index.column()]
                 value = getattr(protocol, attrName)
-                return QtCore.QVariant(value)
+                return value
 
-        return QtCore.QVariant()
+        return None
 
     def setData(self, index, value, role=None):
         # if index is not valid
@@ -320,15 +319,14 @@ class Protocol(QtCore.QObject):
             Set attributes
         """
         if attr in ["tooltip", "clip"]:
-            value, bool = value.toInt()   
-            if bool:
-                setattr(self, attr, value)
+            try:
+                setattr(self, attr, int(value))
                 return True
-
+            except (TypeError, ValueError):
+                return False
         elif attr in ["name", "command", "args"]:
-            value = unicode(value.toString())
+            value = str(value) if value is not None else ""
             if value:
                 setattr(self, attr, value)
                 return True
-
         return False

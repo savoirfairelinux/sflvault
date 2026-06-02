@@ -24,7 +24,7 @@
 
 
 import sys
-from PyQt4 import QtCore, QtGui, QtWebKit
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 from sflvault.clientqt.gui.bar.filterbar import FilterBar
 from sflvault.clientqt.gui.dialog.webpreview import WebPreviewWidget
@@ -70,8 +70,8 @@ class TreeModel(QtCore.QAbstractItemModel):
         self.parentView = parentView
 
         rootData = []
-        rootData.append(QtCore.QVariant("Name"))
-        rootData.append(QtCore.QVariant("Id"))
+        rootData.append("Name")
+        rootData.append("Id")
         self.rootItem = TreeItem(rootData)
         self.research = research
         self.groups_ids = groups_ids
@@ -87,7 +87,7 @@ class TreeModel(QtCore.QAbstractItemModel):
                                          "machines": [],
                                          "customers": [],
                                         })
-        for custoid, custo in search_result["results"].items():
+        for custoid, custo in list(search_result["results"].items()):
             it = TreeItem([custo["name"],
                            "c#" + custoid],
                           Qicons("customer"),
@@ -95,7 +95,7 @@ class TreeModel(QtCore.QAbstractItemModel):
             parents[-1].appendChild(it)
             parents.append(parents[-1].child(parents[-1].childCount() - 1))
 
-            for machineid, machine in custo["machines"].items():
+            for machineid, machine in list(custo["machines"].items()):
                 it = TreeItem(["%s (%s - %s)" % (machine["name"],
                                                  machine["fqdn"],
                                                  machine["ip"]),
@@ -105,7 +105,7 @@ class TreeModel(QtCore.QAbstractItemModel):
                 parents[-1].appendChild(it)
                 parents.append(parents[-1].child(parents[-1].childCount() - 1))
 
-                for serviceid, service in machine["services"].items():
+                for serviceid, service in list(machine["services"].items()):
                     if not service["url"]:
                         continue
                     else:
@@ -128,17 +128,17 @@ class TreeModel(QtCore.QAbstractItemModel):
 
     def data(self, index, role):
         if not index.isValid():
-            return QtCore.QVariant()
+            return None
 
         item = index.internalPointer()
 
         if role == QtCore.Qt.DecorationRole and index.column() == 0:
-            return  QtCore.QVariant(item.icon)
+            return item.icon
 
         if role != QtCore.Qt.DisplayRole:
-            return QtCore.QVariant()
+            return None
 
-        return QtCore.QVariant(item.data(index.column()))
+        return item.data(index.column())
 
     def flags(self, index):
         if not index.isValid():
@@ -150,7 +150,7 @@ class TreeModel(QtCore.QAbstractItemModel):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return self.rootItem.data(section)
 
-        return QtCore.QVariant()
+        return None
 
     def index(self, row, column, parent):
         if row < 0 or column < 0 or row >= self.rowCount(parent) or column >= self.columnCount(parent):
@@ -205,9 +205,9 @@ class TreeModel(QtCore.QAbstractItemModel):
         return parentItem.childItems
 
 
-class proxyVault(QtGui.QSortFilterProxyModel):
+class proxyVault(QtCore.QSortFilterProxyModel):
     def __init__(self, parent=None):
-        QtGui.QSortFilterProxyModel.__init__(self, parent)
+        QtCore.QSortFilterProxyModel.__init__(self, parent)
         self.setDynamicSortFilter(1)
         self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.source_model = self.sourceModel()
@@ -224,15 +224,15 @@ class proxyVault(QtGui.QSortFilterProxyModel):
         # By id
         index_id = self.source_model.index(sourceRow,1,sourceParent)
         # Get pattern
-        pattern = unicode(self.filterRegExp().pattern())
+        pattern = str(self.filterRegExp().pattern())
     
-        if unicode(index_id.data(0).toString()).find(pattern) != -1: 
+        if str(index_id.data()).find(pattern) != -1: 
             # Add it in shown list
             self.shown.add(index_name)
             # Add it in match list
             self.match.add(index_name)
             return True
-        if unicode(index_name.data(0).toString()).find(pattern) != -1:
+        if str(index_name.data()).find(pattern) != -1:
             # Add it in shown list
             self.shown.add(index_name)
             # Add it in match list
@@ -262,7 +262,7 @@ class proxyVault(QtGui.QSortFilterProxyModel):
 
         # Show it if one a its child match
         for child in self.source_model.children(index_name):
-            if unicode(child.data(0)).find(pattern) != -1 or unicode(child.data(1)).find(pattern) != -1:
+            if str(child.data(0)).find(pattern) != -1 or str(child.data(1)).find(pattern) != -1:
                 # Add it in shown list
                 self.shown.add(index_name)
                 # remove it in match list if exist in
@@ -271,7 +271,7 @@ class proxyVault(QtGui.QSortFilterProxyModel):
                 return True
             # Show it if one a its little child match
             for subchild in child.childItems:
-                if unicode(subchild.data(0)).find(pattern) != -1 or unicode(subchild.data(1)).find(pattern) != -1 :
+                if str(subchild.data(0)).find(pattern) != -1 or str(subchild.data(1)).find(pattern) != -1 :
                     # Add it in shown list
                     self.shown.add(index_name)
                     # remove it in match list if exist in
@@ -288,9 +288,9 @@ class proxyVault(QtGui.QSortFilterProxyModel):
         return False
 
 
-class TreeView(QtGui.QTreeView):
+class TreeView(QtWidgets.QTreeView):
     def __init__(self, parent=None):
-        QtGui.QTreeView.__init__(self, parent)
+        QtWidgets.QTreeView.__init__(self, parent)
         self.parent = parent
         
         self.timer = QtCore.QTimer(self)
@@ -332,8 +332,8 @@ class TreeView(QtGui.QTreeView):
         """
         if hasattr(self,"web"):
             self.web.close()
-        self.url = QtCore.QUrl(index.data().toString())
-        if self.url.scheme().startsWith("http") and self.url.isValid():
+        self.url = QtCore.QUrl(str(index.data()))
+        if self.url.scheme().startswith("http") and self.url.isValid():
             if self.timer.isActive():
                 self.timer.stop()
             self.timer.start(500)
@@ -346,15 +346,15 @@ class TreeView(QtGui.QTreeView):
             Set headers size
         """
         h = self.header()
-        h.setResizeMode(0, QtGui.QHeaderView.Stretch)
+        h.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         h.setStretchLastSection(0)
         self.setColumnWidth(1,65)
 
     def search(self, research, groups_ids=None):
         # Get minimum number of caracters to search
-        minsearch = self.parent.settings.value("SFLvault-qt4/minsearch").toInt()[0]
+        minsearch = int(self.parent.settings.value("SFLvault-qt4/minsearch", 0))
         # Test if research if not null or if it contains just empty unicode
-        if research and not research == [u'']:
+        if research and not research == ['']:
             # Join all research words
             research_length = len("".join(research))
             # If not null, test if the length if < minsearch
@@ -365,12 +365,12 @@ class TreeView(QtGui.QTreeView):
         self.sourcemodel = TreeModel(research, groups_ids, self)
         # Load proxy
         self.proxyModel.setSourceModel(self.sourcemodel)
-        if research and not research == [u''] :
+        if research and not research == [''] :
             self.expandAll()
         else:
             self.collapseAll()
         # Sort by name
-        self.sortByColumn(0)
+        self.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
     def contextMenuEvent(self, event):
         """
@@ -378,14 +378,14 @@ class TreeView(QtGui.QTreeView):
         """
         if len(self.selectedIndexes()) < 1:
             return event.ignore()
-        menu = QtGui.QMenu(self)
+        menu = QtWidgets.QMenu(self)
         if self.selectedIndexes()[0].parent().parent().isValid():
             menu.addAction(self.connectAct)
             menu.addAction(self.showAct)
             menu.addAction(self.editAct)
             menu.addAction(self.bookmarkAct)
             index = self.selectedIndexes()[0]
-            self.url = QtCore.QUrl(index.data().toString())
+            self.url = QtCore.QUrl(str(index.data()))
             if self.url.scheme() == "ssh":
                 menu.addAction(self.tunnelAct)
         elif self.selectedIndexes()[0].parent().isValid():
@@ -401,35 +401,35 @@ class TreeView(QtGui.QTreeView):
         """
             Create actions for contextMenu
         """
-        self.newMachineAct = QtGui.QAction(self.tr("New machine"), self)
+        self.newMachineAct = QtWidgets.QAction(self.tr("New machine"), self)
         self.newMachineAct.setStatusTip(self.tr("New machine"))
 
-        self.newServiceAct = QtGui.QAction(self.tr("New service"), self)
+        self.newServiceAct = QtWidgets.QAction(self.tr("New service"), self)
         self.newServiceAct.setStatusTip(self.tr("New service"))
 
-        self.newAct = QtGui.QAction(self.tr("&New..."), self)
+        self.newAct = QtWidgets.QAction(self.tr("&New..."), self)
         self.newAct.setShortcut(self.tr("Ctrl+N"))
         self.newAct.setStatusTip(self.tr("New item"))
 
-        self.connectAct = QtGui.QAction(self.tr("&Connect..."), self)
+        self.connectAct = QtWidgets.QAction(self.tr("&Connect..."), self)
 #        self.connectAct.setShortcut(self.tr("Ctrl+D"))
         self.connectAct.setStatusTip(self.tr("Connect to this service or show password"))
 
-        self.showAct = QtGui.QAction(self.tr("&Show password"), self)
+        self.showAct = QtWidgets.QAction(self.tr("&Show password"), self)
         self.showAct.setStatusTip(self.tr("Show password of this service"))
 
-        self.editAct = QtGui.QAction(self.tr("&Edit..."), self)
+        self.editAct = QtWidgets.QAction(self.tr("&Edit..."), self)
         self.editAct.setShortcut(self.tr("Ctrl+E"))
         self.editAct.setStatusTip(self.tr("Edit item"))
 
-        self.bookmarkAct = QtGui.QAction(self.tr("&Create alias..."), self)
+        self.bookmarkAct = QtWidgets.QAction(self.tr("&Create alias..."), self)
         self.bookmarkAct.setShortcut(self.tr("Ctrl+D"))
         self.bookmarkAct.setStatusTip(self.tr("Create an alias from this item"))
 
-        self.tunnelAct = QtGui.QAction(self.tr("&Create tunnel..."), self)
+        self.tunnelAct = QtWidgets.QAction(self.tr("&Create tunnel..."), self)
         self.tunnelAct.setStatusTip(self.tr("Create a ssh connection with tunnel"))
 
-        self.delAct = QtGui.QAction(self.tr("&Delete..."), self)
+        self.delAct = QtWidgets.QAction(self.tr("&Delete..."), self)
         self.delAct.setStatusTip(self.tr("Delete item"))
 
     def filter(self, pattern):
@@ -439,7 +439,7 @@ class TreeView(QtGui.QTreeView):
         self.proxyModel.setFilterRegExp(pattern)
         self.expandAll()
         # Sort by name
-        self.sortByColumn(0)
+        self.sortByColumn(0, QtCore.Qt.AscendingOrder)
         
     def expandCollapse(self):
         """
@@ -470,18 +470,18 @@ class TreeView(QtGui.QTreeView):
             else:
                 self.expandCollapse()
 
-class TreeVault(QtGui.QWidget):
+class TreeVault(QtWidgets.QWidget):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.parent = parent
 
         self.tree = TreeView(parent)
         self.filter = FilterBar(self) 
-        self.filter.connect(self.filter.filter_input, QtCore.SIGNAL("textChanged(const QString&)"), self.tree.filter)
+        self.filter.filter_input.textChanged.connect(self.tree.filter)
 
-        layout = QtGui.QVBoxLayout(self);
+        layout = QtWidgets.QVBoxLayout(self);
         layout.setSpacing(0)
-        layout.setMargin(0)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         layout.addWidget(self.tree)
         layout.addWidget(self.filter)
@@ -495,8 +495,10 @@ class TreeVault(QtGui.QWidget):
         """
             Define tree shortcuts
         """
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Space),
-                self.tree, self.tree.expandCollapse, None, QtCore.Qt.WidgetShortcut)
+        shortcut = QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Space),
+                self.tree)
+        shortcut.setContext(QtCore.Qt.WidgetShortcut)
+        shortcut.activated.connect(self.tree.expandCollapse)
         # FIXME Disable cause QtCore.Qt.WidgetShortcut context doesn t work
-#        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Return),
+#        QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Return),
 #                self.tree, self.tree.enterShortcut, None, QtCore.Qt.WidgetShortcut)

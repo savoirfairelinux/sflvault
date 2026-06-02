@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
@@ -35,53 +35,53 @@ from sflvault.clientqt.lib.auth import *
 from sflvault.clientqt.gui.dialog import progressdialog
 
 
-class UsersWidget(QtGui.QDialog):
+class UsersWidget(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.parent = parent
         self.settings = self.parent.settings
 
         # Load gui items
-        userinfobox = QtGui.QGroupBox(self.tr("User Information"))
-        self.usernameLabel = QtGui.QLabel(self.tr("User name"))
-        self.username = QtGui.QLineEdit()
+        userinfobox = QtWidgets.QGroupBox(self.tr("User Information"))
+        self.usernameLabel = QtWidgets.QLabel(self.tr("User name"))
+        self.username = QtWidgets.QLineEdit()
         self.username.setReadOnly(True)
-        self.idLabel = QtGui.QLabel(self.tr("Id"))
-        self.id = QtGui.QLineEdit()
+        self.idLabel = QtWidgets.QLabel(self.tr("Id"))
+        self.id = QtWidgets.QLineEdit()
         self.id.setReadOnly(True)
-        self.adminLabel = QtGui.QLabel(self.tr("Admin"))
-        self.admin = QtGui.QCheckBox()
+        self.adminLabel = QtWidgets.QLabel(self.tr("Admin"))
+        self.admin = QtWidgets.QCheckBox()
         self.admin.setEnabled(False)
-        self.setup_expiredLabel = QtGui.QLabel(self.tr("Setup Expired"))
-        self.setup_expired = QtGui.QCheckBox()
+        self.setup_expiredLabel = QtWidgets.QLabel(self.tr("Setup Expired"))
+        self.setup_expired = QtWidgets.QCheckBox()
         self.setup_expired.setEnabled(False)
-        self.waiting_setupLabel = QtGui.QLabel(self.tr("Waiting Setup"))
-        self.waiting_setup = QtGui.QCheckBox()
+        self.waiting_setupLabel = QtWidgets.QLabel(self.tr("Waiting Setup"))
+        self.waiting_setup = QtWidgets.QCheckBox()
         self.waiting_setup.setEnabled(False)
-        self.created_stampLabel = QtGui.QLabel(self.tr("Created at : "))
-        self.created_stamp = QtGui.QDateTimeEdit()
+        self.created_stampLabel = QtWidgets.QLabel(self.tr("Created at : "))
+        self.created_stamp = QtWidgets.QDateTimeEdit()
         self.created_stamp.setReadOnly(True)
-        groupbox = QtGui.QGroupBox(self.tr("Groups"))
-        self.group_add = QtGui.QPushButton(self.tr("New group"))
-        self.group_delete = QtGui.QPushButton(self.tr("Delete group"))
-        self.group_list = QtGui.QTableView(self)
-        self.group_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        groupbox = QtWidgets.QGroupBox(self.tr("Groups"))
+        self.group_add = QtWidgets.QPushButton(self.tr("New group"))
+        self.group_delete = QtWidgets.QPushButton(self.tr("Delete group"))
+        self.group_list = QtWidgets.QTableView(self)
+        self.group_list.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.group_list.setSortingEnabled(1)
-        self.group_list.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        self.group_list_filter_label = QtGui.QLabel(self.tr("Filter"))
-        self.group_list_filter = QtGui.QLineEdit(self)
+        self.group_list.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.group_list_filter_label = QtWidgets.QLabel(self.tr("Filter"))
+        self.group_list_filter = QtWidgets.QLineEdit(self)
 
-        userbox = QtGui.QGroupBox(self.tr("Users"))
-        self.user_add = QtGui.QPushButton(self.tr("New user"))
-        self.user_delete = QtGui.QPushButton(self.tr("Delete user"))
-        self.user_list = QtGui.QTreeView(self)
-        self.user_list.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        self.user_list.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        userbox = QtWidgets.QGroupBox(self.tr("Users"))
+        self.user_add = QtWidgets.QPushButton(self.tr("New user"))
+        self.user_delete = QtWidgets.QPushButton(self.tr("Delete user"))
+        self.user_list = QtWidgets.QTreeView(self)
+        self.user_list.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.user_list.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.user_list.setRootIsDecorated(False)
-        self.user_list_filter = QtGui.QLineEdit(self)
+        self.user_list_filter = QtWidgets.QLineEdit(self)
         
-        okButton = QtGui.QPushButton(self.tr("OK"))
-        cancelButton = QtGui.QPushButton(self.tr("Cancel"))
+        okButton = QtWidgets.QPushButton(self.tr("OK"))
+        cancelButton = QtWidgets.QPushButton(self.tr("Cancel"))
 
         # Load model
         self.model_group = GroupsModel(self)
@@ -94,7 +94,7 @@ class UsersWidget(QtGui.QDialog):
 
         # Positionning items
         ## User information groupbox
-        gridLayout = QtGui.QGridLayout()
+        gridLayout = QtWidgets.QGridLayout()
         gridLayout.addWidget(self.usernameLabel,0,0)
         gridLayout.addWidget(self.username,0,1)
         gridLayout.addWidget(self.idLabel,1,0)
@@ -110,7 +110,7 @@ class UsersWidget(QtGui.QDialog):
         userinfobox.setLayout(gridLayout)
         
         ## Groups groupbox
-        gridLayout = QtGui.QGridLayout()
+        gridLayout = QtWidgets.QGridLayout()
         gridLayout.addWidget(self.group_add,0,0)
         gridLayout.addWidget(self.group_delete,0,2)
         gridLayout.addWidget(self.group_list_filter_label,7,0)
@@ -119,19 +119,19 @@ class UsersWidget(QtGui.QDialog):
         groupbox.setLayout(gridLayout)
 
         ## User groupbox
-        gridLayout = QtGui.QGridLayout()
+        gridLayout = QtWidgets.QGridLayout()
         gridLayout.addWidget(self.user_add, 0, 0)
         gridLayout.addWidget(self.user_delete, 0, 2)
         gridLayout.addWidget(self.user_list_filter,1,0,1,3)
         gridLayout.addWidget(self.user_list,2,0,5,3)
         userbox.setLayout(gridLayout)
 
-        buttonLayout = QtGui.QHBoxLayout()
+        buttonLayout = QtWidgets.QHBoxLayout()
         buttonLayout.addStretch(1)
         buttonLayout.addWidget(cancelButton)
         buttonLayout.addWidget(okButton)
 
-        mainLayout = QtGui.QGridLayout()
+        mainLayout = QtWidgets.QGridLayout()
         mainLayout.addWidget(userbox,0,0,2,1)
         mainLayout.addWidget(userinfobox,0,1)
         mainLayout.addWidget(groupbox,1,1)
@@ -141,14 +141,14 @@ class UsersWidget(QtGui.QDialog):
         self.setWindowTitle(self.tr("Users management"))
 
         # SIGNALS
-        self.connect(self.user_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.user_proxy.setFilterRegExp)
-        self.connect(self.user_add, QtCore.SIGNAL("clicked()"), self.newUser)
-        self.connect(self.group_add, QtCore.SIGNAL("clicked()"), self.newGroup)
-        self.connect(self.user_delete, QtCore.SIGNAL("clicked()"), self.deleteUser)
-        self.connect(self.group_delete, QtCore.SIGNAL("clicked()"), self.deleteGroup)
-        self.connect(self.user_list, QtCore.SIGNAL("activated (const QModelIndex&)"), self.editUser)
-        self.connect(self.group_list_filter, QtCore.SIGNAL("textChanged (const QString&)"), self.group_proxy.setFilterRegExp)
-        self.connect(cancelButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        self.user_list_filter.textChanged.connect(self.user_proxy.setFilterRegExp)
+        self.user_add.clicked.connect(self.newUser)
+        self.group_add.clicked.connect(self.newGroup)
+        self.user_delete.clicked.connect(self.deleteUser)
+        self.group_delete.clicked.connect(self.deleteGroup)
+        self.user_list.activated.connect(self.editUser)
+        self.group_list_filter.textChanged.connect(self.group_proxy.setFilterRegExp)
+        cancelButton.clicked.connect(self.reject)
 
     def exec_(self):
         if not self.parent.userinfo["is_admin"]:
@@ -164,7 +164,7 @@ class UsersWidget(QtGui.QDialog):
             Delete selected group
         """
         if self.group_list.selectedIndexes():
-            name = unicode(self.group_list.selectedIndexes()[0].data().toString())
+            name = str(self.group_list.selectedIndexes()[0].data())
             selected_group = self.model_group.groups[self.group_list.selectedIndexes()[0].row()]
 
             pdialog = progressdialog.ProgressDialog("Deleting a group",
@@ -173,7 +173,7 @@ class UsersWidget(QtGui.QDialog):
             ret = pdialog.run()
 
             if ret:
-                message = QtGui.QMessageBox(QtGui.QMessageBox.Information, self.tr("Delete group"), self.tr("Group %s deleted successfully" % unicode(selected_group.id)))
+                message = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Information, self.tr("Delete group"), self.tr("Group %s deleted successfully" % str(selected_group.id)))
                 message.exec_()
                 self.editUser() 
                 return True
@@ -186,13 +186,13 @@ class UsersWidget(QtGui.QDialog):
             Delete selected user
         """
         if self.user_list.selectedIndexes():
-            name = unicode(self.user_list.selectedIndexes()[0].data().toString())
+            name = str(self.user_list.selectedIndexes()[0].data())
             delUser(name)
             self.loadUserList()
 
     def updateInfo(self):
         # Get your informations
-        self.parent.userinfo = getUserInfo(str(self.settings.value("SFLvault/username").toString()))
+        self.parent.userinfo = getUserInfo(self.settings.value("SFLvault/username", ""))
         # Get groups list
         self.groups = listGroup()
         # Update users info
@@ -206,14 +206,14 @@ class UsersWidget(QtGui.QDialog):
             self.updateInfo()
             self.model_group.groups = []
             self.model_group.setHeaders() 
-            self.current_username = unicode(self.user_list.selectedIndexes()[0].data().toString())
-            id = int(self.user_list.selectedIndexes()[1].data().toString().split("#")[1])
+            self.current_username = str(self.user_list.selectedIndexes()[0].data())
+            id = int(str(self.user_list.selectedIndexes()[1].data()).split("#")[1])
             # Find user in user list
             for user in self.model_user.users:
                 if user["id"] == id:
                     # Fill user form
                     self.username.setText(user["username"])
-                    self.id.setText(unicode(user["id"]))
+                    self.id.setText(str(user["id"]))
                     if user["is_admin"]:
                         self.admin.setCheckState(QtCore.Qt.Checked)
                     else:
@@ -259,19 +259,19 @@ class UsersWidget(QtGui.QDialog):
         """ Create a new group
         """
         # Show input Dialog
-        group_name, ok = QtGui.QInputDialog.getText(self.parent, self.tr("New group"),
+        group_name, ok = QtWidgets.QInputDialog.getText(self.parent, self.tr("New group"),
                                                 self.tr("New group name :"),
-                                                QtGui.QLineEdit.Normal)
+                                                QtWidgets.QLineEdit.Normal)
         if not ok or not group_name:
             return False
 
         pdialog = progressdialog.ProgressDialog("Creating a new group",
             "Please wait while creating a new group",
-            addGroup, unicode(group_name))
+            addGroup, str(group_name))
         ret = pdialog.run()
 
         if ret:
-            message = QtGui.QMessageBox(QtGui.QMessageBox.Information, self.tr("Create group"), self.tr("Group %s created successfully" % unicode(group_name)))
+            message = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Information, self.tr("Create group"), self.tr("Group %s created successfully" % str(group_name)))
             message.exec_()
             self.editUser()
             return True
@@ -296,9 +296,9 @@ class UsersWidget(QtGui.QDialog):
         self.user_proxy.setSourceModel(self.model_user)
 
 
-class UsersProxy(QtGui.QSortFilterProxyModel):
+class UsersProxy(QtCore.QSortFilterProxyModel):
     def __init__(self, parent=None):
-        QtGui.QSortFilterProxyModel.__init__(self, parent)
+        QtCore.QSortFilterProxyModel.__init__(self, parent)
         self.parent = parent
         self.setDynamicSortFilter(1)
         self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
@@ -314,8 +314,8 @@ class UsersProxy(QtGui.QSortFilterProxyModel):
         # Get pattern
         pattern = self.filterRegExp().pattern()
         # If pattern is in id or name, show it !
-        if unicode(index_id.data(0).toString()).find(pattern) != -1 or \
-            unicode(index_name.data(0).toString()).find(pattern) != -1:
+        if str(index_id.data()).find(pattern) != -1 or \
+            str(index_name.data()).find(pattern) != -1:
             return True
         return False
 
@@ -328,18 +328,18 @@ class UsersModel(QtGui.QStandardItemModel):
         self.users = users
         if users != False:
             for user in users:
-                self.addUser(user["username"], "u#" + unicode(user["id"]))
+                self.addUser(user["username"], "u#" + str(user["id"]))
 
     def setHeaders(self):
         self.setColumnCount(2)
         self.setRowCount(0)
-        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
-        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
+        self.setHeaderData(0, QtCore.Qt.Horizontal, "Name")
+        self.setHeaderData(1, QtCore.Qt.Horizontal, "Id")
 
     def addUser(self, name=None, id=None):
         self.insertRow(0)
-        self.setData(self.index(0, 0), QtCore.QVariant(name))
-        self.setData(self.index(0, 1), QtCore.QVariant(id))
+        self.setData(self.index(0, 0), name)
+        self.setData(self.index(0, 1), id)
 
     def delUser(self):
         """
@@ -350,9 +350,9 @@ class UsersModel(QtGui.QStandardItemModel):
         self.removeRows(selected_row.row(), 1)
         
 
-class GroupsProxy(QtGui.QSortFilterProxyModel):
+class GroupsProxy(QtCore.QSortFilterProxyModel):
     def __init__(self, parent=None):
-        QtGui.QSortFilterProxyModel.__init__(self, parent)
+        QtCore.QSortFilterProxyModel.__init__(self, parent)
         self.parent = parent
         self.setDynamicSortFilter(1)
         self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
@@ -368,8 +368,8 @@ class GroupsProxy(QtGui.QSortFilterProxyModel):
         # Get pattern
         pattern = self.filterRegExp().pattern()
         # If pattern is in id or name, show it !
-        if unicode(index_id.data(0).toString()).find(pattern) != -1 or \
-            unicode(index_name.data(0).toString()).find(pattern) != -1:
+        if str(index_id.data()).find(pattern) != -1 or \
+            str(index_name.data()).find(pattern) != -1:
             return True
         return False
 
@@ -385,10 +385,10 @@ class GroupsModel(QtGui.QStandardItemModel):
     def setHeaders(self):
         self.setColumnCount(4)
         self.setRowCount(0)
-        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Admin"))
-        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Member"))
-        self.setHeaderData(2, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
-        self.setHeaderData(3, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
+        self.setHeaderData(0, QtCore.Qt.Horizontal, "Admin")
+        self.setHeaderData(1, QtCore.Qt.Horizontal, "Member")
+        self.setHeaderData(2, QtCore.Qt.Horizontal, "Name")
+        self.setHeaderData(3, QtCore.Qt.Horizontal, "Id")
 
     def addGroup(self, admin=QtCore.Qt.Unchecked, checked=QtCore.Qt.Unchecked, name=None, id=None,):
         self.insertRow(0)
@@ -403,13 +403,13 @@ class GroupsModel(QtGui.QStandardItemModel):
     def data(self, index, role):
         # if index is not valid
         if not index.isValid():
-            return QtCore.QVariant()
+            return None
         # if protocols is empty
         if not self.groups:
-            return QtCore.QVariant()
+            return None
 
         if len(self.groups) <= index.row():
-            return QtCore.QVariant()
+            return None
 
         group = self.groups[index.row()]
 
@@ -418,7 +418,7 @@ class GroupsModel(QtGui.QStandardItemModel):
             if index.column() == 0 or index.column() == 1:
                 attrName = self.columns[index.column()]
                 value = getattr(group, attrName)
-                return QtCore.QVariant(value)
+                return value
 
         # get value of group name and id
         if role == QtCore.Qt.DisplayRole:
@@ -426,10 +426,10 @@ class GroupsModel(QtGui.QStandardItemModel):
                 attrName = self.columns[index.column()]
                 value = getattr(group, attrName)
                 if attrName == "id":
-                    value = "g#" + unicode(value)
-                return QtCore.QVariant(value)
+                    value = "g#" + str(value)
+                return value
 
-        return QtCore.QVariant()
+        return None
 
     def setData(self, index, value, role):
         # if index is not valid
@@ -466,8 +466,10 @@ class GroupItem(QtCore.QObject):
             Set attributes
         """
         if attr == "admin":
-            value, bool = value.toInt()
-            if bool:
+            try:
+                value = int(value)
+            except (TypeError, ValueError):
+                return False
                 if value == QtCore.Qt.Checked:
                     # If user checks admin
                     if self.member == QtCore.Qt.Checked:
@@ -512,8 +514,10 @@ class GroupItem(QtCore.QObject):
                     return True
 
         if attr == "member":
-            value, bool = value.toInt()
-            if bool:
+            try:
+                value = int(value)
+            except (TypeError, ValueError):
+                return False
                 if self.admin == QtCore.Qt.Checked:
                     is_admin = True
                 else:
@@ -545,24 +549,24 @@ class GroupItem(QtCore.QObject):
 
         return False
 
-class NewUserWidget(QtGui.QDialog):
+class NewUserWidget(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.parent = parent
 
         # Load gui items
-        groupbox = QtGui.QGroupBox()
-        self.nameLabel = QtGui.QLabel(self.tr("User Name : "))
-        self.name = QtGui.QLineEdit()
-        self.adminLabel = QtGui.QLabel(self.tr("Admin : "))
-        self.admin = QtGui.QCheckBox()
+        groupbox = QtWidgets.QGroupBox()
+        self.nameLabel = QtWidgets.QLabel(self.tr("User Name : "))
+        self.name = QtWidgets.QLineEdit()
+        self.adminLabel = QtWidgets.QLabel(self.tr("Admin : "))
+        self.admin = QtWidgets.QCheckBox()
 
-        self.save = QtGui.QPushButton(self.tr("Save user"))
-        self.cancel = QtGui.QPushButton(self.tr("Cancel"))
+        self.save = QtWidgets.QPushButton(self.tr("Save user"))
+        self.cancel = QtWidgets.QPushButton(self.tr("Cancel"))
 
         # Positionning items
         ## Groups groupbox
-        gridLayout = QtGui.QGridLayout()
+        gridLayout = QtWidgets.QGridLayout()
         gridLayout.addWidget(self.nameLabel,0,0)
         gridLayout.addWidget(self.name,0,1)
         gridLayout.addWidget(self.adminLabel,1,0)
@@ -571,18 +575,18 @@ class NewUserWidget(QtGui.QDialog):
         gridLayout.addWidget(self.cancel,2,1)
         groupbox.setLayout(gridLayout)
 
-        mainLayout = QtGui.QGridLayout()
+        mainLayout = QtWidgets.QGridLayout()
         mainLayout.addWidget(groupbox,0,0)
         self.setLayout(mainLayout)
 
         self.setWindowTitle(self.tr("New user"))
 
         # SIGNALS
-        self.connect(self.save, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
-        self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        self.save.clicked.connect(self.accept)
+        self.cancel.clicked.connect(self.reject)
 
     def accept(self):
-        username = unicode(self.name.text())
+        username = str(self.name.text())
         if self.admin.checkState() == QtCore.Qt.Checked:
             admin = True
         else:

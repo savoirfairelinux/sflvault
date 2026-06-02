@@ -108,7 +108,6 @@ def authenticate(keep_privkey=False):
             # try the last token
             retval2 = self.vault.authenticate(username, self.authtok)
             if retval2['error']:
-                print(retval2['message'])
                 # decrypt token.
                 cryptok = elgamal_decrypt(privkey, unserial_elgamal_msg(retval['cryptok']))
                 retval3 = self.vault.authenticate(username, b64encode(cryptok).decode('ascii'))
@@ -1263,5 +1262,4 @@ class SFLvaultClient(object):
         for x in retval['list']:
             print("c#%d\t%s" % (x['id'], x['name']))
         return retval
-
 

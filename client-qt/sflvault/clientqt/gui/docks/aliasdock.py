@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
@@ -33,9 +33,9 @@ import os
 from sflvault.clientqt.lib.auth import *
 
 
-class AliasDock(QtGui.QDockWidget):
+class AliasDock(QtWidgets.QDockWidget):
     def __init__(self, parent=None):
-        QtGui.QDockWidget.__init__(self, parent)
+        QtWidgets.QDockWidget.__init__(self, parent)
         self.parent = parent
         self.alias = Alias(self)
         self.setWidget(self.alias)
@@ -43,7 +43,7 @@ class AliasDock(QtGui.QDockWidget):
         self.setWindowTitle(self.tr("Aliases"))
 
         ## Check visibility
-        QtCore.QObject.connect(self, QtCore.SIGNAL("visibilityChanged (bool)"), self.parent.menubar.checkDockBoxes)
+        self.visibilityChanged.connect(self.parent.menubar.checkDockBoxes)
 
     def readAliases(self):
         self.alias.model.clear()
@@ -56,7 +56,7 @@ class AliasDock(QtGui.QDockWidget):
             Set headers size
         """
         h = self.alias.alias_list.header()
-        h.setResizeMode(0, QtGui.QHeaderView.Stretch)
+        h.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         h.setStretchLastSection(0)
         self.alias.alias_list.setColumnWidth(1,65)
 
@@ -64,15 +64,16 @@ class AliasDock(QtGui.QDockWidget):
         """
             Define tree shortcuts
         """
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Delete),
-                self.alias.alias_list, self.alias.model.delAlias)
-#        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_F2),
+        sc = QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Delete),
+                self.alias.alias_list)
+        sc.activated.connect(self.alias.model.delAlias)
+#        QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_F2),
 #                self.alias.alias_list, self.alias.model.editAlias)
 
 
-class Alias(QtGui.QWidget):
+class Alias(QtWidgets.QWidget):
     def __init__(self, parent=None, ):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.parent = parent
 
         # Load model
@@ -85,7 +86,7 @@ class Alias(QtGui.QWidget):
         self.alias_list.setModel(self.model)
 
         # QGridLayout
-        mainLayout = QtGui.QGridLayout()
+        mainLayout = QtWidgets.QGridLayout()
         mainLayout.addWidget(self.alias_list,0,0)
 
         # Geometries
@@ -109,8 +110,8 @@ class AliasModel(QtGui.QStandardItemModel):
         """
         self.setColumnCount(2)
         self.setRowCount(0)
-        self.setHeaderData(0, QtCore.Qt.Horizontal, QtCore.QVariant("Name"))
-        self.setHeaderData(1, QtCore.Qt.Horizontal, QtCore.QVariant("Id"))
+        self.setHeaderData(0, QtCore.Qt.Horizontal, "Name")
+        self.setHeaderData(1, QtCore.Qt.Horizontal, "Id")
        
     def readConfig(self):
         """
@@ -125,20 +126,20 @@ class AliasModel(QtGui.QStandardItemModel):
         """
         # Show input Dialog
         if not id and not alias:
-            alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("New alias"),
+            alias, ok = QtWidgets.QInputDialog.getText(self.parent, self.tr("New alias"),
                                                     self.tr("New alias name :"),
-                                                    QtGui.QLineEdit.Normal)
+                                                    QtWidgets.QLineEdit.Normal)
             if not ok or not alias:
                 return False
             # Get id of the selected service
             id_index = self.tree.selectedIndexes()[1]
-            id  = self.tree.model().data(id_index).toString()
+            id = str(self.tree.model().data(id_index))
 
         # Insert the new row 
         self.insertRow(rowNumber)
-        self.setData(self.index(rowNumber, 0), QtCore.QVariant(alias))
-        self.setData(self.index(rowNumber, 1), QtCore.QVariant(id))
-        saveAlias(unicode(alias), unicode(id))
+        self.setData(self.index(rowNumber, 0), alias)
+        self.setData(self.index(rowNumber, 1), id)
+        saveAlias(str(alias), str(id))
         # Clear row selection
         self.parent.alias_list.clearSelection()
         # Select the new row
@@ -146,8 +147,8 @@ class AliasModel(QtGui.QStandardItemModel):
         id_index_rect = self.parent.alias_list.visualRect(self.index(rowNumber, 1))
         name_index_rect = self.parent.alias_list.visualRect(self.index(rowNumber, 0))
         ## Select the new row
-        self.parent.alias_list.setSelection(id_index_rect, QtGui.QItemSelectionModel.Select)
-        self.parent.alias_list.setSelection(name_index_rect, QtGui.QItemSelectionModel.Select)
+        self.parent.alias_list.setSelection(id_index_rect, QtCore.QItemSelectionModel.Select)
+        self.parent.alias_list.setSelection(name_index_rect, QtCore.QItemSelectionModel.Select)
         # Sort list
         self.parent.alias_list.sortByColumn(0,QtCore.Qt.AscendingOrder)
 
@@ -164,7 +165,7 @@ class AliasModel(QtGui.QStandardItemModel):
         if not selected_row:
             # if not do nothing
             return False
-        alias = unicode(self.data(selected_row[0]).toString())
+        alias = str(self.data(selected_row[0]))
         # Remove row
         self.removeRows(selected_row[0].row(), 1)
         # This function comes from the sflvault api
@@ -181,11 +182,11 @@ class AliasModel(QtGui.QStandardItemModel):
             if not selected_row:
                 # if not do nothing
                 return False
-            alias = unicode(self.data(selected_row[0]).toString())
-            id = unicode(self.data(selected_row[1]).toString())
-            alias, ok = QtGui.QInputDialog.getText(self.parent, self.tr("Edit Alias"),
+            alias = str(self.data(selected_row[0]))
+            id = str(self.data(selected_row[1]))
+            alias, ok = QtWidgets.QInputDialog.getText(self.parent, self.tr("Edit Alias"),
                                                     self.tr("new name:"),
-                                                    QtGui.QLineEdit.Normal, alias)
+                                                    QtWidgets.QLineEdit.Normal, alias)
             if not ok or not alias:
                 return False
         # Get selected row
@@ -193,19 +194,19 @@ class AliasModel(QtGui.QStandardItemModel):
         # Delete row and alias
         self.delAlias(selected_row)
         # Add row and alias
-        self.addAlias(unicode(id),unicode(alias),rowNumber)
+        self.addAlias(str(id),str(alias),rowNumber)
  
 
-class AliasView(QtGui.QTreeView):
+class AliasView(QtWidgets.QTreeView):
     def __init__(self, parent=None):
-        QtGui.QTreeView.__init__(self, parent)
+        QtWidgets.QTreeView.__init__(self, parent)
         self.parentView = parent
 
         # Set behavior
-        self.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.setSortingEnabled(1)
-        self.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-        self.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.setRootIsDecorated(False)
         self.setAlternatingRowColors(True)
         # Create menu
@@ -219,7 +220,7 @@ class AliasView(QtGui.QTreeView):
         if not self.selectedIndexes():
             # if not do nothing
             return False
-        menu = QtGui.QMenu(self)
+        menu = QtWidgets.QMenu(self)
         menu.addAction(self.connectAct)
         menu.addAction(self.showAct)
         menu.addAction(self.editAct)
@@ -230,15 +231,15 @@ class AliasView(QtGui.QTreeView):
         """
             Create actions for contextMenu
         """
-        self.connectAct = QtGui.QAction(self.tr("&Connect..."), self)
+        self.connectAct = QtWidgets.QAction(self.tr("&Connect..."), self)
         self.connectAct.setStatusTip(self.tr("Connect to this service or show password"))
         #self.connect(self.connectAct, QtCore.SIGNAL("triggered()"), self.connection)
-        self.showAct = QtGui.QAction(self.tr("&Show password"), self)
+        self.showAct = QtWidgets.QAction(self.tr("&Show password"), self)
         self.showAct.setStatusTip(self.tr("Show password of this service"))
         #self.connect(self.showAct, QtCore.SIGNAL("triggered()"), self.parentView.model.showAlias)
-        self.editAct = QtGui.QAction(self.tr("&Edit bookmark..."), self)
+        self.editAct = QtWidgets.QAction(self.tr("&Edit bookmark..."), self)
         self.editAct.setStatusTip(self.tr("Edit bookmark"))
-        self.connect(self.editAct, QtCore.SIGNAL("triggered()"), self.parentView.model.editAlias)
-        self.delAct = QtGui.QAction(self.tr("&Delete bookmark..."), self)
+        self.editAct.triggered.connect(self.parentView.model.editAlias)
+        self.delAct = QtWidgets.QAction(self.tr("&Delete bookmark..."), self)
         self.delAct.setStatusTip(self.tr("Delete bookmark"))
-        self.connect(self.delAct, QtCore.SIGNAL("triggered()"), self.parentView.model.delAlias)
+        self.delAct.triggered.connect(self.parentView.model.delAlias)

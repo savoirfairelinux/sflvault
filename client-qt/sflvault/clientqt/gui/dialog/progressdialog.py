@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 from sflvault.clientqt.images.qicons import *
@@ -33,19 +33,19 @@ import shutil
 import os
 
 
-class ProgressDialog(QtGui.QDialog):
+class ProgressDialog(QtWidgets.QDialog):
     def __init__(self, title, message, function, *args):
-        QtGui.QDialog.__init__(self, None)
+        QtWidgets.QDialog.__init__(self, None)
         self.function = function
         self.args = args
 
         # title & message
         self.setWindowTitle(title)
-        self.message = QtGui.QLabel(message)
+        self.message = QtWidgets.QLabel(message)
         # layout
-        layout = QtGui.QVBoxLayout(self)
+        layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(self.message)
-        self.progress = QtGui.QProgressBar()
+        self.progress = QtWidgets.QProgressBar()
         self.progress.setMinimum(0)
         self.progress.setMaximum(0)
         layout.addWidget(self.progress)
@@ -67,7 +67,7 @@ class ProgressDialog(QtGui.QDialog):
         # Create thread
         self.thread = Thread(self, self.function, self.args)
 
-        QtCore.QObject.connect(self.thread, QtCore.SIGNAL("finished()"), self.close)
+        self.thread.finished.connect(self.close)
 
     def run(self):
         # launch thread

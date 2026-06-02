@@ -23,22 +23,22 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
-from savepassword import SavePasswordWizard
+from sflvault.clientqt.gui.wizard.savepassword import SavePasswordWizard
 from sflvault.clientqt.lib.auth import *
 import shutil
 import os
 
 
-class InitAccount(QtGui.QWizard):
+class InitAccount(QtWidgets.QWizard):
     def __init__(self, parent=None):
         """ Wizard to launch user-setup
         """
-        QtGui.QWizard.__init__(self, parent)
+        QtWidgets.QWizard.__init__(self, parent)
         self.parent = parent
         # Init Pages
         page1 = Page1(self)
@@ -52,51 +52,51 @@ class InitAccount(QtGui.QWizard):
         self.show()
 
 
-class Page1(QtGui.QWizardPage):
+class Page1(QtWidgets.QWizardPage):
     def __init__(self, parent=None):
         """ Introduction page
         """
-        QtGui.QWizard.__init__(self, parent)
+        QtWidgets.QWizard.__init__(self, parent)
         self.parent = parent
         self.setTitle("Account Activation")
-        label = QtGui.QLabel("This wizard will activate your account."
+        label = QtWidgets.QLabel("This wizard will activate your account."
                 )
         label.setWordWrap(True)
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(label)
         self.setLayout(layout)
 
 
-class Page2(QtGui.QWizardPage):
+class Page2(QtWidgets.QWizardPage):
     def __init__(self, parent=None):
         """ Form page
         """
-        QtGui.QWizardPage.__init__(self, parent)
+        QtWidgets.QWizardPage.__init__(self, parent)
         self.parent = parent
         self.setTitle("Initialize your vault account")
         self.setSubTitle("Fill this form")
         self.setCommitPage(True)
         
-        username_label = QtGui.QLabel(self.tr("&Username"))
-        self.username = QtGui.QLineEdit(os.getenv('USER'))
+        username_label = QtWidgets.QLabel(self.tr("&Username"))
+        self.username = QtWidgets.QLineEdit(os.getenv('USER'))
         username_label.setBuddy(self.username)
 
-        address_label = QtGui.QLabel(self.tr("&Vault URL"))
-        self.address = QtGui.QLineEdit()
+        address_label = QtWidgets.QLabel(self.tr("&Vault URL"))
+        self.address = QtWidgets.QLineEdit()
         self.address.setText("https://localhost:5000/vault/rpc")
         address_label.setBuddy(self.address)
 
-        password1_label = QtGui.QLabel(self.tr("&Password"))
-        self.password1 = QtGui.QLineEdit()
-        self.password1.setEchoMode(QtGui.QLineEdit.Password)
+        password1_label = QtWidgets.QLabel(self.tr("&Password"))
+        self.password1 = QtWidgets.QLineEdit()
+        self.password1.setEchoMode(QtWidgets.QLineEdit.Password)
         password1_label.setBuddy(self.password1)
 
-        password2_label = QtGui.QLabel(self.tr("Confirm your password"))
-        self.password2 = QtGui.QLineEdit()
-        self.password2.setEchoMode(QtGui.QLineEdit.Password)
+        password2_label = QtWidgets.QLabel(self.tr("Confirm your password"))
+        self.password2 = QtWidgets.QLineEdit()
+        self.password2.setEchoMode(QtWidgets.QLineEdit.Password)
         password2_label.setBuddy(self.password2)
 
-        layout = QtGui.QGridLayout(self)
+        layout = QtWidgets.QGridLayout(self)
         layout.addWidget(username_label,0,0)
         layout.addWidget(self.username,0,1)
         layout.addWidget(address_label,1,0)
@@ -120,40 +120,40 @@ class Page2(QtGui.QWizardPage):
         # password matching ?
         if self.password2.text().compare(self.password1.text()):
             # password not matching
-            error = QtGui.QMessageBox(QtGui.QMessageBox.Critical, "Password error", "Passwords don't match")
+            error = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Critical, "Password error", "Passwords don't match")
             error.exec_()
             return False
         # Empty password
         if not self.password2.text().compare(""):
-            error = QtGui.QMessageBox(QtGui.QMessageBox.Critical, "Empty password", "Password can't be empty")
+            error = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Critical, "Empty password", "Password can't be empty")
             error.exec_()
             return False
         # test to register account
-        elif not registerAccount(unicode(self.username.text()), unicode(self.address.text()), unicode(self.password1.text())):
+        elif not registerAccount(str(self.username.text()), str(self.address.text()), str(self.password1.text())):
             return False
         # Reload config
         self.parent.parent.settings.sync()
         return True
 
 
-class Page3(QtGui.QWizardPage):
+class Page3(QtWidgets.QWizardPage):
     def __init__(self, parent=None):
         """ Final page
         """
-        QtGui.QWizardPage.__init__(self, parent)
+        QtWidgets.QWizardPage.__init__(self, parent)
         self.parent = parent
         self.setTitle("Account activation successfully")
-        label = QtGui.QLabel("You account is now activated. "
+        label = QtWidgets.QLabel("You account is now activated. "
                             "You can now connect to the vault.\n"
                             "\n"
                             )
         label.setWordWrap(True)
 
-        self.savepassword_label = QtGui.QLabel("Save your password in your wallet")
-        self.savepassword = QtGui.QCheckBox()
+        self.savepassword_label = QtWidgets.QLabel("Save your password in your wallet")
+        self.savepassword = QtWidgets.QCheckBox()
         self.savepassword.setCheckState(QtCore.Qt.Checked)
         self.savepassword_label.setBuddy(self.savepassword)
-        layout = QtGui.QGridLayout()
+        layout = QtWidgets.QGridLayout()
         layout.addWidget(label,0,0,1,2)
         layout.addWidget(self.savepassword_label,1,0)
         layout.addWidget(self.savepassword,1,1)
@@ -163,5 +163,5 @@ class Page3(QtGui.QWizardPage):
     def validatePage(self):
         if self.savepassword.checkState() == QtCore.Qt.Checked:
             # Launch savepassword wizard
-            self.savepass = SavePasswordWizard(self.field("password1").toString(), parent=self.parent.parent)
+            self.savepass = SavePasswordWizard(self.field("password1"), parent=self.parent.parent)
         return True

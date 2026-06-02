@@ -158,19 +158,9 @@ class SFLvaultCommand(object):
 
             if action in ['-v', '--version']:
                 try:
-                    print(_ilmeta.version('SFLvault-common'))
-                except _ilmeta.PackageNotFoundError:
-                    print("SFLvault-common not installed")
-
-                try:
                     print(_ilmeta.version('SFLvault-client'))
                 except _ilmeta.PackageNotFoundError:
                     print("SFLvault-client not installed")
-
-                try:
-                    print(_ilmeta.version('SFLvault-server'))
-                except _ilmeta.PackageNotFoundError:
-                    print("SFLvault-server not installed")
                 return
 
             # Fix for functions

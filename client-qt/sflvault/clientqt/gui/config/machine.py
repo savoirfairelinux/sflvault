@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
@@ -34,9 +34,9 @@ import os
 from sflvault.clientqt.lib.auth import *
 
 
-class DeleteMachineWidget(QtGui.QMessageBox):
+class DeleteMachineWidget(QtWidgets.QMessageBox):
     def __init__(self, machid=None, parent=None):
-        QtGui.QMessageBox.__init__(self, parent)
+        QtWidgets.QMessageBox.__init__(self, parent)
         self.parent = parent
         # Check if a line is selected
         if not machid:
@@ -47,14 +47,14 @@ class DeleteMachineWidget(QtGui.QMessageBox):
         if not "machine" in machine:
             return None
         # Set windows
-        self.setIcon(QtGui.QMessageBox.Question)
-        self.ok = self.addButton(QtGui.QMessageBox.Ok)
-        self.cancel = self.addButton(QtGui.QMessageBox.Cancel)
+        self.setIcon(QtWidgets.QMessageBox.Question)
+        self.ok = self.addButton(QtWidgets.QMessageBox.Ok)
+        self.cancel = self.addButton(QtWidgets.QMessageBox.Cancel)
         self.setText(self.tr("Do you want to delete %s" % machine["machine"]["name"]))
 
         # SIGNALS
-        self.connect(self.ok, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
-        self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        self.ok.clicked.connect(self.accept)
+        self.cancel.clicked.connect(self.reject)
 
     def accept(self):
         # Delete machine
@@ -65,9 +65,9 @@ class DeleteMachineWidget(QtGui.QMessageBox):
             self.done(1)
 
 
-class EditMachineWidget(QtGui.QDialog):
+class EditMachineWidget(QtWidgets.QDialog):
     def __init__(self, machid=None, custid=None, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         self.parent = parent
         self.settings = self.parent.settings
         self.machid = machid
@@ -75,26 +75,26 @@ class EditMachineWidget(QtGui.QDialog):
         self.mode = "add"
 
         # Load gui items
-        groupbox = QtGui.QGroupBox()
-        self.nameLabel = QtGui.QLabel(self.tr("Machine Name"))
-        self.name = QtGui.QLineEdit()
-        self.customerLabel = QtGui.QLabel(self.tr("Customer"))
-        self.customer = QtGui.QComboBox()
-        self.fqdnLabel = QtGui.QLabel(self.tr("FQDN"))
-        self.fqdn = QtGui.QLineEdit()
-        self.addressLabel = QtGui.QLabel(self.tr("Address"))
-        self.address = QtGui.QLineEdit()
-        self.locationLabel = QtGui.QLabel(self.tr("Location"))
-        self.location = QtGui.QLineEdit()
-        self.notesLabel = QtGui.QLabel(self.tr("Notes"))
-        self.notes = QtGui.QLineEdit()
+        groupbox = QtWidgets.QGroupBox()
+        self.nameLabel = QtWidgets.QLabel(self.tr("Machine Name"))
+        self.name = QtWidgets.QLineEdit()
+        self.customerLabel = QtWidgets.QLabel(self.tr("Customer"))
+        self.customer = QtWidgets.QComboBox()
+        self.fqdnLabel = QtWidgets.QLabel(self.tr("FQDN"))
+        self.fqdn = QtWidgets.QLineEdit()
+        self.addressLabel = QtWidgets.QLabel(self.tr("Address"))
+        self.address = QtWidgets.QLineEdit()
+        self.locationLabel = QtWidgets.QLabel(self.tr("Location"))
+        self.location = QtWidgets.QLineEdit()
+        self.notesLabel = QtWidgets.QLabel(self.tr("Notes"))
+        self.notes = QtWidgets.QLineEdit()
 
-        self.save = QtGui.QPushButton(self.tr("Save machine"))
-        self.cancel = QtGui.QPushButton(self.tr("Cancel"))
+        self.save = QtWidgets.QPushButton(self.tr("Save machine"))
+        self.cancel = QtWidgets.QPushButton(self.tr("Cancel"))
 
         # Positionning items
         ## Groups groupbox
-        gridLayout = QtGui.QGridLayout()
+        gridLayout = QtWidgets.QGridLayout()
         gridLayout.addWidget(self.nameLabel, 0, 0)
         gridLayout.addWidget(self.name, 0, 1)
         gridLayout.addWidget(self.customerLabel, 1, 0)
@@ -111,21 +111,21 @@ class EditMachineWidget(QtGui.QDialog):
         gridLayout.addWidget(self.save, 6, 1)
         groupbox.setLayout(gridLayout)
 
-        mainLayout = QtGui.QGridLayout()
+        mainLayout = QtWidgets.QGridLayout()
         mainLayout.addWidget(groupbox,0,0)
         self.setLayout(mainLayout)
 
         self.setWindowTitle(self.tr("Add machine"))
 
         # SIGNALS
-        self.connect(self.save, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("accept()"))
-        self.connect(self.cancel, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("reject()"))
+        self.save.clicked.connect(self.accept)
+        self.cancel.clicked.connect(self.reject)
 
     def exec_(self):
         # get customer lists
         customers = listCustomers()
         for customer in customers["list"]:
-            self.customer.addItem(customer['name'] +" - c#" + unicode(customer['id']) , QtCore.QVariant(customer['id']))
+            self.customer.addItem(customer['name'] +" - c#" + str(customer['id']) , customer['id'])
 
         if self.machid:
             # Fill fields for edit mode
@@ -133,7 +133,7 @@ class EditMachineWidget(QtGui.QDialog):
             informations = machine["machine"]
             self.name.setText(informations["name"])
             self.customer.setCurrentIndex(self.customer.findData(
-                                QtCore.QVariant(informations["customer_id"])))
+                                informations["customer_id"]))
             self.fqdn.setText(informations["fqdn"])
             self.address.setText(informations["ip"])
             self.location.setText(informations["location"])
@@ -143,7 +143,7 @@ class EditMachineWidget(QtGui.QDialog):
             self.setWindowTitle(self.tr("Edit machine"))
 
         if self.custid:
-            self.customer.setCurrentIndex(self.customer.findData(QtCore.QVariant(self.custid)))
+            self.customer.setCurrentIndex(self.customer.findData(self.custid))
 
         self.show()
 
@@ -157,13 +157,12 @@ class EditMachineWidget(QtGui.QDialog):
                         "notes": None,
                         }
         # Fill it
-        machine_info["name"] = unicode(self.name.text())
-        machine_info["customer_id"], bool =\
-                self.customer.itemData(self.customer.currentIndex()).toInt()
-        machine_info["fqdn"] = unicode(self.fqdn.text())
-        machine_info["ip"] = unicode(self.address.text())
-        machine_info["location"] = unicode(self.location.text())
-        machine_info["notes"] = unicode(self.notes.text())
+        machine_info["name"] = str(self.name.text())
+        machine_info["customer_id"] = self.customer.itemData(self.customer.currentIndex())
+        machine_info["fqdn"] = str(self.fqdn.text())
+        machine_info["ip"] = str(self.address.text())
+        machine_info["location"] = str(self.location.text())
+        machine_info["notes"] = str(self.notes.text())
         if self.mode == "add":
             # Add a new machine
             addMachine(machine_info["name"], machine_info["customer_id"],

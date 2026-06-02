@@ -25,28 +25,28 @@
 
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
-from tree.tree import TreeVault, TreeView
-from docks.infodock import InfoDock
-from docks.searchdock import SearchDock
-from docks.aliasdock import AliasDock
-from config.protocols import ProtocolsWidget
-from config.users import UsersWidget
-from config.preferences import PreferencesWidget
+from .tree.tree import TreeVault, TreeView
+from .docks.infodock import InfoDock
+from .docks.searchdock import SearchDock
+from .docks.aliasdock import AliasDock
+from .config.protocols import ProtocolsWidget
+from .config.users import UsersWidget
+from .config.preferences import PreferencesWidget
 #from config.configfile import ConfigFileWidget
-from config.config import Config
-from config.customer import EditCustomerWidget, DeleteCustomerWidget
-from config.machine import EditMachineWidget, DeleteMachineWidget
-from config.service import EditServiceWidget, DeleteServiceWidget
-from dialog.aboutdialog import AboutDialog, About_sflvaultqt_dialog, Help_dialog
-from wizard.initaccount import InitAccount
-from wizard.savepassword import SavePasswordWizard
-from bar.menubar import MenuBar
-from bar.systray import Systray
-from bar.osd import Osd
+from .config.config import Config
+from .config.customer import EditCustomerWidget, DeleteCustomerWidget
+from .config.machine import EditMachineWidget, DeleteMachineWidget
+from .config.service import EditServiceWidget, DeleteServiceWidget
+from .dialog.aboutdialog import AboutDialog, About_sflvaultqt_dialog, Help_dialog
+from .wizard.initaccount import InitAccount
+from .wizard.savepassword import SavePasswordWizard
+from .bar.menubar import MenuBar
+from .bar.systray import Systray
+from .bar.osd import Osd
 from sflvault.client import SFLvaultClient
 import shutil
 import os
@@ -57,9 +57,9 @@ import shlex
 
 
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, app=None, parent=None):
-        QtGui.QMainWindow.__init__(self, parent)
+        QtWidgets.QMainWindow.__init__(self, parent)
         self.parent = parent
         self.translator = QtCore.QTranslator() 
         self.app = app
@@ -88,7 +88,7 @@ class MainWindow(QtGui.QMainWindow):
         self.systray = Systray(parent=self)
 
         # Create clipboard
-        self.clipboard = QtGui.QApplication.clipboard()
+        self.clipboard = QtWidgets.QApplication.clipboard()
 
         # Load alias list
         self.alias_list = self.aliasdock.alias.alias_list
@@ -118,42 +118,43 @@ class MainWindow(QtGui.QMainWindow):
 
         # Signals
         ## Quit
-        QtCore.QObject.connect(self.menubar.quit, QtCore.SIGNAL("triggered()"), self.app.quit)
+        self.menubar.quit.triggered.connect(self.app.quit)
         ## Protocols
-        QtCore.QObject.connect(self.menubar.protocols, QtCore.SIGNAL("triggered()"), self.protocols.exec_)
+        self.menubar.protocols.triggered.connect(self.protocols.exec_)
         ## Protocols
-        QtCore.QObject.connect(self.menubar.quickconnect, QtCore.SIGNAL("triggered()"), self.quickConnection)
+        self.menubar.quickconnect.triggered.connect(self.quickConnection)
         ## Users & Groups
-        QtCore.QObject.connect(self.menubar.users, QtCore.SIGNAL("triggered()"), self.users.exec_)
+        self.menubar.users.triggered.connect(self.users.exec_)
         ## Save Vault password
-        QtCore.QObject.connect(self.menubar.savepass, QtCore.SIGNAL("triggered()"), self.savePassword)
+        self.menubar.savepass.triggered.connect(self.savePassword)
         ## First Vault connection
-        QtCore.QObject.connect(self.menubar.firstconnection, QtCore.SIGNAL("triggered()"), self.firstConnection)
+        self.menubar.firstconnection.triggered.connect(self.firstConnection)
         ## Vault connection
-        QtCore.QObject.connect(self.menubar.connection, QtCore.SIGNAL("triggered()"), self.vaultConnection)
+        self.menubar.connection.triggered.connect(self.vaultConnection)
         ## Preferences
-        QtCore.QObject.connect(self.menubar.preferences, QtCore.SIGNAL("triggered()"), self.preferences.exec_)
+        self.menubar.preferences.triggered.connect(self.preferences.exec_)
         ## Set config file
 #        QtCore.QObject.connect(self.menubar.configfile, QtCore.SIGNAL("triggered()"), self.configfile.exec_)
         ## Show search dock
-        QtCore.QObject.connect(self.menubar.search, QtCore.SIGNAL("triggered(bool)"), self.searchdock.setShown)
+        self.menubar.search.triggered.connect(self.searchdock.setVisible)
         ## Show info dock
-        QtCore.QObject.connect(self.menubar.info, QtCore.SIGNAL("triggered(bool)"), self.infodock.setShown)
+        self.menubar.info.triggered.connect(self.infodock.setVisible)
         ## Show alias dock
-        QtCore.QObject.connect(self.menubar.alias, QtCore.SIGNAL("triggered(bool)"), self.aliasdock.setShown)
+        self.menubar.alias.triggered.connect(self.aliasdock.setVisible)
         ## new customer
-        QtCore.QObject.connect(self.menubar.newcust, QtCore.SIGNAL("triggered(bool)"), self.editCustomer)
+        self.menubar.newcust.triggered.connect(self.editCustomer)
         ## new machine
-        QtCore.QObject.connect(self.menubar.newmach, QtCore.SIGNAL("triggered(bool)"), self.editMachine)
+        self.menubar.newmach.triggered.connect(self.editMachine)
         ## new service
-        QtCore.QObject.connect(self.menubar.newserv, QtCore.SIGNAL("triggered(bool)"), self.editService)
+        self.menubar.newserv.triggered.connect(self.editService)
         ## about
-        QtCore.QObject.connect(self.menubar.sflvaultabout, QtCore.SIGNAL("triggered(bool)"), self.showAbout)
-        QtCore.QObject.connect(self.menubar.qtabout, QtCore.SIGNAL("triggered(bool)"), self.show_qt_about)
-        QtCore.QObject.connect(self.menubar.sflvaulthelp, QtCore.SIGNAL("triggered(bool)"), self.show_help)
+        self.menubar.sflvaultabout.triggered.connect(self.showAbout)
+        self.menubar.qtabout.triggered.connect(self.show_qt_about)
+        self.menubar.sflvaulthelp.triggered.connect(self.show_help)
 
-        geometry = self.settings.value("SFLvault-qt4/binsavewindow").toByteArray()
-        self.restoreGeometry(geometry)
+        geometry = self.settings.value("SFLvault-qt4/binsavewindow")
+        if geometry is not None:
+            self.restoreGeometry(geometry)
 
     def show_help(self):
         helpd = Help_dialog(self)
@@ -171,13 +172,13 @@ class MainWindow(QtGui.QMainWindow):
         about.show()
 
     def closeEvent(self, event):
-        if self.settings.value("SFLvault-qt4/hide").toInt()[0] == QtCore.Qt.Checked:
+        if int(self.settings.value("SFLvault-qt4/hide", 0)) == QtCore.Qt.Checked:
             event.ignore()
-            state = QtCore.QVariant(self.saveGeometry())
+            state = self.saveGeometry()
             self.settings.setValue("SFLvault-qt4/binsavewindow", state)
             self.hide()
-        elif self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
-            state = QtCore.QVariant(self.saveGeometry())
+        elif int(self.settings.value("SFLvault-qt4/savewindow", 0)) == QtCore.Qt.Checked:
+            state = self.saveGeometry()
             self.settings.setValue("SFLvault-qt4/binsavewindow", state)
 
     def searchWaiting(self, research):
@@ -195,18 +196,18 @@ class MainWindow(QtGui.QMainWindow):
         if self.search_timer.isActive():
             self.search_timer.stop()
         # Get select group
-        groups,bool = self.searchdock.search.groups.itemData(self.searchdock.search.groups.currentIndex()).toInt()
-        if not bool:
+        groups = self.searchdock.search.groups.itemData(self.searchdock.search.groups.currentIndex())
+        if groups is None:
             groups = None
         # Get research
-        research = unicode(self.searchdock.search.search.text(), "latin-1").split(" ")
+        research = self.searchdock.search.search.text().split(" ")
         self.tree.search(research, groups)
 
     def showInformations(self, index):
         """
            Show informations
         """
-        if isinstance(index, QtGui.QItemSelection):
+        if isinstance(index, QtCore.QItemSelection):
             # if no items are selected do nothing...
             if not index.indexes():
                 return None
@@ -225,33 +226,33 @@ class MainWindow(QtGui.QMainWindow):
                 parentIndex = self.tree.proxyModel.parent(index)
                 # Get column 1 (id column)
                 parentIndex1 = self.tree.proxyModel.index(parentIndex.row(), 1, parentIndex.parent())
-                idmach = self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole).toString()
+                idmach = str(self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole))
                 idmach = int(idmach.split("#")[1])
                 # Get machine parent id (customerid)
                 parentIndex = self.tree.proxyModel.parent(parentIndex)
                 parentIndex1 = self.tree.proxyModel.index(parentIndex.row(), 1, parentIndex.parent())
-                idcust = self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole).toString()
+                idcust = str(self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole))
                 idcust = int(idcust.split("#")[1])
                 # Get service id 
-                idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+                idserv = str(indexId.data(QtCore.Qt.DisplayRole))
                 idserv = int(idserv.split("#")[1])
             else:
                 # Selected item is a machine
                 # Get machine parent id (customerid)
                 parentIndex = self.tree.proxyModel.parent(index)
                 parentIndex1 = self.tree.proxyModel.index(parentIndex.row(), 1, parentIndex.parent())
-                idcust = self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole).toString()
+                idcust = str(self.tree.proxyModel.data(parentIndex1, QtCore.Qt.DisplayRole))
                 idcust = int(idcust.split("#")[1])
                 # Get machine id 
-                idmach = indexId.data(QtCore.Qt.DisplayRole).toString()
+                idmach = str(indexId.data(QtCore.Qt.DisplayRole))
                 try:
                     idmach = int(idmach.split("#")[1])
-                except ValueError, e:
+                except ValueError as e:
                     idmach = None
                 idserv = None
         else:
             # Selected item is a customer
-            idcust = indexId.data(QtCore.Qt.DisplayRole).toString()
+            idcust = str(indexId.data(QtCore.Qt.DisplayRole))
             idcust = int(idcust.split("#")[1])
             idmach = None
             idserv = None
@@ -266,7 +267,7 @@ class MainWindow(QtGui.QMainWindow):
         if index == None:
             index = self.tree.selectedIndexes()[0]
         indexId = self.tree.selectedIndexes()[1]
-        idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+        idserv = str(indexId.data(QtCore.Qt.DisplayRole))
         idserv = int(idserv.split("#")[1])
         # Check if seleted item is a service
         if index.parent().parent().isValid():
@@ -278,7 +279,7 @@ class MainWindow(QtGui.QMainWindow):
         """
         # Get Id colunm
         indexId = self.alias_list.selectedIndexes()[1]
-        idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+        idserv = str(indexId.data(QtCore.Qt.DisplayRole))
         idserv = int(idserv.split("#")[1])
         # Check if seleted item is a service
         self.connection(idserv)
@@ -289,7 +290,7 @@ class MainWindow(QtGui.QMainWindow):
         """
         # Get Id colunm
         indexId = self.alias_list.selectedIndexes()[1]
-        idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+        idserv = str(indexId.data(QtCore.Qt.DisplayRole))
         idserv = int(idserv.split("#")[1])
         # Check if seleted item is a service
         self.connection(idserv,True)
@@ -302,7 +303,7 @@ class MainWindow(QtGui.QMainWindow):
         if index == None:
             index = self.tree.selectedIndexes()[0]
         indexId = self.tree.selectedIndexes()[1]
-        idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+        idserv = str(indexId.data(QtCore.Qt.DisplayRole))
         idserv = int(idserv.split("#")[1])
         # Check if seleted item is a service
         if index.parent().parent().isValid():
@@ -336,12 +337,12 @@ class MainWindow(QtGui.QMainWindow):
             url = QtCore.QUrl(protocol + "://" + url)
         else:
             url = QtCore.QUrl(service["services"][-1]["url"])
-        protocol = unicode(url.scheme())
-        port = unicode(url.port())
-        address  = unicode(url.host() + ":" + unicode(port) + url.path()) if port != "-1" else unicode(url.host() + url.path())
+        protocol = str(url.scheme())
+        port = str(url.port())
+        address  = str(url.host() + ":" + str(port) + url.path()) if port != "-1" else str(url.host() + url.path())
         # Copy password to clipboard if checked in config
-        clip, bool = self.settings.value("protocols/" + protocol + "/clip").toInt()
-        if bool and clip == QtCore.Qt.Checked:
+        clip = int(self.settings.value("protocols/" + protocol + "/clip", 0))
+        if clip == QtCore.Qt.Checked:
             self.copyToClip(password)
         # Prepare dictionnary
         if username:
@@ -361,9 +362,9 @@ class MainWindow(QtGui.QMainWindow):
         else:
             options["vaultconnect"] = "sflvault connect %s" % options["vaultid"]
         # Show Tooltip if checked in config
-        tooltip, bool = self.settings.value("protocols/" + protocol + "/tooltip").toInt()
-        if (bool and tooltip == QtCore.Qt.Checked) or \
-           not self.settings.value("protocols/" + protocol + "/command").toString()\
+        tooltip = int(self.settings.value("protocols/" + protocol + "/tooltip", 0))
+        if tooltip == QtCore.Qt.Checked or \
+           not self.settings.value("protocols/" + protocol + "/command", "")\
            or show_tooltip:
             self.osd = Osd(password=password, username=options["user"], address=options["address"], parent=self)
             self.osd.show()
@@ -371,15 +372,15 @@ class MainWindow(QtGui.QMainWindow):
                 # If tooltip == True then we just want to show password
                 return True
         # Prepare to launch command
-        command = unicode(self.settings.value("protocols/" + protocol + "/command").toString())
+        command = self.settings.value("protocols/" + protocol + "/command", "")
         if command:
             # Create Command
-            args = unicode(self.settings.value("protocols/" + protocol + "/args").toString())
-            command = unicode(self.settings.value("protocols/" + protocol + "/command").toString())
+            args = self.settings.value("protocols/" + protocol + "/args", "")
+            command = self.settings.value("protocols/" + protocol + "/command", "")
             args = args % options
-            print " ".join([command, args])
-            args = [QtCore.QString(arg) for arg in shlex.split(args)]
-            args_list = QtCore.QStringList(args)
+            print(" ".join([command, args]))
+            args = [str(arg) for arg in shlex.split(args)]
+            args_list = list(args)
             
             # Exit if command is empty (to prevent segfault. See bug #4)
             if command.strip() == "":
@@ -403,12 +404,12 @@ class MainWindow(QtGui.QMainWindow):
             return False
 
         # Get your informations
-        self.userinfo = getUserInfo(str(self.settings.value("SFLvault/username").toString()))
+        self.userinfo = getUserInfo(self.settings.value("SFLvault/username", ""))
 
         ## "Connect" Alias
-        QtCore.QObject.connect(self.aliasdock.alias.alias_list, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByBookmark)
-        QtCore.QObject.connect(self.aliasdock.alias.alias_list.connectAct, QtCore.SIGNAL("triggered()"), self.GetIdByBookmark)
-        QtCore.QObject.connect(self.aliasdock.alias.alias_list.showAct, QtCore.SIGNAL("triggered()"), self.show_tooltip_by_bookmark)
+        self.aliasdock.alias.alias_list.doubleClicked.connect(self.GetIdByBookmark)
+        self.aliasdock.alias.alias_list.connectAct.triggered.connect(self.GetIdByBookmark)
+        self.aliasdock.alias.alias_list.showAct.triggered.connect(lambda checked: self.show_tooltip_by_bookmark())
 
         # "Connect" search dock
         ## Update Group list in search box
@@ -417,27 +418,27 @@ class MainWindow(QtGui.QMainWindow):
         # "Connect" tree
         self.treewidget.connection()
         ## Tree Search
-        QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("textEdited (const QString&)"), self.searchWaiting)
-        QtCore.QObject.connect(self.search_timer, QtCore.SIGNAL("timeout()"), self.search)
-        QtCore.QObject.connect(self.searchdock.search.search, QtCore.SIGNAL("returnPressed ()"), self.focusOnTree)
+        self.searchdock.search.search.textEdited.connect(self.searchWaiting)
+        self.search_timer.timeout.connect(self.search)
+        self.searchdock.search.search.returnPressed.connect(self.focusOnTree)
         ## Tree filter by groups
-        QtCore.QObject.connect(self.searchdock.search.groups, QtCore.SIGNAL("currentIndexChanged (const QString&)"), self.search)
+        self.searchdock.search.groups.currentIndexChanged.connect(self.search)
         ## Tree menu
-        QtCore.QObject.connect(self.tree.bookmarkAct, QtCore.SIGNAL("triggered()"), self.aliasdock.alias.model.addAlias)
-        QtCore.QObject.connect(self.tree.editAct, QtCore.SIGNAL("triggered()"), self.editItem)
-        QtCore.QObject.connect(self.tree.delAct, QtCore.SIGNAL("triggered()"), self.delItem)
-        QtCore.QObject.connect(self.tree.newServiceAct, QtCore.SIGNAL("triggered()"), self.addService)
-        QtCore.QObject.connect(self.tree.newMachineAct, QtCore.SIGNAL("triggered()"), self.addMachine)
-        QtCore.QObject.connect(self.tree.tunnelAct, QtCore.SIGNAL("triggered()"), self.tunnel)
-        QtCore.QObject.connect(self.tree.connectAct, QtCore.SIGNAL("triggered()"), self.GetIdByTree)
-        QtCore.QObject.connect(self.tree.showAct, QtCore.SIGNAL("triggered()"), self.show_tooltip)
+        self.tree.bookmarkAct.triggered.connect(self.aliasdock.alias.model.addAlias)
+        self.tree.editAct.triggered.connect(self.editItem)
+        self.tree.delAct.triggered.connect(self.delItem)
+        self.tree.newServiceAct.triggered.connect(self.addService)
+        self.tree.newMachineAct.triggered.connect(self.addMachine)
+        self.tree.tunnelAct.triggered.connect(self.tunnel)
+        self.tree.connectAct.triggered.connect(self.GetIdByTree)
+        self.tree.showAct.triggered.connect(lambda checked: self.show_tooltip())
         ## Tree connection
-        QtCore.QObject.connect(self.tree, QtCore.SIGNAL("doubleClicked (const QModelIndex&)"), self.GetIdByTree)
+        self.tree.doubleClicked.connect(self.GetIdByTree)
         ## Tree item informations
-        QtCore.QObject.connect(self.tree, QtCore.SIGNAL("clicked (const QModelIndex&)"), self.showInformations)
-        QtCore.QObject.connect(self.tree.selectionModel(), QtCore.SIGNAL("selectionChanged (const QItemSelection&,const QItemSelection&)"), self.showInformations)
+        self.tree.clicked.connect(self.showInformations)
+        self.tree.selectionModel().selectionChanged.connect(self.showInformations)
         ## Tree Filter
-        QtCore.QObject.connect(self.treewidget.filter.filter_input, QtCore.SIGNAL("returnPressed ()"), self.focusOnTree)
+        self.treewidget.filter.filter_input.returnPressed.connect(self.focusOnTree)
 
         # "Connect" menus
         self.menubar.enableItems()
@@ -449,10 +450,11 @@ class MainWindow(QtGui.QMainWindow):
         """
             Show default and load dock positions if necessary
         """
-        if self.settings.value("SFLvault-qt4/savewindow").toInt()[0] == QtCore.Qt.Checked:
-            if self.settings.value("SFLvault-qt4/binsavewindow").toByteArray():
-                t = self.restoreState(self.settings.value("SFLvault-qt4/binsavewindow").toByteArray())
-        if self.settings.value("SFLvault-qt4/autoconnect").toInt()[0] == QtCore.Qt.Checked:
+        if int(self.settings.value("SFLvault-qt4/savewindow", 0)) == QtCore.Qt.Checked:
+            geometry = self.settings.value("SFLvault-qt4/binsavewindow")
+            if geometry:
+                self.restoreState(geometry)
+        if int(self.settings.value("SFLvault-qt4/autoconnect", 0)) == QtCore.Qt.Checked:
             self.vaultConnection()
         self.loadUnloadSystrayConfig()
         self.disEnableEffectsConfig()
@@ -464,9 +466,9 @@ class MainWindow(QtGui.QMainWindow):
         """
             Load or unload systray
         """
-        if self.settings.value("SFLvault-qt4/systray").toInt()[0] == QtCore.Qt.Checked:
+        if int(self.settings.value("SFLvault-qt4/systray", 0)) == QtCore.Qt.Checked:
             self.systray.show()
-        elif self.settings.value("SFLvault-qt4/systray").toInt()[0] == QtCore.Qt.Unchecked:
+        elif int(self.settings.value("SFLvault-qt4/systray", 0)) == QtCore.Qt.Unchecked:
             self.systray.hide()
 
 
@@ -474,10 +476,10 @@ class MainWindow(QtGui.QMainWindow):
         """
             Enable or not effects
         """
-        if self.settings.value("SFLvault-qt4/effects").toInt()[0] == QtCore.Qt.Checked:
+        if int(self.settings.value("SFLvault-qt4/effects", 0)) == QtCore.Qt.Checked:
             self.setAnimated(True)
             self.tree.setAnimated(True)
-        elif self.settings.value("SFLvault-qt4/effects").toInt()[0] == QtCore.Qt.Unchecked:
+        elif int(self.settings.value("SFLvault-qt4/effects", 0)) == QtCore.Qt.Unchecked:
             self.setAnimated(False)
             self.tree.setAnimated(False)
 
@@ -485,32 +487,41 @@ class MainWindow(QtGui.QMainWindow):
         """
             Show or hide filter bar
         """
-        if self.settings.value("SFLvault-qt4/filter").toInt()[0] == QtCore.Qt.Checked:
+        if int(self.settings.value("SFLvault-qt4/filter", 0)) == QtCore.Qt.Checked:
             self.treewidget.filter.show()
-        elif self.settings.value("SFLvault-qt4/filter").toInt()[0] == QtCore.Qt.Unchecked:
+        elif int(self.settings.value("SFLvault-qt4/filter", 0)) == QtCore.Qt.Unchecked:
             self.treewidget.filter.hide()
             self.treewidget.filter.filter_input.setText("")
  
     def webpreviewConfig(self):
-        if self.settings.value("SFLvault-qt4/webpreview").toInt()[0] == QtCore.Qt.Checked:
-            QtCore.QObject.connect(self.tree,QtCore.SIGNAL("entered (const QModelIndex&)"), self.tree.startTimer)
-            QtCore.QObject.connect(self.tree.timer, QtCore.SIGNAL("timeout ()"), self.tree.showWebPreview)
-            QtCore.QObject.connect(self.tree,QtCore.SIGNAL("viewportEntered ()"), self.tree.timerStop)
-        elif self.settings.value("SFLvault-qt4/webpreview").toInt()[0] == QtCore.Qt.Unchecked:
-            QtCore.QObject.disconnect(self.tree,QtCore.SIGNAL("entered (const QModelIndex&)"), self.tree.startTimer)
-            QtCore.QObject.disconnect(self.tree.timer, QtCore.SIGNAL("timeout ()"), self.tree.showWebPreview)
-            QtCore.QObject.disconnect(self.tree,QtCore.SIGNAL("viewportEntered ()"), self.tree.timerStop)
+        if int(self.settings.value("SFLvault-qt4/webpreview", 0)) == QtCore.Qt.Checked:
+            self.tree.entered.connect(self.tree.startTimer)
+            self.tree.timer.timeout.connect(self.tree.showWebPreview)
+            self.tree.viewportEntered.connect(self.tree.timerStop)
+        elif int(self.settings.value("SFLvault-qt4/webpreview", 0)) == QtCore.Qt.Unchecked:
+            try:
+                self.tree.entered.disconnect(self.tree.startTimer)
+            except (TypeError, RuntimeError):
+                pass
+            try:
+                self.tree.timer.timeout.disconnect(self.tree.showWebPreview)
+            except (TypeError, RuntimeError):
+                pass
+            try:
+                self.tree.viewportEntered.disconnect(self.tree.timerStop)
+            except (TypeError, RuntimeError):
+                pass
 
     def setLanguage(self):
         """
             Load language
         """
-        if self.settings.value("SFLvault-qt4/language").toString():
-            lang = self.settings.value("SFLvault-qt4/language").toString()
+        lang = self.settings.value("SFLvault-qt4/language", "")
+        if lang:
             bool = self.translator.load("sflvault-qt4_" + lang, "./i18n", "_", ".qm")
             # If not language loaded, print message
             if not bool:
-                print self.tr("Warning : unable to load i18n/sflvault-qt4_" + lang)
+                print(self.tr("Warning : unable to load i18n/sflvault-qt4_" + lang))
 
             self.app.installTranslator(self.translator)
 
@@ -518,12 +529,12 @@ class MainWindow(QtGui.QMainWindow):
         """
             Set shortcuts
         """
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_I),
-                        self, self.showHideFilterShort )
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_F),
-                        self, self.searchShort )
-        QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_T),
-                        self, self.focusOnTree)
+        sc1 = QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_I), self)
+        sc1.activated.connect(self.showHideFilterShort)
+        sc2 = QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_F), self)
+        sc2.activated.connect(self.searchShort)
+        sc3 = QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_T), self)
+        sc3.activated.connect(self.focusOnTree)
 
     def searchShort(self):
         """
@@ -556,30 +567,29 @@ class MainWindow(QtGui.QMainWindow):
             name_column_width = self.tree.columnWidth(0)
             id_column_width = self.tree.columnWidth(1)
             # Select first row and first column
-            self.tree.setSelection(QtCore.QRect(0, 0, name_column_width, 16), QtGui.QItemSelectionModel.Select)
+            self.tree.setSelection(QtCore.QRect(0, 0, name_column_width, 16), QtCore.QItemSelectionModel.Select)
             # Select first row and second column
-            self.tree.setSelection(QtCore.QRect(name_column_width, 0, id_column_width, 16), QtGui.QItemSelectionModel.Select)
+            self.tree.setSelection(QtCore.QRect(name_column_width, 0, id_column_width, 16), QtCore.QItemSelectionModel.Select)
 
     def quickConnection(self):
         """
             Launch connection from shortcut
         """
-        ret, ok = QtGui.QInputDialog.getText(self.parent, self.tr("Quick connection"),
+        ret, ok = QtWidgets.QInputDialog.getText(self.parent, self.tr("Quick connection"),
                                                  self.tr("Service id or service alias :"),
-                                                 QtGui.QLineEdit.Normal)
+                                                 QtWidgets.QLineEdit.Normal)
         if not ok or not ret:
             return False
 
         # Try to know if id is a integer
-        id, bool = ret.toInt()
-        if not bool:
-            # if is not a integer, then it's a QString
-            # check if it's something like s#111
-            ret = unicode(ret)
+        try:
+            id = int(ret)
+        except ValueError:
+            id = None
+            ret = str(ret)
             if ret.startswith("s#"):
                 id = ret.split("#")[1]
             if not id:
-            # Then it's an alias
                 id = getAlias(ret)
                 if id:
                     id = id.split("#")[1]
@@ -605,10 +615,10 @@ class MainWindow(QtGui.QMainWindow):
         # Get Id colunm
         indexId = self.tree.selectedIndexes()[1]
         index = self.tree.selectedIndexes()[0]
-        itemid = indexId.data(QtCore.Qt.DisplayRole).toString()
+        itemid = str(indexId.data(QtCore.Qt.DisplayRole))
         try:
             itemid = int(itemid.split("#")[1])
-        except ValueError, e:
+        except ValueError as e:
             return False
         # Check if seleted item is a service
         if index.parent().parent().isValid():
@@ -647,10 +657,10 @@ class MainWindow(QtGui.QMainWindow):
         # Get Id colunm
         indexId = self.tree.selectedIndexes()[1]
         index = self.tree.selectedIndexes()[0]
-        itemid = indexId.data(QtCore.Qt.DisplayRole).toString()
+        itemid = str(indexId.data(QtCore.Qt.DisplayRole))
         try:
             itemid = int(itemid.split("#")[1])
-        except ValueError, e:
+        except ValueError as e:
             return False
         # Check if seleted item is a service
         if index.parent().parent().isValid():
@@ -670,7 +680,7 @@ class MainWindow(QtGui.QMainWindow):
         # Get Id colunm
         indexId = self.tree.selectedIndexes()[1]
         index = self.tree.selectedIndexes()[0]
-        servid = indexId.data(QtCore.Qt.DisplayRole).toString()
+        servid = str(indexId.data(QtCore.Qt.DisplayRole))
         servid = int(servid.split("#")[1])
         self.addmachine = EditMachineWidget(None, servid, parent=self)
         self.addmachine.exec_()
@@ -681,10 +691,10 @@ class MainWindow(QtGui.QMainWindow):
         # Get Id colunm
         indexId = self.tree.selectedIndexes()[1]
         index = self.tree.selectedIndexes()[0]
-        machid = indexId.data(QtCore.Qt.DisplayRole).toString()
+        machid = str(indexId.data(QtCore.Qt.DisplayRole))
         try:
             machid = int(machid.split("#")[1])
-        except ValueError, e:
+        except ValueError as e:
             return False
         self.addservice = EditServiceWidget(False, machid, parent=self)
         self.addservice.exec_()
@@ -692,14 +702,14 @@ class MainWindow(QtGui.QMainWindow):
     def tunnel(self):
         index = self.tree.selectedIndexes()[0]
         indexId = self.tree.selectedIndexes()[1]
-        idserv = indexId.data(QtCore.Qt.DisplayRole).toString()
+        idserv = str(indexId.data(QtCore.Qt.DisplayRole))
         idserv = int(idserv.split("#")[1])
 
-        tunnel,bool = QtGui.QInputDialog().getText(
+        tunnel,bool = QtWidgets.QInputDialog().getText(
                                     self,
                                     "SSH Tunnel",
                                     "Enter the ssh tunnel (ex: -L 5000:127.0.0.1:3306 )",
-                                    QtGui.QLineEdit.Normal,
+                                    QtWidgets.QLineEdit.Normal,
                                     "",
                                     )
         if not bool or tunnel == "":
@@ -710,11 +720,11 @@ class MainWindow(QtGui.QMainWindow):
         # Get Id colunm
         indexId = self.tree.selectedIndexes()[1]
         index = self.tree.selectedIndexes()[0]
-        itemid = indexId.data(QtCore.Qt.DisplayRole).toString()
+        itemid = str(indexId.data(QtCore.Qt.DisplayRole))
         itemid = int(itemid.split("#")[1])
         # Check if seleted item is a service
         if index.parent().parent().isValid():
-            print index.parent().data(QtCore.Qt.DisplayRole).toString()
+            print(str(index.parent().data(QtCore.Qt.DisplayRole)))
             return False
             self.addService(itemid)
         # Check if seleted item is a machine

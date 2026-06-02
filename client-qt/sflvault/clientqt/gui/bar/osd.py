@@ -24,9 +24,9 @@
 
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
@@ -35,44 +35,44 @@ from sflvault.clientqt.images.qicons import *
 from sflvault.clientqt.lib.auth import *
 
 
-class Osd(QtGui.QWidget):
+class Osd(QtWidgets.QWidget):
     def __init__(self, password=None, address=None, username=None, parent=None, ):
-        QtGui.QSystemTrayIcon.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.parent = parent
         # Define widget as a tooltip
         self.setWindowFlags(QtCore.Qt.ToolTip) 
 
         # QGridLayout
-        mainLayout = QtGui.QGridLayout()
+        mainLayout = QtWidgets.QGridLayout()
 
         # Define labels, buttons and add to grid if necessary
         if username:
-            self.usernameLabel = QtGui.QLabel(self.tr("User name : "))
-            self.username = QtGui.QLineEdit(username)
+            self.usernameLabel = QtWidgets.QLabel(self.tr("User name : "))
+            self.username = QtWidgets.QLineEdit(username)
             self.username.setReadOnly(True)
-            self.usernameCopy = QtGui.QPushButton(self.tr("Copy"))
+            self.usernameCopy = QtWidgets.QPushButton(self.tr("Copy"))
             mainLayout.addWidget(self.usernameLabel,0,0)
             mainLayout.addWidget(self.username,0,1)
             mainLayout.addWidget(self.usernameCopy,0,2)
         if address:
-            self.addressLabel = QtGui.QLabel(self.tr("Address : "))
-            self.address = QtGui.QLineEdit(address)
+            self.addressLabel = QtWidgets.QLabel(self.tr("Address : "))
+            self.address = QtWidgets.QLineEdit(address)
             self.address.setReadOnly(True)
-            self.addressCopy = QtGui.QPushButton(self.tr("Copy"))
+            self.addressCopy = QtWidgets.QPushButton(self.tr("Copy"))
             mainLayout.addWidget(self.addressLabel,1,0)
             mainLayout.addWidget(self.address,1,1)
             mainLayout.addWidget(self.addressCopy,1,2)
         if password:
-            self.passwordLabel = QtGui.QLabel(self.tr("Password : "))
-            self.password = QtGui.QLineEdit(password)
+            self.passwordLabel = QtWidgets.QLabel(self.tr("Password : "))
+            self.password = QtWidgets.QLineEdit(password)
             self.password.setReadOnly(True)
 #            self.password.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
-            self.passwordCopy = QtGui.QPushButton(self.tr("Copy"))
+            self.passwordCopy = QtWidgets.QPushButton(self.tr("Copy"))
             mainLayout.addWidget(self.passwordLabel,2,0)
             mainLayout.addWidget(self.password,2,1)
             mainLayout.addWidget(self.passwordCopy,2,2)
         # Define close button
-        self.closeButton = QtGui.QPushButton(self.tr("&Close"))
+        self.closeButton = QtWidgets.QPushButton(self.tr("&Close"))
         mainLayout.addWidget(self.closeButton,3,0,1,3)
 
         # Geometries
@@ -82,12 +82,12 @@ class Osd(QtGui.QWidget):
         self.setLayout(mainLayout)
 
         # Load old position
-        if self.parent.settings.value("osd/posx").isValid():
+        if self.parent.settings.value("osd/posx") is not None:
             # get current width
             width = self.geometry().getCoords()[3]
             # get saved position
-            posx, bool = self.parent.settings.value("osd/posx").toInt()
-            posy, bool = self.parent.settings.value("osd/posy").toInt()
+            posx = int(self.parent.settings.value("osd/posx", 0))
+            posy = int(self.parent.settings.value("osd/posy", 0))
             self.setGeometry(posx, posy, width, 1) 
 
         # FIXME
@@ -105,25 +105,25 @@ class Osd(QtGui.QWidget):
 
         # Signals
         ## Close widhet
-        QtCore.QObject.connect(self.closeButton, QtCore.SIGNAL("clicked()"), self.close)
+        self.closeButton.clicked.connect(self.close)
         if username:
             ## Copy user to clipboard
-            QtCore.QObject.connect(self.usernameCopy, QtCore.SIGNAL("clicked()"), self.copyUsername)
+            self.usernameCopy.clicked.connect(self.copyUsername)
         if address:
             ## Copy address to clipboard
-            QtCore.QObject.connect(self.addressCopy, QtCore.SIGNAL("clicked()"), self.copyAddress)
+            self.addressCopy.clicked.connect(self.copyAddress)
         if password:
             ## Copy password to clipboard
-            QtCore.QObject.connect(self.passwordCopy, QtCore.SIGNAL("clicked()"), self.copyPassword)
+            self.passwordCopy.clicked.connect(self.copyPassword)
 
         # Check if timer is set
-        timerTimeout, bool = self.parent.settings.value("osd/timer").toInt()
-        if bool and timerTimeout > 0:
+        timerTimeout = int(self.parent.settings.value("osd/timer", 0))
+        if timerTimeout > 0:
             # If yes launch timer 
             self.timer = QtCore.QTimer(self)
             self.timer.start(timerTimeout * 1000)
             # Connect timeout timer with widget close function
-            QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.close)
+            self.timer.timeout.connect(self.close)
 
     def mousePressEvent(self, event):
         """
@@ -142,8 +142,8 @@ class Osd(QtGui.QWidget):
             event.accept()
             # Save new position
             posx, posy, width, heigth = self.geometry().getCoords()
-            self.parent.settings.setValue("osd/posx", QtCore.QVariant(posx))
-            self.parent.settings.setValue("osd/posy", QtCore.QVariant(posy))
+            self.parent.settings.setValue("osd/posx", posx)
+            self.parent.settings.setValue("osd/posy", posy)
 
     def copyUsername(self):
         """

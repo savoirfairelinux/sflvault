@@ -1,9 +1,4 @@
-try:
-    from setuptools import setup, find_packages
-except ImportError:
-    from distribute_setup import use_setuptools
-    use_setuptools()
-    from setuptools import setup, find_packages
+from setuptools import setup, find_packages
 
 
 
@@ -17,7 +12,7 @@ setup(
     license='GPLv2',
     setup_requires=['wheel'],
     install_requires=[
-                    #"PyQt",
+                    "PyQt5",
                       "SFLvault-client~=0.9",
                       "SFLvault-common~=0.9",
                       ],

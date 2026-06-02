@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 from sflvault.clientqt.images.qicons import *
@@ -34,9 +34,9 @@ import os
 import pkg_resources as pkgres
 import webbrowser
 
-class Help_dialog(QtGui.QDialog):
+class Help_dialog(QtWidgets.QDialog):
     def __init__(self, parent):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         # title & message
         #from PyQt4 import QtCore
         #QtCore.pyqtRemoveInputHook()
@@ -44,15 +44,15 @@ class Help_dialog(QtGui.QDialog):
         self.setWindowTitle('SFLvault Help')
         distr = pkgres.get_distribution('SFLvault_client')
 
-        self.msg1 = QtGui.QLabel(" SFLvault Help")
-        self.msg2 = QtGui.QLabel(""" <a href="http://sflvault.org">http://sflvault.org</a> """)
-        self.close_button = QtGui.QPushButton("Close")
+        self.msg1 = QtWidgets.QLabel(" SFLvault Help")
+        self.msg2 = QtWidgets.QLabel(""" <a href="http://sflvault.org">http://sflvault.org</a> """)
+        self.close_button = QtWidgets.QPushButton("Close")
 
         icon = Qicons("sflvault_icon")
-        self.icon = QtGui.QLabel("")
+        self.icon = QtWidgets.QLabel("")
         self.icon.setPixmap(icon.pixmap(64,64))
         # layout
-        layout = QtGui.QGridLayout(self)
+        layout = QtWidgets.QGridLayout(self)
         layout.addWidget(self.icon, 0,0, 2, 1)
         layout.addWidget(self.msg1, 0,1,1,2)
         layout.addWidget(self.msg2, 1,1,1,2)
@@ -61,8 +61,8 @@ class Help_dialog(QtGui.QDialog):
         # windows properties
         self.setWindowModality(Qt.ApplicationModal)
 
-        QtCore.QObject.connect(self.close_button, QtCore.SIGNAL("clicked()"), self.close)
-        QtCore.QObject.connect(self.msg2, QtCore.SIGNAL("linkActivated (const QString&)"), self.link)
+        self.close_button.clicked.connect(self.close)
+        self.msg2.linkActivated.connect(self.link)
 
     def link(self, link):
         webbrowser.open_new_tab(link)
@@ -71,9 +71,9 @@ class Help_dialog(QtGui.QDialog):
         self.accept()
 
 
-class AboutDialog(QtGui.QDialog):
+class AboutDialog(QtWidgets.QDialog):
     def __init__(self, parent):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         # title & message
         #from PyQt4 import QtCore
         #QtCore.pyqtRemoveInputHook()
@@ -81,18 +81,18 @@ class AboutDialog(QtGui.QDialog):
         self.setWindowTitle('About SFLvault')
         distr = pkgres.get_distribution('SFLvault_client')
 
-        self.msg1 = QtGui.QLabel(" About SFLvault")
-        self.msg2 = QtGui.QLabel(" " + 
+        self.msg1 = QtWidgets.QLabel(" About SFLvault")
+        self.msg2 = QtWidgets.QLabel(" " + 
                                  distr.project_name +
                                  " : " +
                                  distr.version)
-        self.close_button = QtGui.QPushButton("Close")
+        self.close_button = QtWidgets.QPushButton("Close")
 
         icon = Qicons("sflvault_icon")
-        self.icon = QtGui.QLabel("")
+        self.icon = QtWidgets.QLabel("")
         self.icon.setPixmap(icon.pixmap(64,64))
         # layout
-        layout = QtGui.QGridLayout(self)
+        layout = QtWidgets.QGridLayout(self)
         layout.addWidget(self.icon, 0,0, 2, 1)
         layout.addWidget(self.msg1, 0,1,1,2)
         layout.addWidget(self.msg2, 1,1,1,2)
@@ -101,15 +101,15 @@ class AboutDialog(QtGui.QDialog):
         # windows properties
         self.setWindowModality(Qt.ApplicationModal)
 
-        QtCore.QObject.connect(self.close_button, QtCore.SIGNAL("clicked()"), self.close)
+        self.close_button.clicked.connect(self.close)
 
     def close(self):
         self.accept()
 
 
-class About_sflvaultqt_dialog(QtGui.QDialog):
+class About_sflvaultqt_dialog(QtWidgets.QDialog):
     def __init__(self, parent):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
         # title & message
         #from PyQt4 import QtCore
         #QtCore.pyqtRemoveInputHook()
@@ -117,18 +117,18 @@ class About_sflvaultqt_dialog(QtGui.QDialog):
         self.setWindowTitle('About SFLvault Qt')
         distr = pkgres.get_distribution('SFLvault_client_qt')
 
-        self.msg1 = QtGui.QLabel(" About SFLvault Qt")
-        self.msg2 = QtGui.QLabel(" " +
+        self.msg1 = QtWidgets.QLabel(" About SFLvault Qt")
+        self.msg2 = QtWidgets.QLabel(" " +
                                  distr.project_name +
                                  " : " +
                                  distr.version)
-        self.close_button = QtGui.QPushButton("Close")
+        self.close_button = QtWidgets.QPushButton("Close")
 
         icon = Qicons("sflvault_icon")
-        self.icon = QtGui.QLabel("")
+        self.icon = QtWidgets.QLabel("")
         self.icon.setPixmap(icon.pixmap(64,64))
         # layout
-        layout = QtGui.QGridLayout(self)
+        layout = QtWidgets.QGridLayout(self)
         layout.addWidget(self.icon, 0,0, 2, 1)
         layout.addWidget(self.msg1, 0,1,1,2)
         layout.addWidget(self.msg2, 1,1,1,2)
@@ -137,7 +137,7 @@ class About_sflvaultqt_dialog(QtGui.QDialog):
         # windows properties
         self.setWindowModality(Qt.ApplicationModal)
 
-        QtCore.QObject.connect(self.close_button, QtCore.SIGNAL("clicked()"), self.close)
+        self.close_button.clicked.connect(self.close)
 
 
     def close(self):

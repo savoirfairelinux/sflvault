@@ -24,19 +24,18 @@
 
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from sflvault.client import SFLvaultClient
 from sflvault.clientqt.images.qicons import *
 import socket
-import xmlrpclib
-import exceptions
+import xmlrpc.client as xmlrpclib
 
 
-class ErrorMessage(QtGui.QMessageBox):
+class ErrorMessage(QtWidgets.QMessageBox):
     def __init__(self, exception, parent=None):
-        QtGui.QMessageBox.__init__(self, parent)
+        QtWidgets.QMessageBox.__init__(self, parent)
         self.exception = exception
-        if isinstance(self.exception, exceptions.ValueError):
+        if isinstance(self.exception, ValueError):
             self.noPassword()
         elif isinstance(self.exception, socket.error):
             if self.exception[0] == 111:
@@ -57,7 +56,7 @@ class ErrorMessage(QtGui.QMessageBox):
         elif isinstance(self.exception, xmlrpclib.ProtocolError):
             # Protocol error means the token is now invalid
             self.protocolError()
-        elif hasattr(exception, 'message') and exception.message != '':
+        elif getattr(exception, 'message', ''):
             if exception.message == "Unable to decrypt groupkey (Error decrypting: inconsistent message)":
                 self.AccessError()
             else:
@@ -68,33 +67,33 @@ class ErrorMessage(QtGui.QMessageBox):
         
     def messageError(self):
         self.setWindowTitle(self.tr("Message Error"))
-        self.setText(self.exception[1].decode("utf8"))
-        print "message error"
-        self.setIcon(QtGui.QMessageBox.Critical)
+        self.setText(str(self.exception.args[1]) if len(self.exception.args) > 1 else str(self.exception))
+        print("message error")
+        self.setIcon(QtWidgets.QMessageBox.Critical)
 
     def connectionError(self):
         self.setWindowTitle(self.tr("Connection Error"))
-        self.setText(self.exception[1].decode("utf8"))
-        print "connection error"
-        self.setIcon(QtGui.QMessageBox.Critical)
+        self.setText(str(self.exception.args[1]) if len(self.exception.args) > 1 else str(self.exception))
+        print("connection error")
+        self.setIcon(QtWidgets.QMessageBox.Critical)
 
     def AccessError(self):
         self.setWindowTitle(self.tr("Access Error"))
         self.setText("Access Denied")
-        print "access denied"
-        self.setIcon(QtGui.QMessageBox.Critical)
+        print("access denied")
+        self.setIcon(QtWidgets.QMessageBox.Critical)
 
     def protocolError(self):
         self.setWindowTitle(self.tr("Protocol Error"))
         self.setText("Protocol Error")
-        print "protocol error"
-        self.setIcon(QtGui.QMessageBox.Critical)
+        print("protocol error")
+        self.setIcon(QtWidgets.QMessageBox.Critical)
 
     def noPassword(self):
         self.setWindowTitle(self.tr("Environment Problem"))
-        print "no password"
+        print("no password")
         self.setText("No password Found")
-        self.setIcon(QtGui.QMessageBox.Critical)
+        self.setIcon(QtWidgets.QMessageBox.Critical)
 
     def message(self):
         if isinstance(self.exception, str):
@@ -102,17 +101,17 @@ class ErrorMessage(QtGui.QMessageBox):
             self.setText(self.exception)
         elif self.exception and hasattr(self.exception, 'message'):
             self.setWindowTitle(self.tr("Error message"))
-            self.setText(self.exception.message)
+            self.setText(getattr(self.exception, "message", str(self.exception)))
         elif self.exception:
-            print "message error"
+            print("message error")
             try:
                 self.setWindowTitle(self.tr("Error message"))
                 self.setText(self.exception[1])
-            except IndexError, e:
+            except IndexError as e:
                 self.setWindowTitle(self.tr("Error Message"))
-                self.setText(self.exception.message)
+                self.setText(getattr(self.exception, "message", str(self.exception)))
         else:
             self.setWindowTitle(self.tr("Error"))
             self.setText(self.tr("Unknown error"))
-            print "message unknown"
-        self.setIcon(QtGui.QMessageBox.Critical)
+            print("message unknown")
+        self.setIcon(QtWidgets.QMessageBox.Critical)

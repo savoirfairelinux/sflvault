@@ -23,9 +23,9 @@
 #
 
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 import re
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 import sflvault
 from sflvault.client import SFLvaultClient
 import shutil
@@ -45,8 +45,8 @@ class Config(QtCore.QSettings):
                                         "SFLvault", "config", parent);
         else:
             QtCore.QSettings.__init__(self,
-                         '/home/' + os.getenv( 'USER' ) + '/.sflvault/config',
-                         0, parent)
+                         os.path.expanduser('~/.sflvault/config'),
+                         QtCore.QSettings.IniFormat, parent)
         self.parent = parent
         self.checkConfig()
 
@@ -71,7 +71,7 @@ class Config(QtCore.QSettings):
         """
         if not self.contains("protocols/ssh"):
             self.beginGroup("protocols")
-            self.setValue("ssh", QtCore.QVariant("SSH protocol"));
+            self.setValue("ssh", "SSH protocol")
             self.endGroup()
 
         self.saveConfig()
